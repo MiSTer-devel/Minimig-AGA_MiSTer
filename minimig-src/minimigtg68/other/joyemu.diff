@@ -1,0 +1,154 @@
+diff -Nrub -x *.bak unzip_20/minimig/CIA8520.v unzip/minimig/CIA8520.v
+--- unzip_20/minimig/CIA8520.v	Tue Apr 21 18:34:28 2009
++++ unzip/minimig/CIA8520.v	Wed Sep  2 07:55:32 2009
+@@ -90,6 +90,9 @@
+ 	output	[7:0] osdctrl,		//osd control
+ 	output	freeze,				//Action Replay freeze key
+ 	input	disk_led			//floppy disk activity LED
++	
++	, output [5:0] mou_emu
++	, output [5:0] joy_emu
+ );
+ 
+ //local signals
+@@ -173,6 +176,9 @@
+ 	.keyack(keyack),
+ 	.osdctrl(osdctrl),
+ 	.freeze(freeze)
++	
++	, .mou_emu(mou_emu)
++	, .joy_emu(joy_emu)
+ );
+ 
+ //sdr register
+diff -Nrub -x *.bak unzip_20/minimig/Minimig1.v unzip/minimig/Minimig1.v
+--- unzip_20/minimig/Minimig1.v	Sun Aug 30 20:07:40 2009
++++ unzip/minimig/Minimig1.v	Wed Sep  2 08:48:54 2009
+@@ -339,6 +339,9 @@
+ 
+ reg		ntsc = NTSC;			//PAL/NTSC video mode selection
+ 
++wire  [5:0] mou_emu;
++wire  [5:0] joy_emu;
++
+ //--------------------------------------------------------------------------------------
+ //--------------------------------------------------------------------------------------
+ 
+@@ -505,8 +508,10 @@
+ 	.ps2mclk(msclk),
+ 	._fire0(_fire0),
+ 	._fire1(_fire1),
+-	._joy1(_joy1),
+-	._joy2(_joy2),
++	//._joy1(_joy1),
++	._joy1(mou_emu),
++	//._joy2(_joy2),
++	._joy2(joy_emu),
+ 	.osdctrl(osdctrl),
+ 	.keydis(keyboard_disable),
+ 	._den(_spisel1),
+@@ -594,6 +599,9 @@
+ 	.osdctrl(osdctrl),
+ 	.freeze(freeze),
+ 	.disk_led(disk_led)
++	
++	, .mou_emu (mou_emu)
++	, .joy_emu (joy_emu)
+ );
+ 
+ //instantiate cia B
+diff -Nrub -x *.bak unzip_20/minimig/PS2Keyboard.v unzip/minimig/PS2Keyboard.v
+--- unzip_20/minimig/PS2Keyboard.v	Tue Apr 21 18:34:28 2009
++++ unzip/minimig/PS2Keyboard.v	Wed Sep  2 08:55:46 2009
+@@ -56,6 +56,9 @@
+ 	input	keyack,				//keyboard data out acknowledge
+ 	output	[7:0] osdctrl,		//on-screen-display controll
+ 	output	freeze				//Action Replay freeze button
++	
++	, output [5:0] mou_emu
++	, output [5:0] joy_emu
+ );
+ 
+ //local signals
+@@ -262,6 +265,9 @@
+ 	.caps(caps),
+ 	.osdctrl(osdctrl),
+ 	.freeze(freeze)
++	
++	, .mou_emu(mou_emu)
++	, .joy_emu(joy_emu)
+ );
+ 
+ //Duplicate key filter and caps lock handling.
+@@ -350,6 +356,9 @@
+ 	output	caps,	   			//amiga capslock key
+ 	output	reg [7:0] osdctrl,	//osd menu control
+ 	output	reg freeze
++	
++	, output [5:0] mou_emu
++	, output reg [5:0] joy_emu
+ );
+ 
+ //local signals
+@@ -409,6 +418,61 @@
+ 		freeze <= keyrom[4] & ~upstroke;
+ end
+ 
++reg guileft;
++reg guiright;
++reg altleft;
++reg altright;
++
++always @(posedge clk)
++begin
++  if (reset)
++  begin
++    guileft <= 0;
++    guiright <= 0;
++    altleft <= 0;
++    altright <= 0;
++  end
++  else 
++  if (enable2)
++  begin
++    if (keyrom[7:0] == 8'h66)
++      guileft <= ~upstroke;
++    else if (keyrom[7:0] == 8'h67)
++      guiright <= ~upstroke;
++    else if (aleft)
++      altleft <= ~upstroke;
++    else if (aright)
++      altright <= ~upstroke;
++  end
++end
++
++// active low
++assign mou_emu[5] = ~(guiright & altright);
++assign mou_emu[4] = ~(guileft & altleft);
++assign mou_emu[3:0] = 4'b1111;
++
++always @(posedge clk)
++begin
++  if (reset)
++    joy_emu <= 6'b11_1111;
++  else
++  if (enable2)
++  begin
++    if (keyrom[7:0] == 8'h4c)
++      joy_emu[3] <= upstroke;  // UP
++    else if (keyrom[7:0] == 8'h4d)
++      joy_emu[2] <= upstroke;  // DOWN
++    else if (keyrom[7:0] == 8'h4f)
++      joy_emu[1] <= upstroke;  // LEFT
++    else if (keyrom[7:0] == 8'h4e)
++      joy_emu[0] <= upstroke;  // RIGHT
++    else if (ctrl)
++      joy_emu[4] <= upstroke;  // FIRE
++    else if (aleft & ~guileft)
++      joy_emu[5] <= upstroke;  // FIRE2
++  end
++end
++
+ //-------------------------------------------------------------------------------------------------
+ 
+ //here follows the ps2 to Amiga key romtable:
