@@ -36,7 +36,8 @@
 // 2009-05-23	- better timing model for CIA interface
 // 2009-05-24	- clean-up & renaming
 // 2009-05-25	- ram, cpu and custom chips bus multiplexer
-// 2009-09-01	- fixed sel_kick 
+// 2009-09-01	- fixed sel_kick
+// 2010-08-15	- clean-up
 
 module gary
 (
@@ -83,7 +84,7 @@ module gary
 
 wire	[2:0] t_sel_slow;
 wire	sel_xram;
-wire	sel_bank_1;
+wire	sel_bank_1; 				// $200000-$3FFFFF
 
 //--------------------------------------------------------------------------------------
 
@@ -133,7 +134,7 @@ begin
 end
 
 assign t_sel_slow[0] = cpu_address_in[23:19]==5'b1100_0 ? 1'b1 : 1'b0; //$C00000 - $C7FFFF
-assign t_sel_slow[1] = cpu_address_in[23:19]==5'b1100_1 ? 1'b1 : 1'b0; //$C80000 - $CfFFFF
+assign t_sel_slow[1] = cpu_address_in[23:19]==5'b1100_1 ? 1'b1 : 1'b0; //$C80000 - $CFFFFF
 assign t_sel_slow[2] = cpu_address_in[23:19]==5'b1101_0 ? 1'b1 : 1'b0; //$D00000 - $D7FFFF
 
 assign sel_xram = (t_sel_slow[0] & (memory_config[2] | memory_config[3]))

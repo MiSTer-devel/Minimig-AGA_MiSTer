@@ -51,33 +51,39 @@
 // 2009-07-18	- change of memory_config takes effect after reset
 // 2009-08-11	- hdd_ena replaced with ide_config
 // 2009-08-17	- OSD position moved right
+// 2009-12-18	- clean-up
+// 2010-08-16	- joystick emulation
+// 2010-08-16	- autofire
+//				- lmb & rmb emulation
 
 module userio
 (
-	input 	clk,		    		//bus clock
-	input 	reset,			   		//reset
+	input 	clk,		    		// bus clock
+	input 	reset,			   		// reset
 	input	clk28m,
 	input	c1,
 	input	c3,
-	input	sol,					//start of video line
-	input	sof,					//start of video frame 
-	input 	[8:1] reg_address_in,	//register adress inputs
-	input	[15:0] data_in,			//bus data in
-	output	reg [15:0] data_out,	//bus data out
-	inout	ps2mdat,				//mouse PS/2 data
-	inout	ps2mclk,				//mouse PS/2 clk
-	output	_fire0,					//joystick 0 fire output (to CIA)
-	output	_fire1,					//joystick 1 fire output (to CIA)
-	input	[5:0] _joy1,			//joystick 1 in (default mouse port)
-	input	[5:0] _joy2,			//joystick 2 in (default joystick port)
-	input	[7:0] osd_ctrl,			//OSD control (minimig->host, [menu,select,down,up])
-	output	reg keydis,				//disables Amiga keyboard while OSD is active
-	input	_scs,					//SPI enable
-	input	sdi,		  			//SPI data in
-	output	sdo,	 				//SPI data out
-	input	sck,	  				//SPI clock
-	output	osd_blank,				//osd overlay, normal video blank output
-	output	osd_pixel,				//osd video pixel
+	input	sol,					// start of video line
+	input	sof,					// start of video frame 
+	input 	[8:1] reg_address_in,	// register adress inputs
+	input	[15:0] data_in,			// bus data in
+	output	reg [15:0] data_out,	// bus data out
+	inout	ps2mdat,				// mouse PS/2 data
+	inout	ps2mclk,				// mouse PS/2 clk
+	output	_fire0,					// joystick 0 fire output (to CIA)
+	output	_fire1,					// joystick 1 fire output (to CIA)
+	input	[5:0] _joy1,			// joystick 1 in (default mouse port)
+	input	[5:0] _joy2,			// joystick 2 in (default joystick port)
+	input	_lmb,
+	input	_rmb,
+	input	[7:0] osd_ctrl,			// OSD control (minimig->host, [menu,select,down,up])
+	output	reg keyboard_disabled,	// disables Amiga keyboard while OSD is active
+	input	_scs,					// SPI enable
+	input	sdi,		  			// SPI data in
+	output	sdo,	 				// SPI data out
+	input	sck,	  				// SPI clock
+	output	osd_blank,				// osd overlay, normal video blank output
+	output	osd_pixel,				// osd video pixel
 	output	[1:0] lr_filter,
 	output	[1:0] hr_filter,
 	output	[3:0] memory_config,
@@ -85,33 +91,36 @@ module userio
 	output	[3:0] floppy_config,
 	output	[1:0] scanline,
 	output	[2:0] ide_config,
-	output	usrrst,					//user reset from osd module
-	output	bootrst					//user reset to bootloader
+	output	usrrst,					// user reset from osd module
+	output	bootrst					// user reset to bootloader
 );
 
-//local signals	
-reg		[5:0] _sjoy1;				//synchronized joystick 1 signals
-reg		[5:0] _xjoy2;				//synchronized joystick 2 signals
-wire	[5:0] _sjoy2;				//synchronized joystick 2 signals
-wire	[15:0] mouse0dat;			//mouse counters
-wire	_mleft;						//left mouse button
-wire	_mthird;					//middle mouse button
-wire	_mright;					//right mouse buttons
-reg		joy1enable;					//joystick 1 enable (mouse/joy switch)
-reg		joy2enable;					//joystick 2 enable when no osd
-wire	osd_enable;					//osd enable
-reg		[7:0] t_osd_ctrl;			//JB: osd control lines
-wire	test_load;					//load test value to mouse counter 
-wire	[15:0] test_data;			//mouse counter test value
+// local signals	
+reg		[5:0] _sjoy1;				// synchronized joystick 1 signals
+reg		[5:0] _xjoy2;				// synchronized joystick 2 signals
+wire	[5:0] _sjoy2;				// synchronized joystick 2 signals
+wire	[15:0] mouse0dat;			// mouse counters
+wire	_mleft;						// left mouse button
+wire	_mthird;					// middle mouse button
+wire	_mright;					// right mouse buttons
+reg		joy1enable;					// joystick 1 enable (mouse/joy switch)
+reg		joy2enable;					// joystick 2 enable when no osd
+wire	osd_enable;					// OSD display enable
+wire	key_disable;				// Amiga keyboard disable
+reg		[7:0] t_osd_ctrl;			// JB: osd control lines
+wire	test_load;					// load test value to mouse counter 
+wire	[15:0] test_data;			// mouse counter test value
+wire	[1:0] autofire_config;
+reg		[1:0] autofire_cnt;
+reg		autofire;
 
-
-//register names and adresses		
+// register names and adresses		
 parameter JOY0DAT = 9'h00a;
 parameter JOY1DAT = 9'h00c;
 parameter POTINP  = 9'h016;
 parameter JOYTEST = 9'h036;
 
-parameter KEY_MENU  = 8'h88;
+parameter KEY_MENU  = 8'h69;
 parameter KEY_ESC   = 8'h45;
 parameter KEY_ENTER = 8'h44;
 parameter KEY_UP    = 8'h4C;
@@ -122,14 +131,27 @@ parameter KEY_RIGHT = 8'h4E;
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//disable keyboard when OSD is displayed
+//autofire pulses generation
+
 always @(posedge clk)
-	if (osd_enable)
-		keydis <= 1;
-	else if (t_osd_ctrl==0) //enable keyboard when OSD is not displayed and all keys are released
-		keydis <= 0;											   
+	if (sof)
+		if (autofire_cnt == 1)
+			autofire_cnt <= autofire_config;
+		else
+			autofire_cnt <= autofire_cnt - 1;
+			
+always @(posedge clk)
+	if (sof)
+		if (autofire_config == 0)
+			autofire <= 1'b0;
+		else if (autofire_cnt == 1)
+			autofire <= ~autofire;
+
+// disable keyboard when OSD is displayed
+always @(key_disable)
+	keyboard_disabled <= key_disable;
 											   
-//input synchronization of external signals
+// input synchronization of external signals
 always @(posedge clk)
 	_sjoy1[5:0] <= _joy1[5:0];	
 
@@ -137,14 +159,14 @@ always @(posedge clk)
 	if (sof)
 		_xjoy2[5:0] <= _joy2[5:0];	
 
-//port 2 joystick disable in osd
+// port 2 joystick disable in osd
 always @(posedge clk)
-	if (osd_enable)
+	if (key_disable)
 		joy2enable <= 0;
 	else if (_xjoy2[5:0] == 6'b11_1111)
 		joy2enable <= 1;
 
-assign _sjoy2[5:0] = joy2enable ? _xjoy2[5:0] : 6'b11_1111;
+assign _sjoy2[5:0] = joy2enable ? _xjoy2[5:0] | (autofire << 4) : 6'b11_1111;
 
 always @(joy2enable or _xjoy2 or osd_ctrl)
 	if (~joy2enable)
@@ -168,41 +190,41 @@ always @(joy2enable or _xjoy2 or osd_ctrl)
 		else
 			t_osd_ctrl = osd_ctrl;
 
-//port 1 automatic mouse/joystick switch
+// port 1 automatic mouse/joystick switch
 always @(posedge clk)
-	if (!_mleft || reset)//when left mouse button pushed, switch to mouse (default)
+	if (!_mleft || reset)// when left mouse button pushed, switch to mouse (default)
 		joy1enable = 0;
-	else if (!_sjoy1[4])//when joystick 1 fire pushed, switch to joystick
+	else if (!_sjoy1[4])// when joystick 1 fire pushed, switch to joystick
 		joy1enable = 1;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//data output multiplexer
+// data output multiplexer
 always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mright or _mthird)
-	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
+	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)// read port 1 joystick
 		data_out[15:0] = {6'b000000,~_sjoy1[1],_sjoy1[3]^_sjoy1[1],6'b000000,~_sjoy1[0],_sjoy1[2]^_sjoy1[0]};
-	else if (reg_address_in[8:1]==JOY0DAT[8:1])//read port 1 mouse
+	else if (reg_address_in[8:1]==JOY0DAT[8:1])// read port 1 mouse
 		data_out[15:0] = mouse0dat[15:0];
-	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
+	else if (reg_address_in[8:1]==JOY1DAT[8:1])// read port 2 joystick
 		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
-	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
-		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5],1'b0,_mthird,8'b00000000};
+	else if (reg_address_in[8:1]==POTINP[8:1])// read mouse and joysticks extra buttons
+		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5]&_rmb,1'b0,_mthird,8'b00000000};
 	else
 		data_out[15:0] = 16'h0000;
 
-//assign fire outputs to cia A
+// assign fire outputs to cia A
 assign _fire1 = _sjoy2[4];
-assign _fire0 = _sjoy1[4] & _mleft;
+assign _fire0 = _sjoy1[4] & _mleft & _lmb;
 
-//JB: some trainers writes to JOYTEST register to reset current mouse counter
+// JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1 : 0;
 assign test_data = data_in[15:0];
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//instantiate mouse controller
+// instantiate mouse controller
 ps2mouse pm1
 (
 	.clk(clk),
@@ -222,7 +244,7 @@ ps2mouse pm1
 //--------------------------------------------------------------------------------------
 
 
-//instantiate osd controller
+// instantiate osd controller
 osd	osd1
 (
 	.clk(clk),
@@ -240,6 +262,7 @@ osd	osd1
 	.osd_blank(osd_blank),
 	.osd_pixel(osd_pixel),
 	.osd_enable(osd_enable),
+	.key_disable(key_disable),
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
 	.memory_config(memory_config),
@@ -247,6 +270,7 @@ osd	osd1
 	.floppy_config(floppy_config),
 	.scanline(scanline),
 	.ide_config(ide_config),
+	.autofire_config(autofire_config),
 	.usrrst(usrrst),
 	.bootrst(bootrst)
 );
@@ -261,54 +285,55 @@ endmodule
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//on screen display controller
+// on screen display controller
 module osd
 (
-	input 	clk,		    	//pixel clock
-	input	reset,				//reset
-	input	clk28m,				//35ns clock
-	input	c1,					//clk28m domain clock enable
+	input 	clk,		    				// pixel clock
+	input	reset,							// reset
+	input	clk28m,							// 35ns clock
+	input	c1,								// clk28m domain clock enable
 	input	c3,
-	input	sol,				//start of video line
-	input	sof,				//start of video frame 
-	input	[7:0] osd_ctrl,		//keycode for OSD control (Amiga keyboard codes + additional keys coded as values > 80h)
-	input	_scs,				//SPI enable
-	input	sdi,		  		//SPI data in
-	output	sdo,	 			//SPI data out
-	input	sck,	  			//SPI clock
-	output	osd_blank,			//osd overlay, normal video blank output
-	output	osd_pixel,			//osd video pixel
-	output	osd_enable,			//osd enable
-	output	reg [1:0] lr_filter,
-	output	reg [1:0] hr_filter,
+	input	sol,							// start of video line
+	input	sof,							// start of video frame 
+	input	[7:0] osd_ctrl,					// keycode for OSD control (Amiga keyboard codes + additional keys coded as values > 80h)
+	input	_scs,							// SPI enable
+	input	sdi,		  					// SPI data in
+	output	sdo,	 						// SPI data out
+	input	sck,	  						// SPI clock
+	output	osd_blank,						// osd overlay, normal video blank output
+	output	osd_pixel,						// osd video pixel
+	output	reg osd_enable = 0,				// osd enable
+	output	reg key_disable = 0,			// keyboard disable
+	output	reg [1:0] lr_filter = 0,
+	output	reg [1:0] hr_filter = 0,
 	output	reg [3:0] memory_config = 0,
 	output	reg [3:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
-	output	reg	[2:0] ide_config = 0,		//enable hard disk support
+	output	reg	[2:0] ide_config = 0,		// enable hard disk support
+	output	reg [1:0] autofire_config = 0,
 	output	usrrst,
 	output	bootrst
 );
 
-//local signals
-reg		[10:0] horbeam;			//horizontal beamcounter
-reg		[8:0] verbeam;			//vertical beamcounter
-reg		[7:0] osdbuf [2047:0];	//osd video buffer
-wire	osdframe;				//true if beamcounters within osd frame
-reg		[7:0] bufout;			//osd buffer read data
-reg 	osd_enable1;				//osd display enable 1
-reg 	osd_enable2;				//osd display enable 2 (synchronized to start of frame)
-reg 	[10:0] wraddr;			//osd buffer write address
-wire	[7:0] wrdat;			//osd buffer write data
-wire	wren;					//osd buffer write enable
+// local signals
+reg		[10:0] horbeam;			// horizontal beamcounter
+reg		[8:0] verbeam;			// vertical beamcounter
+reg		[7:0] osdbuf [2047:0];	// osd video buffer
+wire	osdframe;				// true if beamcounters within osd frame
+reg		[7:0] bufout;			// osd buffer read data
+reg 	[10:0] wraddr;			// osd buffer write address
+wire	[7:0] wrdat;			// osd buffer write data
+wire	wren;					// osd buffer write enable
 
-reg		[3:0] highlight;		//highlighted line number
-reg		invert;					//invertion of highlighted line
+reg		[3:0] highlight;		// highlighted line number
+reg		invert;					// invertion of highlighted line
 reg		[5:0] vpos;
 reg		vena;
 
 reg 	[3:0] t_memory_config = 0;
 reg		[2:0] t_ide_config = 0;
+reg 	[3:0] t_chipset_config = 0;
 
 //--------------------------------------------------------------------------------------
 // memory configuration select signal
@@ -317,24 +342,30 @@ reg		[2:0] t_ide_config = 0;
 // configuration changes only while reset is active
 always @(posedge clk)
 	if (reset)
+	begin
+		chipset_config[1] <= t_chipset_config[1];
 		memory_config <= t_memory_config;
-
-always @(posedge clk)
-	if (reset)
 		ide_config <= t_ide_config;
+	end
 
+always @(t_chipset_config)
+begin
+	chipset_config[3:2] <= t_chipset_config[3:2];
+	chipset_config[0] <= t_chipset_config[0];
+end
+		
 //--------------------------------------------------------------------------------------
-//OSD video generator
+// OSD video generator
 //--------------------------------------------------------------------------------------
 
-//osd local horizontal beamcounter
+// osd local horizontal beamcounter
 always @(posedge clk28m)
 	if (sol && !c1 && !c3)
 		horbeam <= 0;
 	else
 		horbeam <= horbeam + 1;
 
-//osd local vertical beamcounter
+// osd local vertical beamcounter
 always @(posedge clk)
 	if (sof)
 		verbeam <= 0;
@@ -346,15 +377,15 @@ always @(posedge clk)
 		vpos[5:0] <= verbeam[5:0];
 
 //--------------------------------------------------------------------------------------
-//generate osd video frame
+// generate osd video frame
 
 
-//horizontal part..
+// horizontal part..
 wire hframe;
 
 assign hframe = (horbeam[7] & horbeam[8] & horbeam[9] & ~horbeam[10]) | (~horbeam[8] & ~horbeam[9] & horbeam[10]) | (~horbeam[7] & horbeam[8] & ~horbeam[9] & horbeam[10]);
 
-//vertical part..
+// vertical part..
 reg vframe;
 
 always @(posedge clk)
@@ -367,8 +398,13 @@ always @(posedge clk)
 	if (sol)
 		vena <= vframe;
 
-//combine..
-assign osdframe = vframe & hframe & osd_enable2;
+// combine..
+reg osd_enabled;
+always @(posedge clk)
+	if (sof)
+		osd_enabled <= osd_enable;
+		
+assign osdframe = vframe & hframe & osd_enabled;
 
 always @(posedge clk)
 	if (~highlight[3] && verbeam[5:3]==highlight[2:0] && !verbeam[6])
@@ -378,32 +414,32 @@ always @(posedge clk)
 
 //--------------------------------------------------------------------------------------
 
-//assign osd blank and pixel outputs
+// assign osd blank and pixel outputs
 assign osd_pixel = invert ^ (vena & bufout[vpos[2:0]]);
 assign osd_blank = osdframe;
 
 //--------------------------------------------------------------------------------------
-//video buffer
+// video buffer
 //--------------------------------------------------------------------------------------
 
-//dual ported osd video buffer
-//video buffer is 1024*8
-//this buffer should be a single blockram
-always @(posedge clk)//input part
+// dual ported osd video buffer
+// video buffer is 1024*8
+// this buffer should be a single blockram
+always @(posedge clk) // input part
 	if (wren)
 		osdbuf[wraddr[10:0]] <= wrdat[7:0];
 		
-always @(posedge clk28m)//output part
+always @(posedge clk28m) // output part
 	bufout[7:0] <= osdbuf[{vpos[5:3],horbeam[8]^horbeam[7],~horbeam[7],horbeam[6:1]}];
 
 //--------------------------------------------------------------------------------------
-//interface to host
+// interface to host
 //--------------------------------------------------------------------------------------
 wire	rx;
 wire	cmd;
-reg 	[2:0] spicmd;		//spi command
+reg 	wrcmd;		// spi write command
 
-//instantiate spi interface
+// instantiate spi interface
 spi8 spi0
 (
 	.clk(clk),
@@ -417,91 +453,86 @@ spi8 spi0
 	.cmd(cmd)
 );
 
-//command latch
-// commands are:
+// OSD SPI commands:
 //
-// 8'b00000000 	nop
-// 8'b00100NNN 	write data to osd buffer line <NNN>
-// 8'b01000000	disable displaying of osd
-// 8'b01100000	enable displaying of osd
-// 8'b10100000	read osd_ctrl (controls for osd)
-// 8'b10000000	reset Minimig
-// 8'b1010xxSS	set scanline mode
-// 8'b1011xxxH	set hdd config (H-enable IDE0)
-// 8'b1100FFxS	set floppy speed and drive number
-// 8'b1101xxxS	set cpu speed
-// 8'b1110HHLL	set interpolation filter
-// 8'b1111xxMM	set memory configuration
+// 8'b00000000 	NOP
+// 8'b001H0NNN 	write data to osd buffer line <NNN> (H - highlight)
+// 8'b0100--KE	enable OSD display (E) and disable Amiga keyboard (K)
+// 8'b1000000B	reset Minimig (B - reset to bootloader)
+// 8'b100001AA	set autofire rate
+// 8'b1001---S	set cpu speed
+// 8'b1010--SS	set scanline mode
+// 8'b1011-SMC	set hard disk config (C - enable HDC, M - enable Master HDD, S - enable Slave HDD)
+// 8'b1100FF-S	set floppy speed and drive number
+// 8'b1101-EAN	set chipset features (N - ntsc, A - OCS A1000, E - ECS)
+// 8'b1110HHLL	set interpolation filter (H - Hires, L - Lores)
+// 8'b1111SSCC	set memory configuration (S - Slow, C - Chip)
 
 always @(posedge clk)
 	if (rx && cmd)
-		spicmd <= wrdat[7:5];
+		wrcmd <= wrdat[7:5]==3'b001 ? 1'b1 : 1'b0;
 
-//scanline mode
+// scanline mode
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1010)
 		scanline <= wrdat[1:0];
 		
-//hdd config
+// hdd config
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1011)
 		t_ide_config <= wrdat[2:0];
 		
-//floppy speed select
+// floppy speed select
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1100)
 		floppy_config[3:0] <= wrdat[3:0];
 		
-//cpu speed select
+// chipset features select
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1101)
-		chipset_config[3:0] <= wrdat[3:0];
+		t_chipset_config[3:0] <= wrdat[3:0];
 		
-//filter configuration
+// video filter configuration
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1110)
 		{hr_filter[1:0],lr_filter[1:0]} <= wrdat[3:0];
 
-//memory configuration
+// memory configuration
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1111)
 		t_memory_config[3:0] <= wrdat[3:0];
 
-//address counter and buffer write control (write line <NNN> command)
+// autofire configuration
 always @(posedge clk)
-	if (rx && cmd && wrdat[7:5]==3'b001)//set linenumber from incoming command byte
+	if (rx && cmd && wrdat[7:2]==6'b1000_01)
+		autofire_config[1:0] <= wrdat[1:0];
+
+// address counter and buffer write control (write line <NNN> command)
+always @(posedge clk)
+	if (rx && cmd && wrdat[7:5]==3'b001) // set linenumber from incoming command byte
 		wraddr[10:0] <= {wrdat[2:0],8'b0000_0000};
-	else if (rx)	//increment for every data byte that comes in
+	else if (rx) // increment for every data byte that comes in
 		wraddr[10:0] <= wraddr[10:0] + 1;
 
 always @(posedge clk)
-	if (~osd_enable1)
+	if (~osd_enable)
 		highlight <= 4'b1000;
 	else if (rx && cmd && wrdat[7:4]==4'b0011)
 		highlight <= wrdat[3:0];
 		
-//disable/enable osd display
+// disable/enable osd display
+// memory configuration
 always @(posedge clk)
-begin
-	if (spicmd[2:0]==3'b010)//disable
-		osd_enable1 <= 0;
-	else if (spicmd[2:0]==3'b011)//enable
-		osd_enable1 <= 1;
-end
+	if (rx && cmd && wrdat[7:4]==4'b0100)
+		{key_disable, osd_enable} <= wrdat[1:0];
 
-//synchronize osd_enable 1 to start-of-frame
-always @(posedge clk)
-	osd_enable2 <= osd_enable1;
-	
-assign osd_enable = osd_enable2;
+assign wren = rx && ~cmd && wrcmd ? 1'b1 : 1'b0;
 
-assign wren = rx && ~cmd && spicmd==3'b001 ? 1 : 0;
+// user reset request (from osd menu)		
+assign usrrst = rx && cmd && wrdat[7:1]==7'b1000_000 ? 1'b1 : 1'b0;
 
-//user reset request (from osd menu)		
-assign usrrst = rx && cmd && wrdat[7:5]==3'b100 ? 1 : 0;
-
-//reset to bootloader
-assign bootrst = rx && cmd && wrdat[7:5]==3'b100 && wrdat[0] ? 1 : 0;
+// reset to bootloader
+assign bootrst = rx && cmd && wrdat[7:0]==8'b1000_0001 ? 1'b1 : 1'b0;
 
 endmodule
 
@@ -510,40 +541,40 @@ endmodule
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//SPI interface module (8 bits)
-//this is a slave module, clock is controlled by host
-//clock is high when bus is idle
-//ingoing data is sampled at the positive clock edge
-//outgoing data is shifted/changed at the negative clock edge
-//msb is sent first
-//         ____   _   _   _   _
-//sck   ->    |_| |_| |_| |_|
-//data   ->     777 666 555 444
-//sample ->      ^   ^   ^   ^
-//strobe is asserted at the end of every byte and signals that new data must
-//be registered at the out output. At the same time, new data is read from the in input.
-//The data at input in is also sent as the first byte after _scs is asserted (without strobe!). 
+// SPI interface module (8 bits)
+// this is a slave module, clock is controlled by host
+// clock is high when bus is idle
+// ingoing data is sampled at the positive clock edge
+// outgoing data is shifted/changed at the negative clock edge
+// msb is sent first
+//          ____   _   _   _   _
+// sck    ->    |_| |_| |_| |_|
+// data   ->     777 666 555 444
+// sample ->      ^   ^   ^   ^
+// strobe is asserted at the end of every byte and signals that new data must
+// be registered at the out output. At the same time, new data is read from the in input.
+// The data at input in is also sent as the first byte after _scs is asserted (without strobe!). 
 module spi8
 (
-	input 	clk,		    //pixel clock
-	input	_scs,			//SPI chip select
-	input	sdi,		  	//SPI data in
-	output	sdo,	 		//SPI data out
-	input	sck,	  		//SPI clock
-	input	[7:0] in,		//parallel input data
-	output	[7:0] out,		//parallel output data
-	output	reg rx,		//byte received
-	output	reg cmd			//first byte received
+	input 	clk,		    // pixel clock
+	input	_scs,			// SPI chip select
+	input	sdi,		  	// SPI data in
+	output	sdo,	 		// SPI data out
+	input	sck,	  		// SPI clock
+	input	[7:0] in,		// parallel input data
+	output	[7:0] out,		// parallel output data
+	output	reg rx,			// byte received
+	output	reg cmd			// first byte received
 );
 
-//locals
-reg [2:0] bit_cnt;		//bit counter
-reg [7:0] sdi_reg;		//input shift register	(rising edge of SPI clock)
-reg [7:0] sdo_reg;		//output shift register	 (falling edge of SPI clock)
+// locals
+reg [2:0] bit_cnt;		// bit counter
+reg [7:0] sdi_reg;		// input shift register	(rising edge of SPI clock)
+reg [7:0] sdo_reg;		// output shift register (falling edge of SPI clock)
 
-reg new_byte;			//new byte (8 bits) received
-reg rx_sync;			//synchronization to clk (first stage)
-reg first_byte;		//first byte is going to be received
+reg new_byte;			// new byte (8 bits) received
+reg rx_sync;			// synchronization to clk (first stage)
+reg first_byte;			// first byte is going to be received
 
 //------ input shift register ------//
 always @(posedge sck)
@@ -554,47 +585,47 @@ assign out = sdi_reg;
 //------ receive bit counter ------//
 always @(posedge sck or posedge _scs)
 	if (_scs)
-		bit_cnt <= 0;					//always clear bit counter when CS is not active
+		bit_cnt <= 0;				// always clear bit counter when CS is not active
 	else
-		bit_cnt <= bit_cnt + 1;		//increment bit counter when new bit has been received
+		bit_cnt <= bit_cnt + 1;		// increment bit counter when new bit has been received
 
 //----- rx signal ------//
-//this signal goes high for one clk clock period just after new byte has been received
-//it's synchronous with clk, output data shouldn't change when rx is active
+// this signal goes high for one clk clock period just after new byte has been received
+// it's synchronous with clk, output data shouldn't change when rx is active
 always @(posedge sck or posedge rx)
 	if (rx)
-		new_byte <= 0;		//cleared asynchronously when rx is high (rx is synchronous with clk)
+		new_byte <= 0;		// cleared asynchronously when rx is high (rx is synchronous with clk)
 	else if (bit_cnt==7)
-		new_byte <= 1;		//set when last bit of a new byte has been just received
+		new_byte <= 1;		// set when last bit of a new byte has been just received
 
 always @(negedge clk)
-	rx_sync <= new_byte;	//double synchronization to avoid metastability
+	rx_sync <= new_byte;	// double synchronization to avoid metastability
 
 always @(posedge clk)
-	rx <= rx_sync;			//synchronous with clk
+	rx <= rx_sync;			// synchronous with clk
 
 //------ cmd signal generation ------//
-//this signal becomes active after reception of first byte
-//when any other byte is received it's deactivated indicating data bytes
+// this signal becomes active after reception of first byte
+// when any other byte is received it's deactivated indicating data bytes
 always @(posedge sck or posedge _scs)
 	if (_scs)
-		first_byte <= 1;		//set when CS is not active
+		first_byte <= 1;		// set when CS is not active
 	else if (bit_cnt==7)
-		first_byte <= 0;		//cleared after reception of first byte
+		first_byte <= 0;		// cleared after reception of first byte
 
 always @(posedge sck)
 	if (bit_cnt==7)
-		cmd <= first_byte;		//active only when first byte received
+		cmd <= first_byte;		// active only when first byte received
 	
 //------ serial data output register ------//
-always @(negedge sck)	//output change on falling SPI clock
+always @(negedge sck)	// output change on falling SPI clock
 	if (bit_cnt==0)
 		sdo_reg <= in;
 	else
 		sdo_reg <= {sdo_reg[6:0],1'b0};
 
 //------ SPI output signal ------//
-assign sdo = ~_scs & sdo_reg[7];	//force zero if SPI not selected
+assign sdo = ~_scs & sdo_reg[7];	// force zero if SPI not selected
 
 endmodule
 
@@ -603,50 +634,50 @@ endmodule
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//PS2 mouse controller.
-//This module decodes the standard 3 byte packet of an PS/2 compatible 2 or 3 button mouse.
-//The module also automatically handles power-up initailzation of the mouse.
+// PS2 mouse controller.
+// This module decodes the standard 3 byte packet of an PS/2 compatible 2 or 3 button mouse.
+// The module also automatically handles power-up initailzation of the mouse.
 module ps2mouse
 (
-	input 	clk,		    	//bus clock
-	input 	reset,			   	//reset 
-	inout	ps2mdat,			//mouse PS/2 data
-	inout	ps2mclk,			//mouse PS/2 clk
-	output	reg [7:0]ycount,	//mouse Y counter
-	output	reg [7:0]xcount,	//mouse X counter
-	output	reg _mleft,			//left mouse button output
-	output	reg _mthird,		//third(middle) mouse button output
-	output	reg _mright,		//right mouse button output
-	input	test_load,			//load test value to mouse counter
-	input	[15:0] test_data	//mouse counter test value
+	input 	clk,		    	// bus clock
+	input 	reset,			   	// reset 
+	inout	ps2mdat,			// mouse PS/2 data
+	inout	ps2mclk,			// mouse PS/2 clk
+	output	reg [7:0]ycount,	// mouse Y counter
+	output	reg [7:0]xcount,	// mouse X counter
+	output	reg _mleft,			// left mouse button output
+	output	reg _mthird,		// third(middle) mouse button output
+	output	reg _mright,		// right mouse button output
+	input	test_load,			// load test value to mouse counter
+	input	[15:0] test_data	// mouse counter test value
 );
 
 //local signals
-reg		mclkout; 				//mouse clk out
-wire	mdatout;				//mouse data out
-reg		mdatb,mclkb,mclkc;		//input synchronization	
+reg		mclkout; 				// mouse clk out
+wire	mdatout;				// mouse data out
+reg		mdatb,mclkb,mclkc;		// input synchronization	
 
-reg		[10:0] mreceive;		//mouse receive register	
-reg		[11:0] msend;			//mouse send register
-reg		[15:0] mtimer;			//mouse timer
-reg		[2:0] mstate;			//mouse current state
-reg		[2:0] mnext;			//mouse next state
+reg		[10:0] mreceive;		// mouse receive register	
+reg		[11:0] msend;			// mouse send register
+reg		[15:0] mtimer;			// mouse timer
+reg		[2:0] mstate;			// mouse current state
+reg		[2:0] mnext;			// mouse next state
 
-wire	mclkneg;				//negative edge of mouse clock strobe
-reg		mrreset;				//mouse receive reset
-wire	mrready;				//mouse receive ready;
-reg		msreset;				//mosue send reset
-wire	msready;				//mouse send ready;
-reg		mtreset;				//mouse timer reset
-wire	mtready;				//mouse timer ready	 
-wire	mthalf;					//mouse timer somewhere halfway timeout
-reg		[1:0] mpacket;			//mouse packet byte valid number
+wire	mclkneg;				// negative edge of mouse clock strobe
+reg		mrreset;				// mouse receive reset
+wire	mrready;				// mouse receive ready;
+reg		msreset;				// mosue send reset
+wire	msready;				// mouse send ready;
+reg		mtreset;				// mouse timer reset
+wire	mtready;				// mouse timer ready	 
+wire	mthalf;					// mouse timer somewhere halfway timeout
+reg		[1:0] mpacket;			// mouse packet byte valid number
 
-//bidirectional open collector IO buffers
+// bidirectional open collector IO buffers
 assign ps2mclk = (mclkout) ? 1'bz : 1'b0;
 assign ps2mdat = (mdatout) ? 1'bz : 1'b0;
 
-//input synchronization of external signals
+// input synchronization of external signals
 always @(posedge clk)
 begin
 	mdatb <= ps2mdat;
@@ -654,10 +685,10 @@ begin
 	mclkc <= mclkb;
 end						
 
-//detect mouse clock negative edge
+// detect mouse clock negative edge
 assign mclkneg = mclkc & (~mclkb);
 
-//PS2 mouse input shifter
+// PS2 mouse input shifter
 always @(posedge clk)
 	if (mrreset)
 		mreceive[10:0]<=11'b11111111111;
@@ -665,7 +696,7 @@ always @(posedge clk)
 		mreceive[10:0]<={mdatb,mreceive[10:1]};
 assign mrready=~mreceive[0];
 
-//PS2 mouse send shifter
+// PS2 mouse send shifter
 always @(posedge clk)
 	if (msreset)
 		msend[11:0]<=12'b110111101000;
@@ -674,7 +705,7 @@ always @(posedge clk)
 assign msready=(msend[11:0]==12'b000000000001)?1:0;
 assign mdatout=msend[0];
 
-//PS2 mouse timer
+// PS2 mouse timer
 always @(posedge clk)
 	if (mtreset)
 		mtimer[15:0]<=16'h0000;
@@ -683,38 +714,38 @@ always @(posedge clk)
 assign mtready=(mtimer[15:0]==16'hffff)?1:0;
 assign mthalf=mtimer[11];
 
-//PS2 mouse packet decoding and handling
+// PS2 mouse packet decoding and handling
 always @(posedge clk)
 begin
-	if (reset)//reset
+	if (reset) // reset
 	begin
 		{_mthird,_mright,_mleft} <= 3'b111;
 		xcount[7:0] <= 8'h00;	
 		ycount[7:0] <= 8'h00;
 	end
-	else if (test_load) //test value preload
+	else if (test_load) // test value preload
 		{ycount[7:2],xcount[7:2]} <= {test_data[15:10],test_data[7:2]};
-	else if (mpacket==1)//buttons
+	else if (mpacket==1) // buttons
 		{_mthird,_mright,_mleft} <= ~mreceive[3:1];
-	else if (mpacket==2)//delta X movement
+	else if (mpacket==2) // delta X movement
 		xcount[7:0] <= xcount[7:0] + mreceive[8:1];
-	else if (mpacket==3)//delta Y movement
+	else if (mpacket==3) // delta Y movement
 		ycount[7:0] <= ycount[7:0] - mreceive[8:1];
 end
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//PS2 mouse state machine
+// PS2 mouse state machine
 always @(posedge clk)
-	if (reset || mtready)//master reset OR timeout
+	if (reset || mtready) // master reset OR timeout
 		mstate<=0;
 	else 
 		mstate<=mnext;
 always @(mstate or mthalf or msready or mrready or mreceive)
 begin
 	case(mstate)
-		0://initialize mouse phase 0, start timer
+		0: // initialize mouse phase 0, start timer
 			begin
 				mclkout=1;
 				mrreset=0;
@@ -724,44 +755,44 @@ begin
 				mnext=1;
 			end
 
-		1://initialize mouse phase 1, hold clk low and reset send logic
+		1: // initialize mouse phase 1, hold clk low and reset send logic
 			begin
 				mclkout=0;
 				mrreset=0;
 				mtreset=0;
 				msreset=1;
 				mpacket=0;
-				if (mthalf)//clk was low long enough, go to next state
+				if (mthalf) // clk was low long enough, go to next state
 					mnext=2;
 				else
 					mnext=1;
 			end
 
-		2://initialize mouse phase 2, send 'enable data reporting' command to mouse
+		2: // initialize mouse phase 2, send 'enable data reporting' command to mouse
 			begin
 				mclkout=1;
 				mrreset=1;
 				mtreset=0;
 				msreset=0;
 				mpacket=0;
-				if (msready)//command set, go get 'ack' byte
+				if (msready) // command set, go get 'ack' byte
 					mnext=5;
 				else
 					mnext=2;
 			end
 
-		3://get first packet byte
+		3: // get first packet byte
 			begin
 				mclkout=1;
 				mtreset=1;
 				msreset=0;
-				if (mrready)//we got our first packet byte
+				if (mrready) // we got our first packet byte
 				begin
 					mpacket=1;
 					mrreset=1;
 					mnext=4;
  				end
-				else//we are still waiting				
+				else // we are still waiting				
  				begin
 					mpacket=0;
 					mrreset=0;
@@ -769,19 +800,19 @@ begin
 				end
 			end
 
-		4://get second packet byte
+		4: // get second packet byte
 			begin
 				mclkout=1;
 				mtreset=0;
 				msreset=0;
-				if (mrready)//we got our second packet byte
+				if (mrready) // we got our second packet byte
 				begin
 					mpacket=2;
 					mrreset=1;
 					mnext=5;
 
 				end
-				else//we are still waiting				
+				else // we are still waiting				
  				begin
 					mpacket=0;
 					mrreset=0;
@@ -789,19 +820,19 @@ begin
 				end
 			end
 
-		5://get third packet byte (or get 'ACK' byte..)
+		5: // get third packet byte (or get 'ACK' byte..)
 			begin
 				mclkout=1;
 				mtreset=0;
 				msreset=0;
-				if (mrready)//we got our third packet byte
+				if (mrready) // we got our third packet byte
 				begin
 					mpacket=3;
 					mrreset=1;
 					mnext=3;
 
 				end
-				else//we are still waiting				
+				else // we are still waiting				
  				begin
 					mpacket=0;
 					mrreset=0;
@@ -809,7 +840,7 @@ begin
 				end
 			end
  
-		default://we should never come here
+		default: // we should never come here
 			begin
 				mclkout=1'bx;
 				mrreset=1'bx;

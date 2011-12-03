@@ -38,6 +38,7 @@
 // 2008-12-27	- clean-up
 // 2009-05-24	- clean-up & renaming
 // 2009-08-31	- scanlines synthesis option
+// 2010-05-30	- htotal changed
 
 `define SCANLINES
 
@@ -47,7 +48,7 @@ module Amber
 	input	[1:0] lr_filter,		//interpolation filters settings for low resolution
 	input	[1:0] hr_filter,		//interpolation filters settings for high resolution
 	input	[1:0] scanline,			//scanline effect enable
-	input	[8:0] htotal,			//video line length
+	input	[8:1] htotal,			//video line length
 	input	hires,					//display is in hires mode (from bplcon0)
 	input	dblscan,				//enable VGA output (enable scandoubler)
 	input	osd_blank,				//OSD overlay enable (blank normal video)
@@ -123,7 +124,7 @@ always @(posedge clk28m)
 		wr_ptr <= wr_ptr + 1;
 
 //end of scan-doubled line
-assign eol = rd_ptr=={htotal[8:0],1'b1} ? 1 : 0;
+assign eol = rd_ptr=={htotal[8:1],2'b11} ? 1'b1 : 1'b0;
 
 //line buffer read pointer
 always @(posedge clk28m)
@@ -179,7 +180,7 @@ always @(posedge clk28m)
 begin
 		_hsync_out <= dblscan ? lbfo2[17] : _csync_in;
 		_vsync_out <= dblscan ? _vsync_in : 1'b1;
-		
+
 		if (~dblscan)
 		begin  //pass through
 			if (osd_blank) //osd window

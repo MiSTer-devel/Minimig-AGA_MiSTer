@@ -32,19 +32,23 @@
 // 2008-12-27	- addapted playfield horizontal scrolling
 // 2009-02-09	- added hpos for proper horizontal scroll of non-aligned dma fetches
 // 2009-05-24	- clean-up & renaming
+// 2009-10-07	- pixel pipe line extra delay (alligment of bitplane data and copper colour change)
 
 
 module bitplanes
 (
-	input 	clk,					//bus clock
-	input 	[8:1] reg_address_in, 	//register address
-	input 	[15:0] data_in,	 		//bus data in
-	input 	hires,		   			//high resolution mode select
-	input	[8:0] hpos,				//horizontal position (70ns resolution)
-	output 	[6:1] bpldata			//bitplane data out
+	input 	clk,		   			// system bus clock
+	input 	clk28m,					// 35ns pixel clock
+	input 	c1,						// 35ns clock enable signals (for synchronization with clk)
+	input 	c3,
+	input 	[8:1] reg_address_in, 	// register address
+	input 	[15:0] data_in,	 		// bus data in
+	input 	hires,		   			// high resolution mode select
+	input 	shres,		   			// super high resolution mode select
+	input	[8:0] hpos,				// horizontal position (70ns resolution)
+	output 	[6:1] bpldata			// bitplane data out
 );
 //register names and adresses
-parameter DDFSTRT = 9'h092;		
 parameter BPLCON1 = 9'h102;  		
 parameter BPL1DAT = 9'h110;
 parameter BPL2DAT = 9'h112;
@@ -54,36 +58,27 @@ parameter BPL5DAT = 9'h118;
 parameter BPL6DAT = 9'h11a;
 
 //local signals
-reg 	[7:0] bplcon1;		//bplcon1 register
-wire	hclk;				//high res double pumped clock
-reg		hclkl1;				//helper latch for generating hclk;
-reg		hclkl2;	   			//helper latch for generating hclk;
-reg		[15:0] bpl2dat;		//buffer register for bit plane 2
-reg		[15:0] bpl3dat;		//buffer register for bit plane 3
-reg		[15:0] bpl4dat;		//buffer register for bit plane 4
-reg		[15:0] bpl5dat;		//buffer register for bit plane 5
-reg		[15:0] bpl6dat;		//buffer register for bit plane 6
-wire	load;				//parallel load signal
+reg 	[7:0] bplcon1;		// bplcon1 register
+reg		[15:0] bpl1dat;		// buffer register for bit plane 2
+reg		[15:0] bpl2dat;		// buffer register for bit plane 2
+reg		[15:0] bpl3dat;		// buffer register for bit plane 3
+reg		[15:0] bpl4dat;		// buffer register for bit plane 4
+reg		[15:0] bpl5dat;		// buffer register for bit plane 5
+reg		[15:0] bpl6dat;		// buffer register for bit plane 6
+reg		load;				// bpl1dat written => load shif registers
 
-reg		[3:0] extra_delay;	//extra delay when not alligned ddfstart
-reg		[3:0] pf1h;			//playfield 1 horizontal scroll
-reg		[3:0] pf2h;			//playfield 2 horizontal scroll
-reg		pfxh_load;
-
-//--------------------------------------------------------------------------------------
-
-//generate hclk hclk is in sync with clk but driven by logic instead of general clock
-always @(posedge clk)
-	hclkl1 <= ~hclkl1;
-	
-always @(negedge clk)
-	hclkl2 <= hclkl1;
-	
-assign hclk = hclkl1 ^ hclkl2;
+reg		[3:0] extra_delay;	// extra delay when not alligned ddfstart
+reg		[3:0] pf1h;			// playfield 1 horizontal scroll
+reg		[3:0] pf2h;			// playfield 2 horizontal scroll
+reg		[3:0] pf1h_del;		// delayed playfield 1 horizontal scroll
+reg		[3:0] pf2h_del;		// delayed playfield 2 horizontal scroll
 
 //--------------------------------------------------------------------------------------
 
-//horizontal scroll depends on horizontal position when BPL0DAT in written
+// horizontal scroll depends on horizontal position when BPL0DAT in written
+// visible display scroll is updated on fetch boundaries
+// increasing scroll value during active display inserts blank pixels
+
 always @(hpos)
 	case (hpos[3:2])
 		2'b00 : extra_delay = 4'b0000;
@@ -92,20 +87,22 @@ always @(hpos)
 		2'b11 : extra_delay = 4'b0100;
 	endcase
 
-//delay
-always @(posedge clk)
-	pfxh_load  <=  load;
-	
 //playfield 1 effective horizontal scroll
 always @(posedge clk)
-	if (pfxh_load)
-		pf1h  <=  bplcon1[3:0] + extra_delay;
+	if (load)
+		pf1h <= bplcon1[3:0] + extra_delay;
 
+always @(posedge clk)
+	pf1h_del <= pf1h;
+		
 //playfield 2 effective horizontal scroll
 always @(posedge clk)
-	if (pfxh_load)
-		pf2h  <=  bplcon1[7:4] + extra_delay;
+	if (load)
+		pf2h <= bplcon1[7:4] + extra_delay;
 
+always @(posedge clk)
+	pf2h_del <= pf2h;
+	
 //writing bplcon1 register : horizontal scroll codes for even and odd bitplanes
 always @(posedge clk)
 	if (reg_address_in[8:1]==BPLCON1[8:1])
@@ -113,111 +110,119 @@ always @(posedge clk)
 
 //--------------------------------------------------------------------------------------
 
+//bitplane buffer register for plane 1
+always @(posedge clk)
+	if (reg_address_in[8:1]==BPL1DAT[8:1])
+		bpl1dat <= data_in[15:0];
+		
 //bitplane buffer register for plane 2
 always @(posedge clk)
-	if (load)
-		bpl2dat <= 16'b0000000000000000;	
-	else if (reg_address_in[8:1]==BPL2DAT[8:1])
+	if (reg_address_in[8:1]==BPL2DAT[8:1])
 		bpl2dat <= data_in[15:0];
 
 //bitplane buffer register for plane 3
 always @(posedge clk)
-	if (load)
-		bpl3dat <= 16'b0000000000000000;	
-	else if (reg_address_in[8:1]==BPL3DAT[8:1])
+	if (reg_address_in[8:1]==BPL3DAT[8:1])
 		bpl3dat <= data_in[15:0];
 
 //bitplane buffer register for plane 4
 always @(posedge clk)
-	if (load)
-		bpl4dat <= 16'b0000000000000000;	
-	else if (reg_address_in[8:1]==BPL4DAT[8:1])
+	if (reg_address_in[8:1]==BPL4DAT[8:1])
 		bpl4dat <= data_in[15:0];
 
 //bitplane buffer register for plane 5
 always @(posedge clk)
-	if (load)
-		bpl5dat <= 16'b0000000000000000;	
-	else if (reg_address_in[8:1]==BPL5DAT[8:1])
+	if (reg_address_in[8:1]==BPL5DAT[8:1])
 		bpl5dat <= data_in[15:0];
 
 //bitplane buffer register for plane 6
 always @(posedge clk)
-	if (load)
-		bpl6dat <= 16'b0000000000000000;	
-	else if (reg_address_in[8:1]==BPL6DAT[8:1])
+	if (reg_address_in[8:1]==BPL6DAT[8:1])
 		bpl6dat <= data_in[15:0];
 
 //generate load signal when plane 1 is written
-assign load = reg_address_in[8:1]==BPL1DAT[8:1] ? 1 : 0;
+always @(posedge clk)
+	load <= reg_address_in[8:1]==BPL1DAT[8:1] ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 
 //instantiate bitplane 1 parallel to serial converters, this plane is loaded directly from bus
-bplshift bpls1 
+bitplane_shifter bplshft1 
 (
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(data_in),
-	.delay(pf1h),
+	.shres(shres),
+	.data_in(bpl1dat),
+	.scroll(pf1h_del),
 	.out(bpldata[1])	
 );
 
 //instantiate bitplane 2 to 6 parallel to serial converters, (loaded from buffer registers)
-bplshift bpls2 
+bitplane_shifter bplshft2 
 (	
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(bpl2dat),
-	.delay(pf2h),
+	.shres(shres),
+	.data_in(bpl2dat),
+	.scroll(pf2h_del),
 	.out(bpldata[2])	
 );
 
-bplshift bpls3 
+bitplane_shifter bplshft3 
 (	
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(bpl3dat),
-	.delay(pf1h),
+	.shres(shres),
+	.data_in(bpl3dat),
+	.scroll(pf1h_del),
 	.out(bpldata[3])	
 );
 
-bplshift bpls4 
+bitplane_shifter bplshft4 
 (	
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(bpl4dat),
-	.delay(pf2h),
+	.shres(shres),
+	.data_in(bpl4dat),
+	.scroll(pf2h_del),
 	.out(bpldata[4])	
 );
 
-bplshift bpls5 
+bitplane_shifter bplshft5 
 (	
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(bpl5dat),
-	.delay(pf1h),
+	.shres(shres),
+	.data_in(bpl5dat),
+	.scroll(pf1h_del),
 	.out(bpldata[5])	
 );
 
-bplshift bpls6 
+bitplane_shifter bplshft6 
 (	
-	.clk(clk),
-	.hclk(hclk),
+	.clk28m(clk28m),
+	.c1(c1),
+	.c3(c3),
 	.load(load),
 	.hires(hires),
-	.data(bpl6dat),
-	.delay(pf2h),
+	.shres(shres),
+	.data_in(bpl6dat),
+	.scroll(pf2h_del),
 	.out(bpldata[6])	
 );
 
@@ -258,7 +263,8 @@ begin
 		if (bpldata[5] || bpldata[3] || bpldata[1]) //detect data valid for playfield 1
 			nplayfield[1] = 1;
 		else
-			nplayfield[1] = 0;	
+			nplayfield[1] = 0;
+			
 		if (bpldata[6] || bpldata[4] || bpldata[2]) //detect data valid for playfield 2
 			nplayfield[2] = 1;
 		else
@@ -316,101 +322,69 @@ endmodule
 //--------------------------------------------------------------------------------------
 
 //this is the bitplane parallel to serial converter
-//it can operate in normal mode or hires mode
-//clk is 7.09379 MHz (low resolution pixel clock)
-//hclk is also 7.09379 MHz (high resolution double rate pixel clock) but driven by logic
-//hires is double pumped (data on rising AND falling edge of clk)
-
-module bplshift
+module bitplane_shifter
 (
-	input 	clk,		   		//lores pixel clock
-	input	hclk,				//hires clock that can drive logic	(double pumped)
+	input 	clk28m,		   		//35ns pixel clock
+	input	c1,
+	input	c3,
 	input	load,				//load shift register
-	input	hires,				//high resolution / double pump select
-	input	[15:0] data,		//parallel load data input
-	input	[3:0] delay,		//delay select (for scrolling)
+	input	hires,				//high resolution select
+	input	shres,				//super high resolution select (takes priority over hires)
+	input	[15:0] data_in,		//parallel load data input
+	input	[3:0] scroll,		//scrolling value
 	output	out					//shift register out
 );
 
 //local signals
-reg		[7:0] mshifteven;		//main shifter for even bits (0,2..)
-reg		[7:0] mshiftodd;		//main shifter for odd bits (1,3..)
-reg		[15:0] dshifteven;		//delayed scrolling shifter for even bits (0,2..)
-reg		[15:0] dshiftodd;		//delayed scrolling shifter for odd bits (1,3..)
-
-reg		enable;					//enable (toggles at clk/2)
-reg		senable;				//shifters enable
-reg		oddselect;				//odd shifter select
-reg	 	[4:0] select;			//delayed pixel select
-
-//--------------------------------------------------------------------------------------
-
-//generate enable signal
-always @(posedge clk)
-	if (load) //upon load synchronize toggling enable signal
-		enable <= 1;
-	else
-		enable <= ~enable;
+reg		[15:0] shifter;			//main shifter
+reg		[15:0] scroller;		//scroller shifter
+reg		shift;					//shifter enable
+reg	 	[3:0] select;			//delayed pixel select
+wire	scroller_out;
+reg		[3:0] delay;
 
 //--------------------------------------------------------------------------------------
 
 //main shifter
-always @(posedge clk)
-	if (load) //load new parallel data into shifter
-		begin
-			mshifteven[7:0] <= {data[14],data[12],data[10],data[8],data[6],data[4],data[2],data[0]};
-			mshiftodd[7:0] <= {data[15],data[13],data[11],data[9],data[7],data[5],data[3],data[1]};
-		end
-	else if (senable) //shift when enabled
-		begin
-			mshifteven[7:0] <= {mshifteven[6:0],1'b0};
-			mshiftodd[7:0] <= {mshiftodd[6:0],1'b0};
-		end
+always @(posedge clk28m)
+	if (load && !c1 && !c3) //load new data into shifter
+		shifter[15:0] <= data_in[15:0];
+	else if (shift) //shift already loaded data
+		shifter[15:0] <= {shifter[14:0],1'b0};
 
-//delayed shifter
-always @(posedge clk)
-	if (senable)
-		begin
-			dshifteven[15:0] <= {dshifteven[14:0],mshifteven[7]};
-			dshiftodd[15:0] <= {dshiftodd[14:0],mshiftodd[7]};
-		end		 
+always @(posedge clk28m)
+	if (shift) //shift scroller data
+		scroller[15:0] <= {scroller[14:0],shifter[15]};
+
+assign scroller_out = scroller[select[3:0]];//select odd pixel
 
 //--------------------------------------------------------------------------------------
 
-wire	oddpixel;			//odd shift register delayed output
-wire	evenpixel;			//even shift register delayed output
-wire 	sout;				//final shift register delay output
-reg		dout;				//1 clk delayed version of sout
-
-//select even and odd pixel
-assign oddpixel = dshiftodd[select[3:0]];//select odd pixel
-assign evenpixel = dshifteven[select[3:0]];//select even pixel
-
-//select final shifter output
-assign sout = oddselect ? oddpixel : evenpixel;
-
-//delay sout by 1 clock for pixel resolution scrolling in lores mode
-always @(posedge clk)
-	dout <= sout;
-
-//assign output data
-assign out = select[4] ? dout : sout;
+//delay by one low resolution pixel
+always @(posedge clk28m)
+	delay[3:0] <= {delay[2:0], scroller_out};
+	
+// select output pixel
+assign out = delay[3];
 
 //--------------------------------------------------------------------------------------
 
-//main hires/lores shifter and scroll control
-always @(hires or enable or hclk or delay)
-	if (hires) //hires mode
+// main shifter and scroller control
+always @(hires or shres or scroll or c1 or c3)
+	if (shres) // super hires mode
 	begin
-		senable = 1;//shifter always enabled in this mode (2 pixels per clock)
-		oddselect = hclk;
-		select[4:0] = {2'b00,delay[2:0]};//only delay in 2 pixel steps
+		shift = 1'b1; // shifter always enabled
+		select[3:0] = {scroll[1:0],2'b11}; // scroll in 4 pixel steps
 	end
-	else
+	else if (hires) // hires mode
 	begin
-		senable = enable;//shifter enable once every 2 clocks
-		oddselect = ~enable;
-		select[4:0] = {delay[0],1'b0,delay[3:1]};//scroll in 1 pixel steps
+		shift = ~c1 ^ c3; // shifter enabled every other clock cycle
+		select[3:0] = {scroll[2:0],1'b1}; // scroll in 2 pixel steps
+	end
+	else // lowres mode
+	begin
+		shift = ~c1 & ~c3; // shifter enabled once every 4 clock cycles
+		select[3:0] = scroll[3:0]; // scroll in 1 pixel steps
 	end
 			
 endmodule		
