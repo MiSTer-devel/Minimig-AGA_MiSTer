@@ -3,7 +3,7 @@
 --                                                                          --
 -- This is the 68000 software compatible Kernal of TG68                     --
 --                                                                          --
--- Copyright (c) 2007 Tobias Gubener <tobiflex@opencores.org>               -- 
+-- Copyright (c) 2007-2010 Tobias Gubener <tobiflex@opencores.org>          -- 
 --                                                                          --
 -- This source file is free software: you can redistribute it and/or modify --
 -- it under the terms of the GNU Lesser General Public License as published --
@@ -20,6 +20,10 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+--
+-- Revision 1.08 2010/06/14
+-- Bugfix Movem with regmask==xFFFF
+-- Add missing Illegal $4AFC
 --
 -- Revision 1.07 2009/10/02
 -- Bugfix Movem with regmask==x0000
@@ -76,17 +80,14 @@ entity TG68_fast is
         state_out         : out std_logic_vector(1 downto 0);
 		LDS, UDS		  : out std_logic;		
         decodeOPC         : buffer std_logic;
-		wr				  : out std_logic;
-        enaRDreg         : in std_logic:='1';
-        enaWRreg         : in std_logic:='1'
-        );
+		wr				  : out std_logic
+		);
 end TG68_fast;
 
 architecture logic of TG68_fast is
 
    signal state        	  : std_logic_vector(1 downto 0);
    signal clkena	      : std_logic;
-   signal clkenareg	      : std_logic;
    signal TG68_PC         : std_logic_vector(31 downto 0);
    signal TG68_PC_add     : std_logic_vector(31 downto 0);
    signal memaddr         : std_logic_vector(31 downto 0);
@@ -375,8 +376,8 @@ BEGIN
 	
 	PROCESS (clk)
 	BEGIN
-		IF rising_edge(clk) THEN
-		    IF clkenareg='1' THEN
+		IF falling_edge(clk) THEN
+		    IF clkena='1' THEN
 				reg_QA <= regfile_high(RWindex_A) & regfile_low(RWindex_A);
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
@@ -429,10 +430,9 @@ END PROCESS;
 PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, memaddr, memaddr_a, set_mem_addsub, movem_presub, 
          movem_busy, state, PCmarker, execOPC, datatype, setdisp, setdispbrief, briefext, setdispbyte, brief,
          set_mem_rega, reg_QA, setaddrlong, data_read, decodeOPC, TG68_PC, data_in, long_done, last_data_read, mem_byte,
-         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
+         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt)
 	BEGIN
-		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaWRreg;
-		clkenareg <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaRDreg;
+		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC;
 		
 		IF rising_edge(clk) THEN
 			IF clkena='1' THEN
@@ -546,7 +546,7 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
 			longread <= '0';
 			long_done <= '0';
 		ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' AND enaWRreg='1' THEN
+        	IF clkena_in='1' THEN
 				last_data_read <= data_in;
 					long_done <= longread;
 				IF get_extendedOPC='0' OR (get_extendedOPC='1' AND PCmarker='1') THEN
@@ -664,7 +664,7 @@ process (clk, reset, opcode, TG68_PC, TG68_PC_dec, TG68_PC_br8, TG68_PC_brw, PC_
 			test_delay <= "000";
 			PCmarker <= '0';
 	  	ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' AND enaWRreg='1' THEN
+        	IF clkena_in='1' THEN
 				get_extendedOPC <= set_get_extendedOPC;
 				get_bitnumber <= set_get_bitnumber;
 				get_movem_mask <= set_get_movem_mask;
@@ -1877,23 +1877,28 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 							END IF;
 							
 						WHEN "101"=>						--tst, tas
-							IF decodeOPC='1' THEN
-								ea_build <= '1';
-							END IF;
-							IF execOPC='1' THEN
-								dest_hbits <= '1';				--for Flags
-								source_lowbits <= '1';
-		--						IF opcode(3)='1' THEN			--MC68020...
-		--							source_areg <= '1';
-		--						END IF;
-							END IF;
-							set_exec_MOVE <= '1';
-							IF opcode(7 downto 6)="11" THEN		--tas
-								set_exec_tas <= '1';
-								write_back <= '1';
-								datatype <= "00";				--Byte
-								IF execOPC='1' AND endOPC='1' THEN
-									regwrena <= '1';
+							IF opcode(7 downto 2)="111111" THEN   --4AFC illegal
+								trap_illegal <= '1';
+								trapmake <= '1';
+							ELSE
+								IF decodeOPC='1' THEN
+									ea_build <= '1';
+								END IF;
+								IF execOPC='1' THEN
+									dest_hbits <= '1';				--for Flags
+									source_lowbits <= '1';
+			--						IF opcode(3)='1' THEN			--MC68020...
+			--							source_areg <= '1';
+			--						END IF;
+								END IF;
+								set_exec_MOVE <= '1';
+								IF opcode(7 downto 6)="11" THEN		--tas
+									set_exec_tas <= '1';
+									write_back <= '1';
+									datatype <= "00";				--Byte
+									IF execOPC='1' AND endOPC='1' THEN
+										regwrena <= '1';
+									END IF;
 								END IF;
 							END IF;
 --						WHEN "110"=>
@@ -3197,20 +3202,20 @@ PROCESS (reset, clk, movem_mask, movem_muxa ,movem_muxb, movem_muxc)
 			movem_addr <= '0';
 			maskzero <= '0';
 	  	ELSIF rising_edge(clk) THEN
-	 		IF clkena_in='1' AND get_movem_mask='1' AND enaWRreg='1' THEN
+	 		IF clkena_in='1' AND get_movem_mask='1' THEN
 				movem_mask <= data_read(15 downto 0);
 			END IF;	
-	 		IF clkena_in='1' AND test_maskzero='1' AND enaWRreg='1' THEN
+	 		IF clkena_in='1' AND test_maskzero='1' THEN
 				IF movem_mask=X"0000" THEN
 					maskzero <= '1';
 				END IF;	
 			END IF;	
-	 		IF clkena_in='1' AND endOPC='1' AND enaWRreg='1' THEN
+	 		IF clkena_in='1' AND endOPC='1' THEN
 				maskzero <= '0';
 			END IF;	
 	       	IF clkena='1' THEN
 				IF set_movem_busy='1' THEN
-					IF movem_bits(3 downto 1) /= "000" OR opcode(10)='0' THEN	
+					IF movem_bits(4 downto 1) /= "0000" OR opcode(10)='0' THEN	
 						movem_busy <= '1';
 					END IF;
 					movem_addr <= '1';
