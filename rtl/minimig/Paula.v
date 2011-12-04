@@ -89,7 +89,7 @@ module Paula
 	output	_change,				// disk has been removed from drive
 	output	_ready,					// disk is ready
 	output	_wprot,					// disk is write-protected
-	output	index,					// disk index pulse
+	//output	index,					// disk index pulse
 	output	disk_led,				// disk activity LED
 	// flash drive host controller interface	(SPI)
 	input	_scs,					// async. serial data enable
@@ -99,6 +99,8 @@ module Paula
 	// audio outputs
 	output	left,					// audio bitstream left
 	output	right,					// audio bitstream right
+  output  [14:0]ldata,      //left DAC data
+  output  [14:0]rdata,      //right DAC data
 	// system configuration
 	input	[1:0] floppy_drives,	// number of extra floppy drives
 	// direct sector read from SD card
@@ -113,7 +115,16 @@ module Paula
 	output	hdd_wr,					// task file write enable
 	output	hdd_status_wr,			// drive status write enable
 	output	hdd_data_wr,			// data port write enable
-	output	hdd_data_rd				// data port read enable
+	output	hdd_data_rd,				// data port read enable
+// DE1 Ext. SRAM for FIFO
+  output  [12:0]fifoinptr,
+  output  [15:0]fifodwr,
+  output  fifowr,
+  output  [12:0]fifooutptr,
+  input   [15:0]fifodrd,
+  output  [7:0]trackdisp,
+  output  [13:0]secdisp
+
 );
 //--------------------------------------------------------------------------------------
 
@@ -248,7 +259,7 @@ floppy pf1
 	._change(_change),
 	._ready(_ready),
 	._wprot(_wprot),
-	.index(index),
+	//.index(index),
 	.blckint(blckint),
 	.syncint(syncint),
 	.wordsync(adkcon[10]),
@@ -270,7 +281,15 @@ floppy pf1
 	.hdd_wr(hdd_wr),
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd)
+	.hdd_data_rd(hdd_data_rd),
+// DE1 Ext. SRAM for FIFO
+  .fifoinptr(fifoinptr),
+  .fifodwr(fifodwr),
+  .fifowr(fifowr),
+  .fifooutptr(fifooutptr),
+  .fifodrd(fifodrd),
+  .trackdisp(trackdisp),
+  .secdisp(secdisp)
 );
 
 //instantiate audio controller
@@ -289,7 +308,9 @@ audio ad1
 	.dmal(audio_dmal),
 	.dmas(audio_dmas),
 	.left(left),
-	.right(right)	
+	.right(right),
+  .ldata(ldata),
+  .rdata(rdata) 
 );
 
 //--------------------------------------------------------------------------------------
@@ -303,6 +324,7 @@ endmodule
 // interrupt controller //
 module intcontroller
 (
+  output inten,
 	input 	clk,		    		// bus clock
 	input 	reset,			   		// reset 
 	input 	[8:1] reg_address_in,	// register address inputs
@@ -333,6 +355,8 @@ reg		[14:0] intena;			//int enable write register
 reg 	[15:0] intenar;			//int enable read register
 reg		[14:0] intreq;			//int request register
 reg		[15:0] intreqr;			//int request readback
+
+assign inten = intena[14];
 
 //rbf mirror out
 assign rbfmirror = intreq[11];

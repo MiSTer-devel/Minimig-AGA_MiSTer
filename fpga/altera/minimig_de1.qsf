@@ -587,8 +587,8 @@ set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
 set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name MISC_FILE "C:/_fpga/minimig090421/Quartus_DE1/minimig_de1.dpf"
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name BDF_FILE ../../sch/de1/minimig_de1.bdf
 set_global_assignment -name VHDL_FILE ../../rtl/de1/startram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/de1/SRAM.vhd
@@ -600,6 +600,7 @@ set_global_assignment -name VHDL_FILE ../../rtl/de1/Audio_shifter.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/de1/amigaclk.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68_fast.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68.vhd
+set_global_assignment -name VERILOG_FILE ../../lib/xilinx/srl16e.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/PS2Keyboard.v
@@ -620,3 +621,4 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

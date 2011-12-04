@@ -80,7 +80,10 @@ entity TG68_fast is
         state_out         : out std_logic_vector(1 downto 0);
 		LDS, UDS		  : out std_logic;		
         decodeOPC         : buffer std_logic;
-		wr				  : out std_logic
+		wr				  : out std_logic;
+        enaRDreg         : in std_logic:='1';
+        enaWRreg         : in std_logic:='1'
+
 		);
 end TG68_fast;
 
@@ -88,6 +91,7 @@ architecture logic of TG68_fast is
 
    signal state        	  : std_logic_vector(1 downto 0);
    signal clkena	      : std_logic;
+   signal clkenareg       : std_logic;
    signal TG68_PC         : std_logic_vector(31 downto 0);
    signal TG68_PC_add     : std_logic_vector(31 downto 0);
    signal memaddr         : std_logic_vector(31 downto 0);
@@ -376,8 +380,8 @@ BEGIN
 	
 	PROCESS (clk)
 	BEGIN
-		IF falling_edge(clk) THEN
-		    IF clkena='1' THEN
+		IF rising_edge(clk) THEN
+		    IF clkenareg='1' THEN
 				reg_QA <= regfile_high(RWindex_A) & regfile_low(RWindex_A);
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
@@ -430,9 +434,10 @@ END PROCESS;
 PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, memaddr, memaddr_a, set_mem_addsub, movem_presub, 
          movem_busy, state, PCmarker, execOPC, datatype, setdisp, setdispbrief, briefext, setdispbyte, brief,
          set_mem_rega, reg_QA, setaddrlong, data_read, decodeOPC, TG68_PC, data_in, long_done, last_data_read, mem_byte,
-         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt)
+         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
 	BEGIN
-		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC;
+		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaWRreg;
+    clkenareg <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaRDreg;
 		
 		IF rising_edge(clk) THEN
 			IF clkena='1' THEN
@@ -546,7 +551,7 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
 			longread <= '0';
 			long_done <= '0';
 		ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' THEN
+        	IF clkena_in='1' AND enaWRreg='1' THEN
 				last_data_read <= data_in;
 					long_done <= longread;
 				IF get_extendedOPC='0' OR (get_extendedOPC='1' AND PCmarker='1') THEN
@@ -664,7 +669,7 @@ process (clk, reset, opcode, TG68_PC, TG68_PC_dec, TG68_PC_br8, TG68_PC_brw, PC_
 			test_delay <= "000";
 			PCmarker <= '0';
 	  	ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' THEN
+        	IF clkena_in='1' AND enaWRreg='1' THEN
 				get_extendedOPC <= set_get_extendedOPC;
 				get_bitnumber <= set_get_bitnumber;
 				get_movem_mask <= set_get_movem_mask;
@@ -3202,15 +3207,15 @@ PROCESS (reset, clk, movem_mask, movem_muxa ,movem_muxb, movem_muxc)
 			movem_addr <= '0';
 			maskzero <= '0';
 	  	ELSIF rising_edge(clk) THEN
-	 		IF clkena_in='1' AND get_movem_mask='1' THEN
+	 		IF clkena_in='1' AND get_movem_mask='1' AND enaWRreg='1' THEN
 				movem_mask <= data_read(15 downto 0);
 			END IF;	
-	 		IF clkena_in='1' AND test_maskzero='1' THEN
+	 		IF clkena_in='1' AND test_maskzero='1' AND enaWRreg='1' THEN
 				IF movem_mask=X"0000" THEN
 					maskzero <= '1';
 				END IF;	
 			END IF;	
-	 		IF clkena_in='1' AND endOPC='1' THEN
+	 		IF clkena_in='1' AND endOPC='1' AND enaWRreg='1' THEN
 				maskzero <= '0';
 			END IF;	
 	       	IF clkena='1' THEN

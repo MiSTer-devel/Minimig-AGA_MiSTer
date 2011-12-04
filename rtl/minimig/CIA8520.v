@@ -343,7 +343,7 @@ endmodule
 //----------------------------------------------------------------------------------
 
 /*cia b*/
-module ciab
+module giab
 (
 	input 	clk,	  			// clock
 	input 	aen,		    	// adress enable

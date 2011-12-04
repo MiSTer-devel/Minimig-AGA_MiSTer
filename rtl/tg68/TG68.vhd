@@ -59,7 +59,9 @@ entity TG68 is
         uds           : out std_logic;
         lds           : out std_logic;
         rw            : out std_logic;
-        drive_data    : out std_logic				--enable for data_out driver
+        drive_data    : out std_logic;				--enable for data_out driver
+        enaRDreg     : in std_logic:='1';
+        enaWRreg     : in std_logic:='1'
         );
 end TG68;
 
@@ -78,7 +80,10 @@ ARCHITECTURE logic OF TG68 IS
         state_out     : out std_logic_vector(1 downto 0);
         decodeOPC     : buffer std_logic;
 		wr			  : out std_logic;
-		UDS, LDS	  : out std_logic
+		UDS, LDS	  : out std_logic;
+        enaRDreg      : in std_logic;
+        enaWRreg      : in std_logic
+
         );
 	END COMPONENT;
 
@@ -122,7 +127,9 @@ TG68_fast_inst: TG68_fast
         decodeOPC => decode, 	-- : buffer std_logic;
 		wr => wr, 				-- : out std_logic;
 		UDS => uds_in, 			-- : out std_logic;
-		LDS => lds_in 			-- : out std_logic;
+		LDS => lds_in, 			-- : out std_logic;
+    enaRDreg => enaWRreg,
+    enaWRreg => enaRDreg
         );
 	
 	PROCESS (clk)
@@ -154,7 +161,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			uds_s <= '1';
 			lds_s <= '1';
 		ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' THEN
+        	IF clkena_in='1' AND enaWRreg='1' THEN
 				as_s <= '1';
 				rw_s <= '1';
 				uds_s <= '1';
@@ -194,7 +201,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			cpuIPL <= "111";
 			drive_data <= '0';
 		ELSIF falling_edge(clk) THEN
-        	IF clkena_in='1' THEN
+        	IF clkena_in='1' AND enaWRreg='1' THEN
 				as_e <= '1';
 				rw_e <= '1';
 				uds_e <= '1';

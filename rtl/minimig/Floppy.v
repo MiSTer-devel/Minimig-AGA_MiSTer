@@ -87,7 +87,7 @@ module floppy
 	output	_change,				// disk has been removed from drive
 	output	_ready,					// disk is ready
 	output	_wprot,					// disk is write-protected
-	output	index,					// disk index pulse
+	//output	index,					// disk index pulse
 	// interrupt request and misc. control
 	output	reg blckint,			// disk dma has finished interrupt
 	output	syncint,				// disk syncword found
@@ -111,7 +111,15 @@ module floppy
 	output	hdd_wr,					// task file register write strobe
 	output	hdd_status_wr,			// status register write strobe (MCU->HDD)
 	output	hdd_data_wr,			// data write strobe
-	output	hdd_data_rd				// data read strobe
+	output	hdd_data_rd,				// data read strobe
+// DE1 Ext. SRAM for FIFO
+  output  [12:0]fifoinptr,
+  output  [15:0]fifodwr,
+  output  fifowr,
+  output  [12:0]fifooutptr,
+  input   [15:0]fifodrd,
+  output  [7:0]trackdisp,
+  output  [13:0]secdisp
 );
 
 //register names and addresses
@@ -217,6 +225,9 @@ module floppy
 	reg	[1:0] rx_cnt;
 	reg	[1:0] spi_rx_cnt;		//received SPI words counter (counts form 0 to 3 and stops there)
 	reg	spi_rx_cnt_rst;			//indicates reception of the first spi word after activation of the chip select
+
+assign trackdisp = track;
+assign secdisp = dsklen[13:0];
 
 //SPI mode 0 - high idle clock
 assign sdin = direct_scs ? direct_sdi : sdi;
@@ -405,7 +416,7 @@ always @(posedge clk)
 			rpm_pulse_cnt <= rpm_pulse_cnt + 1;
 		
 // disk index pulses output
-assign index = |(~_sel & motor_on) & ~|rpm_pulse_cnt & sof;
+//assign index = |(~_sel & motor_on) & ~|rpm_pulse_cnt & sof;
 		
 //--------------------------------------------------------------------------------------
 //data out multiplexer
@@ -591,7 +602,13 @@ fifo db1
 	.wr(fifo_wr & ~fifo_full),
 	.empty(fifo_empty),
 	.full(fifo_full),
-	.cnt(fifo_cnt)
+	.cnt(fifo_cnt),
+// DE1 Ext. SRAM for FIFO
+  .fifoinptr(fifoinptr),
+  .fifodwr(fifodwr),
+  .fifowr(fifowr),
+  .fifooutptr(fifooutptr),
+  .fifodrd(fifodrd)
 );
 
 
@@ -715,38 +732,50 @@ module fifo
 	input	wr,					// write to fifo
 	output	reg empty,			// fifo is empty
 	output	full,				// fifo is full
-	output	[11:0] cnt			// number of entries in FIFO
+	output	[11:0] cnt,			// number of entries in FIFO
+// DE1 Ext. SRAM for FIFO
+  output  [12:0]fifoinptr,
+  output  [15:0]fifodwr,
+  output  fifowr,
+  output  [12:0]fifooutptr,
+  input   [15:0]fifodrd
 );
 
 //local signals and registers
-reg 	[15:0] mem [2047:0];	// 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)
+//reg 	[15:0] mem [2047:0];	// 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)
 reg		[11:0] in_ptr;			// fifo input pointer
 reg		[11:0] out_ptr;			// fifo output pointer
 wire	equal;					// lower 11 bits of in_ptr and out_ptr are equal
+
+assign fifodwr = in;
+assign fifoinptr = in_ptr[11:0];
+assign fifooutptr = out_ptr[11:0];
+assign fifowr = wr && !full;
 
 // count of FIFO entries
 assign cnt = in_ptr - out_ptr;
 
 // main fifo memory (implemented using synchronous block ram)
-always @(posedge clk)
-	if (wr)
-		mem[in_ptr[10:0]] <= in;
+//always @(posedge clk)
+//	if (wr && !full)
+//		mem[in_ptr[10:0]] <= in;
 
 always @(posedge clk)
-	out = mem[out_ptr[10:0]];
+//	out = mem[out_ptr[10:0]];
+  out = fifodrd;
 
 // fifo write pointer control
 always @(posedge clk)
 	if (reset)
 		in_ptr[11:0] <= 0;
-	else if (wr)
+	else if (wr && !full)
 		in_ptr[11:0] <= in_ptr[11:0] + 1;
 
 // fifo read pointer control
 always @(posedge clk)
 	if (reset)
 		out_ptr[11:0] <= 0;
-	else if (rd)
+	else if (rd && !empty)
 		out_ptr[11:0] <= out_ptr[11:0] + 1;
 
 // check lower 11 bits of pointer to generate equal signal

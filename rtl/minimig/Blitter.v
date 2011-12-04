@@ -868,71 +868,46 @@ endmodule
 //Multipliers are used to save logic.
 module barrel_shifter
 (
-	input	desc,			// select descending mode (shift to the left)
-	input	[3:0] shift,	// shift value (0 to 15)
-	input 	[15:0] new,		// barrel shifter data in
-	input 	[15:0] old,		// barrel shifter data in
-	output	[15:0] out		// barrel shifter data out
+  input desc,     // select descending mode (shift to the left)
+  input [3:0] shift,   // shift value (0 to 15)
+  input   [15:0] new,   // barrel shifter data in
+  input   [15:0] old,   // barrel shifter data in
+  output  reg [15:0] out  // barrel shifter data out
 );
 
-wire [35:0] shifted_new;	// shifted new data
-wire [35:0] shifted_old;	// shifted old data
-reg  [17:0] shift_onehot;	// one-hot shift value for multipliers
+//local signals
+wire    [30:0] bshiftin;  // barrel shifter input
+wire    [3:0] bsh;      // barrel shift value
 
-//one-hot shift value encoding
-always @(desc or shift)
-	case ({desc,shift[3:0]})
-		5'h00 : shift_onehot = 18'h10000;
-		5'h01 : shift_onehot = 18'h08000;
-		5'h02 : shift_onehot = 18'h04000;
-		5'h03 : shift_onehot = 18'h02000;
-		5'h04 : shift_onehot = 18'h01000;
-		5'h05 : shift_onehot = 18'h00800;
-		5'h06 : shift_onehot = 18'h00400;
-		5'h07 : shift_onehot = 18'h00200;
-		5'h08 : shift_onehot = 18'h00100;
-		5'h09 : shift_onehot = 18'h00080;
-		5'h0A : shift_onehot = 18'h00040;
-		5'h0B : shift_onehot = 18'h00020;
-		5'h0C : shift_onehot = 18'h00010;
-		5'h0D : shift_onehot = 18'h00008;
-		5'h0E : shift_onehot = 18'h00004;
-		5'h0F : shift_onehot = 18'h00002;
-		5'h10 : shift_onehot = 18'h00001;
-		5'h11 : shift_onehot = 18'h00002;
-		5'h12 : shift_onehot = 18'h00004;
-		5'h13 : shift_onehot = 18'h00008;
-		5'h14 : shift_onehot = 18'h00010;
-		5'h15 : shift_onehot = 18'h00020;
-		5'h16 : shift_onehot = 18'h00040;
-		5'h17 : shift_onehot = 18'h00080;
-		5'h18 : shift_onehot = 18'h00100;
-		5'h19 : shift_onehot = 18'h00200;
-		5'h1A : shift_onehot = 18'h00400;
-		5'h1B : shift_onehot = 18'h00800;
-		5'h1C : shift_onehot = 18'h01000;
-		5'h1D : shift_onehot = 18'h02000;
-		5'h1E : shift_onehot = 18'h04000;
-		5'h1F : shift_onehot = 18'h08000;
- 	endcase
-	
-MULT18X18 multiplier_1 
-(
-	.A({2'b00,new[15:0]}),  // 18-bit multiplier input
-	.B(shift_onehot),     	// 18-bit multiplier input
-	.P(shifted_new)			// 36-bit multiplier output
-);
-   
-MULT18X18 multiplier_2
-(
-	.A({2'b00,old[15:0]}),	// 18-bit multiplier input
-	.B(shift_onehot),		// 18-bit multiplier input
-	.P(shifted_old)			// 36-bit multiplier output
-);   
+//cross multiplexer feeding barrelshifter
+assign bshiftin[30:0] = desc ? {new[15:0],old[15:1]} : {old[14:0],new[15:0]};
 
-assign out = desc ? shifted_new[15:0] | shifted_old[31:16] : shifted_new[31:16] | shifted_old[15:0];
+//shift value generator for barrel shifter
+assign bsh[3:0] = desc ? ~shift[3:0] : shift[3:0];
+
+//actual barrel shifter
+always @(bsh or bshiftin)
+  case (bsh[3:0])
+    0:  out[15:0] = bshiftin[15:0];
+    1:  out[15:0] = bshiftin[16:1];
+    2:  out[15:0] = bshiftin[17:2];
+    3:  out[15:0] = bshiftin[18:3];
+    4:  out[15:0] = bshiftin[19:4];
+    5:  out[15:0] = bshiftin[20:5];
+    6:  out[15:0] = bshiftin[21:6];
+    7:  out[15:0] = bshiftin[22:7];
+    8:  out[15:0] = bshiftin[23:8];
+    9:  out[15:0] = bshiftin[24:9];
+    10: out[15:0] = bshiftin[25:10];
+    11: out[15:0] = bshiftin[26:11];
+    12: out[15:0] = bshiftin[27:12];
+    13: out[15:0] = bshiftin[28:13];
+    14: out[15:0] = bshiftin[29:14];
+    15: out[15:0] = bshiftin[30:15];
+  endcase
 
 endmodule
+
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
