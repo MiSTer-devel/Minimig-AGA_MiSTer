@@ -3,7 +3,7 @@
 --                                                                          --
 -- This is the TOP-Level for TG68_fast to generate 68K Bus signals          --
 --                                                                          --
--- Copyright (c) 2007 Tobias Gubener <tobiflex@opencores.org>               -- 
+-- Copyright (c) 2007-2008 Tobias Gubener <tobiflex@opencores.org>          -- 
 --                                                                          --
 -- This source file is free software: you can redistribute it and/or modify --
 -- it under the terms of the GNU Lesser General Public License as published --
@@ -20,6 +20,9 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+--
+-- Revision 1.02 2008/01/23
+-- bugfix Timing
 --
 -- Revision 1.01 2007/11/28
 -- add MOVEP
@@ -56,9 +59,9 @@ entity TG68 is
         uds           : out std_logic;
         lds           : out std_logic;
         rw            : out std_logic;
+        drive_data    : out std_logic;       --enable for data_out driver
         enaRDreg     : in std_logic:='1';
         enaWRreg     : in std_logic:='1'
- --       wr            : buffer std_logic
         );
 end TG68;
 
@@ -97,12 +100,12 @@ ARCHITECTURE logic OF TG68 IS
    SIGNAL S_state     : std_logic_vector(1 downto 0);
    SIGNAL decode	  : std_logic;
    SIGNAL wr	      : std_logic;
---   SIGNAL rw	      : std_logic;
    SIGNAL uds_in	  : std_logic;
    SIGNAL lds_in	  : std_logic;
    SIGNAL state       : std_logic_vector(1 downto 0);
    SIGNAL clkena	  : std_logic;
    SIGNAL n_clk		  : std_logic;
+   SIGNAL cpuIPL      : std_logic_vector(2 downto 0);
 
 
 BEGIN  
@@ -116,8 +119,9 @@ TG68_fast_inst: TG68_fast
         reset => reset, 		-- : in std_logic;
         clkena_in => clkena, 	-- : in std_logic;
         data_in => data_in, 	-- : in std_logic_vector(15 downto 0);
-		IPL => IPL, 			-- : in std_logic_vector(2 downto 0);
-        test_IPL => '0', 		-- : in std_logic;
+--		IPL => cpuIPL, 			-- : in std_logic_vector(2 downto 0);
+ 		IPL => IPL, 			-- : in std_logic_vector(2 downto 0);
+       test_IPL => '0', 		-- : in std_logic;
         address => addr, 		-- : out std_logic_vector(31 downto 0);
         data_write => data_out, -- : out std_logic_vector(15 downto 0);
         state_out => state, 	-- : out std_logic_vector(1 downto 0);
@@ -129,14 +133,10 @@ TG68_fast_inst: TG68_fast
 		enaWRreg => enaRDreg
         );
 	
---	clkena <= '1' WHEN clkena_in='1' AND ((clkena_e OR decode)='1')
---				  ELSE '0';
-
 		
 	PROCESS (clk)
 	BEGIN
-		IF rising_edge(clk) THEN
---			IF clkena_in='1' AND ((clkena_e OR decode)='1') THEN
+		IF rising_edge(clk) THEN -- TODO new version is not edge sensitive (remove this)
 			IF clkena_in='1' AND (clkena_e='1' OR state="01") THEN
 				clkena <= '1';
 			ELSE 
@@ -202,19 +202,25 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			uds_e <= '1';
 			lds_e <= '1';
 			clkena_e <= '0';
+      cpuIPL <= "111";
+      drive_data <= '0';
 		ELSIF rising_edge(clk) THEN
+--		ELSIF falling_edge(clk) THEN
         	IF clkena_in='1' AND enaRDreg='1' THEN
 				as_e <= '1';
 				rw_e <= '1';
 				uds_e <= '1';
 				lds_e <= '1';
 				clkena_e <= '0';
+        drive_data <= '0';
 				CASE S_state IS
-					WHEN "00" =>
-					WHEN "01" =>
+					WHEN "00" => null;
+					WHEN "01" => drive_data <= NOT wr;
 					WHEN "10" => as_e <= '0';
 								 uds_e <= uds_in;
 								 lds_e <= lds_in;
+                 cpuIPL <= IPL;
+                 drive_data <= NOT wr;
 								 IF state="01" THEN
 									 clkena_e <= '1';
 									 waitm <= '0';

@@ -3,7 +3,7 @@
 --                                                                          --
 -- This is the 68000 software compatible Kernal of TG68                     --
 --                                                                          --
--- Copyright (c) 2007 Tobias Gubener <tobiflex@opencores.org>               -- 
+-- Copyright (c) 2007-2010 Tobias Gubener <tobiflex@opencores.org>          -- 
 --                                                                          --
 -- This source file is free software: you can redistribute it and/or modify --
 -- it under the terms of the GNU Lesser General Public License as published --
@@ -20,6 +20,10 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+--
+-- Revision 1.08 2010/06/14
+-- Bugfix Movem with regmask==xFFFF
+-- Add missing Illegal $4AFC
 --
 -- Revision 1.07 2009/10/02
 -- Bugfix Movem with regmask==x0000
@@ -377,6 +381,8 @@ BEGIN
 	BEGIN
 		IF rising_edge(clk) THEN
 		    IF clkenareg='1' THEN
+--		IF falling_edge(clk) THEN
+--        IF clkena='1' THEN
 				reg_QA <= regfile_high(RWindex_A) & regfile_low(RWindex_A);
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
@@ -1877,6 +1883,10 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 							END IF;
 							
 						WHEN "101"=>						--tst, tas
+              IF opcode(7 downto 2)="111111" THEN   --4AFC illegal
+                trap_illegal <= '1';
+                trapmake <= '1';
+              ELSE
 							IF decodeOPC='1' THEN
 								ea_build <= '1';
 							END IF;
@@ -1896,6 +1906,7 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 									regwrena <= '1';
 								END IF;
 							END IF;
+            END IF;
 --						WHEN "110"=>
 						WHEN "111"=>					--4EXX
 							IF opcode(7)='1' THEN		--jsr, jmp
@@ -3210,7 +3221,7 @@ PROCESS (reset, clk, movem_mask, movem_muxa ,movem_muxb, movem_muxc)
 			END IF;	
 	       	IF clkena='1' THEN
 				IF set_movem_busy='1' THEN
-					IF movem_bits(3 downto 1) /= "000" OR opcode(10)='0' THEN	
+					IF movem_bits(4 downto 1) /= "0000" OR opcode(10)='0' THEN	
 						movem_busy <= '1';
 					END IF;
 					movem_addr <= '1';
