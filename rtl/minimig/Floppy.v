@@ -58,12 +58,19 @@
 // 2009-04-05	- code clean-up
 // 2009-05-24	- clean-up & renaming
 // 2009-07-21	- WORDEQUAL in DSKBYTR register is always set now
+// 2009-11-14 - changed DSKSYNC reset value (Kick 1.3 doesn't initialize this register after reset)
+//        - reduced FIFO size (to save some block rams)
+// 2009-12-26 - step enable
+// 2010-04-12 - implemented work-around for dsksync interrupt request
+// 2010-08-14 - set BYTEREADY of DSKBYTR (required by Kick Off 2 loader)
 
 module floppy
 (
-	//bus interface
+	// system bus interface
 	input 	clk,		    		//bus clock
 	input 	reset,			   		//reset 
+  input ntsc,         // ntsc mode
+  input sof,          // start of frame
 	input	enable,					//dma enable
 	input 	[8:1] reg_address_in,	//register address inputs
 	input	[15:0] data_in,			//bus data in
@@ -80,6 +87,7 @@ module floppy
 	output	_change,				//disk has been removed from drive
 	output	_ready,					//disk is ready
 	output	_wprot,					//disk is write-protected
+  output  index,          // disk index pulse
 	//interrupt request and misc. control
 	output	reg blckint,			//disk dma has finished interrupt
 	output	syncint,				//disk syncword found
@@ -134,14 +142,16 @@ module floppy
 	reg		trackrd;				//read track (command to host)
 	
 	wire	_dsktrack0;				//disk heads are over track 0
-	
-	wire	[15:0] bufdin;			//fifo data in
-	wire	[15:0] bufdout; 		//fifo data out
-	wire	bufwr;					//fifo write enable
-	reg		bufwr_del;				//fifo write enable delayed
-	wire	bufrd;					//fifo read enable
-	wire	bufempty;				//fifo is empty
-	wire	buffull;				//fifo is full
+  wire  dsktrack79;       //disk heads are over track 0
+
+	wire	[15:0] fifo_in;			//fifo data in
+	wire	[15:0] fifo_out; 		//fifo data out
+	wire	fifo_wr;					//fifo write enable
+	reg		fifo_wr_del;				//fifo write enable delayed
+	wire	fifo_rd;					//fifo read enable
+	wire	fifo_empty;				//fifo is empty
+	wire	fifo_full;				//fifo is full
+  wire  [13:0] fifo_cnt;
 
 	wire	[15:0] dskbytr;			
 	wire	[15:0] dskdatr;
@@ -149,7 +159,6 @@ module floppy
 	// JB:
 	wire	fifo_reset;
 	reg		dmaen;					//dsklen dma enable
-	wire	[13:0] fifo_cnt;
 	reg		[15:0] wr_fifo_status;
 	
 	reg		[3:0] disk_present;		//disk present status
@@ -159,6 +168,14 @@ module floppy
 	wire	[1:0] sel;				//selected drive number
 	
 	reg		[1:0] drives;			//number of currently connected floppy drives (1-4)
+
+  reg   [3:0] _disk_change;
+  reg   _step_del;
+  reg   [8:0] step_ena_cnt;
+  wire  step_ena;
+  // drive motor control
+  reg   [3:0] _sel_del;     // deleyed drive select signals for edge detection
+  reg   [3:0] motor_on;     // drive motor on
 
 	//decoded SPI commands
 	reg		cmd_fdd;				//SPI host accesses floppy drive buffer
@@ -346,8 +363,8 @@ always @(spi_tx_cnt or spi_tx_data_0 or spi_tx_data_1 or spi_tx_data_2 or spi_tx
 		3 : spi_tx_data = spi_tx_data_3;
 	endcase
 
-always @(sel or drives or hdd_dat_req or hdd_cmd_req or trackwr or trackrd or track)
-	spi_tx_data_0 = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd,track[7:0]};
+always @(sel or drives or hdd_dat_req or hdd_cmd_req or trackwr or trackrd or track or fifo_cnt)
+	spi_tx_data_0 = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd&~fifo_cnt[12],track[7:0]};
 
 always @(dsksync)
 //	if (trackrd)
@@ -363,12 +380,12 @@ always @(trackrd or dmaen or dsklen or trackwr or wr_fifo_status)
 	else
 		spi_tx_data_2 = 0;
 
-always @(cmd_fdd or trackrd or dmaen or dsklen or trackwr or bufdout	or cmd_hdd_rd or cmd_hdd_data_rd or hdd_data_in)	
+always @(cmd_fdd or trackrd or dmaen or dsklen or trackwr or fifo_out	or cmd_hdd_rd or cmd_hdd_data_rd or hdd_data_in)	
 	if (cmd_fdd)
 		if (trackrd)
 			spi_tx_data_3 = {dmaen,dsklen[14:0]};
 		else if (trackwr)
-			spi_tx_data_3 = bufdout;
+			spi_tx_data_3 = fifo_out;
 		else
 			spi_tx_data_3 = 0;
 	else if (cmd_hdd_rd || cmd_hdd_data_rd)
@@ -388,56 +405,119 @@ always @(posedge clk)
 always @(posedge clk)
 	if (reset)
 		drives <= floppy_drives;
-		
+
+//-----------------------------------------------------------------------------------------------//
+// 300 RPM floppy disk rotation signal
+reg [3:0] rpm_pulse_cnt;
+always @(posedge clk)
+  if (sof)
+    if (rpm_pulse_cnt==11 || !ntsc && rpm_pulse_cnt==9)
+      rpm_pulse_cnt <= 0;
+    else
+      rpm_pulse_cnt <= rpm_pulse_cnt + 1;
+    
+// disk index pulses output
+assign index = |(~_sel & motor_on) & ~|rpm_pulse_cnt & sof;
+	
 //--------------------------------------------------------------------------------------
 //data out multiplexer
 assign data_out = dskbytr | dskdatr;
 
 //--------------------------------------------------------------------------------------
-//floppy control signal behaviour
-reg		_stepd; 		//used to detect rising edge of _step
 
 //active whenever any drive is selected
 assign _selx = &_sel[3:0];
 
+// delayed step signal for detection of its rising edge 
+always @(posedge clk)
+  _step_del <= _step;
+  
+always @(posedge clk)
+  if (!step_ena)
+    step_ena_cnt <= step_ena_cnt + 1;
+  else if (_step && !_step_del)
+    step_ena_cnt <= 0;
+    
+assign step_ena = step_ena_cnt[8];
+
+// disk change latch
+// set by reset or when the disk is removed form the drive
+// reset when the disk is present and step pulse is received for selected drive
+always @(posedge clk)
+  _disk_change <= (_disk_change | ~_sel & {4{_step}} & ~{4{_step_del}} & disk_present) & ~({4{reset}} | ~disk_present);
+ 
 //active drive number (priority encoder)
 assign sel = !_sel[0] ? 0 : !_sel[1] ? 1 : !_sel[2] ? 2 : !_sel[3] ? 3 : 0;
 
+//delayed drive select signals
+always @(posedge clk)
+  _sel_del <= _sel;
+
+//drive motor control
+always @(posedge clk)
+  if (reset)
+    motor_on[0] <= 1'b0;
+  else if (!_sel[0] && _sel_del[0])
+    motor_on[0] <= ~_motor;
+
+always @(posedge clk)
+  if (reset)
+    motor_on[1] <= 1'b0;
+  else if (!_sel[1] && _sel_del[1])
+    motor_on[1] <= ~_motor;
+
+always @(posedge clk)
+  if (reset)
+    motor_on[2] <= 1'b0;
+  else if (!_sel[2] && _sel_del[2])
+    motor_on[2] <= ~_motor;
+
+always @(posedge clk)
+  if (reset)
+    motor_on[3] <= 1'b0;
+  else if (!_sel[3] && _sel_del[3])
+    motor_on[3] <= ~_motor;
+
 //_ready,_track0 and _change signals
-assign _change = &(_sel | disk_present);
+assign _change = &(_sel | _disk_change);
 
 assign _wprot = &(_sel | disk_writable);
 
 assign  _track0 =&(_selx | _dsktrack0);
 
-//delay _step and _sel
-always @(posedge clk)
-	_stepd <= _step;
-
 //track control
 assign track = {dsktrack[sel],~side};
-	
-always @(posedge clk)
-	if(!_selx && _step && !_stepd && !(!_dsktrack0 && direc))//track increment (direc=0) or decrement (direc=1) at rising edge of _step
-		dsktrack[sel] <= dsktrack[sel] + {direc,direc,direc,direc,direc,direc,1'b1};
 
-//_dsktrack0 and dsktrack79 detect
-assign _dsktrack0 = (dsktrack[sel]==7'b000_0000) ? 0 : 1;
+always @(posedge clk)
+  if (!_selx && _step && !_step_del && step_ena) // track increment (direc=0) or decrement (direc=1) at rising edge of _step
+    if (!dsktrack79 && !direc)
+      dsktrack[sel] <= dsktrack[sel] + 1;
+    else if (_dsktrack0 && direc)
+      dsktrack[sel] <= dsktrack[sel] - 1;	
+
+// _dsktrack0 detect
+assign _dsktrack0 = dsktrack[sel]==0 ? 0 : 1;
+
+// dsktrack79 detect
+assign dsktrack79 = dsktrack[sel]==82 ? 1 : 0;
 
 // drive _ready signal control
 // Amiga DD drive activates _ready whenever _sel is active and motor is off
 // or whenever _sel is active, motor is on and there is a disk inserted (not implemented - _ready is active when _sel is active)
-assign _ready = (_sel[3]|~(drives[1]&drives[0])) & (_sel[2]|~drives[1]) & (_sel[1]|~(drives[1]|drives[0])) & _sel[0];
+assign _ready   = (_sel[3] | ~(drives[1] & drives[0])) 
+        & (_sel[2] | ~drives[1]) 
+        & (_sel[1] | ~(drives[1] | drives[0])) 
+        & (_sel[0]);
 
 //--------------------------------------------------------------------------------------
 
 //disk data byte and status read
-assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b0,(trackrd|trackwr),dsklen[14],13'b1_0000_0000_0000} : 16'h00_00;
+assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;
 	 
 //disk sync register
 always @(posedge clk)
 	if (reset) 
-		dsksync[15:0] <= 0;
+		dsksync[15:0] <= 16'h4489;
 	else if (reg_address_in[8:1]==DSKSYNC[8:1])
 		dsksync[15:0] <= data_in[15:0];
 
@@ -447,7 +527,7 @@ always @(posedge clk)
 		dsklen[14:0] <= 0;
 	else if (reg_address_in[8:1]==DSKLEN[8:1])
 		dsklen[14:0] <= data_in[14:0];
-	else if (bufwr)//decrement length register
+	else if (fifo_wr)//decrement length register
 		dsklen[13:0] <= dsklen[13:0] - 1;
 
 //disk length register DMAEN
@@ -484,28 +564,30 @@ assign busrd = (reg_address_in[8:1]==DSKDATR[8:1]) ? 1 : 0;
 assign buswr = (reg_address_in[8:1]==DSKDAT[8:1]) ? 1 : 0;
 
 //fifo data input multiplexer
-assign bufdin[15:0] = trackrd ? rx_data[15:0] : data_in[15:0];
+assign fifo_in[15:0] = trackrd ? rx_data[15:0] : data_in[15:0];
 
 //fifo write control
-assign bufwr = (trackrdok & spidat & ~lenzero) | (buswr & dmaon);
+assign fifo_wr = (trackrdok & spidat & ~lenzero) | (buswr & dmaon);
 
 //delayed version to allow writing of the last word to empty fifo
 always @(posedge clk)
-	bufwr_del <= bufwr;
+	fifo_wr_del <= fifo_wr;
 
 //fifo read control
-assign bufrd = (busrd & dmaon) | (trackwr & spidat);
+assign fifo_rd = (busrd & dmaon) | (trackwr & spidat);
 
 //DSKSYNC interrupt
-assign syncint = dsksync[15:0]==rx_data[15:0] && spidat && trackrd ? 1 : 0;
-//assign syncint = 16'h4489==rx_data[15:0] && spidat && trackrd ? 1 : 0;
+wire sync_match;
+assign sync_match = dsksync[15:0]==rx_data[15:0] && spidat && trackrd ? 1'b1 : 1'b0;
+
+assign syncint = sync_match | ~dmaen & |(~_sel & motor_on & disk_present) & sof;
 
 //track read enable / wait for syncword logic
 always @(posedge clk)
 	if (!trackrd)//reset
 		trackrdok <= 0;
 	else//wordsync is enabled, wait with reading untill syncword is found
-		trackrdok <= ~wordsync | syncint | trackrdok;
+		trackrdok <= ~wordsync | sync_match | trackrdok;
 
 assign fifo_reset = reset | ~dmaen;
 		
@@ -514,13 +596,13 @@ fifo db1
 (
 	.clk(clk),
 	.reset(fifo_reset),
-	.din(bufdin),
-	.dout(bufdout),
-	.rd(bufrd),
-	.wr(bufwr),
-	.full(buffull),
+	.in(fifo_in),
+	.out(fifo_out),
+	.rd(fifo_rd),
+	.wr(fifo_wr),
+	.empty(fifo_empty),
+	.full(fifo_full),
 	.cnt(fifo_cnt),
-	.empty(bufempty),
 // DE1 Ext. SRAM for FIFO
 	.fifoinptr(fifoinptr),
 	.fifodwr(fifodwr),
@@ -531,13 +613,14 @@ fifo db1
 
 
 //disk data read output gate
-assign dskdatr[15:0] = busrd ? bufdout[15:0] : 16'h00_00;
+assign dskdatr[15:0] = busrd ? fifo_out[15:0] : 16'h00_00;
 
 //--------------------------------------------------------------------------------------
 //dma request logic
-assign dmal = dmaon & ((~dsklen[14] & ~bufempty) | (dsklen[14] & ~buffull));
+assign dmal = dmaon & (~dsklen[14] & ~fifo_empty | dsklen[14] & ~fifo_full);
+
 //dmas is active during writes
-assign dmas = dmaon & dsklen[14] & ~buffull;
+assign dmas = dmaon & dsklen[14] & ~fifo_full;
 
 //--------------------------------------------------------------------------------------
 //main disk controller
@@ -575,8 +658,9 @@ always @(posedge clk)
 	end
 
 //disk activity LED
-assign disk_led = dskstate!=DISKDMA_IDLE ? 1 : 0;
-		
+//assign disk_led = dskstate!=DISKDMA_IDLE ? 1'b1 : 1'b0;
+assign disk_led = |motor_on;
+	
 //main disk state machine
 always @(posedge clk)
 	if (reset)
@@ -584,7 +668,7 @@ always @(posedge clk)
 	else
 		dskstate <= nextstate;
 		
-always @(dskstate or spidat or rx_data or dmaen or lenzero or enable or dsklen or bufempty or rx_flag or cmd_fdd or rx_cnt or bufwr_del)
+always @(dskstate or spidat or rx_data or dmaen or lenzero or enable or dsklen or fifo_empty or rx_flag or cmd_fdd or rx_cnt or fifo_wr_del)
 begin
 	case(dskstate)
 		DISKDMA_IDLE://disk is present in flash drive
@@ -600,13 +684,13 @@ begin
 		end
 		DISKDMA_ACTIVE://do disk dma operation
 		begin
-			trackrd = (~lenzero)&(~dsklen[14]);//track read (disk->ram)
-			trackwr = dsklen[14];//track write (ram->disk)
-			dmaon=(~lenzero) | (~dsklen[14]);
+      trackrd = ~lenzero & ~dsklen[14]; // track read (disk->ram)
+      trackwr = dsklen[14]; // track write (ram->disk)
+      dmaon = ~lenzero | ~dsklen[14];
 			blckint=0;
 			if (!dmaen || !enable)
 				nextstate = DISKDMA_IDLE;
-			else if (lenzero && bufempty && !bufwr_del)//complete dma cycle done
+			else if (lenzero && fifo_empty && !fifo_wr_del)//complete dma cycle done
 				nextstate = DISKDMA_INT;
 			else
 				nextstate = DISKDMA_ACTIVE;			
@@ -649,13 +733,13 @@ module fifo
 (
 	input 	clk,		    	//bus clock
 	input 	reset,			   	//reset 
-	input	[15:0] din,			//data in
-	output	reg [15:0] dout,	//data out
+	input	[15:0] in,			//data in
+	output	reg [15:0] out,	//data out
 	input	rd,					//read from fifo
 	input	wr,					//write to fifo
-	output	full,				//fifo is full
-	output	[13:0] cnt,
 	output	reg empty,			//fifo is empty
+	output	full,				//fifo is full
+	output	[13:0] cnt,       // number of entries in FIFO
 // DE1 Ext. SRAM for FIFO
 	output  [12:0]fifoinptr,
 	output  [15:0]fifodwr,
@@ -666,49 +750,51 @@ module fifo
 
 //local signals and registers
 //reg 	[15:0] mem [8191:0];	//8192 words by 16 bit wide fifo memory
-reg		[13:0] inptr;			//fifo input pointer
-reg		[13:0] outptr;			//fifo output pointer
-wire	equal;					//lower 13 bits of inptr and outptr are equal
+reg		[13:0] in_ptr;			//fifo input pointer
+reg		[13:0] out_ptr;			//fifo output pointer
+wire	equal;					//lower 13 bits of in_ptr and out_ptr are equal
 
-assign fifodwr = din;
-assign fifoinptr = inptr[12:0];
-assign fifooutptr = outptr[12:0];
+assign fifodwr = in;
+assign fifoinptr = in_ptr[12:0];
+assign fifooutptr = out_ptr[12:0];
 assign fifowr = wr && !full;
-assign cnt = inptr - outptr;
+
+// count of FIFO entries
+assign cnt = in_ptr - out_ptr;
 
 //main fifo memory (implemented using synchronous block ram)
 //always @(posedge clk)
 //	if (wr && !full)
-//		mem[inptr[12:0]] <= din;
+//		mem[in_ptr[12:0]] <= in;
 
 always @(posedge clk)
-//	dout=mem[outptr[12:0]];
-	dout=fifodrd;
+//	out=mem[out_ptr[12:0]];
+	out <= fifodrd;
 
 //fifo write pointer control
 always @(posedge clk)
 	if (reset)
-		inptr[13:0] <= 0;
+		in_ptr[13:0] <= 0;
 	else if(wr && !full)
-		inptr[13:0] <= inptr[13:0] + 1;
+		in_ptr[13:0] <= in_ptr[13:0] + 1;
 
-//fifo read pointer control
+// fifo read pointer control
 always @(posedge clk)
 	if (reset)
-		outptr[13:0] <= 0;
+		out_ptr[13:0] <= 0;
 	else if (rd && !empty)
-		outptr[13:0] <= outptr[13:0] + 1;
+		out_ptr[13:0] <= out_ptr[13:0] + 1;
 
-//check lower 13 bits of pointer to generate equal signal
-assign equal = (inptr[12:0]==outptr[12:0]) ? 1 : 0;
+// check lower 13 bits of pointer to generate equal signal
+assign equal = (in_ptr[12:0]==out_ptr[12:0]) ? 1'b1 : 1'b0;
 
-//assign output flags, empty is delayed by one clock to handle ram delay
+// assign output flags, empty is delayed by one clock to handle ram delay
 always @(posedge clk)
-	if (equal && (inptr[13]==outptr[13]))
-		empty = 1;
+	if (equal && (in_ptr[13]==out_ptr[13]))
+		empty <= 1'b1;
 	else
-		empty = 0;	
+		empty <= 1'b0;
 		
-assign full = (equal && (inptr[13]!=outptr[13])) ? 1 : 0;	
+assign full = (equal && (in_ptr[13]!=out_ptr[13])) ? 1'b1 : 1'b0;	
 
 endmodule
