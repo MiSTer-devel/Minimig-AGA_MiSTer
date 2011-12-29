@@ -261,6 +261,9 @@ wire		int2;					//intterrupt 2
 wire		int3;					//intterrupt 3 
 wire		int6;					//intterrupt 6
 wire		[7:0] osd_ctrl;			//OSD control
+wire    kb_lmb;
+wire    kb_rmb;
+wire    [5:0] kb_joy2;
 wire		freeze;					//Action Replay freeze button
 wire		_fire0;					//joystick 1 fire signal to cia A
 wire		_fire1;					//joystick 2 fire signal to cia A
@@ -274,6 +277,7 @@ wire		index;					//disk index interrupt
 wire		blank;					//blanking signal
 wire		sol;					//start of video line
 wire		sof;					//start of video frame
+wire    vbl_int;        // vertical blanking interrupt
 wire		strhor_denise;			//horizontal strobe for Denise
 wire		strhor_paula;			//horizontal strobe for Paula
 wire		[3:0]red_i;				//denise red (internal)
@@ -284,7 +288,7 @@ wire		osd_pixel;				//osd pixel(video) data
 wire		_hsync_i;				//horizontal sync (internal)
 wire		_vsync_i;				//vertical sync (internal)
 wire		_csync_i;				//composite sync (internal)
-wire		[8:0] htotal;			//video line length (140ns units)
+wire		[8:1] htotal;			//video line length (140ns units)
 
 //local floppy signals (CIA<-->Paula)
 wire		_step;					//step heads of disk
@@ -327,6 +331,7 @@ wire	[2:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables
 wire	sel_ide;				//select IDE drive registers
 wire	sel_gayle;				//select GAYLE control registers
 wire	gayle_irq;				//interrupt request
+wire  gayle_nrdy;       // HDD fifo is not ready for reading
 //emulated hard disk drive signals
 wire	hdd_cmd_req;			//hard disk controller has written command register and requests processing
 wire	hdd_dat_req;			//hard disk controller requests data from emulated hard disk drive
@@ -340,7 +345,7 @@ wire	hdd_data_rd;			//data port read strobe
 
 wire	[7:0] bank;				//memory bank select
 
-wire	keyboard_disable;		//disables Amiga keyboard while OSD is active
+wire	keyboard_disabled;		//disables Amiga keyboard while OSD is active
 wire	disk_led;				//floppy disk activity LED
 
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
@@ -402,6 +407,7 @@ Agnus AGNUS1
 	.blank(blank),
 	.sol(sol),
 	.sof(sof),
+  .vbl_int(vbl_int),
 	.strhor_denise(strhor_denise),
 	.strhor_paula(strhor_paula),
 	.htotal(htotal),
@@ -412,15 +418,17 @@ Agnus AGNUS1
 	.disk_dmas(disk_dmas),
 	.bls(bls),
 	.ntsc(ntsc),
-	.ecsena(chipset_config[3]),
+  .a1k(chipset_config[2]),
+	.ecs(chipset_config[3]),
 	.floppy_speed(floppy_config[0]),
-	.fastblitter(turbo)
+	.turbo(turbo)
 );
 
 //instantiate paula
 Paula PAULA1
 (
 	.clk(clk),
+  .clk28m(clk28m),
 	.cck(cck),
 	.reset(reset),
 	.reg_address_in(reg_address),
@@ -428,8 +436,10 @@ Paula PAULA1
 	.data_out(paula_data_out),
 	.txd(txd),
 	.rxd(rxd),
-	.strhor(strhor_paula),
+  .ntsc(ntsc),
 	.sof(sof),
+  .strhor(strhor_paula),
+  .vblint(vbl_int),
 	.int2(int2|gayle_irq),
 	.int3(int3),
 	.int6(int6),
@@ -447,6 +457,7 @@ Paula PAULA1
 	._change(_change),
 	._ready(_ready),
 	._wprot(_wprot),
+  .index(/*index*/),
 	.disk_led(disk_led),
 	._scs(_scs[0]),
 	.sdi(sdi),
@@ -498,9 +509,12 @@ userio USERIO1
 	._fire0(_fire0),
 	._fire1(_fire1),
 	._joy1(_joy1),
-	._joy2(_joy2),
+	._joy2(_joy2/* & kb_joy2*/),
+//  ._lmb(kb_lmb),
+//  ._rmb(kb_rmb),
 	.osd_ctrl(osd_ctrl),
-	.keydis(keyboard_disable),
+//	.keyboard_disabled(keyboard_disabled),
+	.keydis(keyboard_disabled),
 	._scs(_scs[1]),
 	.sdi(sdi),
 	.sdo(user_sdo),
@@ -523,7 +537,11 @@ assign cpu_speed = chipset_config[0];
 //instantiate Denise
 Denise DENISE1
 (		
+  .clk28m(clk28m),
 	.clk(clk),
+  .c1(c1),
+  .c3(c3),
+  .cck(cck),
 	.reset(reset),
 	.strhor(strhor_denise),
 	.reg_address_in(reg_address),
@@ -533,6 +551,7 @@ Denise DENISE1
 	.red(red_i),
 	.green(green_i),
 	.blue(blue_i),
+  .ecs(chipset_config[3]),
 	.hires(hires)
 );
 
@@ -572,7 +591,7 @@ ciaa CIAA1
 	.rs(cpu_address_out[11:8]),
 	.data_in(cpu_data_out[7:0]),
 	.data_out(cia_data_out[7:0]),
-	.tick(sof),//vsync count
+	.tick(_vsync_i),
 	.eclk(eclk[9]),
 	.irq(int2),
 	.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),
@@ -580,8 +599,12 @@ ciaa CIAA1
 	.kbdrst(kbdrst),
 	.kbddat(kbddat),
 	.kbdclk(kbdclk),
-	.keydis(keyboard_disable),
+//  .keyboard_disabled(keyboard_disabled),
+  .keydis(keyboard_disabled),
 	.osd_ctrl(osd_ctrl),
+//  ._lmb(kb_lmb),
+//  ._rmb(kb_rmb),
+//  ._joy2(kb_joy2),
 	.freeze(freeze),
 	.disk_led(disk_led)
 );
@@ -597,7 +620,7 @@ ciab CIAB1
 	.rs(cpu_address_out[11:8]),
 	.data_in(cpu_data_out[15:8]),
 	.data_out(cia_data_out[15:8]),
-	.tick(sol),//hsync count
+	.tick(_hsync_i),
 	.eclk(eclk[9]),
 	.flag(index),
 	.irq(int6),
@@ -757,6 +780,7 @@ gayle GAYLE1
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.irq(gayle_irq),
+  .nrdy(gayle_nrdy),
 	.hdd_ena(ide_config[2:1]),
 
 	.hdd_cmd_req(hdd_cmd_req),
