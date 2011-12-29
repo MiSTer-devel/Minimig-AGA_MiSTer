@@ -51,12 +51,13 @@
 // 2009-04-05	- code clean-up
 // 2009-05-24	- clean-up & renaming
 // 2009-07-10	- implementation of intreq[14] (Unreal needs it)
-//
+// 2009-11-14 - added 28 MHz clock input for sigma-delta modulator
 
 module Paula
 (
-	//bus interface
+	// system bus interface
 	input 	clk,		    		//bus clock
+  input clk28m,         // 28 MHz system clock
 	input 	cck,		    		//colour clock enable
 	input 	reset,			   		//reset 
 	input 	[8:1] reg_address_in,	//register address inputs
@@ -66,8 +67,10 @@ module Paula
 	output 	txd,					//serial port transmitted data
 	input 	rxd,			  		//serial port received data
 	//interrupts and dma
+  input ntsc,         // PAL/NTSC mode
+  input sof,          // start of vertical frame
 	input	strhor,					//start of video line (latches audio DMA requests)
-	input	sof,					//start of video frame (triggers vertical blank interrupt)
+  input vblint,         // vertical blanking interrupt trigger
 	input	int2,					//level 2 interrupt
 	input	int3,					//level 3 interrupt
 	input	int6,					//level 6 interrupt
@@ -86,6 +89,7 @@ module Paula
 	output	_change,				//disk has been removed from drive
 	output	_ready,					//disk is ready
 	output	_wprot,					//disk is write-protected
+  output  index,          // disk index pulse
 	output	disk_led,				//disk activity LED
 	//flash drive host controller interface	(SPI)
 	input	_scs,					//async. serial data enable
@@ -97,22 +101,21 @@ module Paula
 	output	right,					//audio bitstream right
 	output	[14:0]ldata,			//left DAC data
 	output	[14:0]rdata, 			//right DAC data
-	
+  // system configuration
 	input	[1:0] floppy_drives,	//number of extra floppy drives
-	
+  // direct sector read from SD card
 	input	direct_scs,				//spi select line for direct transfers from SD card
 	input	direct_sdi,				//spi data line for direct transfers from SD card
-	
-	//emulated hard disk drive uses the same SPI interface as the floppy drive, signals described elsewhere
-	input	hdd_cmd_req,
-	input	hdd_dat_req,
-	output	[2:0] hdd_addr,
-	output	[15:0] hdd_data_out,
-	input	[15:0] hdd_data_in,
-	output	hdd_wr,
-	output	hdd_status_wr,
-	output	hdd_data_wr,
-	output	hdd_data_rd,
+  // emulated Hard Disk Drive signals
+	input	hdd_cmd_req,      // command request
+	input	hdd_dat_req,     // data request
+	output	[2:0] hdd_addr,     // task file register address
+	output	[15:0] hdd_data_out,  // data bus output
+	input	[15:0] hdd_data_in,   // data bus input
+	output	hdd_wr,         // task file write enable
+	output	hdd_status_wr,      // drive status write enable
+	output	hdd_data_wr,      // data port write enable
+	output	hdd_data_rd,        // data port read enable
 // DE1 Ext. SRAM for FIFO
 	output  [12:0]fifoinptr,
 	output  [15:0]fifodwr,
@@ -222,7 +225,7 @@ intcontroller pi1
 	.data_out(intdata_out),
 	.rxint(rxint),
 	.txint(txint),
-	.sof(sof),
+  .vblint(vblint),
 	.int2(int2),
 	.int3(int3),
 	.int6(int6),
@@ -239,6 +242,8 @@ floppy pf1
 (
 	.clk(clk),
 	.reset(reset),
+  .ntsc(ntsc),
+  .sof(sof),
 	.enable(dsken),
 	.reg_address_in(reg_address_in),
 	.data_in(data_in),
@@ -254,6 +259,7 @@ floppy pf1
 	._change(_change),
 	._ready(_ready),
 	._wprot(_wprot),
+  .index(index),
 	.blckint(blckint),
 	.syncint(syncint),
 	.wordsync(adkcon[10]),
@@ -290,6 +296,7 @@ floppy pf1
 audio ad1
 (
 	.clk(clk),
+  .clk28m(clk28m),
 	.cck(cck),
 	.reset(reset),
 	.strhor(strhor),
@@ -314,7 +321,7 @@ endmodule
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-/*interrupt controller*/
+// interrupt controller //
 module intcontroller
 (
 	output	inten,
@@ -325,7 +332,7 @@ module intcontroller
 	output	[15:0] data_out,		//bus data out
 	input	rxint,				//uart receive interrupt
 	input	txint,				//uart transmit interrupt
-	input	sof,				//start of video frame
+  input vblint,         // start of video frame
 	input	int2,				//level 2 interrupt
 	input	int3,				//level 3 interrupt
 	input	int6,				//level 6 interrupt
@@ -419,7 +426,7 @@ begin
 		//Copper
 		intreq[4] <= tmp[4];
 		//start of vertical blank
-		intreq[5] <= tmp[5] | sof;
+		intreq[5] <= tmp[5] | vblint;
 		//blitter finished
 		intreq[6] <= tmp[6] | int3;
 		//audio channel 0
