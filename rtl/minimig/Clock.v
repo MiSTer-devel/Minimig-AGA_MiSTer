@@ -32,7 +32,7 @@ module clock_generator
 	input	clk28m,	 	// 28.37516 MHz clock output
 	output	reg c1,		// clk28m clock domain signal synchronous with clk signal
 	output	reg c3,		// clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
-	input	cck,		// colour clock from Agnus hpos[0] (3.54 MHz)
+	output 	cck,		// colour clock output (3.54 MHz)
 	input 	clk, 		// 7.09379  MHz clock output
 //	output	cpu_clk,
 //	input	turbo,
@@ -50,18 +50,30 @@ module clock_generator
 //
 
 
-	reg		[3:0] e_cnt;	//used to generate e clock enable
+reg		[3:0] e_cnt;	//used to generate e clock enable
 
+/*
 //generate e in sync with cck
 always @(cck)
-	e_cnt[0] <= ~cck;
-	
+  e_cnt[0] <= ~cck;
+
 always @(posedge clk)
-	if (e_cnt[0])
-		if (e_cnt[3])	//if e_cnt==9 reset counter
-			e_cnt[3:1] <= 0;
-		else
-			e_cnt[3:1] <= e_cnt[3:1] + 1;
+  if (e_cnt[0])
+    if (e_cnt[3]) //if e_cnt==9 reset counter
+      e_cnt[3:1] <= 0;
+    else
+      e_cnt[3:1] <= e_cnt[3:1] + 1;
+*/
+
+// E clock counter
+always @(posedge clk)
+  if (e_cnt[3] && e_cnt[0])
+    e_cnt[3:0] <= 0;
+  else
+    e_cnt[3:0] <= e_cnt[3:0] + 1;
+
+// CCK clock output
+assign cck = ~e_cnt[0];
 
 assign eclk[0] = ~e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] & ~e_cnt[0]; // e_cnt == 0
 assign eclk[1] = ~e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] &  e_cnt[0]; // e_cnt == 1
