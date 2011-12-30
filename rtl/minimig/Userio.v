@@ -219,13 +219,13 @@ always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mrigh
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
 		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
-		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5]/*&_rmb*/,1'b0,_mthird,8'b00000000};
+		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5]&_rmb,1'b0,_mthird,8'b00000000};
 	else
 		data_out[15:0] = 16'h0000;
 
 //assign fire outputs to cia A
 assign _fire1 = _sjoy2[4];
-assign _fire0 = _sjoy1[4] & _mleft/* & _lmb*/;
+assign _fire0 = _sjoy1[4] & _mleft & _lmb;
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1 : 0;
