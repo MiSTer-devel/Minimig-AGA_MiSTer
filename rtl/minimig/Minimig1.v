@@ -120,6 +120,14 @@
 // 2009-07-01	- enabling of ddfstrt/ddfstop ECS extension bits is configurable
 // 2009-08-11	- support for second hardfile
 // 2009-08-16	- Action Replay problem fixed (thanks Sascha)
+// 2009-12-15 - improved blitter data flow
+// 2009-12-16 - improved bitplane dma timing
+//        - Denise id is selectable
+// 2010-05-30 - htotal changed
+// 2010-07-27 - fixed isue with external reset
+// 2010-07-28 - added vsync for the MCU
+// 2010-08-05 - added cache for the CPU
+// 2010-08-15 - added joystick emulation
 
 module Minimig1
 (
@@ -353,11 +361,8 @@ reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-// NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
-always @(posedge clk)
-	if (reset)
-		ntsc <= chipset_config[2];
-		
+// SPI clock buffer
+
 //power led control
 //when _led=0, pwrled=on
 //when _led=1, pwrled=powered by weak pullup
@@ -366,10 +371,27 @@ assign pwrled = _led ? 1'bz : 1'b1;
 //extra memory Chip Selects for additional RAM chips
 assign gpio = 1'bz;
 
-// SPI clock buffer
+// NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
+always @(posedge clk)
+	if (reset)
+		ntsc <= chipset_config[2];
+
+// vertical sync for the MCU
+reg vsync_del = 1'b0;   // delayed vsync signal for edge detection
+reg vsync_t = 1'b0;   // toggled vsync output
+
+always @(posedge clk)
+  vsync_del <= _vsync_i;
+  
+always @(posedge clk)
+  if (~_vsync_i && vsync_del)
+    vsync_t <= ~vsync_t;
+
+assign init_b = vsync_t;
+
 
 //--------------------------------------------------------------------------------------
-
+/*
 //index signal generation, this signal is the disk index interrupt and is needed to let some loaders function correctly
 //index is asserted every 10 video frames to simulate disk at 300 RPM
 reg [3:0] index_cnt;
@@ -380,7 +402,7 @@ always @(posedge clk)
 		index_cnt[3:0] <= index_cnt[3:0] + 1;
 		
 assign index = index_cnt[3:0]==9 && sof ? 1'b1 : 1'b0;
-	
+*/
 //--------------------------------------------------------------------------------------
 
 //instantiate agnus
@@ -457,7 +479,7 @@ Paula PAULA1
 	._change(_change),
 	._ready(_ready),
 	._wprot(_wprot),
-  .index(/*index*/),
+  .index(index),
 	.disk_led(disk_led),
 	._scs(_scs[0]),
 	.sdi(sdi),
@@ -636,13 +658,16 @@ m68k_bridge CPU1
 	.c3(c3),
 	.cck(cck),
 	.clk(clk),
+  .cpu_clk(cpu_clk),
 	.eclk(eclk),
 	.vpa(sel_cia),
 	.dbr(dbr),
 	.dbs(dbs),
 	.xbs(xbs),
+  .nrdy(gayle_nrdy),
 	.bls(bls),
 	.cpu_speed(cpu_speed),
+  .memory_config(memory_config),
 	.turbo(turbo),
 	._as(_cpu_as),
 	._lds(_cpu_lds),
@@ -873,6 +898,7 @@ endmodule
 //This resets the system for a second time but it also de-asserts boot.
 //Thus, the system now boots as a regular amiga.
 //Subsequent resets by asserting mrst will not assert boot again.
+//
 // JB:
 // 2008-07-11	- reset to bootloader
 // 2009-03-13	- shorter reset
@@ -1170,14 +1196,17 @@ module m68k_bridge
 	input	c1,						// clock enable signal
 	input	c3,						// clock enable signal
 	input	clk,					// bus clock
+  input cpu_clk,        // cpu clock
 	input	[9:0] eclk,				// ECLK enable signal
 	input	vpa,					// valid peripheral address (CIAs)
 	input	dbr, 					// data bus request, Gary keeps CPU off the bus (custom chips transfer data)
 	input	dbs,					// data bus slowdown (access to chip ram or custom registers)
 	input	xbs,					// cross bridge access (active dbr holds off CPU access)
+  input nrdy,         // target device is not ready
 	output	bls,					// blitter slowdown, tells the blitter that CPU wants the bus
 	input	cck,					// colour clock enable, active when dma can access the memory bus
 	input	cpu_speed,				// CPU speed select request
+  input [3:0] memory_config,  // system memory config
 	output	reg turbo,				// indicates current CPU speed mode
 	input	_as,					// m68k adress strobe
 	input	_lds,					// m68k lower data strobe d0-d7
@@ -1195,6 +1224,9 @@ module m68k_bridge
 	output	reg [15:0] data_out,	// internal data bus output
 	input	[15:0] data_in			// internal data bus input
 );
+
+localparam VCC = 1'b1;
+localparam GND = 1'b0;
 
 /*
 68000 bus timing diagram
@@ -1270,7 +1302,7 @@ always @(posedge clk)
 always @(posedge clk28m or posedge _as)
 	if (_as)
 		_ta <= 1;
-	else if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && c1 && c3 && !turbo)
+	else if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy && c1 && c3 && !turbo)
 		_ta <= 0;	
 	else if (!l_as28m && !(dbr && xbs) && c1 && c3 && turbo)
 		_ta <= 0;
@@ -1282,7 +1314,7 @@ always @(negedge clk28m or posedge _as)
 	else
 		_dtack <= _ta;
 		
-assign enable = (~l_as & ~l_dtack & ~cck & ~turbo) | (~l_as28m & l_dtack & ~(dbr & xbs) & turbo);
+assign enable = (~l_as & ~l_dtack & ~cck & ~turbo) | (~l_as28m & l_dtack & ~(dbr & xbs) & !nrdy & turbo);
 assign rd = enable & lr_w;
 assign hwr = enable & ~lr_w & ~l_uds; 
 assign lwr = enable & ~lr_w & ~l_lds;
