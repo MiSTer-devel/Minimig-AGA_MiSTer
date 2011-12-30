@@ -51,6 +51,10 @@
 // 2009-07-18	- change of memory_config takes effect after reset
 // 2009-08-11	- hdd_ena replaced with ide_config
 // 2009-08-17	- OSD position moved right
+// 2009-12-18 - clean-up
+// 2010-08-16 - joystick emulation
+// 2010-08-16 - autofire
+//        - lmb & rmb emulation
 
 module userio
 (
@@ -70,8 +74,10 @@ module userio
 	output	_fire1,					//joystick 1 fire output (to CIA)
 	input	[5:0] _joy1,			//joystick 1 in (default mouse port)
 	input	[5:0] _joy2,			//joystick 2 in (default joystick port)
+  input _lmb,
+  input _rmb,
 	input	[7:0] osd_ctrl,			//OSD control (minimig->host, [menu,select,down,up])
-	output	reg keydis,				//disables Amiga keyboard while OSD is active
+  output  reg keyboard_disabled,  // disables Amiga keyboard while OSD is active
 	input	_scs,					//SPI enable
 	input	sdi,		  			//SPI data in
 	output	sdo,	 				//SPI data out
@@ -99,10 +105,14 @@ wire	_mthird;					//middle mouse button
 wire	_mright;					//right mouse buttons
 reg		joy1enable;					//joystick 1 enable (mouse/joy switch)
 reg		joy2enable;					//joystick 2 enable when no osd
-wire	osd_enable;					//osd enable
+wire	osd_enable;					// OSD display enable
+wire  key_disable;        // Amiga keyboard disable
 reg		[7:0] t_osd_ctrl;			//JB: osd control lines
 wire	test_load;					//load test value to mouse counter 
 wire	[15:0] test_data;			//mouse counter test value
+wire  [1:0] autofire_config;
+reg   [1:0] autofire_cnt;
+reg   autofire;
 
 
 //register names and adresses		
@@ -112,6 +122,7 @@ parameter POTINP  = 9'h016;
 parameter JOYTEST = 9'h036;
 
 parameter KEY_MENU  = 8'h88;
+//parameter KEY_MENU  = 8'h69; // TODO rkrajnc
 parameter KEY_ESC   = 8'h45;
 parameter KEY_ENTER = 8'h44;
 parameter KEY_UP    = 8'h4C;
@@ -122,13 +133,34 @@ parameter KEY_RIGHT = 8'h4E;
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
+//autofire pulses generation
+
+always @(posedge clk)
+  if (sof)
+    if (autofire_cnt == 1)
+      autofire_cnt <= autofire_config;
+    else
+      autofire_cnt <= autofire_cnt - 1;
+      
+always @(posedge clk)
+  if (sof)
+    if (autofire_config == 0)
+      autofire <= 1'b0;
+    else if (autofire_cnt == 1)
+      autofire <= ~autofire;
+
+// disable keyboard when OSD is displayed
+always @(key_disable)
+  keyboard_disabled <= key_disable;
+/*
 //disable keyboard when OSD is displayed
 always @(posedge clk)
 	if (osd_enable)
 		keydis <= 1;
 	else if (t_osd_ctrl==0) //enable keyboard when OSD is not displayed and all keys are released
 		keydis <= 0;											   
-											   
+*/
+										   
 //input synchronization of external signals
 always @(posedge clk)
 	_sjoy1[5:0] <= _joy1[5:0];	
@@ -139,12 +171,12 @@ always @(posedge clk)
 
 //port 2 joystick disable in osd
 always @(posedge clk)
-	if (osd_enable)
+	if (key_disable)
 		joy2enable <= 0;
 	else if (_xjoy2[5:0] == 6'b11_1111)
 		joy2enable <= 1;
 
-assign _sjoy2[5:0] = joy2enable ? _xjoy2[5:0] : 6'b11_1111;
+assign _sjoy2[5:0] = joy2enable ? _xjoy2[5:0] | (autofire << 4) : 6'b11_1111;
 
 always @(joy2enable or _xjoy2 or osd_ctrl)
 	if (~joy2enable)
@@ -187,13 +219,13 @@ always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mrigh
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
 		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
-		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5],1'b0,_mthird,8'b00000000};
+		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5]/*&_rmb*/,1'b0,_mthird,8'b00000000};
 	else
 		data_out[15:0] = 16'h0000;
 
 //assign fire outputs to cia A
 assign _fire1 = _sjoy2[4];
-assign _fire0 = _sjoy1[4] & _mleft;
+assign _fire0 = _sjoy1[4] & _mleft/* & _lmb*/;
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1 : 0;
@@ -240,6 +272,7 @@ osd	osd1
 	.osd_blank(osd_blank),
 	.osd_pixel(osd_pixel),
 	.osd_enable(osd_enable),
+  .key_disable(key_disable),
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
 	.memory_config(memory_config),
@@ -247,6 +280,7 @@ osd	osd1
 	.floppy_config(floppy_config),
 	.scanline(scanline),
 	.ide_config(ide_config),
+  .autofire_config(autofire_config),
 	.usrrst(usrrst),
 	.bootrst(bootrst)
 );
@@ -278,14 +312,16 @@ module osd
 	input	sck,	  			//SPI clock
 	output	osd_blank,			//osd overlay, normal video blank output
 	output	osd_pixel,			//osd video pixel
-	output	osd_enable,			//osd enable
-	output	reg [1:0] lr_filter,
-	output	reg [1:0] hr_filter,
+	output	reg osd_enable = 0,			//osd enable
+  output  reg key_disable = 0,      // keyboard disable
+	output	reg [1:0] lr_filter = 0,
+	output	reg [1:0] hr_filter = 0,
 	output	reg [3:0] memory_config = 0,
 	output	reg [3:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
 	output	reg	[2:0] ide_config = 0,		//enable hard disk support
+  output  reg [1:0] autofire_config = 0,
 	output	usrrst,
 	output	bootrst
 );
@@ -297,7 +333,6 @@ reg		[7:0] osdbuf [2047:0];	//osd video buffer
 wire	osdframe;				//true if beamcounters within osd frame
 reg		[7:0] bufout;			//osd buffer read data
 reg 	osd_enable1;				//osd display enable 1
-reg 	osd_enable2;				//osd display enable 2 (synchronized to start of frame)
 reg 	[10:0] wraddr;			//osd buffer write address
 wire	[7:0] wrdat;			//osd buffer write data
 wire	wren;					//osd buffer write enable
@@ -309,6 +344,7 @@ reg		vena;
 
 reg 	[3:0] t_memory_config = 0;
 reg		[2:0] t_ide_config = 0;
+reg   [3:0] t_chipset_config = 0;
 
 //--------------------------------------------------------------------------------------
 // memory configuration select signal
@@ -316,12 +352,19 @@ reg		[2:0] t_ide_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk)
-	if (reset)
-		memory_config <= t_memory_config;
+  if (reset)
+  begin
+    chipset_config[1] <= t_chipset_config[1];
+    memory_config <= t_memory_config;
+    ide_config <= t_ide_config;
+  end
 
-always @(posedge clk)
-	if (reset)
-		ide_config <= t_ide_config;
+always @(t_chipset_config)
+begin
+  chipset_config[3:2] <= t_chipset_config[3:2];
+  chipset_config[0] <= t_chipset_config[0];
+end
+
 
 //--------------------------------------------------------------------------------------
 //OSD video generator
@@ -367,8 +410,13 @@ always @(posedge clk)
 	if (sol)
 		vena <= vframe;
 
-//combine..
-assign osdframe = vframe & hframe & osd_enable2;
+// combine..
+reg osd_enabled;
+always @(posedge clk)
+  if (sof)
+    osd_enabled <= osd_enable;
+    
+assign osdframe = vframe & hframe & osd_enabled;
 
 always @(posedge clk)
 	if (~highlight[3] && verbeam[5:3]==highlight[2:0] && !verbeam[6])
@@ -402,6 +450,7 @@ always @(posedge clk28m)//output part
 wire	rx;
 wire	cmd;
 reg 	[2:0] spicmd;		//spi command
+reg   wrcmd;    // spi write command
 
 //instantiate spi interface
 spi8 spi0
@@ -416,6 +465,21 @@ spi8 spi0
 	.rx(rx),
 	.cmd(cmd)
 );
+
+// OSD SPI commands:
+//
+// 8'b00000000  NOP
+// 8'b001H0NNN  write data to osd buffer line <NNN> (H - highlight)
+// 8'b0100--KE  enable OSD display (E) and disable Amiga keyboard (K)
+// 8'b1000000B  reset Minimig (B - reset to bootloader)
+// 8'b100001AA  set autofire rate
+// 8'b1001---S  set cpu speed
+// 8'b1010--SS  set scanline mode
+// 8'b1011-SMC  set hard disk config (C - enable HDC, M - enable Master HDD, S - enable Slave HDD)
+// 8'b1100FF-S  set floppy speed and drive number
+// 8'b1101-EAN  set chipset features (N - ntsc, A - OCS A1000, E - ECS)
+// 8'b1110HHLL  set interpolation filter (H - Hires, L - Lores)
+// 8'b1111SSCC  set memory configuration (S - Slow, C - Chip)
 
 //command latch
 // commands are:
@@ -434,8 +498,14 @@ spi8 spi0
 // 8'b1111xxMM	set memory configuration
 
 always @(posedge clk)
+  if (rx && cmd)
+    wrcmd <= wrdat[7:5]==3'b001 ? 1'b1 : 1'b0;
+
+
+always @(posedge clk)
 	if (rx && cmd)
 		spicmd <= wrdat[7:5];
+
 
 //scanline mode
 always @(posedge clk)
@@ -452,12 +522,12 @@ always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1100)
 		floppy_config[3:0] <= wrdat[3:0];
 		
-//cpu speed select
+// chipset features select
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1101)
-		chipset_config[3:0] <= wrdat[3:0];
+		t_chipset_config[3:0] <= wrdat[3:0];
 		
-//filter configuration
+// video filter configuration
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1110)
 		{hr_filter[1:0],lr_filter[1:0]} <= wrdat[3:0];
@@ -466,6 +536,11 @@ always @(posedge clk)
 always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1111)
 		t_memory_config[3:0] <= wrdat[3:0];
+
+// autofire configuration
+always @(posedge clk)
+  if (rx && cmd && wrdat[7:2]==6'b1000_01)
+    autofire_config[1:0] <= wrdat[1:0];
 
 //address counter and buffer write control (write line <NNN> command)
 always @(posedge clk)
@@ -479,6 +554,22 @@ always @(posedge clk)
 		highlight <= 4'b1000;
 	else if (rx && cmd && wrdat[7:4]==4'b0011)
 		highlight <= wrdat[3:0];
+
+/*
+// disable/enable osd display
+// memory configuration
+always @(posedge clk)
+  if (rx && cmd && wrdat[7:4]==4'b0100)
+    {key_disable, osd_enable} <= wrdat[1:0];
+
+assign wren = rx && ~cmd && wrcmd ? 1'b1 : 1'b0;
+
+// user reset request (from osd menu)   
+assign usrrst = rx && cmd && wrdat[7:1]==7'b1000_000 ? 1'b1 : 1'b0;
+
+// reset to bootloader
+assign bootrst = rx && cmd && wrdat[7:0]==8'b1000_0001 ? 1'b1 : 1'b0;
+*/
 		
 //disable/enable osd display
 always @(posedge clk)
@@ -491,10 +582,8 @@ end
 
 //synchronize osd_enable 1 to start-of-frame
 always @(posedge clk)
-	osd_enable2 <= osd_enable1;
+	osd_enable <= osd_enable1;
 	
-assign osd_enable = osd_enable2;
-
 assign wren = rx && ~cmd && spicmd==3'b001 ? 1 : 0;
 
 //user reset request (from osd menu)		
@@ -502,6 +591,7 @@ assign usrrst = rx && cmd && wrdat[7:5]==3'b100 ? 1 : 0;
 
 //reset to bootloader
 assign bootrst = rx && cmd && wrdat[7:5]==3'b100 && wrdat[0] ? 1 : 0;
+
 
 endmodule
 
