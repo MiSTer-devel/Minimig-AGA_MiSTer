@@ -83,15 +83,14 @@ entity TG68_fast is
 		wr				  : out std_logic;
         enaRDreg         : in std_logic:='1';
         enaWRreg         : in std_logic:='1'
-
-		);
+        );
 end TG68_fast;
 
 architecture logic of TG68_fast is
 
    signal state        	  : std_logic_vector(1 downto 0);
    signal clkena	      : std_logic;
-   signal clkenareg       : std_logic;
+   signal clkenareg	      : std_logic;
    signal TG68_PC         : std_logic_vector(31 downto 0);
    signal TG68_PC_add     : std_logic_vector(31 downto 0);
    signal memaddr         : std_logic_vector(31 downto 0);
@@ -382,6 +381,8 @@ BEGIN
 	BEGIN
 		IF rising_edge(clk) THEN
 		    IF clkenareg='1' THEN
+--		IF falling_edge(clk) THEN
+--        IF clkena='1' THEN
 				reg_QA <= regfile_high(RWindex_A) & regfile_low(RWindex_A);
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
@@ -437,7 +438,7 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
          data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
 	BEGIN
 		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaWRreg;
-    clkenareg <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaRDreg;
+		clkenareg <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaRDreg;
 		
 		IF rising_edge(clk) THEN
 			IF clkena='1' THEN
@@ -1882,30 +1883,30 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 							END IF;
 							
 						WHEN "101"=>						--tst, tas
-							IF opcode(7 downto 2)="111111" THEN   --4AFC illegal
-								trap_illegal <= '1';
-								trapmake <= '1';
-							ELSE
-								IF decodeOPC='1' THEN
-									ea_build <= '1';
-								END IF;
-								IF execOPC='1' THEN
-									dest_hbits <= '1';				--for Flags
-									source_lowbits <= '1';
-			--						IF opcode(3)='1' THEN			--MC68020...
-			--							source_areg <= '1';
-			--						END IF;
-								END IF;
-								set_exec_MOVE <= '1';
-								IF opcode(7 downto 6)="11" THEN		--tas
-									set_exec_tas <= '1';
-									write_back <= '1';
-									datatype <= "00";				--Byte
-									IF execOPC='1' AND endOPC='1' THEN
-										regwrena <= '1';
-									END IF;
+              IF opcode(7 downto 2)="111111" THEN   --4AFC illegal
+                trap_illegal <= '1';
+                trapmake <= '1';
+              ELSE
+							IF decodeOPC='1' THEN
+								ea_build <= '1';
+							END IF;
+							IF execOPC='1' THEN
+								dest_hbits <= '1';				--for Flags
+								source_lowbits <= '1';
+		--						IF opcode(3)='1' THEN			--MC68020...
+		--							source_areg <= '1';
+		--						END IF;
+							END IF;
+							set_exec_MOVE <= '1';
+							IF opcode(7 downto 6)="11" THEN		--tas
+								set_exec_tas <= '1';
+								write_back <= '1';
+								datatype <= "00";				--Byte
+								IF execOPC='1' AND endOPC='1' THEN
+									regwrena <= '1';
 								END IF;
 							END IF;
+            END IF;
 --						WHEN "110"=>
 						WHEN "111"=>					--4EXX
 							IF opcode(7)='1' THEN		--jsr, jmp

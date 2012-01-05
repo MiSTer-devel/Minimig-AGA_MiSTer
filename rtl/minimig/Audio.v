@@ -19,17 +19,17 @@
 //
 // This is the audio part of Paula
 //
-// 27-12-2005	- started coding
-// 28-12-2005	- done lots of work
-// 29-12-2005	- done lots of work
-// 01-01-2006	- we are having OK sound in dma mode now
-// 02-01-2006	- fixed last state
-// 03-01-2006	- added dmas to avoid interference with copper cycles
-// 04-01-2006	- experimented with DAC
-// 06-01-2006	- experimented some more with DAC and decided to leave it as it is for now
-// 07-01-2006	- cleaned up code
-// 21-02-2006	- improved audio state machine
-// 22-02-2006	- fixed dma interrupt timing, Turrican-3 theme now plays correct!
+// 27-12-2005		-started coding
+// 28-12-2005		-done lots of work
+// 29-12-2005		-done lots of work
+// 01-01-2006		-we are having OK sound in dma mode now
+// 02-01-2006		-fixed last state
+// 03-01-2006		-added dmas to avoid interference with copper cycles
+// 04-01-2006		-experimented with DAC
+// 06-01-2006		-experimented some more with DAC and decided to leave it as it is for now
+// 07-01-2006		-cleaned up code
+// 21-02-2006		-improved audio state machine
+// 22-02-2006		-fixed dma interrupt timing, Turrican-3 theme now plays correct!
 //
 // -- JB --
 // 2008-10-12	- code clean-up
@@ -41,9 +41,9 @@
 // 2009-03-26	- audio dma requests are latched and cleared at the start of every scan line, seemd to cure Agony problem
 //				- Forgotten Worlds freezes at game intro screen due to missed audio irq
 // 2009-05-24	- clean-up & renaming
-// 2009-11-14	- modified audio state machine to be more cycle-exact with its real counterpart
-//				- sigma-delta modulator is clocked at 28 MHz
-// 2010-06-15	- updated description
+// 2009-11-14 - modified audio state machine to be more cycle-exact with its real counterpart
+//        - sigma-delta modulator is clocked at 28 MHz
+// 2010-06-15 - updated description
 
 // Paula requests data from Agnus using DMAL line (high active state)
 // DMAL time slot allocation (relative to first refresh slot referenced as $00):
@@ -69,7 +69,7 @@
 module audio
 (
 	input 	clk,		    		//bus clock
-	input	clk28m,
+  input clk28m,
 	input 	cck,		    		//colour clock enable
 	input 	reset,			   		//reset 
 	input	strhor,					//horizontal strobe
@@ -82,8 +82,8 @@ module audio
 	output	reg [3:0] dmas,			//dma special 
 	output	left,					//audio bitstream out left
 	output	right,					//audio bitstream out right
-  output  [14:0]ldata,    //left DAC data
-  output  [14:0]rdata     //right DAC data
+	output	[14:0]ldata,		//left DAC data
+	output	[14:0]rdata 		//right DAC data
 );
 
 //register names and addresses
@@ -209,7 +209,8 @@ audiochannel ach3
 //instantiate volume control and sigma/delta modulator
 sigmadelta dac0 
 (
-	.clk(clk28m),
+//	.clk(clk), 
+	.clk(clk28m), // TODO rkrajnc
 	.sample0(sample0),
 	.sample1(sample1),
 	.sample2(sample2),
@@ -219,9 +220,9 @@ sigmadelta dac0
 	.vol2(vol2),
 	.vol3(vol3),
 	.left(left),
-	.right(right),
-  .ldatasum(ldata),
-  .rdatasum(rdata)    	
+	.right(right),	
+	.ldatasum(ldata),
+	.rdatasum(rdata)
 );
 
 //--------------------------------------------------------------------------------------
@@ -250,8 +251,8 @@ module sigmadelta
 	input	[6:0] vol3,			//volume 3 input
 	output	left,				//left bitstream output
 	output	right,				//right bitsteam output
-  output  reg [14:0]ldatasum,   //left DAC data
-  output  reg [14:0]rdatasum    //right DAC data
+	output	reg [14:0]ldatasum,		//left DAC data
+	output	reg [14:0]rdatasum		//right DAC data
 );
 
 //local signals
@@ -263,8 +264,8 @@ wire	[6:0] leftvmux;			//left mux volum
 wire	[6:0] rightvmux;		//right mux volume
 wire	[13:0] ldata;			//left DAC data
 wire	[13:0] rdata; 			//right DAC data
-reg   [13:0]ldatatmp;     //left DAC data
-reg   [13:0]rdatatmp;     //right DAC data
+reg		[13:0]ldatatmp;			//left DAC data
+reg		[13:0]rdatatmp; 		//right DAC data
 reg		mxc;					//multiplex control
 
 //--------------------------------------------------------------------------------------
@@ -272,17 +273,17 @@ reg		mxc;					//multiplex control
 //multiplexer control
 always @(posedge clk)
 begin
-  mxc<=~mxc;
-  if(mxc)
-  begin
-    ldatatmp<=ldata;
-    rdatatmp<=rdata;
-  end
-  else  
-  begin
-    ldatasum<={ldata[13],ldata}+{ldatatmp[13],ldatatmp};
-    rdatasum<={rdata[13],rdata}+{rdatatmp[13],rdatatmp};
-  end
+	mxc<=~mxc;
+	if(mxc)
+	begin
+		ldatatmp<=ldata;
+		rdatatmp<=rdata;
+	end
+	else
+	begin
+		ldatasum<={ldata[13],ldata}+{ldatatmp[13],ldatatmp};
+		rdatasum<={rdata[13],rdata}+{rdatatmp[13],rdatatmp};
+	end
 end
 
 //sample multiplexer
@@ -618,47 +619,47 @@ begin
 				AUDxDR = 1;
 				AUDxIR = 1;
 				lencount = ~lenfin;
-				pbufld1 = 0;	//first data received, discard it since first data access is used to reload pointer		
-				percntrld = 0; 				
-				volcntrld = 0;
-			end
-			else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
-			begin
-				audio_next = AUDIO_STATE_0;
-				AUDxDR = 0;
-				AUDxIR = 0;
-				lencount = 0;
-				pbufld1 = 0;
-				percntrld = 0; 
-				volcntrld = 0;
-			end
-			else
-			begin
-				audio_next = AUDIO_STATE_1;
-				AUDxDR = 0;
-				AUDxIR = 0;
-				lencount = 0;
-				pbufld1 = 0;				
-				percntrld = 0;
-				volcntrld = 0;
-			end
-		end
+        pbufld1 = 0;  //first data received, discard it since first data access is used to reload pointer   
+        percntrld = 0;        
+        volcntrld = 0;
+      end
+      else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
+      begin
+        audio_next = AUDIO_STATE_0;
+        AUDxDR = 0;
+        AUDxIR = 0;
+        lencount = 0;
+        pbufld1 = 0;
+        percntrld = 0; 
+        volcntrld = 0;
+      end
+      else
+      begin
+        audio_next = AUDIO_STATE_1;
+        AUDxDR = 0;
+        AUDxIR = 0;
+        lencount = 0;
+        pbufld1 = 0;        
+        percntrld = 0;
+        volcntrld = 0;
+      end
+    end
 
-		AUDIO_STATE_2: //audio DMA has been enabled
-		begin
-			dmasen = 0;
-			intreq2_clr = 1;
-			intreq2_set = 0;
-			lencntrld = 0;
-			penhi = 0;
-			percount = 0;
-			
-			if (AUDxON && AUDxDAT) //requested data has arrived
-			begin
-				audio_next = AUDIO_STATE_3;
-				AUDxDR = 1;
-				AUDxIR = 0;
-				lencount = ~lenfin;
+    AUDIO_STATE_2: //audio DMA has been enabled
+    begin
+      dmasen = 0;
+      intreq2_clr = 1;
+      intreq2_set = 0;
+      lencntrld = 0;
+      penhi = 0;
+      percount = 0;
+      
+      if (AUDxON && AUDxDAT) //requested data has arrived
+      begin
+        audio_next = AUDIO_STATE_3;
+        AUDxDR = 1;
+        AUDxIR = 0;
+        lencount = ~lenfin;
 				pbufld1 = 1;	//new data has been just received so put it in the output buffer		
 				percntrld = 1; 				
 				volcntrld = 1;
