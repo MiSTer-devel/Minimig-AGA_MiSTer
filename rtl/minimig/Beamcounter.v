@@ -24,6 +24,9 @@
 // 2009-06-10	- in non-interlace mode all frames are long (313 lines for PAL)
 // 2010-01-19	- added vertical interrupt request signal for Paula
 // 2010-04-14	- A1000 compatible VBL interrupt generation
+//
+// SB:
+// 2011-04-10 - added readable VPOSW and VHPOSW register (fix for RSI slideshow)
 
 module beamcounter
 (
@@ -86,7 +89,7 @@ parameter	hsstrt  = 29+4+4;	// front porch = 1.6us (29)
 parameter	hsstop  = 63-1+4+4;	// hsync pulse duration = 4.7us (63)
 parameter	hbstop  = 103-5+4;	// back porch = 4.7us (103) shorter blanking for overscan visibility
 parameter	hcenter = 256+4+4;	// position of vsync pulse during the long field of interlaced screen
-parameter	vsstrt  = 3;	// vertical sync start
+parameter	vsstrt  = 2; //3	// vertical sync start
 parameter	vsstop  = 5;	// PAL vsync width: 2.5 lines (NTSC: 3 lines - not implemented)
 parameter	vbstrt  = 0;	// vertical blanking start
 
@@ -114,9 +117,9 @@ assign	vbstop = pal ? 25 : 20;			// vertical blanking end (PAL 26 lines, NTSC vb
 
 //beamcounter read registers VPOSR and VHPOSR
 always @(reg_address_in or long_frame or long_line or vpos or hpos or ntsc or ecs)
-	if (reg_address_in[8:1]==VPOSR[8:1])
+	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
 		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,4'b0000,long_line,4'b0000,vpos[10:8]};
-	else if (reg_address_in[8:1]==VHPOSR[8:1])
+	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
 		data_out[15:0] = {vpos[7:0],hpos[8:1]};
 	else
 		data_out[15:0] = 0;

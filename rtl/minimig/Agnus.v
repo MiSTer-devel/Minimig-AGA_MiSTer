@@ -145,6 +145,9 @@
 // 2009-12-27	- OCS Denise compatible display window generation
 // 2010-04-13	- undocumented 7 bitplane mode implemented
 // 2010-06-29	- added more magic to ddf logic
+//
+//SB:
+// 2011-03-08 - added DIP and FatAgnus handling of scanline 0 (fix for RoboCop2 game)
 
 module Agnus
 (
@@ -447,6 +450,8 @@ bpldma_engine bpd1
 	.clk(clk),
 	.reset(reset),
 	.ecs(ecs),
+  .a1k(a1k),
+  .sof(sof),
 	.dmaena(bplen),
 	.vpos(vpos),
 	.hpos(hpos),
@@ -596,6 +601,8 @@ module bpldma_engine
 	input 	clk,		    			// bus clock
 	input	reset,						// reset
 	input	ecs,						// ddfstrt/ddfstop ECS bits enable
+  input a1k,              // DIP Agnus feature
+  input sof,              // start of frame
 	input	dmaena,						// enable dma input
 	input	[10:0] vpos,				// vertical position counter
 	input	[8:0] hpos,					// agnus internal horizontal position counter (advanced by 4 CCK)
@@ -609,7 +616,7 @@ module bpldma_engine
 localparam GND = 1'b0;
 localparam VCC = 1'b1;
 
-// register names and adresses	
+// register names and adresses
 localparam DIWSTRT   = 9'h08E;
 localparam DIWSTOP   = 9'h090;
 localparam DIWHIGH   = 9'h1E4;	
@@ -708,7 +715,7 @@ always @(posedge clk)
 
 // vertical display window enable		
 always @(posedge clk)
-	if (vpos[10:0]==0 || vpos[10:0]==vdiwstop[10:0])
+	if (sof && ~a1k || vpos[10:0]==0 && a1k || vpos[10:0]==vdiwstop[10:0]) // DIP Agnus can't start display DMA at scanline 0
 		vdiwena <= GND;
 	else if (vpos[10:0]==vdiwstrt[10:0])	
 		vdiwena <= VCC;

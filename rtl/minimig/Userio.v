@@ -55,6 +55,10 @@
 // 2010-08-16 - joystick emulation
 // 2010-08-16 - autofire
 //        - lmb & rmb emulation
+//
+// SB:
+//  06-03-2011  - added autofire without key press & permanent fire at KP0
+// 11-04-2011 - autofire function toggle able via capslock / led status
 
 module userio
 (
@@ -74,6 +78,7 @@ module userio
 	output	_fire1,					//joystick 1 fire output (to CIA)
 	input	[5:0] _joy1,			//joystick 1 in (default mouse port)
 	input	[5:0] _joy2,			//joystick 2 in (default joystick port)
+  input aflock,         // auto fire lock
   input _lmb,
   input _rmb,
 	input	[7:0] osd_ctrl,			//OSD control (minimig->host, [menu,select,down,up])
@@ -113,7 +118,7 @@ wire	[15:0] test_data;			//mouse counter test value
 wire  [1:0] autofire_config;
 reg   [1:0] autofire_cnt;
 reg   autofire;
-
+reg   sel_autofire;     // select autofire and permanent fire
 
 //register names and adresses		
 parameter JOY0DAT = 9'h00a;
@@ -134,20 +139,24 @@ parameter KEY_RIGHT = 8'h4E;
 //--------------------------------------------------------------------------------------
 
 //autofire pulses generation
-
 always @(posedge clk)
   if (sof)
     if (autofire_cnt == 1)
       autofire_cnt <= autofire_config;
     else
       autofire_cnt <= autofire_cnt - 1;
-      
+
+// autofire 
 always @(posedge clk)
   if (sof)
     if (autofire_config == 0)
       autofire <= 1'b0;
     else if (autofire_cnt == 1)
       autofire <= ~autofire;
+
+// auto fire function toggle via capslock status
+always @(posedge clk)
+  sel_autofire <= (~aflock ^ _xjoy2[4]) ? autofire : 1'b0;
 
 // disable keyboard when OSD is displayed
 always @(key_disable)
@@ -176,7 +185,8 @@ always @(posedge clk)
 	else if (_xjoy2[5:0] == 6'b11_1111)
 		joy2enable <= 1;
 
-assign _sjoy2[5:0] = joy2enable ? _xjoy2[5:0] | (autofire << 4) : 6'b11_1111;
+//  autofire is permanent active if enabled, can be overwritten any time by normal fire button
+assign _sjoy2[5:0] = joy2enable ? {_xjoy2[5], sel_autofire ^ _xjoy2[4], _xjoy2[3:0]} : 6'b11_1111;
 
 always @(joy2enable or _xjoy2 or osd_ctrl)
 	if (~joy2enable)
@@ -211,7 +221,7 @@ always @(posedge clk)
 //--------------------------------------------------------------------------------------
 
 //data output multiplexer
-always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mright or _mthird)
+always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mright or _mthird or _rmb)
 	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
 		data_out[15:0] = {6'b000000,~_sjoy1[1],_sjoy1[3]^_sjoy1[1],6'b000000,~_sjoy1[0],_sjoy1[2]^_sjoy1[0]};
 	else if (reg_address_in[8:1]==JOY0DAT[8:1])//read port 1 mouse

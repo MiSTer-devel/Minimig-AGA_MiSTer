@@ -53,6 +53,7 @@ module ps2keyboard
 	inout	ps2kclk,			//keyboard PS/2 clk
 	input	leda,				//keyboard led a in
 	input	ledb,				//keyboard led b in
+  output  aflock,   // auto fire toggle
 	output	kbdrst,				//keyboard reset out
 	output	[7:0] keydat,		//keyboard data out
 	output	reg keystrobe,		//keyboard data out strobe
@@ -304,6 +305,8 @@ always @(posedge clk)
 		capslock <= 0;
 	else if (valid && !keydat[7] && caps && !(keyequal && (keydat[7]==keydat2[7])))
 		capslock <= ~capslock;
+
+assign aflock = capslock;
 
 //generate keystrobe to indicate valid keycode				
 //assign keystrobe = (keyequal && (keydat[7]==keydatlatch[7]))?0:keyok;

@@ -164,10 +164,10 @@ assign data_out = uartdata_out | intdata_out | diskdata_out | adkconr;
 //NOTE: this register is also present in the Agnus module,
 //there DMACONR (read) is implemented
 always @(posedge clk)
-	if (reset)
+	if (reset) begin
+    dmaen <= 0;
 		dmacon <= 0;
-	else if (reg_address_in[8:1]==DMACON[8:1])
-	begin
+	end else if (reg_address_in[8:1]==DMACON[8:1]) begin
 		if (data_in[15])
 			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} | {data_in[9],data_in[4:0]};
 		else
@@ -229,6 +229,7 @@ intcontroller pi1
 	.int2(int2),
 	.int3(int3),
 	.int6(int6),
+  .strhor(strhor),
 	.blckint(blckint),
 	.syncint(syncint),
 	.audint(audint),
@@ -339,6 +340,7 @@ module intcontroller
 	input	blckint,			//disk block finished interrupt
 	input	syncint,			//disk syncword match interrupt
 	input	[3:0] audint,		//audio channels 0,1,2,3 interrupts
+  input strhor,         // start of video line
 	output	[3:0] audpen,		//mirror of audio interrupts for audio controller
 	output	rbfmirror,			//mirror of serial receive interrupt for uart SERDATR register
 	output	reg [2:0] _ipl		//m68k interrupt request

@@ -70,6 +70,8 @@
 // 2009-12-28	- added serial port register to CIA B
 // 2010-08-15	- added joystick emulation
 // 
+// SB:
+// 2011-04-02 - added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
@@ -97,6 +99,7 @@ module ciaa
 	output	_lmb,
 	output	_rmb,
 	output	[5:0] _joy2,
+  output  aflock,       // auto fire lock
 	output	freeze,				// Action Replay freeze key
 	input	disk_led			// floppy disk activity LED
 );
@@ -109,6 +112,7 @@ wire	[7:0] tmrd_out;
 wire	[7:0] sdr_out;	
 reg		[7:0] pa_out;
 reg		[7:0] pb_out;
+wire  [7:0] portb_out;
 wire	alrm;				// TOD interrupt
 wire	ta;					// TIMER A interrupt
 wire	tb;					// TIMER B interrupt
@@ -124,7 +128,7 @@ reg		tick_del;			// required for edge detection
 //----------------------------------------------------------------------------------
 // address decoder
 //----------------------------------------------------------------------------------
-wire	pra,prb,ddra,cra,talo,tahi,crb,tblo,tbhi,tdlo,tdme,tdhi,icrs,sdr;
+wire	pra,prb,ddra,ddrb,cra,talo,tahi,crb,tblo,tbhi,tdlo,tdme,tdhi,icrs,sdr;
 wire	enable;
 
 assign enable = aen & (rd | wr);
@@ -133,6 +137,7 @@ assign enable = aen & (rd | wr);
 assign	pra  = (enable && rs==4'h0) ? 1'b1 : 1'b0;
 assign	prb  = (enable && rs==4'h1) ? 1'b1 : 1'b0;
 assign	ddra = (enable && rs==4'h2) ? 1'b1 : 1'b0;
+assign  ddrb = (enable && rs==4'h3) ? 1'b1 : 1'b0;
 assign	talo = (enable && rs==4'h4) ? 1'b1 : 1'b0;
 assign	tahi = (enable && rs==4'h5) ? 1'b1 : 1'b0;
 assign	tblo = (enable && rs==4'h6) ? 1'b1 : 1'b0;
@@ -155,8 +160,8 @@ assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | 
 //----------------------------------------------------------------------------------
 wire	keystrobe;
 wire	keyack;
-reg		[7:0] sdr_latch;
 wire	[7:0] keydat;
+reg		[7:0] sdr_latch;
 
 ps2keyboard	kbd1
 (
@@ -166,6 +171,7 @@ ps2keyboard	kbd1
 	.ps2kclk(kbdclk),
 	.leda(~porta_out[1]),	// power/filter LED
 	.ledb(disk_led),		// disk activity LED
+  .aflock(aflock),
 	.kbdrst(kbdrst),
 	.keydat(keydat[7:0]),
 	.keystrobe(keystrobe),
@@ -247,18 +253,43 @@ begin
 end
 		
 // assignment of output port while keeping in mind that the original 8520 uses pull-ups
-assign porta_out[1:0] = (~ddrporta[1:0]) | regporta[1:0];	
+assign porta_out[1:0] = (~ddrporta[1:0]) | regporta[1:0];
 
-// reading of port B data register
-always @(wr or prb)
+//----------------------------------------------------------------------------------
+// portb
+//----------------------------------------------------------------------------------
+reg [7:0] regportb;
+reg [7:0] ddrportb;
+
+// writing of output port
+always @(posedge clk)
+  if (reset)
+    regportb[7:0] <= 0;
+  else if (wr && prb)
+    regportb[7:0] <= (data_in[7:0]);
+
+// writing of ddr register 
+always @(posedge clk)
+  if (reset)
+    ddrportb[7:0] <= 0;
+  else if (wr && ddrb)
+    ddrportb[7:0] <= (data_in[7:0]);
+
+// reading of port/ddr register
+always @(wr or prb or portb_out or ddrb or ddrportb)
 begin
-	if (!wr && prb)
-		pb_out[7:0] = 8'hFF;
-	else
-		pb_out[7:0] = 8'h00;
+  if (!wr && prb)
+    pb_out[7:0] = (portb_out[7:0]);
+  else if (!wr && ddrb)
+    pb_out[7:0] = (ddrportb[7:0]);
+  else
+    pb_out[7:0] = 8'h00;
 end
- 
-// deleyed tick signal for edge detection
+
+// assignment of output port while keeping in mind that the original 8520 uses pull-ups
+assign portb_out[7:0] = ((~ddrportb[7:0]) | (regportb[7:0]));
+
+// delayed tick signal for edge detection
 always @(posedge clk)
 	tick_del <= tick;
 

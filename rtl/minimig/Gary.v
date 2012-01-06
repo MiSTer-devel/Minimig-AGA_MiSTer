@@ -62,7 +62,7 @@ module gary
 	output	xbs,					//cross bridge select, active dbr prevents access
 	
 	input	[3:0] memory_config,	//selected memory configuration
-
+  input ecs,            // ECS chipset enable
 	input	hdc_ena,				//enables hdd interface
 	
 	output	ram_rd,					//bus read
@@ -107,7 +107,7 @@ assign ram_address_out = dbr ? dma_address_in[18:1] : cpu_address_in[18:1];
 //--------------------------------------------------------------------------------------
 
 //chipram, kickstart and bootrom address decode
-always @(dbr or dma_address_in or cpu_address_in or cpu_rd or boot or ovl or t_sel_slow)
+always @(dbr or dma_address_in or cpu_address_in or cpu_rd or boot or ovl or t_sel_slow or ecs or memory_config)
 begin
 	if (dbr)//agnus only accesses chipram
 	begin
@@ -115,7 +115,7 @@ begin
 		sel_chip[1] = ~dma_address_in[20] &  dma_address_in[19];
 		sel_chip[2] =  dma_address_in[20] & ~dma_address_in[19];
 		sel_chip[3] =  dma_address_in[20] &  dma_address_in[19];
-		sel_slow[0] = 1'b0;
+		sel_slow[0] = ( ecs && memory_config==4'b0100 && dma_address_in[20:19]==2'b01) ? 1'b1 : 1'b0; //1'b0;
 		sel_slow[1] = 1'b0;
 		sel_slow[2] = 1'b0;
 		sel_kick    = 1'b0;

@@ -343,7 +343,7 @@ always @(posedge clk)
 	if (enable)
 		skip_flag <= skip;
 	
-always @(copper_state or ir2 or beam_match_wait or beam_match_skip or illegalreg or skip_flag or dma_ack or dma_ena)
+always @(*)//(copper_state or ir2 or beam_match_wait or beam_match_skip or illegalreg or skip_flag or dma_ack or dma_ena)
 begin
 	case (copper_state)
 	

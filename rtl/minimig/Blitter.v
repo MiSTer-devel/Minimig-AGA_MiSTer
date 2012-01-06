@@ -293,10 +293,10 @@ always @(posedge clk)
 always @(bltafwm or bltalwm or first_word or last_word)
 	if (first_word && last_word)
 		bltamask[15:0] = bltafwm[15:0] & bltalwm[15:0];
-	else if (first_word)
-		bltamask[15:0] = bltafwm[15:0];	
 	else if (last_word)
 		bltamask[15:0] = bltalwm[15:0];
+	else if (first_word)
+		bltamask[15:0] = bltafwm[15:0];	
 	else
 		bltamask[15:0] = 16'hFF_FF;
 		

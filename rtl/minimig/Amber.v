@@ -193,9 +193,9 @@ begin
 				end
 				else //osd background
 				begin
-					t_red    <= red_in / 4;
-					t_green  <= green_in / 4;
-					t_blue   <= 4'b1000 + blue_in / 4;
+					t_red    <= red_in / 2;
+					t_green  <= green_in / 2;
+					t_blue   <= 4'b0100 + blue_in / 2;
 				end
 			end
 			else //no osd
@@ -218,15 +218,15 @@ begin
 				else	//osd background
 					if (vfilter)
 					begin //dimmed transparent background with vertical interpolation
-						t_red    <= ( lbfo2[14:10] + lbfdo[14:10] ) / 16;
-						t_green  <= ( lbfo2[9:5] + lbfdo[9:5] ) / 16;
-						t_blue   <= 4'b1000 + ( lbfo2[4:0] + lbfdo[4:0] ) / 16;
+						t_red    <= ( lbfo2[14:10] + lbfdo[14:10] ) / 8;
+						t_green  <= ( lbfo2[9:5] + lbfdo[9:5] ) / 8;
+						t_blue   <= 4'b0100 + ( lbfo2[4:0] + lbfdo[4:0] ) / 8;
 					end
 					else
 					begin //dimmed transparent background without vertical interpolation
-						t_red    <= lbfo2[14:11] / 4;
-						t_green  <= lbfo2[9:6] / 4;
-						t_blue   <= 4'b1000 + lbfo2[4:1] / 4;
+						t_red    <= lbfo2[14:11] / 2;
+						t_green  <= lbfo2[9:6] / 2;
+						t_blue   <= 4'b0100 + lbfo2[4:1] / 2;
 					end
 			end
 			else	//no osd

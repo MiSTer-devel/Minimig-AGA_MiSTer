@@ -128,6 +128,15 @@
 // 2010-07-28 - added vsync for the MCU
 // 2010-08-05 - added cache for the CPU
 // 2010-08-15 - added joystick emulation
+//
+// SB:
+// 2010-12-22 - better drive step sound at 31KHz mode
+// 2011-03-06 - changed autofire function to handless mode
+// 2011-03-08 - added dip and fat agnus DIWSTRT handling (fix RoboCop2)
+// 2011-04-02 - added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data
+// 2011-04-04 - added pwm controlled power-led at "off" state and active Turbo mode (thanks Herzi for the idea)
+// 2011-04-10 - added readable VPOSW and VHPOSW register (fix for RSI slideshow)
+// 11-04-2011 - autofire function toggle able via capslock / led status
 
 module Minimig1
 (
@@ -530,6 +539,7 @@ userio USERIO1
 	.ps2mclk(msclk),
 	._fire0(_fire0),
 	._fire1(_fire1),
+  .aflock(aflock),
 	._joy1(_joy1),
 	._joy2(_joy2 & kb_joy2),
   ._lmb(kb_lmb),
@@ -573,6 +583,7 @@ Denise DENISE1
 	.green(green_i),
 	.blue(blue_i),
   .ecs(chipset_config[3]),
+  .a1k(chipset_config[2]),
 	.hires(hires)
 );
 
@@ -613,7 +624,7 @@ ciaa CIAA1
 	.data_in(cpu_data_out[7:0]),
 	.data_out(cia_data_out[7:0]),
 	.tick(_vsync_i),
-	.eclk(eclk[9]),
+	.eclk(eclk[8]),
 	.irq(int2),
 	.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),
 	.porta_out({_led,ovl}),
@@ -625,6 +636,7 @@ ciaa CIAA1
   ._lmb(kb_lmb),
   ._rmb(kb_rmb),
   ._joy2(kb_joy2),
+  .aflock(aflock),
 	.freeze(freeze),
 	.disk_led(disk_led)
 );
@@ -641,9 +653,9 @@ ciab CIAB1
 	.data_in(cpu_data_out[15:8]),
 	.data_out(cia_data_out[15:8]),
 	.tick(_hsync_i),
-	.eclk(eclk[9]),
-	.flag(index),
+	.eclk(eclk[8]),
 	.irq(int6),
+	.flag(index),
 	.porta_in({1'b0,cts,1'b0}),
 	.porta_out({dtr,rts}),
 	.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
@@ -698,6 +710,7 @@ bank_mapper BMAP1
 	.kick(sel_kick),
 	.cart(selcart),
 	.aron(aron),
+  .ecs(chipset_config[3]),
 	.memory_config(memory_config),
 	.bank(bank)
 );
@@ -778,6 +791,7 @@ gary GARY1
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
+  .ecs(chipset_config[3]),
 	.sel_chip(sel_chip),
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
@@ -966,6 +980,7 @@ module bank_mapper
 	input	kick,				// Kickstart ROM address range select
 	input	cart,				// Action Reply memory range select
 	input	aron,				// Action Reply enable
+  input ecs,        // ECS chipset enable
 	input	[3:0] memory_config,// memory configuration
 	output	reg [7:0] bank		// bank select
 );

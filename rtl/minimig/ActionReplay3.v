@@ -116,6 +116,7 @@ assign sel_ovl = ram_ovl & (cpu_address_in[23:19]==5'b0000_0) & cpu_rd;
 assign selmem = (sel_rom & boot) | (((sel_rom & cpu_rd) | sel_ram | sel_ovl));
 
 // Action Replay is activated by writing to its ROM area during bootloading
+//always @(clk) // TODO rkrajnc
 always @(posedge clk)
 	if (!reset && boot && cpu_address_in[23:18]==6'b0100_00 && cpu_lwr)
 		aron <= 1'b1;	// rom will miss first write but since 2 first words of rom are not readable it doesn't matter
@@ -128,7 +129,7 @@ always @(posedge clk)
 assign freeze_req = freeze & ~freeze_del & (~active | ~aron);
 
 // int7 request
-assign int7_req = ~boot & (freeze_req | reset_req | break_req);
+assign int7_req = ~boot & aron & (freeze_req | reset_req | break_req);
 
 // level7 interrupt ack cycle, on Amiga interrupt vector number is read from kickstart rom
 // A[23:4] all high, A[3:1] vector number

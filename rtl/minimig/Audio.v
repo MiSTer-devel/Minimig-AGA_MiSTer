@@ -64,7 +64,9 @@
 // #1 : 122 (121)
 // #2 : 123 (122)
 // #3 : 124 (123)
-
+//
+// SB:
+// 2011-01-18 - fixed sound output, no more high pitch noise at game Gods
 
 module audio
 (
@@ -209,8 +211,7 @@ audiochannel ach3
 //instantiate volume control and sigma/delta modulator
 sigmadelta dac0 
 (
-//	.clk(clk), 
-	.clk(clk28m), // TODO rkrajnc
+	.clk(clk28m),
 	.sample0(sample0),
 	.sample1(sample1),
 	.sample2(sample2),
@@ -219,6 +220,7 @@ sigmadelta dac0
 	.vol1(vol1),
 	.vol2(vol2),
 	.vol3(vol3),
+  .strhor(strhor),
 	.left(left),
 	.right(right),	
 	.ldatasum(ldata),
@@ -249,6 +251,7 @@ module sigmadelta
 	input	[6:0] vol1,			//volume 1 input
 	input	[6:0] vol2,			//volume 2 input
 	input	[6:0] vol3,			//volume 3 input
+  input strhor,
 	output	left,				//left bitstream output
 	output	right,				//right bitsteam output
 	output	reg [14:0]ldatasum,		//left DAC data
@@ -270,29 +273,33 @@ reg		mxc;					//multiplex control
 
 //--------------------------------------------------------------------------------------
 
-//multiplexer control
+
+// multiplexer control
+always @(posedge clk)
+  if (strhor)
+    mxc <= 0;
+  else
+    mxc <= ~mxc;
+
+// 
 always @(posedge clk)
 begin
-	mxc<=~mxc;
-	if(mxc)
-	begin
+	if(mxc) begin
 		ldatatmp<=ldata;
 		rdatatmp<=rdata;
-	end
-	else
-	begin
+	end else begin
 		ldatasum<={ldata[13],ldata}+{ldatatmp[13],ldatatmp};
 		rdatasum<={rdata[13],rdata}+{rdatatmp[13],rdatatmp};
 	end
 end
 
 //sample multiplexer
-assign leftsmux = (mxc) ? sample1 : sample2;
-assign rightsmux = (mxc) ? sample0 : sample3;
+assign leftsmux = mxc ? sample1 : sample2;
+assign rightsmux = mxc ? sample0 : sample3;
 
 //volume multiplexer
-assign leftvmux = (mxc) ? vol1 : vol2;
-assign rightvmux = (mxc) ? vol0 : vol3;
+assign leftvmux = mxc ? vol1 : vol2;
+assign rightvmux = mxc ? vol0 : vol3;
 
 //left volume control
 //when volume MSB is set, volume is always maximum
@@ -326,14 +333,20 @@ svmul sv1
 
 //left sigma/delta modulator
 always @(posedge clk)
-	acculeft[14:0] <= {1'b0,acculeft[13:0]} + {1'b0,~ldata[13],ldata[12:0]};
+  if (strhor)
+    acculeft[14:0] <= 0;
+  else
+    acculeft[14:0] <= ({1'b0,acculeft[13:0]} + {1'b0,~ldata[13],ldata[12:0]});
 	
 assign left = acculeft[14];
 
 //right sigma/delta modulator
 always @(posedge clk)
-	accuright[14:0] <= {1'b0,accuright[13:0]} + {1'b0,~rdata[13],rdata[12:0]};
-	
+  if (strhor)
+    accuright[14:0] <= 0;
+  else
+    accuright[14:0] <= ({1'b0,accuright[13:0]} + {1'b0,~rdata[13],rdata[12:0]});
+
 assign right = accuright[14];
 
 endmodule
