@@ -26,7 +26,7 @@ module minimig_de1_top (
   // push button inputs
   input  wire [ 4-1:0]  BTN,        //  Pushbutton[3:0]
   // switch inputs
-  input  wire [10-1:0]  SW,         //  Toggle Switch[9:0]  
+  input  wire [10-1:0]  SW,         //  Toggle Switch[9:0]
   // 7-seg display outputs
   output wire [ 7-1:0]  HEX_0,      //  Seven Segment Digit 0
   output wire [ 7-1:0]  HEX_1,      //  Seven Segment Digit 1
@@ -65,15 +65,15 @@ module minimig_de1_top (
   // SRAM
   inout  wire [16-1:0]  SRAM_DQ,    //  SRAM Data bus 16 Bits
   output wire [18-1:0]  SRAM_ADDR,  //  SRAM Address bus 18 Bits
-  output wire           SRAM_UB_N,  //  SRAM High-byte Data Mask 
-  output wire           SRAM_LB_N,  //  SRAM Low-byte Data Mask 
+  output wire           SRAM_UB_N,  //  SRAM High-byte Data Mask
+  output wire           SRAM_LB_N,  //  SRAM Low-byte Data Mask
   output wire           SRAM_WE_N,  //  SRAM Write Enable
   output wire           SRAM_CE_N,  //  SRAM Chip Enable
   output wire           SRAM_OE_N,  //  SRAM Output Enable
   // SDRAM
   inout  wire [16-1:0]  DRAM_DQ,    //  SDRAM Data bus 16 Bits
   output wire [12-1:0]  DRAM_ADDR,  //  SDRAM Address bus 12 Bits
-  output wire           DRAM_LDQM,  //  SDRAM Low-byte Data Mask 
+  output wire           DRAM_LDQM,  //  SDRAM Low-byte Data Mask
   output wire           DRAM_UDQM,  //  SDRAM High-byte Data Mask
   output wire           DRAM_WE_N,  //  SDRAM Write Enable
   output wire           DRAM_CAS_N, //  SDRAM Column Address Strobe
@@ -338,10 +338,232 @@ Minimig1 minimig (
 );
 
 
+/* cfide */
+wire [ 16-1:0] idedata_in;
+wire           sysclk;
+wire           n_reset;
+wire           cpuena_in;
+wire [ 16-1:0] memdata_in;
+wire [ 24-1:0] addr;
+wire [ 16-1:0] cpudata_in;
+wire [  2-1:0] state;
+wire           lds;
+wire           uds;
+wire           sd_di;
+wire [ 16-1:0] idedata;
+wire [  3-1:0] idea;
+wire           ide_wr;
+wire           ide_rd;
+wire           ide_csp0;
+wire           ide_css0;
+wire           ide_csp1;
+wire           memce;
+wire [ 16-1:0] cpudata;
+wire           cpuena;
+wire           TxD;
+wire [  8-1:0] sd_cs;
+wire           sd_clk;
+wire           sd_do;
+wire [ 24-1:0] A_addr;
+wire [ 16-1:0] A_cpudata_in;
+wire           A_rw;
+wire           A_selide;
+wire [ 16-1:0] A_cpudata;
+wire           A_iderdy;
+wire           ideirq;
+wire           support_run;
+wire           sd_dimm;
+wire           enaWRreg;
+
+cfide cfide (
+  .idedata_in   (idedata_in  ),
+  .sysclk       (sysclk      ),
+  .n_reset      (n_reset     ),
+  .cpuena_in    (cpuena_in   ),
+  .memdata_in   (memdata_in  ),
+  .addr         (addr        ),
+  .cpudata_in   (cpudata_in  ),
+  .state        (state       ),
+  .lds          (lds         ),
+  .uds          (uds         ),
+  .sd_di        (sd_di       ),
+  .idedata      (idedata     ),
+  .idea         (idea        ),
+  .ide_wr       (ide_wr      ),
+  .ide_rd       (ide_rd      ),
+  .ide_csp0     (ide_csp0    ),
+  .ide_css0     (ide_css0    ),
+  .ide_csp1     (ide_csp1    ),
+  .memce        (memce       ),
+  .cpudata      (cpudata     ),
+  .cpuena       (cpuena      ),
+  .TxD          (TxD         ),
+  .sd_cs        (sd_cs       ),
+  .sd_clk       (sd_clk      ),
+  .sd_do        (sd_do       ),
+  .A_addr       (A_addr      ),
+  .A_cpudata_in (A_cpudata_in),
+  .A_rw         (A_rw        ),
+  .A_selide     (A_selide    ),
+  .A_cpudata    (A_cpudata   ),
+  .A_iderdy     (A_iderdy    ),
+  .ideirq       (ideirq      ),
+  .support_run  (support_run ),
+  .sd_dimm      (sd_dimm     ),
+  .enaWRreg     (enaWRreg    )
+);
 
 
+/* tg68_fast control cpu */
+wire           clk;
+wire           reset;
+wire           clkena_in;
+wire [ 16-1:0] data_in;
+wire [  3-1:0] IPL;
+wire           test_IPL;
+wire [ 32-1:0] address;
+wire [ 16-1:0] data_write;
+wire [  2-1:0] state_out;
+wire           LDS;
+wire           UDS;
+wire           decodeOPC;
+wire           wr;
+wire           enaRDreg;
+wire           enaWRreg;
+
+TG68_fast TG68_fast (
+  .clk          (clk         ),
+  .reset        (reset       ),
+  .clkena_in    (clkena_in   ),
+  .data_in      (data_in     ),
+  .IPL          (IPL         ),
+  .test_IPL     (test_IPL    ),
+  .address      (address     ),
+  .data_write   (data_write  ),
+  .state_out    (state_out   ),
+  .LDS          (LDS         ),
+  .UDS          (UDS         ),
+  .decodeOPC    (decodeOPC   ),
+  .wr           (wr          ),
+  .enaRDreg     (enaRDreg    ),
+  .enaWRreg     (enaWRreg    )
+);
 
 
+/* sdram */
+wire [ 16-1:0] sdata;
+wire [ 12-1:0] sdaddr;
+wire           sd_we;
+wire           sd_ras;
+wire           sd_cas;
+wire [  4-1:0] sd_cs;
+wire [  2-1:0] dqm;
+wire [  2-1:0] ba;
+wire           sysclk;
+wire           reset;
+wire [ 16-1:0] zdatawr;
+wire [ 24-1:0] zAddr;
+wire [  3-1:0] zstate;
+wire [ 16-1:0] datawr;
+wire [ 24-1:0] rAddr;
+wire           rwr;
+wire           dwrL;
+wire           dwrU;
+wire           ZwrL;
+wire           ZwrU;
+wire           dma;
+wire           cpu_dma;
+wire           c_28min;
+wire [ 16-1:0] dataout;
+wire [ 16-1:0] zdataout;
+wire           c_14m;
+wire           zena_o;
+wire           c_28m;
+wire           c_7m;
+wire           reset_out;
+wire           pulse;
+wire           enaRDreg;
+wire           enaWRreg;
+wire           ena7RDreg;
+wire           ena7WRreg;
+
+sdram sdram (
+  .sdata        (sdata       ),
+  .sdaddr       (sdaddr      ),
+  .sd_we        (sd_we       ),
+  .sd_ras       (sd_ras      ),
+  .sd_cas       (sd_cas      ),
+  .sd_cs        (sd_cs       ),
+  .dqm          (dqm         ),
+  .ba           (ba          ),
+  .sysclk       (sysclk      ),
+  .reset        (reset       ),
+  .zdatawr      (zdatawr     ),
+  .zAddr        (zAddr       ),
+  .zstate       (zstate      ),
+  .datawr       (datawr      ),
+  .rAddr        (rAddr       ),
+  .rwr          (rwr         ),
+  .dwrL         (dwrL        ),
+  .dwrU         (dwrU        ),
+  .ZwrL         (ZwrL        ),
+  .ZwrU         (ZwrU        ),
+  .dma          (dma         ),
+  .cpu_dma      (cpu_dma     ),
+  .c_28min      (c_28min     ),
+  .dataout      (dataout     ),
+  .zdataout     (zdataout    ),
+  .c_14m        (c_14m       ),
+  .zena_o       (zena_o      ),
+  .c_28m        (c_28m       ),
+  .c_7m         (c_7m        ),
+  .reset_out    (reset_out   ),
+  .pulse        (pulse       ),
+  .enaRDreg     (enaRDreg    ),
+  .enaWRreg     (enaWRreg    ),
+  .ena7RDreg    (ena7RDreg   ),
+  .ena7WRreg    (ena7WRreg   )
+);
+
+
+/* audio shifter */
+wire           clk;
+wire           nreset;
+wire [ 16-1:0] rechts;
+wire [ 16-1:0] links;
+wire           exchan;
+wire           aud_bclk;
+wire           aud_daclrck;
+wire           aud_dacdat;
+wire           aud_xck;
+
+Audio_shifter audio_shifter (
+  .clk          (clk         ),
+  .nreset       (nreset      ),
+  .rechts       (rechts      ),
+  .links        (links       ),
+  .exchan       (exchan      ),
+  .aud_bclk     (aud_bclk    ),
+  .aud_daclrck  (aud_daclrck ),
+  .aud_dacdat   (aud_dacdat  ),
+  .aud_xck      (aud_xck     )
+);
+
+
+/* i2c audio config */
+wire iCLK;
+wire iRST_N;
+wire oI2C_SCLK;
+wire oI2C_SDAT;
+
+I2C_AV_Config audio_config (
+  // host side
+  .iCLK         (iCLK        ),
+  .iRST_N       (iRST_N      ),
+  // i2c side
+  .oI2C_SCLK    (oI2C_SCLK   ),
+  .oI2C_SDAT    (oI2C_SDAT   )
+);
 
 
 
