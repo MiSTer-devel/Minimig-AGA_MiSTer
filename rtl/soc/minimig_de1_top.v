@@ -24,14 +24,14 @@ module minimig_de1_top (
   inout  wire [36-1:0]  GPIO_0,     //  GPIO Connection 0
   inout  wire [36-1:0]  GPIO_1,     //  GPIO Connection 1
   // push button inputs
-  input  wire [ 4-1:0]  BTN,        //  Pushbutton[3:0]
+  input  wire [ 4-1:0]  KEY,        //  Pushbutton[3:0]
   // switch inputs
   input  wire [10-1:0]  SW,         //  Toggle Switch[9:0]
   // 7-seg display outputs
-  output wire [ 7-1:0]  HEX_0,      //  Seven Segment Digit 0
-  output wire [ 7-1:0]  HEX_1,      //  Seven Segment Digit 1
-  output wire [ 7-1:0]  HEX_2,      //  Seven Segment Digit 2
-  output wire [ 7-1:0]  HEX_3,      //  Seven Segment Digit 3
+  output wire [ 7-1:0]  HEX0,       //  Seven Segment Digit 0
+  output wire [ 7-1:0]  HEX1,       //  Seven Segment Digit 1
+  output wire [ 7-1:0]  HEX2,       //  Seven Segment Digit 2
+  output wire [ 7-1:0]  HEX3,       //  Seven Segment Digit 3
   // LED outputs
   output wire [ 8-1:0]  LED_G,      //  LED Green[7:0]
   output wire [10-1:0]  LED_R,      //  LED Red[9:0]
@@ -42,9 +42,11 @@ module minimig_de1_top (
   inout  wire           I2C_SDAT,   //  I2C Data
   output wire           I2C_SCLK,   //  I2C Clock
   // PS2
-  input  wire           PS2_DAT,    //  PS2 Data
-  input  wire           PS2_CLK,    //  PS2 Clock
-  // VGA
+  input  wire           PS2_DAT,    //  PS2 Keyboard Data
+  input  wire           PS2_CLK,    //  PS2 Keyboard Clock
+  input  wire           PS2_MDAT,   //  PS2 Mouse Data
+  input  wire           PS2_MCLK,   //  PS2 Mouse Clock
+ // VGA
   output wire           VGA_HS,     //  VGA H_SYNC
   output wire           VGA_VS,     //  VGA V_SYNC
   output wire [ 4-1:0]  VGA_R,      //  VGA Red[3:0]
@@ -89,7 +91,10 @@ module minimig_de1_top (
   output wire           FL_WE_N,    //  FLASH Write Enable
   output wire           FL_RST_N,   //  FLASH Reset
   output wire           FL_OE_N,    //  FLASH Output Enable
-  output wire           FL_CE_N     //  FLASH Chip Enable
+  output wire           FL_CE_N,    //  FLASH Chip Enable
+  // MINIMIG specific
+  input  wire [ 6-1:0]  JOY_A,      // joystick port A
+  input  wire [ 6-1:0]  JOY_B       // joystick port B
 );
 
 
@@ -99,12 +104,88 @@ module minimig_de1_top (
 ////////////////////////////////////////
 
 // clock
-wire           areset;
-wire           inclk0;
-wire           c0;
-wire           c1;
-wire           c2;
-wire           locked;
+wire           pll_in_clk;
+wire           clk_114;
+wire           clk_28;
+wire           clk_sdram;
+wire           pll_locked;
+wire           clk_7;
+wire           clk_14;
+
+// reset
+wire           pll_rst;
+wire           n_rst;
+wire           sdctl_rst;
+
+// sram
+wire [ 13-1:0] fifoinptr;
+wire [ 16-1:0] fifodwr;
+wire           fifowr;
+wire [ 13-1:0] fifooutptr;
+wire [  8-1:0] track;
+wire [ 14-1:0] dsklen;
+wire [ 16-1:0] sram_fifodrd;
+
+// tg68
+wire           tg68_clkena;
+wire           tg68_rst;
+wire [ 16-1:0] tg68_dat_in;
+wire [ 16-1:0] tg68_dat_out;
+wire [ 32-1:0] tg68_adr;
+wire [  3-1:0] tg68_IPL;
+wire           tg68_dtack;
+wire           tg68_as;
+wire           tg68_uds;
+wire           tg68_lds;
+wire           tg68_rw;
+wire           tg68_enaRD;
+wire           tg68_enaWR;
+
+// minimig
+wire [ 16-1:0] ram_data;      // sram data bus
+wire [ 16-1:0] ramdata_in;    // sram data bus in
+wire [ 22-1:1] ram_address;   // sram address bus
+//wire [  4-1:0] _ram_ce;       // sram chip enable
+wire           _ram_bhe;      // sram upper byte select
+wire           _ram_ble;      // sram lower byte select
+wire           _ram_we;       // sram write enable
+wire           _ram_oe;       // sram output enable
+wire           _15khz;        // scandoubler disable
+wire           sdo;           // SPI data output
+wire [ 15-1:0] ldata;         // left DAC data
+wire [ 15-1:0] rdata;         // right DAC data
+
+// cfide
+wire [  8-1:0] sd_cs;
+wire           sd_do;
+wire           sd_clk;
+wire           cfide_memce;
+
+// tg68_fast
+wire           tg68_fast_clkena;
+wire [ 16-1:0] tg68_fast_dat_in;
+wire [ 16-1:0] tg68_fast_dat_out;
+wire [ 32-1:0] tg68_fast_adr;
+wire [  2-1:0] tg68_fast_state;
+wire           tg68_fast_rw;
+wire           tg68_fast_uds;
+wire           tg68_fast_lds;
+wire           tg68_fast_enaRD;
+wire           tg68_fast_enaWR;
+
+// sdram
+wire           reset_out;
+wire           pulse;
+wire           zena_o;
+wire           enaRDreg;
+wire           enaWRreg;
+wire [  4-1:0] sdram_cs;
+wire [  2-1:0] sdram_dqm;
+wire [  2-1:0] sdram_ba;
+wire [ 16-1:0] zdataout;
+
+// audio
+wire           exchan;
 
 
 
@@ -112,11 +193,46 @@ wire           locked;
 // toplevel logic                     //
 ////////////////////////////////////////
 
+// assign unused outputs
+assign TDO          = 1'b1;
+// TODO GPIO - add joystick ports!
+assign FL_ADDR      = 22'h3fffff;
+assign FL_WE_N      = 1'b1;
+assign FL_RST_N     = 1'b1;
+assign FL_OE_N      = 1'b1;
+assign FL_CE_N      = 1'b1;
+
+// assign output ports
+assign DRAM_CLK     = clk_sdram;
+
 // clock
-assign areset = !(SW[0]);
-assign inclk0 = CLOCK_27[0];
+assign pll_in_clk   = CLOCK_27[0];
 
+// reset
+assign pll_rst      = !(SW[0]);
+assign n_rst        = reset_out  & SW[3];
+assign sdctl_rst    = pll_locked & SW[0];
 
+// tg68
+assign tg68_clkena  = 1'b1;
+
+// minimig
+assign _15khz       = SW[9];
+
+// audio
+assign exchan       = SW[8];
+
+// SD card
+assign SD_DAT3      = sd_cs[1];
+assign SD_CMD       = sd_do;
+assign SD_CLK       = sd_clk;
+
+// SDRAM
+assign DRAM_CS_N    = sdram_cs[0];
+assign DRAM_LDQM    = sdram_dqm[0];
+assign DRAM_UDQM    = sdram_dqm[1];
+assign DRAM_BA_0    = sdram_ba[0];
+assign DRAM_BA_1    = sdram_ba[1];
 
 
 
@@ -124,445 +240,251 @@ assign inclk0 = CLOCK_27[0];
 // modules                            //
 ////////////////////////////////////////
 
-/* clock */
+/* clock */ // DONE
 amigaclk amigaclk (
-  .areset       (areset      ), // async reset input
-  .inclk0       (inclk0      ), // input clock (27MHz)
-  .c0           (c0          ), // output clock c0 (114.750000MHz)
-  .c1           (c1          ), // output clock c1 (28.687500MHz)
-  .c2           (c2          ), // output clock c2 (114.750000MHz, -146.25 deg)
-  .locked       (locked      )  // pll locked output
+  .areset       (pll_rst          ), // async reset input
+  .inclk0       (pll_in_clk       ), // input clock (27MHz)
+  .c0           (clk_114          ), // output clock c0 (114.750000MHz)
+  .c1           (clk_28           ), // output clock c1 (28.687500MHz)
+  .c2           (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
+  .locked       (pll_locked       )  // pll locked output
 );
 
 
-/* sram controller */
-wire clk;
-wire pulse;
-wire [ 13-1:0] fifoinptr;
-wire [ 16-1:0] fifodwr;
-wire           fifowr;
-wire [ 13-1:0] fifooutptr;
-wire [  8-1:0] track;
-wire [ 14-1:0] dsklen;
-wire [ 18-1:0] addr;
-wire [ 16-1:0] data;
-wire           oe;
-wire           wr;
-wire [ 16-1:0] fifodrd;
-wire [  7-1:0] hex1;
-wire [  7-1:0] hex10;
-wire [  7-1:0] hex100;
-wire [ 10-1:0] led;
-
+/* sram controller */ // DONE
 SRAM sram (
-  .clk          (clk         ),
-  .pulse        (pulse       ),
-  .fifoinptr    (fifoinptr   ),
-  .fifodwr      (fifodwr     ),
-  .fifowr       (fifowr      ),
-  .fifooutptr   (fifooutptr  ),
-  .track        (track       ),
-  .dsklen       (dsklen      ),
-  .addr         (addr        ),
-  .data         (data        ),
-  .oe           (oe          ),
-  .wr           (wr          ),
-  .fifodrd      (fifodrd     ),
-  .hex1         (hex1        ),
-  .hex10        (hex10       ),
-  .hex100       (hex100      ),
-  .led          (led         )
+  .clk          (clk_7            ),
+  .pulse        (pulse            ),
+  .fifoinptr    (fifoinptr        ),
+  .fifodwr      (fifodwr          ),
+  .fifowr       (fifowr           ),
+  .fifooutptr   (fifooutptr       ),
+  .track        (track            ),
+  .dsklen       (dsklen           ),
+  .addr         (SRAM_ADDR        ),
+  .data         (SRAM_DQ          ),
+  .oe           (SRAM_OE_N        ),
+  .wr           (SRAM_WE_N        ),
+  .fifodrd      (sram_fifodrd     ),
+  .hex1         (HEX0             ),
+  .hex10        (HEX1             ),
+  .hex100       (HEX2             ),
+  .led          (LEDR             )
 );
 
 
-/* tg68 main cpu */
-wire           clk;
-wire           reset;
-wire           clkena_in;
-wire [ 16-1:0] data_in;
-wire [  3-1:0] IPL;
-wire           dtack;
-wire [ 32-1:0] addr;
-wire [ 16-1:0] data_out;
-wire           as;
-wire           uds;
-wire           lds;
-wire           rw;
-wire           drive_data;
-wire           enaRDreg;
-wire           enaWRreg;
-
+/* tg68 main cpu */ // DONE
 TG68 tg68 (
-  .clk          (clk         ),
-  .reset        (reset       ),
-  .clkena_in    (clkena_in   ),
-  .data_in      (data_in     ),
-  .IPL          (IPL         ),
-  .dtack        (dtack       ),
-  .addr         (addr        ),
-  .data_out     (data_out    ),
-  .as           (as          ),
-  .uds          (uds         ),
-  .lds          (lds         ),
-  .rw           (rw          ),
-  .drive_data   (drive_data  ),
-  .enaRDreg     (enaRDreg    ),
-  .enaWRreg     (enaWRreg    )
+  .clk          (clk_114          ),
+  .reset        (tg68_rst         ),
+  .clkena_in    (tg68_clkena      ),
+  .data_in      (tg68_dat_in      ),
+  .data_out     (tg68_dat_out     ),
+  .IPL          (tg68_IPL         ),
+  .dtack        (tg68_dtack       ),
+  .addr         (tg68_adr         ),
+  .as           (tg68_as          ),
+  .uds          (tg68_uds         ),
+  .lds          (tg68_lds         ),
+  .rw           (tg68_rw          ),
+  .drive_data   (                 ),
+  .enaRDreg     (tg68_enaRD       ),
+  .enaWRreg     (tg68_enaWR       )
 );
 
 
-/* minimig top */
-wire [ 16-1:0] cpu_data;      //m68k data bus
-wire [ 24-1:1] cpu_address;   //m68k address bus
-wire [ 16-1:0] cpudata_in;    //m68k data in
-wire [  3-1:0] _cpu_ipl;      //m68k interrupt request
-wire           _cpu_as;       //m68k address strobe
-wire           _cpu_uds;      //m68k upper data strobe
-wire           _cpu_lds;      //m68k lower data strobe
-wire           cpu_r_w;       //m68k read / write
-wire           _cpu_dtack;    //m68k data acknowledge
-wire           _cpu_reset;    //m68k reset
-wire           cpu_clk;       //m68k clock
-wire [ 16-1:0] ram_data;      //sram data bus
-wire [ 22-1:1] ram_address;   //sram address bus
-wire [  4-1:0] _ram_ce;       //sram chip enable
-wire           _ram_bhe;      //sram upper byte select
-wire           _ram_ble;      //sram lower byte select
-wire           _ram_we;       //sram write enable
-wire           _ram_oe;       //sram output enable
-wire           clk;           //system clock (7.09379 MHz)
-wire           clk28m;        //28.37516 MHz clock
-wire           rxd;           //rs232 receive
-wire           txd;           //rs232 send
-wire           cts;           //rs232 clear to send
-wire           rts;           //rs232 request to send
-wire [  6-1:0] _joy1;         //joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-wire [  6-1:0] _joy2;         //joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-wire           _15khz;        //scandoubler disable
-wire           pwrled;        //power led
-wire           msdat;         //PS2 mouse data
-wire           msclk;         //PS2 mouse clk
-wire           kbddat;        //PS2 keyboard data
-wire           kbdclk;        //PS2 keyboard clk
-wire [  3-1:0] _scs;          //SPI chip select
-wire           direct_sdi;    //SD Card direct in
-wire           sdi;           //SPI data input
-wire           sdo;           //SPI data output
-wire           sck;           //SPI clock
-wire           _hsync;        //horizontal sync
-wire           _vsync;        //vertical sync
-wire [  4-1:0] red;           //red
-wire [  4-1:0] green;         //green
-wire [  4-1:0] blue;          //blue
-wire           left;          //audio bitstream left
-wire           right;         //audio bitstream right
-wire [ 15-1:0] ldata;         //left DAC data
-wire [ 15-1:0] rdata;         //right DAC data
-wire           gpio;
-wire [ 16-1:0] ramdata_in;    //sram data bus in
-wire [ 13-1:0] fifoinptr;
-wire [ 16-1:0] fifodwr;
-wire           fifowr;
-wire [ 13-1:0] fifooutptr;
-wire [ 16-1:0] fifodrd;
-wire [  8-1:0] trackdisp;
-wire [ 14-1:0] secdisp;
-
+/* minimig top */ // DONE
 Minimig1 minimig (
   //m68k pins
-  .cpu_data     (cpu_data    ), // M68K data bus
-  .cpu_address  (cpu_address ), // M68K address bus
-  .cpudata_in   (cpudata_in  ), // M68K data in
-  ._cpu_ipl     (_cpu_ipl    ), // M68K interrupt request
-  ._cpu_as      (_cpu_as     ), // M68K address strobe
-  ._cpu_uds     (_cpu_uds    ), // M68K upper data strobe
-  ._cpu_lds     (_cpu_lds    ), // M68K lower data strobe
-  .cpu_r_w      (cpu_r_w     ), // M68K read / write
-  ._cpu_dtack   (_cpu_dtack  ), // M68K data acknowledge
-  ._cpu_reset   (_cpu_reset  ), // M68K reset
-  .cpu_clk      (cpu_clk     ), // M68K clock
+  .cpu_address  (tg68_adr         ), // M68K address bus
+  .cpu_data     (tg68_dat_in      ), // M68K data bus
+  .cpudata_in   (tg68_dat_out     ), // M68K data in
+  ._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
+  ._cpu_as      (tg68_as          ), // M68K address strobe
+  ._cpu_uds     (tg68_uds         ), // M68K upper data strobe
+  ._cpu_lds     (tg68_lds         ), // M68K lower data strobe
+  .cpu_r_w      (tg68_rw          ), // M68K read / write
+  ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
+  ._cpu_reset   (tg68_rst         ), // M68K reset
+  .cpu_clk      (clk_7            ), // M68K clock
   //sram pins
-  .ram_data     (ram_data    ), // SRAM data bus
-  .ram_address  (ram_address ), // SRAM address bus
-  ._ram_ce      (_ram_ce     ), // SRAM chip enable
-  ._ram_bhe     (_ram_bhe    ), // SRAM upper byte select
-  ._ram_ble     (_ram_ble    ), // SRAM lower byte select
-  ._ram_we      (_ram_we     ), // SRAM write enable
-  ._ram_oe      (_ram_oe     ), // SRAM output enable
+  .ram_data     (ram_data         ), // SRAM data bus
+  .ramdata_in   (ramdata_in       ), // SRAM data bus in
+  .ram_address  (ram_address      ), // SRAM address bus
+  ._ram_ce      (_ram_ce          ), // SRAM chip enable
+  ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
+  ._ram_ble     (_ram_ble         ), // SRAM lower byte select
+  ._ram_we      (_ram_we          ), // SRAM write enable
+  ._ram_oe      (_ram_oe          ), // SRAM output enable
   //system  pins
-  .clk          (clk         ), // system clock (7.09379 MHz)
-  .clk28m       (clk28m      ), // 28.37516 MHz clock
+  .clk          (clk_7            ), // system clock (7.09379 MHz)
+  .clk28m       (clk_28           ), // 28.37516 MHz clock
   //rs232 pins
-  .rxd          (rxd         ), // RS232 receive
-  .txd          (txd         ), // RS232 send
-  .cts          (cts         ), // RS232 clear to send
-  .rts          (rts         ), // RS232 request to send
+  .rxd          (1'b0             ), // RS232 receive
+  .txd          (                 ), // RS232 send
+  .cts          (1'b0             ), // RS232 clear to send
+  .rts          (                 ), // RS232 request to send
   //I/O
-  ._joy1        (_joy1       ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (_joy2       ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-  ._15khz       (_15khz      ), // scandoubler disable
-  .pwrled       (pwrled      ), // power led
-  .msdat        (msdat       ), // PS2 mouse data
-  .msclk        (msclk       ), // PS2 mouse clk
-  .kbddat       (kbddat      ), // PS2 keyboard data
-  .kbdclk       (kbdclk      ), // PS2 keyboard clk
+  ._joy1        (JOY_A            ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+  ._joy2        (JOY_B            ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  ._15khz       (_15khz           ), // scandoubler disable
+  .pwrled       (                 ), // power led
+  .msdat        (PS2_MDAT         ), // PS2 mouse data
+  .msclk        (PS2_MCLK         ), // PS2 mouse clk
+  .kbddat       (PS2_DAT          ), // PS2 keyboard data
+  .kbdclk       (PS2_CLK          ), // PS2 keyboard clk
   //host controller interface (SPI)
-  ._scs         (_scs        ), // SPI chip select
-  .direct_sdi   (direct_sdi  ), // SD Card direct in
-  .sdi          (sdi         ), // SPI data input
-  .sdo          (sdo         ), // SPI data output
-  .sck          (sck         ), // SPI clock
+  ._scs         (sd_cs[6:4]       ), // SPI chip select
+  .direct_sdi   (SD_DAT           ), // SD Card direct in
+  .sdi          (sd_do            ), // SPI data input
+  .sdo          (sdo              ), // SPI data output
+  .sck          (sd_clk           ), // SPI clock
   //video
-  ._hsync       (_hsync      ), // horizontal sync
-  ._vsync       (_vsync      ), // vertical sync
-  .red          (red         ), // red
-  .green        (green       ), // green
-  .blue         (blue        ), // blue
+  ._hsync       (VGA_HS           ), // horizontal sync
+  ._vsync       (VGA_VS           ), // vertical sync
+  .red          (VGA_R            ), // red
+  .green        (VGA_G            ), // green
+  .blue         (VGA_B            ), // blue
   //audio
-  .left         (left        ), // audio bitstream left
-  .right        (right       ), // audio bitstream right
-  .ldata        (ldata       ), // left DAC data
-  .rdata        (rdata       ), // right DAC data
+  .left         (                 ), // audio bitstream left
+  .right        (                 ), // audio bitstream right
+  .ldata        (ldata            ), // left DAC data
+  .rdata        (rdata            ), // right DAC data
   //user i/o
-  .gpio         (gpio        ), // spare GPIO
-  // sram data in
-  .ramdata_in   (ramdata_in  ), // SRAM data bus in
+  .gpio         (                 ), // spare GPIO
   // DE1 Ext. SRAM for FIFO
-  .fifoinptr    (fifoinptr   ),
-  .fifodwr      (fifodwr     ),
-  .fifowr       (fifowr      ),
-  .fifooutptr   (fifooutptr  ),
-  .fifodrd      (fifodrd     ),
-  .trackdisp    (trackdisp   ),
-  .secdisp      (secdisp     )
+  .fifoinptr    (fifoinptr        ),
+  .fifodwr      (fifodwr          ),
+  .fifowr       (fifowr           ),
+  .fifooutptr   (fifooutptr       ),
+  .fifodrd      (sram_fifodrd     ),
+  .trackdisp    (track            ),
+  .secdisp      (dsklen           )
 );
 
 
-/* cfide */
-wire [ 16-1:0] idedata_in;
-wire           sysclk;
-wire           n_reset;
-wire           cpuena_in;
-wire [ 16-1:0] memdata_in;
-wire [ 24-1:0] addr;
-wire [ 16-1:0] cpudata_in;
-wire [  2-1:0] state;
-wire           lds;
-wire           uds;
-wire           sd_di;
-wire [ 16-1:0] idedata;
-wire [  3-1:0] idea;
-wire           ide_wr;
-wire           ide_rd;
-wire           ide_csp0;
-wire           ide_css0;
-wire           ide_csp1;
-wire           memce;
-wire [ 16-1:0] cpudata;
-wire           cpuena;
-wire           TxD;
-wire [  8-1:0] sd_cs;
-wire           sd_clk;
-wire           sd_do;
-wire [ 24-1:0] A_addr;
-wire [ 16-1:0] A_cpudata_in;
-wire           A_rw;
-wire           A_selide;
-wire [ 16-1:0] A_cpudata;
-wire           A_iderdy;
-wire           ideirq;
-wire           support_run;
-wire           sd_dimm;
-wire           enaWRreg;
-
+/* cfide */ // DONE
 cfide cfide (
-  .idedata_in   (idedata_in  ),
-  .sysclk       (sysclk      ),
-  .n_reset      (n_reset     ),
-  .cpuena_in    (cpuena_in   ),
-  .memdata_in   (memdata_in  ),
-  .addr         (addr        ),
-  .cpudata_in   (cpudata_in  ),
-  .state        (state       ),
-  .lds          (lds         ),
-  .uds          (uds         ),
-  .sd_di        (sd_di       ),
-  .idedata      (idedata     ),
-  .idea         (idea        ),
-  .ide_wr       (ide_wr      ),
-  .ide_rd       (ide_rd      ),
-  .ide_csp0     (ide_csp0    ),
-  .ide_css0     (ide_css0    ),
-  .ide_csp1     (ide_csp1    ),
-  .memce        (memce       ),
-  .cpudata      (cpudata     ),
-  .cpuena       (cpuena      ),
-  .TxD          (TxD         ),
-  .sd_cs        (sd_cs       ),
-  .sd_clk       (sd_clk      ),
-  .sd_do        (sd_do       ),
-  .A_addr       (A_addr      ),
-  .A_cpudata_in (A_cpudata_in),
-  .A_rw         (A_rw        ),
-  .A_selide     (A_selide    ),
-  .A_cpudata    (A_cpudata   ),
-  .A_iderdy     (A_iderdy    ),
-  .ideirq       (ideirq      ),
-  .support_run  (support_run ),
-  .sd_dimm      (sd_dimm     ),
-  .enaWRreg     (enaWRreg    )
+  .sysclk       (clk_114          ),
+  .n_reset      (n_rst            ),
+  .cpuena_in    (zena_o           ),
+  .memdata_in   (zdataout         ),
+  .addr         (tg68_fast_adr[23:0]),
+  .cpudata      (tg68_fast_dat_in ),
+  .cpudata_in   (tg68_fast_dat_out),
+  .state        (tg68_fast_state  ),
+  .lds          (tg68_fast_lds    ),
+  .uds          (tg68_fast_uds    ),
+  .sd_di        (SD_DAT           ),
+  .idedata      (                 ),
+  .idedata_in   (16'hffff         ),
+  .idea         (                 ),
+  .ide_wr       (                 ),
+  .ide_rd       (                 ),
+  .ide_csp0     (                 ),
+  .ide_css0     (                 ),
+  .ide_csp1     (                 ),
+  .memce        (cfide_memce      ),
+  .cpuena       (tg68_fast_clkena ),
+  .TxD          (UART_TXD         ),
+  .sd_cs        (sd_cs            ),
+  .sd_clk       (sd_clk           ),
+  .sd_do        (sd_do            ),
+  .A_addr       (24'hffffff       ),
+  .A_cpudata_in (16'hffff         ),
+  .A_rw         (1'b1             ),
+  .A_selide     (1'b0             ),
+  .A_cpudata    (                 ),
+  .A_iderdy     (                 ),
+  .ideirq       (                 ),
+  .support_run  (                 ),
+  .sd_dimm      (sdo              ),
+  .enaWRreg     (tg68_fast_enaWR  )
 );
 
 
-/* tg68_fast control cpu */
-wire           clk;
-wire           reset;
-wire           clkena_in;
-wire [ 16-1:0] data_in;
-wire [  3-1:0] IPL;
-wire           test_IPL;
-wire [ 32-1:0] address;
-wire [ 16-1:0] data_write;
-wire [  2-1:0] state_out;
-wire           LDS;
-wire           UDS;
-wire           decodeOPC;
-wire           wr;
-wire           enaRDreg;
-wire           enaWRreg;
-
-TG68_fast TG68_fast (
-  .clk          (clk         ),
-  .reset        (reset       ),
-  .clkena_in    (clkena_in   ),
-  .data_in      (data_in     ),
-  .IPL          (IPL         ),
-  .test_IPL     (test_IPL    ),
-  .address      (address     ),
-  .data_write   (data_write  ),
-  .state_out    (state_out   ),
-  .LDS          (LDS         ),
-  .UDS          (UDS         ),
-  .decodeOPC    (decodeOPC   ),
-  .wr           (wr          ),
-  .enaRDreg     (enaRDreg    ),
-  .enaWRreg     (enaWRreg    )
+/* tg68_fast control cpu */ // DONE
+TG68_fast tg68_fast (
+  .clk          (clk_114          ),
+  .reset        (n_rst            ),
+  .clkena_in    (tg68_fast_clkena ),
+  .data_in      (tg68_fast_dat_in ),
+  .data_write   (tg68_fast_dat_out),
+  .IPL          (3'b111           ),
+  .test_IPL     (1'b1             ),
+  .address      (tg68_fast_adr    ),
+  .state_out    (tg68_fast_state  ),
+  .LDS          (tg68_fast_lds    ),
+  .UDS          (tg68_fast_uds    ),
+  .decodeOPC    (                 ),
+  .wr           (tg68_fast_rw     ),
+  .enaRDreg     (tg68_fast_enaRD  ),
+  .enaWRreg     (tg68_fast_enaWR  )
 );
 
 
-/* sdram */
-wire [ 16-1:0] sdata;
-wire [ 12-1:0] sdaddr;
-wire           sd_we;
-wire           sd_ras;
-wire           sd_cas;
-wire [  4-1:0] sd_cs;
-wire [  2-1:0] dqm;
-wire [  2-1:0] ba;
-wire           sysclk;
-wire           reset;
-wire [ 16-1:0] zdatawr;
-wire [ 24-1:0] zAddr;
-wire [  3-1:0] zstate;
-wire [ 16-1:0] datawr;
-wire [ 24-1:0] rAddr;
-wire           rwr;
-wire           dwrL;
-wire           dwrU;
-wire           ZwrL;
-wire           ZwrU;
-wire           dma;
-wire           cpu_dma;
-wire           c_28min;
-wire [ 16-1:0] dataout;
-wire [ 16-1:0] zdataout;
-wire           c_14m;
-wire           zena_o;
-wire           c_28m;
-wire           c_7m;
-wire           reset_out;
-wire           pulse;
-wire           enaRDreg;
-wire           enaWRreg;
-wire           ena7RDreg;
-wire           ena7WRreg;
-
+/* sdram */ // DONE
 sdram sdram (
-  .sdata        (sdata       ),
-  .sdaddr       (sdaddr      ),
-  .sd_we        (sd_we       ),
-  .sd_ras       (sd_ras      ),
-  .sd_cas       (sd_cas      ),
-  .sd_cs        (sd_cs       ),
-  .dqm          (dqm         ),
-  .ba           (ba          ),
-  .sysclk       (sysclk      ),
-  .reset        (reset       ),
-  .zdatawr      (zdatawr     ),
-  .zAddr        (zAddr       ),
-  .zstate       (zstate      ),
-  .datawr       (datawr      ),
-  .rAddr        (rAddr       ),
-  .rwr          (rwr         ),
-  .dwrL         (dwrL        ),
-  .dwrU         (dwrU        ),
-  .ZwrL         (ZwrL        ),
-  .ZwrU         (ZwrU        ),
-  .dma          (dma         ),
-  .cpu_dma      (cpu_dma     ),
-  .c_28min      (c_28min     ),
-  .dataout      (dataout     ),
-  .zdataout     (zdataout    ),
-  .c_14m        (c_14m       ),
-  .zena_o       (zena_o      ),
-  .c_28m        (c_28m       ),
-  .c_7m         (c_7m        ),
-  .reset_out    (reset_out   ),
-  .pulse        (pulse       ),
-  .enaRDreg     (enaRDreg    ),
-  .enaWRreg     (enaWRreg    ),
-  .ena7RDreg    (ena7RDreg   ),
-  .ena7WRreg    (ena7WRreg   )
+  .sysclk       (clk_114          ),
+  .reset        (sdctl_rst        ),
+  .sdata        (DRAM_DQ          ),
+  .sdaddr       (DRAM_ADDR        ),
+  .sd_we        (DRAM_WE_N        ),
+  .sd_ras       (DRAM_RAS_N       ),
+  .sd_cas       (DRAM_CAS_N       ),
+  .sd_cs        (sdram_cs         ),
+  .dqm          (sdram_dqm        ),
+  .ba           (sdram_ba         ),
+  .zdatawr      (tg68_fast_dat_out),
+  .zAddr        (tg68_fast_adr[23:0]),
+  .zstate       ({cfide_memce, tg68_fast_state}),
+  .datawr       (ram_data         ),
+  .rAddr        ({2'h2, ram_address, 1'h0}),
+  .rwr          (_ram_we          ),
+  .dwrL         (_ram_ble         ),
+  .dwrU         (_ram_bhe         ),
+  .ZwrL         (tg68_fast_lds    ),
+  .ZwrU         (tg68_fast_uds    ),
+  .dma          (_ram_we          ),
+  .cpu_dma      (_ram_oe          ),
+  .c_28min      (clk_28           ),
+  .dataout      (ramdata_in       ),
+  .zdataout     (zdataout         ),
+  .c_14m        (clk_14           ),
+  .zena_o       (zena_o           ),
+  .c_28m        (                 ),
+  .c_7m         (clk_7            ),
+  .reset_out    (reset_out        ),
+  .pulse        (pulse            ),
+  .enaRDreg     (tg68_fast_enaRD  ),
+  .enaWRreg     (tg68_fast_enaWR  ),
+  .ena7RDreg    (tg68_enaRD       ),
+  .ena7WRreg    (tg68_enaWR       )
 );
 
 
-/* audio shifter */
-wire           clk;
-wire           nreset;
-wire [ 16-1:0] rechts;
-wire [ 16-1:0] links;
-wire           exchan;
-wire           aud_bclk;
-wire           aud_daclrck;
-wire           aud_dacdat;
-wire           aud_xck;
-
+/* audio shifter */ // DONE
 Audio_shifter audio_shifter (
-  .clk          (clk         ),
-  .nreset       (nreset      ),
-  .rechts       (rechts      ),
-  .links        (links       ),
-  .exchan       (exchan      ),
-  .aud_bclk     (aud_bclk    ),
-  .aud_daclrck  (aud_daclrck ),
-  .aud_dacdat   (aud_dacdat  ),
-  .aud_xck      (aud_xck     )
+  .clk          (clk_28           ),
+  .nreset       (reset_out        ),
+  .rechts       ({rdata, 1'b0}    ),
+  .links        ({ldata, 1'b0}    ),
+  .exchan       (exchan           ),
+  .aud_bclk     (AUD_BCLK         ),
+  .aud_daclrck  (AUD_DACLRCK      ),
+  .aud_dacdat   (AUD_DACDAT       ),
+  .aud_xck      (AUD_XCK          )
 );
 
 
-/* i2c audio config */
-wire iCLK;
-wire iRST_N;
-wire oI2C_SCLK;
-wire oI2C_SDAT;
-
+/* i2c audio config */  // DONE
 I2C_AV_Config audio_config (
   // host side
-  .iCLK         (iCLK        ),
-  .iRST_N       (iRST_N      ),
+  .iCLK         (clk_28           ),
+  .iRST_N       (reset_out        ),
   // i2c side
-  .oI2C_SCLK    (oI2C_SCLK   ),
-  .oI2C_SDAT    (oI2C_SDAT   )
+  .oI2C_SCLK    (I2C_SCLK         ),
+  .oI2C_SDAT    (I2C_SDAT         )
 );
 
 
