@@ -33,8 +33,8 @@ module minimig_de1_top (
   output wire [ 7-1:0]  HEX2,       //  Seven Segment Digit 2
   output wire [ 7-1:0]  HEX3,       //  Seven Segment Digit 3
   // LED outputs
-  output wire [ 8-1:0]  LED_G,      //  LED Green[7:0]
-  output wire [10-1:0]  LED_R,      //  LED Red[9:0]
+  output wire [ 8-1:0]  LEDG,       //  LED Green[7:0]
+  output wire [10-1:0]  LEDR,       //  LED Red[9:0]
   // UART
   output wire           UART_TXD,   //  UART Transmitter
   input  wire           UART_RXD,   //  UART Receiver
@@ -42,10 +42,10 @@ module minimig_de1_top (
   inout  wire           I2C_SDAT,   //  I2C Data
   output wire           I2C_SCLK,   //  I2C Clock
   // PS2
-  input  wire           PS2_DAT,    //  PS2 Keyboard Data
-  input  wire           PS2_CLK,    //  PS2 Keyboard Clock
-  input  wire           PS2_MDAT,   //  PS2 Mouse Data
-  input  wire           PS2_MCLK,   //  PS2 Mouse Clock
+  inout  wire           PS2_DAT,    //  PS2 Keyboard Data
+  inout  wire           PS2_CLK,    //  PS2 Keyboard Clock
+  inout  wire           PS2_MDAT,   //  PS2 Mouse Data
+  inout  wire           PS2_MCLK,   //  PS2 Mouse Clock
  // VGA
   output wire           VGA_HS,     //  VGA H_SYNC
   output wire           VGA_VS,     //  VGA V_SYNC
@@ -201,6 +201,12 @@ assign FL_WE_N      = 1'b1;
 assign FL_RST_N     = 1'b1;
 assign FL_OE_N      = 1'b1;
 assign FL_CE_N      = 1'b1;
+assign HEX3         = 7'h7f;
+assign LEDG         = 8'h00;
+assign SRAM_CE_N    = 1'b0;
+assign SRAM_LB_N    = 1'b0;
+assign SRAM_UB_N    = 1'b0;
+assign DRAM_CKE     = 1'b1;
 
 // assign output ports
 assign DRAM_CLK     = clk_sdram;
@@ -311,7 +317,7 @@ Minimig1 minimig (
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
   .ram_address  (ram_address      ), // SRAM address bus
-  ._ram_ce      (_ram_ce          ), // SRAM chip enable
+  ._ram_ce      (                 ), // SRAM chip enable
   ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
   ._ram_ble     (_ram_ble         ), // SRAM lower byte select
   ._ram_we      (_ram_we          ), // SRAM write enable
