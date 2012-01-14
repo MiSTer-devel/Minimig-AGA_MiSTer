@@ -14,27 +14,27 @@ module minimig_de1_top (
   input  wire [ 2-1:0]  CLOCK_24,   //  24 MHz
   input  wire [ 2-1:0]  CLOCK_27,   //  27 MHz
   input  wire           CLOCK_50,   //  50 MHz
-  input  wire           CLOCK_EXT,  //  External Clock
+  input  wire           EXT_CLOCK,  //  External Clock
   // USB JTAG Link
   input  wire           TDI,        // CPLD -> FPGA (data in)
   input  wire           TCK,        // CPLD -> FPGA (clk)
   input  wire           TCS,        // CPLD -> FPGA (CS)
   output wire           TDO,        // FPGA -> CPLD (data out)
   // GPIO
-  //inout  wire [36-1:0]  GPIO_0,     //  GPIO Connection 0
-  //inout  wire [36-1:0]  GPIO_1,     //  GPIO Connection 1
+//  inout  wire [36-1:0]  GPIO_0,     //  GPIO Connection 0
+//  inout  wire [36-1:0]  GPIO_1,     //  GPIO Connection 1
   // push button inputs
-  input  wire [ 4-1:0]  BTN,        //  Pushbutton[3:0]
+  input  wire [ 4-1:0]  KEY,        //  Pushbutton[3:0]
   // switch inputs
   input  wire [10-1:0]  SW,         //  Toggle Switch[9:0]
   // 7-seg display outputs
-  output wire [ 7-1:0]  HEX_0,      //  Seven Segment Digit 0
-  output wire [ 7-1:0]  HEX_1,      //  Seven Segment Digit 1
-  output wire [ 7-1:0]  HEX_2,      //  Seven Segment Digit 2
-  output wire [ 7-1:0]  HEX_3,      //  Seven Segment Digit 3
+  output wire [ 7-1:0]  HEX0,      //  Seven Segment Digit 0
+  output wire [ 7-1:0]  HEX1,      //  Seven Segment Digit 1
+  output wire [ 7-1:0]  HEX2,      //  Seven Segment Digit 2
+  output wire [ 7-1:0]  HEX3,      //  Seven Segment Digit 3
   // LED outputs
-  output wire [ 8-1:0]  LED_G,      //  LED Green[7:0]
-  output wire [10-1:0]  LED_R,      //  LED Red[9:0]
+  output wire [ 8-1:0]  LEDG,      //  LED Green[7:0]
+  output wire [10-1:0]  LEDR,      //  LED Red[9:0]
   // UART
   output wire           UART_TXD,   //  UART Transmitter
   input  wire           UART_RXD,   //  UART Receiver
@@ -93,8 +93,8 @@ module minimig_de1_top (
   output wire           FL_OE_N,    //  FLASH Output Enable
   output wire           FL_CE_N,    //  FLASH Chip Enable
   // MINIMIG specific
-  input  wire [ 6-1:0]  JOY_A,      // joystick port A
-  input  wire [ 6-1:0]  JOY_B       // joystick port B
+  input  wire [ 6-1:0]  Joya,      // joystick port A
+  input  wire [ 6-1:0]  Joyb       // joystick port B
 );
 
 
@@ -202,9 +202,9 @@ assign FL_ADDR      = 22'h3fffff;
 assign FL_WE_N      = 1'b1;
 assign FL_RST_N     = 1'b1;
 assign FL_OE_N      = 1'b1;
-assign FL_CE_N      = 1'b1;
-assign HEX_3        = 7'h7f;
-assign LED_G        = 8'h00;
+assign FL_CE_N      = 1'b0;
+assign HEX3        = 7'h7f;
+assign LEDG        = 8'h00;
 assign SRAM_CE_N    = 1'b0;
 assign SRAM_LB_N    = 1'b0;
 assign SRAM_UB_N    = 1'b0;
@@ -248,7 +248,7 @@ assign DRAM_BA_1    = sdram_ba[1];
 // modules                            //
 ////////////////////////////////////////
 
-/* clock */ // DONE
+/* clock */
 amigaclk amigaclk (
   .areset       (pll_rst          ), // async reset input
   .inclk0       (pll_in_clk       ), // input clock (27MHz)
@@ -259,7 +259,7 @@ amigaclk amigaclk (
 );
 
 
-/* sram controller */ // DONE
+/* sram controller */
 SRAM sram (
   .clk          (clk_7            ),
   .pulse        (pulse            ),
@@ -274,14 +274,14 @@ SRAM sram (
   .oe           (SRAM_OE_N        ),
   .wr           (SRAM_WE_N        ),
   .fifodrd      (sram_fifodrd     ),
-  .hex1         (HEX_0            ),
-  .hex10        (HEX_1            ),
-  .hex100       (HEX_2            ),
-  .led          (LED_R            )
+  .hex1         (HEX0            ),
+  .hex10        (HEX1            ),
+  .hex100       (HEX2            ),
+  .led          (LEDR            )
 );
 
 
-/* tg68 main cpu */ // DONE
+/* tg68 main cpu */
 TG68 tg68 (
   .clk          (clk_114          ),
   .reset        (tg68_rst         ),
@@ -301,7 +301,7 @@ TG68 tg68 (
 );
 
 
-/* minimig top */ // DONE
+/* minimig top */
 Minimig1 minimig (
   //m68k pins
   .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
@@ -318,7 +318,7 @@ Minimig1 minimig (
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
-  .ram_address  (ram_address      ), // SRAM address bus
+  .ram_address  (ram_address[21:1]), // SRAM address bus
   ._ram_ce      (                 ), // SRAM chip enable
   ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
   ._ram_ble     (_ram_ble         ), // SRAM lower byte select
@@ -328,13 +328,13 @@ Minimig1 minimig (
   .clk          (clk_7            ), // system clock (7.09379 MHz)
   .clk28m       (clk_28           ), // 28.37516 MHz clock
   //rs232 pins
-  .rxd          (1'b0             ), // RS232 receive
+//  .rxd          (1'b0             ), // RS232 receive
   .txd          (                 ), // RS232 send
-  .cts          (1'b0             ), // RS232 clear to send
+//  .cts          (1'b0             ), // RS232 clear to send
   .rts          (                 ), // RS232 request to send
   //I/O
-  ._joy1        (JOY_A            ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (JOY_B            ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  ._joy1        (Joya            ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+  ._joy2        (Joyb            ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
   ._15khz       (_15khz           ), // scandoubler disable
   .pwrled       (                 ), // power led
   .msdat        (PS2_MDAT         ), // PS2 mouse data
@@ -371,7 +371,7 @@ Minimig1 minimig (
 );
 
 
-/* cfide */ // DONE
+/* cfide */
 cfide cfide (
   .sysclk       (clk_114          ),
   .n_reset      (n_rst            ),
@@ -411,7 +411,7 @@ cfide cfide (
 );
 
 
-/* tg68_fast control cpu */ // DONE
+/* tg68_fast control cpu */
 TG68_fast tg68_fast (
   .clk          (clk_114          ),
   .reset        (n_rst            ),
@@ -431,7 +431,7 @@ TG68_fast tg68_fast (
 );
 
 
-/* sdram */ // DONE
+/* sdram */
 sdram sdram (
   .sysclk       (clk_114          ),
   .reset        (sdctl_rst        ),
@@ -447,7 +447,7 @@ sdram sdram (
   .zAddr        (tg68_fast_adr[23:0]),
   .zstate       ({cfide_memce, tg68_fast_state}),
   .datawr       (ram_data         ),
-  .rAddr        ({2'h2, ram_address, 1'h0}),
+  .rAddr        ({2'b01, ram_address[21:1], 1'b0}),
   .rwr          (_ram_we          ),
   .dwrL         (_ram_ble         ),
   .dwrU         (_ram_bhe         ),
@@ -471,7 +471,7 @@ sdram sdram (
 );
 
 
-/* audio shifter */ // DONE
+/* audio shifter */
 Audio_shifter audio_shifter (
   .clk          (clk_28           ),
   .nreset       (reset_out        ),
@@ -485,7 +485,7 @@ Audio_shifter audio_shifter (
 );
 
 
-/* i2c audio config */  // DONE
+/* i2c audio config */
 I2C_AV_Config audio_config (
   // host side
   .iCLK         (clk_28           ),
