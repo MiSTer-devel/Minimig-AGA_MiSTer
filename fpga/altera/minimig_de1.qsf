@@ -127,23 +127,35 @@ set_location_assignment PIN_D19 -to PS2_MCLK
 #GPIO_1[18]
 set_location_assignment PIN_D20 -to PS2_MDAT
 #GPIO_1[19]
+set_location_assignment PIN_E20 -to Joyb[1]
 #GPIO_1[20]
+set_location_assignment PIN_F20 -to Joyb[5]
 #GPIO_1[21]
+set_location_assignment PIN_E19 -to Joyb[2]
 #GPIO_1[22]
+set_location_assignment PIN_E18 -to Joyb[0]
 #GPIO_1[23]
+set_location_assignment PIN_G20 -to Joyb[3]
 #GPIO_1[24]
+set_location_assignment PIN_G18 -to Joyb[4]
 #GPIO_1[25]
 set_location_assignment PIN_G17 -to Joya[6]
 #GPIO_1[26]
 set_location_assignment PIN_H17 -to Joyb[6]
 #GPIO_1[27]
+set_location_assignment PIN_J15 -to Joya[0]
 #GPIO_1[28]
+set_location_assignment PIN_H18 -to Joya[5]
 #GPIO_1[29]
+set_location_assignment PIN_N22 -to Joya[1]
 #GPIO_1[30]
 set_location_assignment PIN_N21 -to GPIO_1[31]
+set_location_assignment PIN_P15 -to Joya[2]
 #GPIO_1[32]
 set_location_assignment PIN_N15 -to GPIO_1[33]
+set_location_assignment PIN_P17 -to Joya[3]
 #GPIO_1[34]
+set_location_assignment PIN_P18 -to Joya[4]
 #GPIO_1[35]
 set_instance_assignment -name IO_STANDARD LVTTL -to GPIO_0[0]
 set_instance_assignment -name IO_STANDARD LVTTL -to GPIO_0[1]
@@ -540,9 +552,21 @@ set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joy[2]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joy[3]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joy[4]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joy[5]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[2]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joy[6]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[0]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[1]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[3]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[4]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[6]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[5]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[4]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[3]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[2]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[1]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joyb[0]
 set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[6]
+set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to Joya[5]
 set_global_assignment -name FMAX_REQUIREMENT "114 MHz"
 set_location_assignment PIN_AB15 -to FL_CE_N
 set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
@@ -563,35 +587,10 @@ set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
 set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
-set_global_assignment -name MISC_FILE "C:/_fpga/minimig090421/Quartus_DE1/minimig_de1.dpf"
+set_global_assignment -name MISC_FILE "minimig_de1.dpf"
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 
-set_location_assignment PIN_H18 -to JOY_A[5]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[5]
-set_location_assignment PIN_P18 -to JOY_A[4]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[4]
-set_location_assignment PIN_P17 -to JOY_A[3]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[3]
-set_location_assignment PIN_P15 -to JOY_A[2]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[2]
-set_location_assignment PIN_N22 -to JOY_A[1]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[1]
-set_location_assignment PIN_J15 -to JOY_A[0]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_A[0]
-set_location_assignment PIN_F20 -to JOY_B[5]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[5]
-set_location_assignment PIN_G18 -to JOY_B[4]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[4]
-set_location_assignment PIN_G20 -to JOY_B[3]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[3]
-set_location_assignment PIN_E19 -to JOY_B[2]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[2]
-set_location_assignment PIN_E20 -to JOY_B[1]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[1]
-set_location_assignment PIN_E18 -to JOY_B[0]
-set_instance_assignment -name IO_STANDARD "3.3-V PCI" -to JOY_B[0]
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de1_top.v
-set_global_assignment -name BDF_FILE ../../sch/de1/minimig_de1.bdf
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
 set_global_assignment -name VHDL_FILE ../../rtl/de1/startram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/de1/SRAM.vhd
@@ -624,5 +623,9 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+set_global_assignment -name EDA_SIMULATION_TOOL "<None>"
+set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT NONE -section_id eda_simulation
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
