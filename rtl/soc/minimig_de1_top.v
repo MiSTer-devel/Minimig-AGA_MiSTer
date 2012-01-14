@@ -21,20 +21,20 @@ module minimig_de1_top (
   input  wire           TCS,        // CPLD -> FPGA (CS)
   output wire           TDO,        // FPGA -> CPLD (data out)
   // GPIO
-  inout  wire [36-1:0]  GPIO_0,     //  GPIO Connection 0
-  inout  wire [36-1:0]  GPIO_1,     //  GPIO Connection 1
+  //inout  wire [36-1:0]  GPIO_0,     //  GPIO Connection 0
+  //inout  wire [36-1:0]  GPIO_1,     //  GPIO Connection 1
   // push button inputs
-  input  wire [ 4-1:0]  KEY,        //  Pushbutton[3:0]
+  input  wire [ 4-1:0]  BTN,        //  Pushbutton[3:0]
   // switch inputs
   input  wire [10-1:0]  SW,         //  Toggle Switch[9:0]
   // 7-seg display outputs
-  output wire [ 7-1:0]  HEX0,       //  Seven Segment Digit 0
-  output wire [ 7-1:0]  HEX1,       //  Seven Segment Digit 1
-  output wire [ 7-1:0]  HEX2,       //  Seven Segment Digit 2
-  output wire [ 7-1:0]  HEX3,       //  Seven Segment Digit 3
+  output wire [ 7-1:0]  HEX_0,      //  Seven Segment Digit 0
+  output wire [ 7-1:0]  HEX_1,      //  Seven Segment Digit 1
+  output wire [ 7-1:0]  HEX_2,      //  Seven Segment Digit 2
+  output wire [ 7-1:0]  HEX_3,      //  Seven Segment Digit 3
   // LED outputs
-  output wire [ 8-1:0]  LEDG,       //  LED Green[7:0]
-  output wire [10-1:0]  LEDR,       //  LED Red[9:0]
+  output wire [ 8-1:0]  LED_G,      //  LED Green[7:0]
+  output wire [10-1:0]  LED_R,      //  LED Red[9:0]
   // UART
   output wire           UART_TXD,   //  UART Transmitter
   input  wire           UART_RXD,   //  UART Receiver
@@ -132,6 +132,7 @@ wire           tg68_rst;
 wire [ 16-1:0] tg68_dat_in;
 wire [ 16-1:0] tg68_dat_out;
 wire [ 32-1:0] tg68_adr;
+//wire [ 0:32-1] tg68_adr;
 wire [  3-1:0] tg68_IPL;
 wire           tg68_dtack;
 wire           tg68_as;
@@ -157,6 +158,7 @@ wire [ 15-1:0] rdata;         // right DAC data
 
 // cfide
 wire [  8-1:0] sd_cs;
+//wire [  0:8-1] sd_cs;
 wire           sd_do;
 wire           sd_clk;
 wire           cfide_memce;
@@ -201,8 +203,8 @@ assign FL_WE_N      = 1'b1;
 assign FL_RST_N     = 1'b1;
 assign FL_OE_N      = 1'b1;
 assign FL_CE_N      = 1'b1;
-assign HEX3         = 7'h7f;
-assign LEDG         = 8'h00;
+assign HEX_3        = 7'h7f;
+assign LED_G        = 8'h00;
 assign SRAM_CE_N    = 1'b0;
 assign SRAM_LB_N    = 1'b0;
 assign SRAM_UB_N    = 1'b0;
@@ -272,10 +274,10 @@ SRAM sram (
   .oe           (SRAM_OE_N        ),
   .wr           (SRAM_WE_N        ),
   .fifodrd      (sram_fifodrd     ),
-  .hex1         (HEX0             ),
-  .hex10        (HEX1             ),
-  .hex100       (HEX2             ),
-  .led          (LEDR             )
+  .hex1         (HEX_0            ),
+  .hex10        (HEX_1            ),
+  .hex100       (HEX_2            ),
+  .led          (LED_R            )
 );
 
 
@@ -302,7 +304,7 @@ TG68 tg68 (
 /* minimig top */ // DONE
 Minimig1 minimig (
   //m68k pins
-  .cpu_address  (tg68_adr         ), // M68K address bus
+  .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
   .cpu_data     (tg68_dat_in      ), // M68K data bus
   .cpudata_in   (tg68_dat_out     ), // M68K data in
   ._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
@@ -464,8 +466,8 @@ sdram sdram (
   .pulse        (pulse            ),
   .enaRDreg     (tg68_fast_enaRD  ),
   .enaWRreg     (tg68_fast_enaWR  ),
-  .ena7RDreg    (tg68_enaRD       ),
-  .ena7WRreg    (tg68_enaWR       )
+  .ena7RDreg    (tg68_enaWR       ),
+  .ena7WRreg    (tg68_enaRD       )
 );
 
 
