@@ -314,7 +314,7 @@ Minimig1 minimig (
   .cpu_r_w      (tg68_rw          ), // M68K read / write
   ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
   ._cpu_reset   (tg68_rst         ), // M68K reset
-  .cpu_clk      (~clk_7           ), // M68K clock
+  .cpu_clk      (clk_7           ), // M68K clock
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
