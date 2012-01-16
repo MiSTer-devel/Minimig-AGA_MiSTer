@@ -75,9 +75,9 @@ reg 	[3:0] red_del;				//delayed by 70ns for horizontal interpolation
 reg 	[3:0] green_del;			//delayed by 70ns for horizontal interpolation
 reg 	[3:0] blue_del;				//delayed by 70ns for horizontal interpolation
 
-wire 	[4:0] red;					//signal after horizontal interpolation
-wire	[4:0] green;				//signal after horizontal interpolation
-wire 	[4:0] blue;					//signal after horizontal interpolation
+wire 	[4:0] r_h;				//signal after horizontal interpolation
+wire	[4:0] g_h;				//signal after horizontal interpolation
+wire 	[4:0] b_h;				//signal after horizontal interpolation
 
 reg		_hsync_in_del;				//delayed horizontal synchronisation input
 reg		hss;						//horizontal sync start
@@ -94,13 +94,16 @@ reg		scanline_ena;				//signal active when the scan-doubled line is displayed
 reg		[10:0] wr_ptr;				//line buffer write pointer
 reg		[10:0] rd_ptr;				//line buffer read pointer
 
-//delayed hsync for edge detection
+
+// delayed hsync for edge detection
 always @(posedge clk28m)
 	_hsync_in_del <= _hsync_in;
 
-//horizontal sync start	(falling edge detection)
+
+// horizontal sync start	(falling edge detection)
 always @(posedge clk28m)
 	hss <= ~_hsync_in & _hsync_in_del;
+
 
 // pixels delayed by one hires pixel for horizontal interpolation
 always @(posedge clk28m)
@@ -111,38 +114,47 @@ always @(posedge clk28m)
 			blue_del <= blue_in;
 		end
 
-//horizontal interpolation
-assign red	= hfilter ? red_in + red_del : red_in*2;
-assign green = hfilter ? green_in + green_del : green_in*2;
-assign blue	= hfilter ? blue_in + blue_del : blue_in*2;
+
+// horizontal interpolation
+// TODO rounding
+// TODO sharper interpolation
+assign r_h = hfilter ? ({1'b0, red_in}   + {1'b0, red_del})   : {red_in[3:0]  , red_in[3]};   // extend 4 to 5 bits
+assign g_h = hfilter ? ({1'b0, green_in} + {1'b0, green_del}) : {green_in[3:0], green_in[3]}; // extend 4 to 5 bits
+assign b_h = hfilter ? ({1'b0, blue_in}  + {1'b0, blue_del})  : {blue_in[3:0] , blue_in[3]};  // extend 4 to 5 bits
+
 
 // line buffer write pointer
 always @(posedge clk28m)
 	if (hss)
-		wr_ptr <= 0;
+		wr_ptr <= 11'd0;
 	else
-		wr_ptr <= wr_ptr + 1;
+		wr_ptr <= wr_ptr + 11'd1;
+
 
 //end of scan-doubled line
 assign eol = rd_ptr=={htotal[8:1],2'b11} ? 1'b1 : 1'b0;
 
+
 //line buffer read pointer
 always @(posedge clk28m)
 	if (hss || eol)
-		rd_ptr <= 0;
+		rd_ptr <= 11'd0;
 	else
-		rd_ptr <= rd_ptr + 1;
+		rd_ptr <= rd_ptr + 11'd1;
 
+// scanline enable
 always @(posedge clk28m)
 	if (hss)
-		scanline_ena <= 0;
+		scanline_ena <= 1'b0;
 	else if (eol)
-		scanline_ena <= 1;
+		scanline_ena <= 1'b1;
+
 		
 //horizontal interpolation enable	
 always @(posedge clk28m)
 	if (hss)
 		hfilter <= hires ? hr_filter[0] : lr_filter[0];		//horizontal interpolation enable
+
 
 //vertical interpolation enable
 always @(posedge clk28m)
@@ -155,27 +167,42 @@ reg [17:0] lbfo2;			// compensantion for one clock delay of the second line buff
 reg	[17:0] lbfd [1023:0];	// delayed line buffer for vertical interpolation
 reg [17:0] lbfdo;			// delayed line buffer output register
 
+
 // line buffer write
 always @(posedge clk28m)
-	lbf[wr_ptr[10:1]] <= { _hsync_in, osd_blank, osd_pixel, red, green, blue };
+	lbf[wr_ptr[10:1]] <= { _hsync_in, osd_blank, osd_pixel, r_h, g_h, b_h };
+
 
 //line buffer read
 always @(posedge clk28m)
 	lbfo <= lbf[rd_ptr[9:0]];
 
+
 //delayed line buffer write
 always @(posedge clk28m)
 	lbfd[rd_ptr[9:0]] <= lbfo;
+
 
 //delayed line buffer read
 always @(posedge clk28m)
 	lbfdo <= lbfd[rd_ptr[9:0]];
 
+
 //delayed line buffer pixel by one clock cycle
 always @(posedge clk28m)
 	lbfo2 <= lbfo;
 
-// output pixel generation - OSD mixer and vertical interpolation
+
+// vertical interpolation
+// TODO rounding
+// TODO sharper interpolation - only interpolate if the difference between pixels is less than some treshold
+wire [6-1:0] r_v, g_v, b_v;
+assign r_v = vfilter ? ({1'b0, lbfo2[14:10]} + {1'b0, lbfdo[14:10]}) : {lbfo[14:10], lbfo[14]};
+assign g_v = vfilter ? ({1'b0, lbfo2[ 9: 5]} + {1'b0, lbfdo[ 9: 5]}) : {lbfo[ 9: 5], lbfo[ 9]};
+assign b_v = vfilter ? ({1'b0, lbfo2[ 4: 0]} + {1'b0, lbfdo[ 4: 0]}) : {lbfo[ 4: 0], lbfo[ 4]};
+
+
+// output pixel generation - OSD mixer
 always @(posedge clk28m)
 begin
 		_hsync_out <= dblscan ? lbfo2[17] : _csync_in;
@@ -193,9 +220,9 @@ begin
 				end
 				else //osd background
 				begin
-					t_red    <= red_in / 2;
-					t_green  <= green_in / 2;
-					t_blue   <= 4'b0100 + blue_in / 2;
+					t_red    <= {2'b00, red_in[3:2]};
+					t_green  <= {2'b00, green_in[3:2]};
+					t_blue   <= {2'b10, blue_in[3:2]};
 				end
 			end
 			else //no osd
@@ -206,7 +233,7 @@ begin
 			end
 		end
 		else
-		begin
+		begin // doublescan
 			if (lbfo2[16]) //osd window
 			begin
 				if (lbfo2[15])	//osd text colour
@@ -216,34 +243,21 @@ begin
 					t_blue   <= 4'b1110;
 				end
 				else	//osd background
-					if (vfilter)
-					begin //dimmed transparent background with vertical interpolation
-						t_red    <= ( lbfo2[14:10] + lbfdo[14:10] ) / 8;
-						t_green  <= ( lbfo2[9:5] + lbfdo[9:5] ) / 8;
-						t_blue   <= 4'b0100 + ( lbfo2[4:0] + lbfdo[4:0] ) / 8;
-					end
-					else
-					begin //dimmed transparent background without vertical interpolation
-						t_red    <= lbfo2[14:11] / 2;
-						t_green  <= lbfo2[9:6] / 2;
-						t_blue   <= 4'b0100 + lbfo2[4:1] / 2;
-					end
+	  		begin //dimmed transparent background with vertical interpolation
+					t_red    <= {2'b00, r_v[5:4]};
+					t_green  <= {2'b00, g_v[5:4]};
+					t_blue   <= {2'b10, b_v[5:4]};
+				end
 			end
 			else	//no osd
-				if (vfilter)
-				begin //vertical interpolation
-					t_red    <= ( lbfo2[14:10] + lbfdo[14:10] ) / 4;
-					t_green  <= ( lbfo2[9:5] + lbfdo[9:5] ) / 4;
-					t_blue   <= ( lbfo2[4:0] + lbfdo[4:0] ) / 4;
-				end
-				else
-				begin //no vertical interpolation
-					t_red    <= lbfo2[14:11];
-					t_green  <= lbfo2[9:6];
-					t_blue   <= lbfo2[4:1];
-				end
+			begin
+				t_red    <= r_v[5:2];
+				t_green  <= g_v[5:2];
+				t_blue   <= b_v[5:2];
+			end
 		end
 end
+
 
 //scanlines effect
 `ifdef SCANLINES 
@@ -260,3 +274,4 @@ always @(t_red or t_green or t_blue)
 `endif
 
 endmodule
+
