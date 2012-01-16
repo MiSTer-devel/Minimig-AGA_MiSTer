@@ -114,6 +114,7 @@ reg		skip;				// skip next move instruction (input to skip_flag register)
 wire	enable;				// enables copper fsm and dma slot
 reg		dma_req;
 wire	dma_ack;
+wire  dma_ena;
 reg		beam_match;			// delayed beam match signal
 wire	beam_match_skip;	// beam match signal for SKIP condition check
 reg		beam_match_wait;	// beam match signal for WAIT condition chaeck
@@ -183,7 +184,7 @@ always @(posedge clk)
 	else if (dma_ack && strobe2 && copper_state==RESET)//load pointer with location register 2
 		address_out[20:1] <= {cop2lch[20:16],cop2lcl[15:1]};
 	else if (dma_ack && (selins || selreg))//increment address pointer (when not dummy cycle) 
-		address_out[20:1] <= address_out[20:1] + 1;
+		address_out[20:1] <= address_out[20:1] + 1'b1;
 
 //--------------------------------------------------------------------------------------
 
@@ -193,7 +194,7 @@ always @(posedge clk)
 // more according to what happens in a real amiga... I think), else the contents of
 // ir2[8:1] is selected 
 // (if you ask yourself: IR2? is this a bug? then check how ir1/ir2 are loaded in this design)
-always @(selins or selreg or ir2)
+always @(enable or selins or selreg or ir2)
 	if (enable & selins) //load our instruction register
 		reg_address_out[8:1] = COPINS[8:1];
 	else if (enable & selreg)//load register in move instruction

@@ -106,9 +106,9 @@ wire	last_line;			// indicates the last line is displayed (in non-interlaced mod
 
 
 //beam position output signals
-assign	htotal = 227-1;					// line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
-assign	vtotal = pal ? 312-1 : 262-1;	// total number of lines (PAL: 312 lines, NTSC: 262)
-assign	vbstop = pal ? 25 : 20;			// vertical blanking end (PAL 26 lines, NTSC vblank 21 lines)
+assign	htotal = 8'd227 - 8'd1;					// line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
+assign	vtotal = pal ? 11'd312 - 11'd1 : 11'd262 - 11'd1;	// total number of lines (PAL: 312 lines, NTSC: 262)
+assign	vbstop = pal ? 9'd25 : 9'd20;			// vertical blanking end (PAL 26 lines, NTSC vblank 21 lines)
 
 //first visible line $1A (PAL) or $15 (NTSC)
 //sprites are fetched on line $19 (PAL) or $14 (NTSC) - vblend signal used to tell Agnus to fetch sprites during the last vertical blanking line
@@ -165,7 +165,7 @@ always @(posedge clk)
 	else if (end_of_line)
 		hpos[8:1] <= 0;
 	else if (cck && (~ersy || |hpos[8:1]))
-		hpos[8:1] <= hpos[8:1] + 1;
+		hpos[8:1] <= hpos[8:1] + 1'b1;
 		
 always @(cck)
 	hpos[0] = cck;
@@ -205,7 +205,7 @@ always @(posedge clk)
 		if (last_line)
 			vpos <= 0;
 		else
-			vpos <= vpos + 1;
+			vpos <= vpos + 1'b1;
 
 // long_frame - long frame signal used in interlaced mode
 always @(posedge clk)

@@ -82,15 +82,15 @@ wire		attach7;				// attach sprite 6,7
 // sprite register address decoder
 wire	selsprx;
 
-assign selsprx = SPRPOSCTLBASE[8:6]==reg_address_in[8:6] ? 1 : 0; // base address
-assign selspr0 = selsprx && reg_address_in[5:3]==0 ? 1 : 0;
-assign selspr1 = selsprx && reg_address_in[5:3]==1 ? 1 : 0;
-assign selspr2 = selsprx && reg_address_in[5:3]==2 ? 1 : 0;
-assign selspr3 = selsprx && reg_address_in[5:3]==3 ? 1 : 0;
-assign selspr4 = selsprx && reg_address_in[5:3]==4 ? 1 : 0;
-assign selspr5 = selsprx && reg_address_in[5:3]==5 ? 1 : 0;
-assign selspr6 = selsprx && reg_address_in[5:3]==6 ? 1 : 0;
-assign selspr7 = selsprx && reg_address_in[5:3]==7 ? 1 : 0;
+assign selsprx = SPRPOSCTLBASE[8:6]==reg_address_in[8:6] ? 1'b1 : 1'b0; // base address
+assign selspr0 = selsprx && reg_address_in[5:3]==3'd0    ? 1'b1 : 1'b0;
+assign selspr1 = selsprx && reg_address_in[5:3]==3'd1    ? 1'b1 : 1'b0;
+assign selspr2 = selsprx && reg_address_in[5:3]==3'd2    ? 1'b1 : 1'b0;
+assign selspr3 = selsprx && reg_address_in[5:3]==3'd3    ? 1'b1 : 1'b0;
+assign selspr4 = selsprx && reg_address_in[5:3]==3'd4    ? 1'b1 : 1'b0;
+assign selspr5 = selsprx && reg_address_in[5:3]==3'd5    ? 1'b1 : 1'b0;
+assign selspr6 = selsprx && reg_address_in[5:3]==3'd6    ? 1'b1 : 1'b0;
+assign selspr7 = selsprx && reg_address_in[5:3]==3'd7    ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 
@@ -201,14 +201,14 @@ sprshift sps7
 //--------------------------------------------------------------------------------------
 
 // generate sprite data valid signals
-assign nsprite[0] = (sprena && sprdat0[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[1] = (sprena && sprdat1[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[2] = (sprena && sprdat2[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[3] = (sprena && sprdat3[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[4] = (sprena && sprdat4[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[5] = (sprena && sprdat5[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[6] = (sprena && sprdat6[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
-assign nsprite[7] = (sprena && sprdat7[1:0]!=2'b00) ? 1 : 0;//if any non-zero bit -> valid video data
+assign nsprite[0] = (sprena && sprdat0[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[1] = (sprena && sprdat1[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[2] = (sprena && sprdat2[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[3] = (sprena && sprdat3[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[4] = (sprena && sprdat4[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[5] = (sprena && sprdat5[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[6] = (sprena && sprdat6[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
+assign nsprite[7] = (sprena && sprdat7[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-zero bit -> valid video data
 
 //--------------------------------------------------------------------------------------
 
@@ -317,7 +317,7 @@ always @(posedge clk)
 
 // generate load signal
 always @(posedge clk)
-	load <= armed && hpos[8:0]==hstart[8:0] ? 1 : 0;
+	load <= armed && hpos[8:0]==hstart[8:0] ? 1'b1 : 1'b0;
 
 always @(posedge clk)
 	load_del <= load;

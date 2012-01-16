@@ -239,12 +239,12 @@ assign scs = scs1 | scs2;
 //received bits counter (0-15)
 always @(posedge sck or negedge scs)
 	if (~scs)
-		spi_bit_cnt <= 0; //reset if chip select is not active
+		spi_bit_cnt <= 4'h0; //reset if chip select is not active
 	else
-		spi_bit_cnt <= spi_bit_cnt + 1;
+		spi_bit_cnt <= spi_bit_cnt + 1'b1;
 		
-assign spi_bit_15 = spi_bit_cnt==15 ? 1 : 0;
-assign spi_bit_0 = spi_bit_cnt==0 ? 1 : 0;
+assign spi_bit_15 = spi_bit_cnt==4'd15 ? 1'b1 : 1'b0;
+assign spi_bit_0 = spi_bit_cnt==4'd0 ? 1'b1 : 1'b0;
 
 //SDI input shift register
 always @(posedge sck)
@@ -259,9 +259,9 @@ always @(posedge sck)
 assign spi_rx_flag_clr = rx_flag | reset;
 always @(posedge sck or posedge spi_rx_flag_clr)
 	if (spi_rx_flag_clr)
-		spi_rx_flag <= 0;
-	else if (spi_bit_cnt==15)
-		spi_rx_flag <= 1;
+		spi_rx_flag <= 1'b0;
+	else if (spi_bit_cnt==4'd15)
+		spi_rx_flag <= 1'b1;
 
 always @(negedge clk)
 	rx_flag_sync <= spi_rx_flag;	//double synchronization to avoid metastability
@@ -273,9 +273,9 @@ always @(posedge clk)
 assign spi_tx_flag_clr = tx_flag | reset;
 always @(negedge sck or posedge spi_tx_flag_clr)
 	if (spi_tx_flag_clr)
-		spi_tx_flag <= 0;
-	else if (spi_bit_cnt==0)
-		spi_tx_flag <= 1;
+		spi_tx_flag <= 1'b0;
+	else if (spi_bit_cnt==4'd0)
+		spi_tx_flag <= 1'b1;
 
 always @(negedge clk)
 	tx_flag_sync <= spi_tx_flag;	//double synchronization to avoid metastability
@@ -287,9 +287,9 @@ always @(posedge clk)
 
 always @(negedge sck or negedge scs)
 	if (~scs)
-		spi_tx_cnt <= 0;
-	else if (spi_bit_0 && spi_tx_cnt!=3)
-		spi_tx_cnt <= spi_tx_cnt + 1;
+		spi_tx_cnt <= 2'd0;
+	else if (spi_bit_0 && spi_tx_cnt!=2'd3)
+		spi_tx_cnt <= spi_tx_cnt + 2'd1;
 		
 always @(negedge sck)
 	if (spi_bit_0) 
@@ -300,54 +300,54 @@ always @(posedge clk)
 
 //trnsmitted words counter (0-3) used for transfer of IDE task file registers
 always @(negedge sck)
-	if (spi_bit_cnt==0)
-		if (spi_tx_cnt==2)
-			tx_data_cnt <= 0;
+	if (spi_bit_cnt==4'd0)
+		if (spi_tx_cnt==2'd2)
+			tx_data_cnt <= 3'd0;
 		else
-			tx_data_cnt <= tx_data_cnt + 1;
+			tx_data_cnt <= tx_data_cnt + 3'd1;
 
 //received data counter, used only for transferring IDE task file register contents, count range: 0-7			
 always @(posedge clk)
 	if (rx_flag)
-		if (rx_cnt != 3)
-			rx_data_cnt <= 0;
+		if (rx_cnt != 2'd3)
+			rx_data_cnt <= 3'd0;
 		else
-			rx_data_cnt <= rx_data_cnt + 1;			
+			rx_data_cnt <= rx_data_cnt + 3'd1;			
 
 //HDD interface			
-assign hdd_addr = cmd_hdd_rd ? tx_data_cnt : cmd_hdd_wr ? rx_data_cnt : 0;
-assign hdd_wr = cmd_hdd_wr && rx_flag && rx_cnt==3 ? 1 : 0;
-assign hdd_data_wr = (cmd_hdd_data_wr && rx_flag && rx_cnt==3) || (scs2 && rx_flag) ? 1 : 0;	//there is a possibility that SCS2 is inactive before rx_flag is generated, depends on how fast the CS2 is deaserted after sending the last data bit
-assign hdd_status_wr = rx_data[15:12]==4'b1111 && rx_flag && rx_cnt==0 ? 1 : 0;
+assign hdd_addr = cmd_hdd_rd ? tx_data_cnt : cmd_hdd_wr ? rx_data_cnt : 1'b0;
+assign hdd_wr = cmd_hdd_wr && rx_flag && rx_cnt==2'd3 ? 1'b1 : 1'b0;
+assign hdd_data_wr = (cmd_hdd_data_wr && rx_flag && rx_cnt==2'd3) || (scs2 && rx_flag) ? 1'b1 : 1'b0;	//there is a possibility that SCS2 is inactive before rx_flag is generated, depends on how fast the CS2 is deaserted after sending the last data bit
+assign hdd_status_wr = rx_data[15:12]==4'b1111 && rx_flag && rx_cnt==2'd0 ? 1'b1 : 1'b0;
 // problem: spi_cmd1 doesn't deactivate after rising _CS line: direct transfers will be treated as command words,
 // workaround: always send more than one command word
-assign hdd_data_rd = cmd_hdd_data_rd && tx_flag && tx_cnt==3 ? 1 : 0;
+assign hdd_data_rd = cmd_hdd_data_rd && tx_flag && tx_cnt==2'd3 ? 1'b1 : 1'b0;
 assign hdd_data_out = rx_data[15:0];
 		
 always @(posedge sck or negedge scs1)
 	if (~scs1)
-		spi_rx_cnt_rst <= 1;
+		spi_rx_cnt_rst <= 1'b1;
 	else if (spi_bit_15)
-		spi_rx_cnt_rst <= 0;
+		spi_rx_cnt_rst <= 1'b0;
 		
 always @(posedge sck)
 	if (scs1 && spi_bit_15)
 		if (spi_rx_cnt_rst)
-			spi_rx_cnt <= 0;
-		else if (spi_rx_cnt!=3)
-			spi_rx_cnt <= spi_rx_cnt + 1;
+			spi_rx_cnt <= 2'd0;
+		else if (spi_rx_cnt!=2'd3)
+			spi_rx_cnt <= spi_rx_cnt + 2'd1;
 
 always @(posedge clk)
 	rx_cnt <= spi_rx_cnt;
 	
 //spidat strobe		
-assign spidat = cmd_fdd && rx_flag && rx_cnt==3 ? 1 : 0;
+assign spidat = cmd_fdd && rx_flag && rx_cnt==3 ? 1'b1 : 1'b0;
 
 //------------------------------------
 
 //SDO output shift register
 always @(negedge sck)
-	if (spi_bit_cnt==0)
+	if (spi_bit_cnt==4'd0)
 		spi_sdo_reg <= spi_tx_data;
 	else
 		spi_sdo_reg <= {spi_sdo_reg[14:0],1'b0};
@@ -378,7 +378,7 @@ always @(trackrd or dmaen or dsklen or trackwr or wr_fifo_status)
 	else if (trackwr)
 		spi_tx_data_2 = wr_fifo_status;
 	else
-		spi_tx_data_2 = 0;
+		spi_tx_data_2 = 16'd0;
 
 always @(cmd_fdd or trackrd or dmaen or dsklen or trackwr or fifo_out	or cmd_hdd_rd or cmd_hdd_data_rd or hdd_data_in)	
 	if (cmd_fdd)
@@ -387,11 +387,11 @@ always @(cmd_fdd or trackrd or dmaen or dsklen or trackwr or fifo_out	or cmd_hdd
 		else if (trackwr)
 			spi_tx_data_3 = fifo_out;
 		else
-			spi_tx_data_3 = 0;
+			spi_tx_data_3 = 16'd0;
 	else if (cmd_hdd_rd || cmd_hdd_data_rd)
 		spi_tx_data_3 = hdd_data_in;	
 	else
-		spi_tx_data_3 = 0;			
+		spi_tx_data_3 = 16'd0;			
 
 
 //floppy disk write fifo status is latched when transmision of the previous spi word begins 
@@ -411,10 +411,10 @@ always @(posedge clk)
 reg [3:0] rpm_pulse_cnt;
 always @(posedge clk)
   if (sof)
-    if (rpm_pulse_cnt==11 || !ntsc && rpm_pulse_cnt==9)
-      rpm_pulse_cnt <= 0;
+    if (rpm_pulse_cnt==4'd11 || !ntsc && rpm_pulse_cnt==4'd9)
+      rpm_pulse_cnt <= 4'd0;
     else
-      rpm_pulse_cnt <= rpm_pulse_cnt + 1;
+      rpm_pulse_cnt <= rpm_pulse_cnt + 4'd1;
     
 // disk index pulses output
 assign index = |(~_sel & motor_on) & ~|rpm_pulse_cnt & sof;
@@ -434,9 +434,9 @@ always @(posedge clk)
   
 always @(posedge clk)
   if (!step_ena)
-    step_ena_cnt <= step_ena_cnt + 1;
+    step_ena_cnt <= step_ena_cnt + 9'd1;
   else if (_step && !_step_del)
-    step_ena_cnt <= 0;
+    step_ena_cnt <= 9'd0;
     
 assign step_ena = step_ena_cnt[8];
 
@@ -447,7 +447,7 @@ always @(posedge clk)
   _disk_change <= (_disk_change | ~_sel & {4{_step}} & ~{4{_step_del}} & disk_present) & ~({4{reset}} | ~disk_present);
  
 //active drive number (priority encoder)
-assign sel = !_sel[0] ? 0 : !_sel[1] ? 1 : !_sel[2] ? 2 : !_sel[3] ? 3 : 0;
+assign sel = !_sel[0] ? 2'd0 : !_sel[1] ? 2'd1 : !_sel[2] ? 2'd2 : !_sel[3] ? 2'd3 : 2'd0;
 
 //delayed drive select signals
 always @(posedge clk)
@@ -491,15 +491,15 @@ assign track = {dsktrack[sel],~side};
 always @(posedge clk)
   if (!_selx && _step && !_step_del && step_ena) // track increment (direc=0) or decrement (direc=1) at rising edge of _step
     if (!dsktrack79 && !direc)
-      dsktrack[sel] <= dsktrack[sel] + 1;
+      dsktrack[sel] <= dsktrack[sel] + 7'd1;
     else if (_dsktrack0 && direc)
-      dsktrack[sel] <= dsktrack[sel] - 1;	
+      dsktrack[sel] <= dsktrack[sel] - 7'd1;	
 
 // _dsktrack0 detect
-assign _dsktrack0 = dsktrack[sel]==0 ? 0 : 1;
+assign _dsktrack0 = dsktrack[sel]==0 ? 1'b0 : 1'b1;
 
 // dsktrack79 detect
-assign dsktrack79 = dsktrack[sel]==82 ? 1 : 0;
+assign dsktrack79 = dsktrack[sel]==82 ? 1'b1 : 1'b0;
 
 // drive _ready signal control
 // Amiga DD drive activates _ready whenever _sel is active and motor is off
@@ -524,32 +524,32 @@ always @(posedge clk)
 //disk length register
 always @(posedge clk)
 	if (reset)
-		dsklen[14:0] <= 0;
+		dsklen[14:0] <= 15'd0;
 	else if (reg_address_in[8:1]==DSKLEN[8:1])
 		dsklen[14:0] <= data_in[14:0];
 	else if (fifo_wr)//decrement length register
-		dsklen[13:0] <= dsklen[13:0] - 1;
+		dsklen[13:0] <= dsklen[13:0] - 14'd1;
 
 //disk length register DMAEN
 always @(posedge clk)
 	if (reset)
-		dsklen[15] <= 0;
+		dsklen[15] <= 1'b0;
 	else if (blckint)
-		dsklen[15] <= 0;
+		dsklen[15] <= 1'b0;
 	else if (reg_address_in[8:1]==DSKLEN[8:1])
 		dsklen[15] <= data_in[15];
 		
 //dmaen - disk dma enable signal
 always @(posedge clk)
 	if (reset)
-		dmaen <= 0;
+		dmaen <= 1'b0;
 	else if (blckint)
-		dmaen <= 0;
+		dmaen <= 1'b0;
 	else if (reg_address_in[8:1]==DSKLEN[8:1])
 		dmaen <= data_in[15] & dsklen[15];//start disk dma if second write in a row with dsklen[15] set
 
 //dsklen zero detect
-assign lenzero = (dsklen[13:0]==0) ? 1 : 0;
+assign lenzero = (dsklen[13:0]==0) ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 //disk data read path
@@ -558,10 +558,10 @@ wire	buswr;				//bus write
 reg		trackrdok;			//track read enable
 
 //disk buffer bus read address decode
-assign busrd = (reg_address_in[8:1]==DSKDATR[8:1]) ? 1 : 0;
+assign busrd = (reg_address_in[8:1]==DSKDATR[8:1]) ? 1'b1 : 1'b0;
 
 //disk buffer bus write address decode
-assign buswr = (reg_address_in[8:1]==DSKDAT[8:1]) ? 1 : 0;
+assign buswr = (reg_address_in[8:1]==DSKDAT[8:1]) ? 1'b1 : 1'b0;
 
 //fifo data input multiplexer
 assign fifo_in[15:0] = trackrd ? rx_data[15:0] : data_in[15:0];
@@ -650,11 +650,11 @@ always @(posedge clk)
 	end
 	else if (rx_flag && rx_cnt==0)
 	begin
-		cmd_fdd <= rx_data[15:13]==3'b000 ? 1 : 0;
-		cmd_hdd_rd <= rx_data[15:12]==4'b1000 ? 1 : 0;
-		cmd_hdd_wr <= rx_data[15:12]==4'b1001 ? 1 : 0;
-		cmd_hdd_data_wr <= rx_data[15:12]==4'b1010 ? 1 : 0;
-		cmd_hdd_data_rd <= rx_data[15:12]==4'b1011 ? 1 : 0;
+		cmd_fdd <= rx_data[15:13]==3'b000 ? 1'b1 : 1'b0;
+		cmd_hdd_rd <= rx_data[15:12]==4'b1000 ? 1'b1 : 1'b0;
+		cmd_hdd_wr <= rx_data[15:12]==4'b1001 ? 1'b1 : 1'b0;
+		cmd_hdd_data_wr <= rx_data[15:12]==4'b1010 ? 1'b1 : 1'b0;
+		cmd_hdd_data_rd <= rx_data[15:12]==4'b1011 ? 1'b1 : 1'b0;
 	end
 
 //disk activity LED
@@ -776,14 +776,14 @@ always @(posedge clk)
 	if (reset)
 		in_ptr[13:0] <= 0;
 	else if(wr && !full)
-		in_ptr[13:0] <= in_ptr[13:0] + 1;
+		in_ptr[13:0] <= in_ptr[13:0] + 14'd1;
 
 // fifo read pointer control
 always @(posedge clk)
 	if (reset)
 		out_ptr[13:0] <= 0;
 	else if (rd && !empty)
-		out_ptr[13:0] <= out_ptr[13:0] + 1;
+		out_ptr[13:0] <= out_ptr[13:0] + 14'd1;
 
 // check lower 13 bits of pointer to generate equal signal
 assign equal = (in_ptr[12:0]==out_ptr[12:0]) ? 1'b1 : 1'b0;
@@ -798,3 +798,4 @@ always @(posedge clk)
 assign full = (equal && (in_ptr[13]!=out_ptr[13])) ? 1'b1 : 1'b0;	
 
 endmodule
+

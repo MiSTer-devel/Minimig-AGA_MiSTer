@@ -508,9 +508,9 @@ copper cp1
 always @(posedge clk)
 	if (!cck || turbo)
 		if (!bls || bltpri)
-			bls_cnt <= 0;
+			bls_cnt <= 2'b00;
 		else if (bls_cnt[1:0] != BLS_CNT_MAX)
-			bls_cnt <= bls_cnt + 1;
+			bls_cnt <= bls_cnt + 2'b01;
 
 
 //instantiate blitter
@@ -565,8 +565,8 @@ beamcounter	bc1
 //horizontal strobe for Denise
 //in real Amiga Denise's hpos counter seems to be advanced by 4 CCKs in regards to Agnus' one
 //Minimig isn't cycle exact and compensation for different data delay in implemented Denise's video pipeline is required 
-assign strhor_denise = hpos==12-1 && (vpos > 8 || ecs) ? 1 : 0;
-assign strhor_paula = hpos==(6*2+1) ? 1 : 0; //hack
+assign strhor_denise = hpos==12-1 && (vpos > 8 || ecs) ? 1'b1 : 1'b0;
+assign strhor_paula = hpos==(6*2+1) ? 1'b1 : 1'b0; //hack
 
 //--------------------------------------------------------------------------------------
 
@@ -586,11 +586,11 @@ module refresh
 //dma request
 always @(hpos)
 	case (hpos)
-		9'b0000_0100_1 : dma = 1;
-		9'b0000_0110_1 : dma = 1;
-		9'b0000_1000_1 : dma = 1;
-		9'b0000_1010_1 : dma = 1;
-		default        : dma = 0;
+		9'b0000_0100_1 : dma = 1'b1;
+		9'b0000_0110_1 : dma = 1'b1;
+		9'b0000_1000_1 : dma = 1'b1;
+		9'b0000_1010_1 : dma = 1'b1;
+		default        : dma = 1'b0;
 	endcase
 
 endmodule
@@ -895,7 +895,7 @@ always @(posedge clk)
 always @(posedge clk)
 	if (hpos[0]) // cycle alligment
 		if (ddfrun) // if enabled go to the next state
-			ddfseq <= ddfseq + 1;
+			ddfseq <= ddfseq + 1'b1;
 		else
 			ddfseq <= 0;
 
@@ -933,12 +933,12 @@ always @(address_out or bpl1mod or bpl2mod or plane[0] or mod)
 	if (mod)
 	begin
 		if (plane[0]) // even plane modulo
-			newpt[20:1] = address_out[20:1] + {{5{bpl2mod[15]}},bpl2mod[15:1]} + 1;
+			newpt[20:1] = address_out[20:1] + {{5{bpl2mod[15]}},bpl2mod[15:1]} + 1'b1;
 		else // odd plane modulo
-			newpt[20:1] = address_out[20:1] + {{5{bpl1mod[15]}},bpl1mod[15:1]} + 1;
+			newpt[20:1] = address_out[20:1] + {{5{bpl1mod[15]}},bpl1mod[15:1]} + 1'b1;
 	end
 	else
-		newpt[20:1] = address_out[20:1] + 1;
+		newpt[20:1] = address_out[20:1] + 1'b1;
 
 // Denise bitplane shift registers address lookup table
 always @(plane)
@@ -1069,7 +1069,7 @@ reg		[2:0] sprsel;				//memory selection
 //in our solution to save resources they are evaluated sequencially but 8 times faster (28MHz clock)
 always @(posedge clk28m)
 	if (sprsel[2]==hpos[0])		//sprsel[2] is synced with hpos[0]
-		sprsel <= sprsel + 1;
+		sprsel <= sprsel + 1'b1;
 
 //--------------------------------------------------------------------------------------
 
@@ -1081,7 +1081,7 @@ assign ptsel = (ackdma) ? sprite : reg_address_in[4:2];
 assign pcsel = (ackdma) ? sprite : reg_address_in[5:3];
 
 //sprite pointer arithmetic unit
-assign newptr = address_out[20:1] + 1;
+assign newptr = address_out[20:1] + 1'b1;
 
 //sprite pointer high word register bank (implemented using distributed ram)
 wire [20:16] sprpth_in;
@@ -1259,7 +1259,7 @@ assign wr = ~dmas;
 //--------------------------------------------------------------------------------------
 
 //address_out input multiplexer and ALU
-assign address_outnew[20:1] = dma ? address_out[20:1]+1 : {data_in[4:0],data_in[15:1]}; 
+assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]}; 
 
 //disk pointer control
 always @(posedge clk)
@@ -1385,7 +1385,7 @@ assign address_out[20:1] = audptout[20:1];
 // audio pointers register bank (implemented using distributed ram) and ALU
 always @(posedge clk)
 	if (dmal)
-		audpt[channel] <= dmas ? audlcout[20:1] : audptout[20:1] + 1;
+		audpt[channel] <= dmas ? audlcout[20:1] : audptout[20:1] + 1'b1;
 
 // audio pointer output		
 assign audptout[20:1] = audpt[channel];

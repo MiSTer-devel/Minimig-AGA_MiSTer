@@ -548,9 +548,9 @@ always @(posedge clk)
 	if (txbaud)
 		txdiv[15:0] <= {serper[14:0],1'b1};//serper shifted right because of 7.09MHz clock
 	else
-		txdiv <= txdiv - 1;
+		txdiv <= txdiv - 1'b1;
 		
-assign txbaud = (txdiv==0) ? 1 : 0;
+assign txbaud = (txdiv==0) ? 1'b1 : 1'b0;
 
 //txd shifter
 always @(posedge clk)
@@ -566,9 +566,9 @@ assign txd = txshift[0];
 //generate tsre signal
 always @(txshift[11:0])
 	if (txshift[11:0]==12'b0000_0000_0001)
-		tsre = 1;
+		tsre = 1'b1;
 	else
-		tsre = 0;
+		tsre = 1'b0;
 
 //serdat register
 always @(posedge clk)
@@ -632,9 +632,9 @@ always @(posedge clk)
 	else if (rxbaud)
 		rxdiv[15:0] <= {serper[14:0],1'b1};//serper shifted left because of 7.09 MHz clock
 	else
-		rxdiv <= rxdiv - 1;
+		rxdiv <= rxdiv - 1'b1;
 		
-assign rxbaud = rxdiv==0 ? 1 : 0;
+assign rxbaud = rxdiv==0 ? 1'b1 : 1'b0;
 
 //rxd input synchronizer latch
 always @(posedge clk)
@@ -667,8 +667,8 @@ begin
 	case (rxstate)
 		2'b00://wait for startbit
 			begin
-			rxint = 0;
-			rxpreset = 1;
+			rxint = 1'b0;
+			rxpreset = 1'b1;
 			if (!lrxd2)
 				rxnextstate = 2'b01;
 			else
@@ -676,8 +676,8 @@ begin
 			end
 		2'b01://shift in 10 bits (start, 8 data, stop)
 			begin
-			rxint = 0;
-			rxpreset = 0;
+			rxint = 1'b0;
+			rxpreset = 1'b0;
 			if (!rxshift[0])
 				rxnextstate = 2'b10;
 			else
@@ -685,8 +685,8 @@ begin
 			end
 		2'b10,2'b11://new byte has been received, latch byte and request interrupt
 			begin
-			rxint = 1;
-			rxpreset = 0;
+			rxint = 1'b1;
+			rxpreset = 1'b0;
 			rxnextstate = 2'b00;
 			end
 	endcase
@@ -697,7 +697,7 @@ always @(reg_address_in or rbfmirror or tbe or tsre or lrxd2 or rxdat)
 	if (reg_address_in[8:1]==SERDATR[8:1])
 		data_out[15:0] = {1'b0,rbfmirror,tbe,tsre,lrxd2,3'b001,rxdat[7:0]};
 	else
-		data_out[15:0] = 0;
+		data_out[15:0] = 16'h0000;
 
 endmodule
 

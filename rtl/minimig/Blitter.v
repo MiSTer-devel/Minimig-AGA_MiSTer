@@ -320,8 +320,8 @@ barrel_shifter barrel_shifter_A
 (
 	.desc(desc),
 	.shift(ash),
-	.new(bltadat & bltamask),
-	.old(bltaold),
+	.new_val(bltadat & bltamask),
+	.old_val(bltaold),
 	.out(shiftaout)
 );
 
@@ -366,8 +366,8 @@ barrel_shifter barrel_shifter_B
 (
 	.desc(desc),
 	.shift(bsh),
-	.new(bltbdat),
-	.old(bltbold),
+	.new_val(bltbdat),
+	.old_val(bltbold),
 	.out(shiftbout)
 );
 
@@ -480,7 +480,7 @@ always @(posedge clk)
 	if (width_cnt_rld) // reload counter
 		width_cnt[10:0] <= width[10:0];
 	else if (width_cnt_dec) // decrement counter
-		width_cnt[10:0] <= width_cnt[10:0] - 1;
+		width_cnt[10:0] <= width_cnt[10:0] - 1'b1;
 
 assign last_word = width_cnt[10:0]==1 ? 1'b1 : 1'b0;
 assign first_word = width_cnt[10:0]==width[10:0] ? 1'b1 : 1'b0;
@@ -500,7 +500,7 @@ always @(posedge clk)
 	else if (reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // ECS
 		height_cnt[14:0] <= height[14:0];
 	else if (enable && next_word && last_word) // decrement height counter
-		height_cnt[14:0] <= height_cnt[14:0] - 1;
+		height_cnt[14:0] <= height_cnt[14:0] - 1'b1;
 		
 // pipeline is full (first set of sources has been fetched)
 always @(posedge clk)
@@ -870,8 +870,8 @@ module barrel_shifter
 (
 	input	desc,			// select descending mode (shift to the left)
 	input	[3:0] shift,	// shift value (0 to 15)
-	input 	[15:0] new,		// barrel shifter data in
-	input 	[15:0] old,		// barrel shifter data in
+	input 	[15:0] new_val,		// barrel shifter data in
+	input 	[15:0] old_val,		// barrel shifter data in
 	output	[15:0] out		// barrel shifter data out
 );
 
@@ -918,14 +918,14 @@ always @(desc or shift)
 	
 MULT18X18 multiplier_1 
 (
-	.dataa({2'b00,new[15:0]}),  // 18-bit multiplier input
+	.dataa({2'b00,new_val[15:0]}),  // 18-bit multiplier input
 	.datab(shift_onehot),     	// 18-bit multiplier input
 	.result(shifted_new)			// 36-bit multiplier output
 );
    
 MULT18X18 multiplier_2
 (
-	.dataa({2'b00,old[15:0]}),	// 18-bit multiplier input
+	.dataa({2'b00,old_val[15:0]}),	// 18-bit multiplier input
 	.datab(shift_onehot),		// 18-bit multiplier input
 	.result(shifted_old)			// 36-bit multiplier output
 );   

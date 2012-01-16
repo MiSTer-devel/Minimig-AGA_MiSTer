@@ -210,7 +210,7 @@ module Minimig1
 
 //--------------------------------------------------------------------------------------
 
-	parameter NTSC = 0;	//Agnus type (PAL/NTSC)
+	parameter [0:0] NTSC = 1'b0;	//Agnus type (PAL/NTSC)
 
 //--------------------------------------------------------------------------------------
 
@@ -367,6 +367,12 @@ wire	disk_led;				//floppy disk activity LED
 
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
+// RK: missing nets
+//wire  init_b;
+wire  aflock;
+wire  dtr;
+
+
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
@@ -396,7 +402,7 @@ always @(posedge clk)
   if (~_vsync_i && vsync_del)
     vsync_t <= ~vsync_t;
 
-assign init_b = vsync_t;
+//assign init_b = vsync_t;
 
 
 //--------------------------------------------------------------------------------------

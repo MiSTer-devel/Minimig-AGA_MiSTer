@@ -144,14 +144,14 @@ always @(posedge clk)
     if (autofire_cnt == 1)
       autofire_cnt <= autofire_config;
     else
-      autofire_cnt <= autofire_cnt - 1;
+      autofire_cnt <= autofire_cnt - 2'd1;
 
 // autofire 
 always @(posedge clk)
   if (sof)
-    if (autofire_config == 0)
+    if (autofire_config == 2'd0)
       autofire <= 1'b0;
-    else if (autofire_cnt == 1)
+    else if (autofire_cnt == 2'd1)
       autofire <= ~autofire;
 
 // auto fire function toggle via capslock status
@@ -238,7 +238,7 @@ assign _fire1 = _sjoy2[4];
 assign _fire0 = _sjoy1[4] & _mleft & _lmb;
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
-assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1 : 0;
+assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1'b1 : 1'b0;
 assign test_data = data_in[15:0];
 
 //--------------------------------------------------------------------------------------
@@ -383,16 +383,16 @@ end
 //osd local horizontal beamcounter
 always @(posedge clk28m)
 	if (sol && !c1 && !c3)
-		horbeam <= 0;
+		horbeam <= 11'd0;
 	else
-		horbeam <= horbeam + 1;
+		horbeam <= horbeam + 11'd1;
 
 //osd local vertical beamcounter
 always @(posedge clk)
 	if (sof)
-		verbeam <= 0;
+		verbeam <= 9'd0;
 	else if (sol)
-		verbeam <= verbeam + 1;
+		verbeam <= verbeam + 9'd1;
 		
 always @(posedge clk)
 	if (sol)
@@ -557,7 +557,7 @@ always @(posedge clk)
 	if (rx && cmd && wrdat[7:5]==3'b001)//set linenumber from incoming command byte
 		wraddr[10:0] <= {wrdat[2:0],8'b0000_0000};
 	else if (rx)	//increment for every data byte that comes in
-		wraddr[10:0] <= wraddr[10:0] + 1;
+		wraddr[10:0] <= wraddr[10:0] + 11'd1;
 
 always @(posedge clk)
 	if (~osd_enable1)
@@ -585,22 +585,22 @@ assign bootrst = rx && cmd && wrdat[7:0]==8'b1000_0001 ? 1'b1 : 1'b0;
 always @(posedge clk)
 begin
 	if (spicmd[2:0]==3'b010)//disable
-		osd_enable1 <= 0;
+		osd_enable1 <= 1'b0;
 	else if (spicmd[2:0]==3'b011)//enable
-		osd_enable1 <= 1;
+		osd_enable1 <= 1'b1;
 end
 
 //synchronize osd_enable 1 to start-of-frame
 always @(posedge clk)
 	osd_enable <= osd_enable1;
 	
-assign wren = rx && ~cmd && spicmd==3'b001 ? 1 : 0;
+assign wren = rx && ~cmd && spicmd==3'b001 ? 1'b1 : 1'b0;
 
 //user reset request (from osd menu)		
-assign usrrst = rx && cmd && wrdat[7:5]==3'b100 ? 1 : 0;
+assign usrrst = rx && cmd && wrdat[7:5]==3'b100 ? 1'b1 : 1'b0;
 
 //reset to bootloader
-assign bootrst = rx && cmd && wrdat[7:5]==3'b100 && wrdat[0] ? 1 : 0;
+assign bootrst = rx && cmd && wrdat[7:5]==3'b100 && wrdat[0] ? 1'b1 : 1'b0;
 
 
 endmodule
@@ -656,7 +656,7 @@ always @(posedge sck or posedge _scs)
 	if (_scs)
 		bit_cnt <= 0;					//always clear bit counter when CS is not active
 	else
-		bit_cnt <= bit_cnt + 1;		//increment bit counter when new bit has been received
+		bit_cnt <= bit_cnt + 3'd1;		//increment bit counter when new bit has been received
 
 //----- rx signal ------//
 //this signal goes high for one clk clock period just after new byte has been received
@@ -664,7 +664,7 @@ always @(posedge sck or posedge _scs)
 always @(posedge sck or posedge rx)
 	if (rx)
 		new_byte <= 0;		//cleared asynchronously when rx is high (rx is synchronous with clk)
-	else if (bit_cnt==7)
+	else if (bit_cnt == 3'd7)
 		new_byte <= 1;		//set when last bit of a new byte has been just received
 
 always @(negedge clk)
@@ -678,17 +678,17 @@ always @(posedge clk)
 //when any other byte is received it's deactivated indicating data bytes
 always @(posedge sck or posedge _scs)
 	if (_scs)
-		first_byte <= 1;		//set when CS is not active
-	else if (bit_cnt==7)
-		first_byte <= 0;		//cleared after reception of first byte
+		first_byte <= 1'b1;		//set when CS is not active
+	else if (bit_cnt == 3'd7)
+		first_byte <= 1'b0;		//cleared after reception of first byte
 
 always @(posedge sck)
-	if (bit_cnt==7)
+	if (bit_cnt == 3'd7)
 		cmd <= first_byte;		//active only when first byte received
 	
 //------ serial data output register ------//
 always @(negedge sck)	//output change on falling SPI clock
-	if (bit_cnt==0)
+	if (bit_cnt == 3'd0)
 		sdo_reg <= in;
 	else
 		sdo_reg <= {sdo_reg[6:0],1'b0};
@@ -771,7 +771,7 @@ always @(posedge clk)
 		msend[11:0]<=12'b110111101000;
 	else if (!msready && mclkneg)
 		msend[11:0]<={1'b0,msend[11:1]};
-assign msready=(msend[11:0]==12'b000000000001)?1:0;
+assign msready=(msend[11:0]==12'b000000000001) ? 1'b1 : 1'b0;
 assign mdatout=msend[0];
 
 //PS2 mouse timer
@@ -779,8 +779,8 @@ always @(posedge clk)
 	if (mtreset)
 		mtimer[15:0]<=16'h0000;
 	else
-		mtimer[15:0]<=mtimer[15:0]+1;
-assign mtready=(mtimer[15:0]==16'hffff)?1:0;
+		mtimer[15:0]<=mtimer[15:0] + 16'd1;
+assign mtready=(mtimer[15:0]==16'hffff) ? 1'b1 : 1'b0;
 assign mthalf=mtimer[11];
 
 //PS2 mouse packet decoding and handling
