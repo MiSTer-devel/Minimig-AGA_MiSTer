@@ -25,8 +25,8 @@ assign bs   = 2'b00;
 assign addr = clk ? {5'b00000, fifooutptr} : {5'b00000, fifoinptr};
 assign data = ~clk ? fifodwr : 16'bzzzzzzzzzzzzzzzz;
 
-always @(posedge clk) begin
-  fifodrd <= #1 data;
+always @(posedge pulse) begin
+  if (clk) fifodrd <= #1 data;
 end
 
 endmodule
