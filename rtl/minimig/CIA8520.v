@@ -210,9 +210,9 @@ always @(posedge clk)
 // serial port transmitted bits counter		
 always @(posedge clk)
 	if (!ser_tx_run)
-		ser_tx_cnt <= 0;
+		ser_tx_cnt <= 4'd0;
 	else if (tmra_ovf) // bits are transmitted when tmra overflows
-		ser_tx_cnt <= ser_tx_cnt + 1;
+		ser_tx_cnt <= ser_tx_cnt + 4'd1;
 
 assign ser_tx_irq = &ser_tx_cnt & tmra_ovf; // signal irq when ser_tx_cnt overflows
 
@@ -230,14 +230,14 @@ always @(posedge clk)
 // writing of output port
 always @(posedge clk)
 	if (reset)
-		regporta[1:0] <= 0;
+		regporta[1:0] <= 2'd0;
 	else if (wr && pra)
 		regporta[1:0] <= data_in[1:0];
 
 // writing of ddr register 
 always @(posedge clk)
 	if (reset)
-		ddrporta[7:0] <= 0;
+		ddrporta[7:0] <= 8'd0;
 	else if (wr && ddra)
  		ddrporta[7:0] <= data_in[7:0];
 
@@ -264,14 +264,14 @@ reg [7:0] ddrportb;
 // writing of output port
 always @(posedge clk)
   if (reset)
-    regportb[7:0] <= 0;
+    regportb[7:0] <= 8'd0;
   else if (wr && prb)
     regportb[7:0] <= (data_in[7:0]);
 
 // writing of ddr register 
 always @(posedge clk)
   if (reset)
-    ddrportb[7:0] <= 0;
+    ddrportb[7:0] <= 8'd0;
   else if (wr && ddrb)
     ddrportb[7:0] <= (data_in[7:0]);
 
@@ -464,14 +464,14 @@ always @(posedge clk)
 // writing of output port
 always @(posedge clk)
 	if (reset)
-		regporta[7:6] <= 0;
+		regporta[7:6] <= 2'd0;
 	else if (wr && pra)
 		regporta[7:6] <= data_in[7:6];
 
 // writing of ddr register 
 always @(posedge clk)
 	if (reset)
-		ddrporta[7:0] <= 0;
+		ddrporta[7:0] <= 8'd0;
 	else if (wr && ddra)
  		ddrporta[7:0] <= data_in[7:0];
 
@@ -498,14 +498,14 @@ reg [7:0] ddrportb;
 // writing of output port
 always @(posedge clk)
 	if (reset)
-		regportb[7:0] <= 0;
+		regportb[7:0] <= 8'd0;
 	else if (wr && prb)
 		regportb[7:0] <= data_in[7:0];
 
 // writing of ddr register 
 always @(posedge clk)
 	if (reset)
-		ddrportb[7:0] <= 0;
+		ddrportb[7:0] <= 8'd0;
 	else if (wr && ddrb)
  		ddrportb[7:0] <= data_in[7:0];
 
@@ -624,8 +624,8 @@ module ciaint
 	output	irq					// intterupt out
 );
 
-reg  [4:0] icr = 0;			// interrupt register
-reg  [4:0] icrmask = 0;		// interrupt mask register
+reg  [4:0] icr = 5'd0;			// interrupt register
+reg  [4:0] icrmask = 5'd0;		// interrupt mask register
 
 // reading of interrupt data register 
 assign data_out[7:0] = icrs && !wr ? {irq,2'b00,icr[4:0]} : 8'b0000_0000;
@@ -711,13 +711,13 @@ assign count = eclk;
 // writing timer control register
 always @(posedge clk)
 	if (reset)	// synchronous reset
-		tmcr[6:0] <= 0;
+		tmcr[6:0] <= 7'd0;
 	else if (tcr && wr)	// load control register, bit 4(strobe) is always 0
 		tmcr[6:0] <= {data_in[6:5],1'b0,data_in[3:0]};
 	else if (thi_load && oneshot)	// start timer if thi is written in one-shot mode
-		tmcr[0] <= 1;
+		tmcr[0] <= 1'd1;
 	else if (underflow && oneshot) // stop timer in one-shot mode
-		tmcr[0] <= 0;
+		tmcr[0] <= 1'd0;
 
 always @(posedge clk)
 	forceload <= tcr & wr & data_in[4];	// force load strobe 
@@ -753,7 +753,7 @@ always @(posedge clk)
 	else if (reload)
 		tmr[15:0] <= {tmlh[7:0],tmll[7:0]};
 	else if (start && count)
-		tmr[15:0] <= tmr[15:0] - 1;
+		tmr[15:0] <= tmr[15:0] - 16'd1;
 
 // timer counter equals zero		
 assign zero = ~|tmr;		
@@ -808,13 +808,13 @@ assign count = tmcr[6] ? tmra_ovf : eclk;
 // writing timer control register
 always @(posedge clk)
 	if (reset)	// synchronous reset
-		tmcr[6:0] <= 0;
+		tmcr[6:0] <= 7'd0;
 	else if (tcr && wr)	// load control register, bit 4(strobe) is always 0
 		tmcr[6:0] <= {data_in[6:5],1'b0,data_in[3:0]};
 	else if (thi_load && oneshot)	// start timer if thi is written in one-shot mode
-		tmcr[0] <= 1;
+		tmcr[0] <= 1'd1;
 	else if (underflow && oneshot) // stop timer in one-shot mode
-		tmcr[0] <= 0;
+		tmcr[0] <= 1'd0;
 
 always @(posedge clk)
 	forceload <= tcr & wr & data_in[4];	// force load strobe 
@@ -849,7 +849,7 @@ always @(posedge clk)
 	else if (reload)
 		tmr[15:0] <= {tmlh[7:0],tmll[7:0]};
 	else if (start && count)
-		tmr[15:0] <= tmr[15:0] - 1;
+		tmr[15:0] <= tmr[15:0] - 16'd1;
 
 // timer counter equals zero		
 assign zero = ~|tmr;		
@@ -899,13 +899,13 @@ module timerd
 // timer D output latch control
 always @(posedge clk)
 	if (reset)
-		latch_ena <= 1;
+		latch_ena <= 1'd1;
 	else if (!wr)
 	begin
 		if (thi) // if MSB read, hold data for subsequent reads
-			latch_ena <= 0;
+			latch_ena <= 1'd0;
 		else if (tlo) // if LSB read, update data every clock
-			latch_ena <= 1;
+			latch_ena <= 1'd1;
 	end
 always @(posedge clk)
 	if (latch_ena)
@@ -924,28 +924,28 @@ always @(wr or tlo or tme or thi or tcr or tod or tod_latch or crb7)
 		else if (tcr) // bit 7 of crb
 			data_out[7:0] = {crb7,7'b000_0000};
 		else
-			data_out[7:0] = 0;
+			data_out[7:0] = 8'd0;
 	end
 	else
-		data_out[7:0] = 0;  
+		data_out[7:0] = 8'd0;  
 
 // timer D count enable control
 always @(posedge clk)
 	if (reset)
-		count_ena <= 1;
+		count_ena <= 1'd1;
 	else if (wr && !crb7) // crb7==0 enables writing to TOD counter
 	begin
 		if (thi || tme) // stop counting
-			count_ena <= 0;
+			count_ena <= 1'd0;
 		else if (tlo) // write to LSB starts counting again
-			count_ena <= 1;			
+			count_ena <= 1'd1;			
 	end
 
 // timer D counter
 always @(posedge clk)
 	if (reset) // synchronous reset
 	begin
-		tod[23:0] <= 0;
+		tod[23:0] <= 24'd0;
 	end
 	else if (wr && !crb7) // crb7==0 enables writing to TOD counter
 	begin
@@ -957,7 +957,7 @@ always @(posedge clk)
 			tod[23:16] <= data_in[7:0];
 	end
 	else if (count_ena && count)
-		tod[23:0] <= tod[23:0] + 1;
+		tod[23:0] <= tod[23:0] + 24'd1;
 
 // alarm write
 always @(posedge clk)
@@ -980,7 +980,7 @@ always @(posedge clk)
 // crb7 write
 always @(posedge clk)
 	if (reset)
-		crb7 <= 0;
+		crb7 <= 1'd0;
 	else if (wr && tcr)
 		crb7 <= data_in[7];
 

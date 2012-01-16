@@ -171,7 +171,7 @@ always @(posedge clk)
 	if (hwr && sel_tfr && address_in[4:2] == 3'b010) // sector count register loaded by the host
 		sector_count <= data_in[15:8];
 	else if (sector_count_dec)
-		sector_count <= sector_count - 1;
+		sector_count <= sector_count - 8'd1;
 
 assign sector_count_dec = pio_in & fifo_last & sel_fifo & rd;
 		
@@ -208,9 +208,9 @@ always @(posedge clk)
 always @(posedge clk)
 	if (sel_gayleid)
 		if (hwr) // a write resets sequence counter
-			gayleid_cnt <= 0;
+			gayleid_cnt <= 2'd0;
 		else if (rd)
-			gayleid_cnt <= gayleid_cnt + 1;
+			gayleid_cnt <= gayleid_cnt + 2'd1;
 
 assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
 
@@ -343,9 +343,9 @@ always @(posedge clk)
 // fifo write pointer control
 always @(posedge clk)
 	if (reset)
-		inptr <= 0;
+		inptr <= 12'd0;
 	else if (wr)
-		inptr <= inptr + 1;
+		inptr <= inptr + 12'd1;
 
 // fifo read pointer control
 always @(posedge clk)

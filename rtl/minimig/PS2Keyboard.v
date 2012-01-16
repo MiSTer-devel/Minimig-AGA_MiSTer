@@ -119,9 +119,9 @@ assign prbusy = ~preceive[11];
 //PS2 timer
 always @(posedge clk)
 	if (ptreset)
-		ptimer[19:0] <= 0;
+		ptimer[19:0] <= 20'd0;
 	else if (!pto2)
-		ptimer[19:0] <= ptimer[19:0] + 1;
+		ptimer[19:0] <= ptimer[19:0] + 20'd1;
 		
 assign pto1 = ptimer[15];//4.6ms @ 7.09Mhz
 assign pto2 = ptimer[19];//74ms @ 7.09Mhz
@@ -135,13 +135,13 @@ always @(posedge clk)
 	else if (!psready && pclkneg)
 		psend[11:0] <= {1'b0,psend[11:1]};
 		
-assign psready = (psend[11:0]==12'b000000000001) ? 1 : 0;
+assign psready = (psend[11:0]==12'b000000000001) ? 1'd1 : 1'd0;
 assign pdatout = psend[0];
 
 //keyboard state machine
 always @(posedge clk)
 	if (reset)//master reset
-		kstate <= 0;
+		kstate <= 3'd0;
 	else 
 		kstate <= knext;
 		
@@ -150,105 +150,105 @@ begin
 	case(kstate)
 		0://reset timer
 			begin
-				prreset = 1;
-				ptreset = 1;
-				pclkout = 0;
-				psled1 = 0;
-				psled2 = 0;
+				prreset = 1'd1;
+				ptreset = 1'd1;
+				pclkout = 1'd0;
+				psled1 = 1'd0;
+				psled2 = 1'd0;
 				
-				knext = 1;
+				knext = 3'd1;
 			end
 		1://"request-to-send" for led1 code  
 			begin
-				prreset = 1;
-				ptreset = 0;
-				pclkout = 0;
-				psled1 = 1;
-				psled2 = 0;
+				prreset = 1'd1;
+				ptreset = 1'd0;
+				pclkout = 1'd0;
+				psled1 = 1'd1;
+				psled2 = 1'd0;
 				
 				if (pto1)
-					knext = 2;
+					knext = 3'd2;
 				else
-					knext = 1;
+					knext = 3'd1;
 			end
 		2://wait for led1 code to be sent and acknowledge received
 			begin
 				prreset = ~psready;
-				ptreset = 1;
-				pclkout = 1;
-				psled1 = 0;
-				psled2 = 0;
+				ptreset = 1'd1;
+				pclkout = 1'd1;
+				psled1 = 1'd0;
+				psled2 = 1'd0;
 				
 				if (prready)
-					knext = 3;
+					knext = 3'd3;
 				else
-					knext = 2;
+					knext = 3'd2;
 			end
 		3://"request-to-send" for led2 code
 			begin
-				prreset = 1;
-				ptreset = 0;
-				pclkout = 0;
-				psled1 = 0;
-				psled2 = 1;
+				prreset = 1'd1;
+				ptreset = 1'd0;
+				pclkout = 1'd0;
+				psled1 = 1'd0;
+				psled2 = 1'd1;
 				
 				if (pto1)
-					knext = 4;
+					knext = 3'd4;
 				else
-					knext = 3;
+					knext = 3'd3;
 			end
 		4://wait for led2 code to be sent
 			begin
 				prreset = ~psready;
-				ptreset = 1;
-				pclkout = 1;
-				psled1 = 0;
-				psled2 = 0;
+				ptreset = 1'd1;
+				pclkout = 1'd1;
+				psled1 = 1'd0;
+				psled2 = 1'd0;
 				
 				if (prready)
-					knext = 5;
+					knext = 3'd5;
 				else
-					knext = 4;
+					knext = 3'd4;
 			end
 
 
 		5://wait for valid amiga key code
 			begin
-				prreset = 0;
+				prreset = 1'd0;
 				ptreset = keystrobe;
-				pclkout = 1;
-				psled1 = 0;
-				psled2 = 0;
+				pclkout = 1'd1;
+				psled1 = 1'd0;
+				psled2 = 1'd0;
 				if (keystrobe)//valid amiga key decoded
-					knext = 6;
+					knext = 3'd6;
 				else if (!prbusy && pto2)//timeout, update leds
-					knext = 0;
+					knext = 3'd0;
 				else//stay here
-					knext = 5;
+					knext = 3'd5;
  			end
 
 		6://hold of ps2 keyboard and wait for keyack or timeout
 			begin
-				prreset = 0;
+				prreset = 1'd0;
 				ptreset = keyack;
-				pclkout = 0;
-				psled1 = 0;
-				psled2 = 0;
+				pclkout = 1'd0;
+				psled1 = 1'd0;
+				psled2 = 1'd0;
 				if (keyack  ||  pto2)//keyack or timeout
-					knext = 5;
+					knext = 3'd5;
 				else//stay here
-					knext = 6;
+					knext = 3'd6;
  			end
 
 		default://we should never come here
 			begin
-				prreset = 0;//ps2 receiver reset
-				ptreset = 0;//ps2 timer reset
-				pclkout = 1;//ps2 clock override
-				psled1 = 0;//ps2 send led code 1
-				psled2 = 0;//ps2 send led code 2
+				prreset = 1'd0;//ps2 receiver reset
+				ptreset = 1'd0;//ps2 timer reset
+				pclkout = 1'd1;//ps2 clock override
+				psled1 = 1'd0;//ps2 send led code 1
+				psled2 = 1'd0;//ps2 send led code 2
 
-				knext = 0;//go to reset state
+				knext = 3'd0;//go to reset state
  			end
 
 	endcase
@@ -289,11 +289,11 @@ ps2keyboardmap km1
 //therefore, amiga-like caps lock behaviour is simulated here
 wire keyequal;
 reg [7:0]keydat2;
-assign keyequal = keydat2[6:0]==keydat[6:0] ? 1 : 0;//detect if latched key equals new key
+assign keyequal = keydat2[6:0]==keydat[6:0] ? 1'd1 : 1'd0;//detect if latched key equals new key
 //latch last key downstroke event
 always @(posedge clk)
 	if (reset)
-		keydat2[7:0] <= 0;
+		keydat2[7:0] <= 8'd0;
 	else if (valid && !keydat[7])//latch downstroke event for last key pressed
 		keydat2[7:0] <= keydat[7:0];
 	else if (valid && keydat[7] && keyequal)//upstroke event for latched key received
@@ -302,7 +302,7 @@ always @(posedge clk)
 //toggle capslock status on capslock downstroke event		
 always @(posedge clk)
 	if (reset)
-		capslock <= 0;
+		capslock <= 1'd0;
 	else if (valid && !keydat[7] && caps && !(keyequal && (keydat[7]==keydat2[7])))
 		capslock <= ~capslock;
 
@@ -312,13 +312,13 @@ assign aflock = capslock;
 //assign keystrobe = (keyequal && (keydat[7]==keydatlatch[7]))?0:keyok;
 always @(capslock or caps or keyequal or keydat or keydat2 or valid)
 	if (capslock && caps)//filter out capslock downstroke && capslock upstroke events if capslock is set
-		keystrobe = 0;
+		keystrobe = 1'd0;
 	else if (keyequal && (keydat[7]==keydat2[7]))//filter out duplicate events
-		keystrobe = 0;
+		keystrobe = 1'd0;
 	else if (valid)//valid amiga keycode, assert strobe
-		keystrobe = 1;
+		keystrobe = 1'd1;
 	else
-		keystrobe = 0;
+		keystrobe = 1'd0;
 
 //Keyboard reset detector. 
 //Reset is accomplished by holding down the
@@ -328,17 +328,17 @@ always @(posedge clk)
 begin
 	//latch status of control key
 	if (reset)
-		kbdrststatus[2] <= 1;
+		kbdrststatus[2] <= 1'd1;
 	else if (valid && ctrl)
 		kbdrststatus[2] <= keydat[7];
 	//latch status of left alt key
 	if (reset)
-		kbdrststatus[1] <= 1;
+		kbdrststatus[1] <= 1'd1;
 	else if (valid && aleft)
 		kbdrststatus[1] <= keydat[7];
 	//latch status of right alt key
 	if (reset)
-		kbdrststatus[0] <= 1;
+		kbdrststatus[0] <= 1'd1;
 	else if (valid && aright)
 		kbdrststatus[0] <= keydat[7];
 end
@@ -397,17 +397,17 @@ always @(posedge clk)
 always @(posedge clk)
 	if (reset)//reset
 	begin
-		upstroke <= 0;
-		extended <= 0;
+		upstroke <= 1'd0;
+		extended <= 1'd0;
 	end
 	else if (enable2 && keyrom[7] && keyrom[0])//extended key identifier found
-		extended <= 1;
+		extended <= 1'd1;
 	else if (enable2 && keyrom[7] && keyrom[1])//upstroke identifier found
-		upstroke <= 1;
+		upstroke <= 1'd1;
 	else if (enable2 && !(keyrom[7] && keyrom[2]))//other key found and it was not an ack, reset both status bits
 	begin
-		upstroke <= 0;
-		extended <= 0;
+		upstroke <= 1'd0;
+		extended <= 1'd0;
 	end
 
 //assign all output signals
@@ -425,7 +425,7 @@ assign akey[7:0] = {upstroke, keyrom[6:0]};
 always @(posedge clk)
 begin
 	if (reset)
-		osd_ctrl[7:0] <= 0;
+		osd_ctrl[7:0] <= 8'd0;
 	else if (enable2 && (keyrom[8] || keyrom[15]))
     osd_ctrl[7:0] <= {keyrom[8],keyrom[6:0]} & {8{~upstroke}};
 //		osd_ctrl[7:0] <= {upstroke, keyrom[6:0]};

@@ -948,18 +948,18 @@ always @(posedge clk)
 //reset timer and mrst control
 always @(posedge clk)
 	if (smrst || (boot && boot_done && _rst))
-		rst_cnt <= 0;
+		rst_cnt <= 2'd0;
 	else if (!_rst && cnt)
-		rst_cnt <= rst_cnt + 1;
+		rst_cnt <= rst_cnt + 2'd1;
 
 assign _rst = rst_cnt[1];
 
 //boot control
 always @(posedge clk)
 	if (boot_rst)
-		_boot <= 0;
+		_boot <= 1'd0;
 	else if (boot_done)
-		_boot <= 1;
+		_boot <= 1'd1;
 
 //global boot output
 assign boot = ~_boot;

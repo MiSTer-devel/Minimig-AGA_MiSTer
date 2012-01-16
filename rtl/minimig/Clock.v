@@ -70,7 +70,7 @@ always @(posedge clk)
   if (e_cnt[3] && e_cnt[0])
     e_cnt[3:0] <= 0;
   else
-    e_cnt[3:0] <= e_cnt[3:0] + 1;
+    e_cnt[3:0] <= e_cnt[3:0] + 4'd1;
 
 // CCK clock output
 assign cck = ~e_cnt[0];
