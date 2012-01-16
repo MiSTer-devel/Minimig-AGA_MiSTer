@@ -104,13 +104,13 @@ ARCHITECTURE logic OF TG68 IS
    SIGNAL lds_in	  : std_logic;
    SIGNAL state       : std_logic_vector(1 downto 0);
    SIGNAL clkena	  : std_logic;
-   SIGNAL n_clk		  : std_logic;
+--   SIGNAL n_clk		  : std_logic;
    SIGNAL cpuIPL      : std_logic_vector(2 downto 0);
 
 
 BEGIN  
 
-	n_clk <= NOT clk;
+--	n_clk <= NOT clk;
 
 TG68_fast_inst: TG68_fast
 	PORT MAP (
