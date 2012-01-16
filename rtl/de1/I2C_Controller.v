@@ -44,8 +44,8 @@ reg END;
 reg [23:0]SD;
 reg [5:0]SD_COUNTER;
 
-wire I2C_SCLK=SCLK | ( ((SD_COUNTER >= 4) & (SD_COUNTER <=30))? ~CLOCK :0 );
-wire I2C_SDAT=SDO ? 1'bz : 0 ;
+wire I2C_SCLK=SCLK | ( ((SD_COUNTER >= 4) & (SD_COUNTER <=30))? ~CLOCK : 1'd0 );
+wire I2C_SDAT=SDO ? 1'bz : 1'b0 ;
 
 reg ACK1,ACK2,ACK3;
 wire ACK=ACK1 | ACK2 |ACK3;
@@ -57,7 +57,7 @@ else begin
 if (GO==0) 
 	SD_COUNTER=0;
 	else 
-	if (SD_COUNTER < 6'b111111) SD_COUNTER=SD_COUNTER+1;	
+	if (SD_COUNTER < 6'b111111) SD_COUNTER=SD_COUNTER + 6'd1;	
 end
 end
 //----

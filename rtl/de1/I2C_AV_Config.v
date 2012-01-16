@@ -58,16 +58,16 @@ always@(posedge iCLK or negedge iRST_N)
 begin
 	if(!iRST_N)
 	begin
-		mI2C_CTRL_CLK	<=	0;
-		mI2C_CLK_DIV	<=	0;
+		mI2C_CTRL_CLK	<=	16'd0;
+		mI2C_CLK_DIV	<=	16'd0;
 	end
 	else
 	begin
 		if (mI2C_CLK_DIV < (CLK_Freq/I2C_Freq))
-			mI2C_CLK_DIV	<=	mI2C_CLK_DIV+1;
+			mI2C_CLK_DIV	<=	mI2C_CLK_DIV + 16'd1;
 		else
 		begin
-			mI2C_CLK_DIV	<=	0;
+			mI2C_CLK_DIV	<=	16'd0;
 			mI2C_CTRL_CLK	<=	~mI2C_CTRL_CLK;
 		end
 	end
@@ -87,9 +87,9 @@ always@(posedge mI2C_CTRL_CLK or negedge iRST_N)
 begin
 	if(!iRST_N)
 	begin
-		LUT_INDEX	<=	0;
-		mSetup_ST	<=	0;
-		mI2C_GO		<=	0;
+		LUT_INDEX	<=	4'd0;
+		mSetup_ST	<=	2'd0;
+		mI2C_GO		<=	1'd0;
 	end
 	else
 	begin
@@ -98,22 +98,22 @@ begin
 			case(mSetup_ST)
 			0:	begin
 					mI2C_DATA	<= {8'h34,LUT_DATA};
-					mI2C_GO		<= 1;
-					mSetup_ST	<= 1;
+					mI2C_GO		<= 1'd1;
+					mSetup_ST	<= 2'd1;
 				end
 			1:	begin
 					if(mI2C_END)
 					begin
 						if(!mI2C_ACK)
-							mSetup_ST	<= 2;
+							mSetup_ST	<= 2'd2;
 						else
-							mSetup_ST	<= 0;							
-						mI2C_GO		<= 0;
+							mSetup_ST	<= 2'd0;							
+						mI2C_GO		<= 1'd0;
 					end
 				end
 			2:	begin
-					LUT_INDEX	<= LUT_INDEX+1;
-					mSetup_ST	<= 0;
+					LUT_INDEX	<= LUT_INDEX + 4'd1;
+					mSetup_ST	<= 2'd0;
 				end
 			endcase
 		end
@@ -141,3 +141,4 @@ begin
 end
 ////////////////////////////////////////////////////////////////////
 endmodule
+

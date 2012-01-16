@@ -308,7 +308,7 @@ begin
 
 
 	
-	process (initstate, pass, zaddr, datain, init_done, casaddr, dwrU, dwrL, Z_cycle) begin
+	process (sysclk, initstate, pass, zaddr, datain, init_done, casaddr, dwrU, dwrL, Z_cycle) begin
 
 
 
