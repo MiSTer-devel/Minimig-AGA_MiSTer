@@ -68,7 +68,7 @@ wr <= clk OR pulse OR NOT fifowr;
 addr <= "00000"&fifooutptr WHEN clk='1' ELSE "00000"&fifoinptr;
 data <= fifodwr WHEN clk='0' ELSE "ZZZZZZZZZZZZZZZZ";
 				
-PROCESS (pulse,digits,dsklen)
+PROCESS (pulse,digits,dsklen,ledon)
 	BEGIN
 		IF rising_edge(pulse) THEN
 			IF clk='1' THEN
