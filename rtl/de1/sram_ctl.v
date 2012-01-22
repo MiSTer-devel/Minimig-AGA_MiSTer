@@ -7,8 +7,9 @@ module sram_ctl (
   // fifo if
   input  wire [ 13-1:0] fifoinptr,
   input  wire [ 13-1:0] fifooutptr,
+  input  wire           fifowr,
   input  wire [ 16-1:0] fifodwr,
-  output wire [ 16-1:0] fifodrd,
+  output reg  [ 16-1:0] fifodrd,
   // sram if
   output wire           ce,
   output wire           oe,
