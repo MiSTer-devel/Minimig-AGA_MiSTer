@@ -57,7 +57,9 @@ module gayle
 	input	hdd_wr,
 	input	hdd_status_wr,
 	input	hdd_data_wr,
-	input	hdd_data_rd
+	input	hdd_data_rd,
+  output hd_fwr,
+  output hd_frd
 );
 
 localparam VCC = 1'b1;
@@ -99,6 +101,7 @@ Status:
 INTRQ	- Interrupt Request
 
 */
+ 
 
 // address decoding signals
 wire 	sel_gayleid;	// Gayle ID register select
@@ -137,6 +140,10 @@ wire	fifo_last;			// last word of a sector is being read
 // gayle id reg
 reg		[1:0] gayleid_cnt;	// sequence counter
 wire	gayleid;			// output data (one bit wide)
+
+// hd leds
+assign hd_fwr = fifo_wr;
+assign hd_frd = fifo_rd;
 
 // HDD status register
 assign status = {bsy,drdy,2'b00,drq,2'b00,err};

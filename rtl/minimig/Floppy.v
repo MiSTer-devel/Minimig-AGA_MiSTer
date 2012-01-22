@@ -119,7 +119,9 @@ module floppy
 	output  [12:0]fifooutptr,
 	input   [15:0]fifodrd,
 	output  [7:0]trackdisp,
-	output  [13:0]secdisp
+	output  [13:0]secdisp,
+  output  floppy_fwr,
+  output  floppy_frd
 );
 
 //register names and addresses
@@ -229,6 +231,9 @@ module floppy
 
 assign trackdisp = track;
 assign secdisp = dsklen[13:0];
+
+assign floppy_fwr = fifo_wr;
+assign floppy_frd = fifo_rd;
 
 //SPI mode 0 - high idle clock
 assign sdin = direct_scs ? direct_sdi : sdi;

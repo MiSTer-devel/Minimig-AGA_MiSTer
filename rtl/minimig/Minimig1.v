@@ -205,7 +205,11 @@ module Minimig1
 	output  [12:0]fifooutptr,
 	input   [15:0]fifodrd,
 	output  [7:0]trackdisp,
-	output  [13:0]secdisp
+	output  [13:0]secdisp,
+  output  floppy_fwr,
+  output  floppy_frd,
+  output  hd_fwr,
+  output  hd_frd
 );
 
 //--------------------------------------------------------------------------------------
@@ -525,7 +529,9 @@ Paula PAULA1
 	.fifooutptr(fifooutptr),
 	.fifodrd(fifodrd),
 	.trackdisp(trackdisp),
-	.secdisp(secdisp)
+	.secdisp(secdisp),
+  .floppy_fwr (floppy_fwr),
+  .floppy_frd (floppy_frd)
 );
 
 //instantiate user IO
@@ -834,8 +840,9 @@ gayle GAYLE1
 	.hdd_wr(hdd_wr),
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd)
-	
+	.hdd_data_rd(hdd_data_rd),
+  .hd_fwr(hd_fwr),
+  .hd_frd(hd_frd)
 );
 	
 //instantiate boot rom

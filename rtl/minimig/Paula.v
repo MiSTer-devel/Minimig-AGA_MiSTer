@@ -123,8 +123,9 @@ module Paula
 	output  [12:0]fifooutptr,
 	input   [15:0]fifodrd,
 	output  [7:0]trackdisp,
-	output  [13:0]secdisp
-
+	output  [13:0]secdisp,
+  output  floppy_fwr,
+  output  floppy_frd
 );
 //--------------------------------------------------------------------------------------
 
@@ -290,7 +291,9 @@ floppy pf1
 	.fifooutptr(fifooutptr),
 	.fifodrd(fifodrd),
 	.trackdisp(trackdisp),
-	.secdisp(secdisp)
+	.secdisp(secdisp),
+  .floppy_fwr (floppy_fwr),
+  .floppy_frd (floppy_frd)
 );
 
 //instantiate audio controller
