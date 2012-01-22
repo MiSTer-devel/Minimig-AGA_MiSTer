@@ -132,7 +132,6 @@ wire           tg68_rst;
 wire [ 16-1:0] tg68_dat_in;
 wire [ 16-1:0] tg68_dat_out;
 wire [ 32-1:0] tg68_adr;
-//wire [ 0:32-1] tg68_adr;
 wire [  3-1:0] tg68_IPL;
 wire           tg68_dtack;
 wire           tg68_as;
@@ -155,6 +154,10 @@ wire           _15khz;        // scandoubler disable
 wire           sdo;           // SPI data output
 wire [ 15-1:0] ldata;         // left DAC data
 wire [ 15-1:0] rdata;         // right DAC data
+wire           floppy_fwr;
+wire           floppy_frd;
+wire           hd_fwr;
+wire           hd_frd;
 
 // cfide
 wire [  8-1:0] sd_cs;
@@ -197,21 +200,11 @@ wire           exchan;
 
 // assign unused outputs
 assign TDO          = 1'b1;
-// TODO GPIO - add joystick ports!
 assign FL_ADDR      = 22'h3fffff;
 assign FL_WE_N      = 1'b1;
 assign FL_RST_N     = 1'b1;
 assign FL_OE_N      = 1'b1;
 assign FL_CE_N      = 1'b0;
-assign HEX3        = 7'h7f;
-assign LEDG        = 8'h00;
-assign SRAM_CE_N    = 1'b0;
-assign SRAM_LB_N    = 1'b0;
-assign SRAM_UB_N    = 1'b0;
-assign DRAM_CKE     = 1'b1;
-
-// assign output ports
-assign DRAM_CLK     = clk_sdram;
 
 // clock
 assign pll_in_clk   = CLOCK_27[0];
@@ -236,6 +229,8 @@ assign SD_CMD       = sd_do;
 assign SD_CLK       = sd_clk;
 
 // SDRAM
+assign DRAM_CKE     = 1'b1;
+assign DRAM_CLK     = clk_sdram;
 assign DRAM_CS_N    = sdram_cs[0];
 assign DRAM_LDQM    = sdram_dqm[0];
 assign DRAM_UDQM    = sdram_dqm[1];
@@ -259,25 +254,39 @@ amigaclk amigaclk (
 );
 
 
+/* indicators */
+indicators indicators(
+  .clk          (clk_7            ),
+  .rst          (~pll_locked      ),
+  .track        (track            ),
+  .f_wr         (floppy_fwr       ),
+  .f_rd         (floppy_frd       ),
+  .h_wr         (hd_fwr           ),
+  .h_rd         (hd_frd           ),
+  .hex_0        (HEX0             ),
+  .hex_1        (HEX1             ),
+  .hex_2        (HEX2             ),
+  .hex_3        (HEX3             ),
+  .led_g        (LEDG             ),
+  .led_r        (LEDR             )
+);
+
+
 /* sram controller */
-SRAM sram (
+sram_ctl sram_ctl(
   .clk          (clk_7            ),
   .pulse        (pulse            ),
   .fifoinptr    (fifoinptr        ),
-  .fifodwr      (fifodwr          ),
-  .fifowr       (fifowr           ),
   .fifooutptr   (fifooutptr       ),
-  .track        (track            ),
-  .dsklen       (dsklen           ),
-  .addr         (SRAM_ADDR        ),
-  .data         (SRAM_DQ          ),
+  .fifowr       (fifowr           ),
+  .fifodwr      (fifodwr          ),
+  .fifodrd      (sram_fifodrd     ),
+  .ce           (SRAM_CE_N        ),
   .oe           (SRAM_OE_N        ),
   .wr           (SRAM_WE_N        ),
-  .fifodrd      (sram_fifodrd     ),
-  .hex1         (HEX0            ),
-  .hex10        (HEX1            ),
-  .hex100       (HEX2            ),
-  .led          (LEDR            )
+  .bs           ({SRAM_UB_N, SRAM_LB_N}),
+  .addr         (SRAM_ADDR        ),
+  .data         (SRAM_DQ          )
 );
 
 
@@ -328,9 +337,9 @@ Minimig1 minimig (
   .clk          (clk_7            ), // system clock (7.09379 MHz)
   .clk28m       (clk_28           ), // 28.37516 MHz clock
   //rs232 pins
-//  .rxd          (1'b0             ), // RS232 receive
+  .rxd          (1'b0             ), // RS232 receive
   .txd          (                 ), // RS232 send
-//  .cts          (1'b0             ), // RS232 clear to send
+  .cts          (1'b0             ), // RS232 clear to send
   .rts          (                 ), // RS232 request to send
   //I/O
   ._joy1        (Joya            ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
@@ -367,7 +376,11 @@ Minimig1 minimig (
   .fifooutptr   (fifooutptr       ),
   .fifodrd      (sram_fifodrd     ),
   .trackdisp    (track            ),
-  .secdisp      (dsklen           )
+  .secdisp      (dsklen           ),
+  .floppy_fwr   (floppy_fwr       ),
+  .floppy_frd   (floppy_frd       ),
+  .hd_fwr       (hd_fwr           ),
+  .hd_frd       (hd_frd           )
 );
 
 
