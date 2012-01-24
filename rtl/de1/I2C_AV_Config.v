@@ -58,7 +58,7 @@ always@(posedge iCLK or negedge iRST_N)
 begin
 	if(!iRST_N)
 	begin
-		mI2C_CTRL_CLK	<=	16'd0;
+		mI2C_CTRL_CLK	<=	1'd0;
 		mI2C_CLK_DIV	<=	16'd0;
 	end
 	else
