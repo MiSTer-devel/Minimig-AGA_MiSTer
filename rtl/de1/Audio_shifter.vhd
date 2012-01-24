@@ -28,7 +28,11 @@ begin
 		aud_bclk <= not shiftcnt(2);
 		aud_daclrck <= shiftcnt(7);				
 		aud_dacdat <= shift(15);
-		 aud_xck <= shiftcnt(0);
+ 	 aud_xck <= shiftcnt(0);
+  end process;
+
+	process (nreset, clk, shiftcnt, shift) begin
+
 		if nreset='0' then 
 			shiftcnt <= (OTHERS => '0');
 		elsif rising_edge(clk) then
@@ -36,16 +40,9 @@ begin
 			shiftcnt <= shiftcnt-1;
 			if shiftcnt(6 downto 3)<=15 and shiftcnt(2 downto 0)="000" then
 				IF shiftcnt(6 downto 3)= 0 then	
---					IF test(14)='0' THEN
---						shift <= "1011111111111111";
---					ELSE
---						shift <= "0100000000000000";
---					END IF;	
 			    	IF (exchan XOR shiftcnt(7))='1' THEN	--aud_daclrck					
---						shift <= (links(14)& NOT links(14)& links(13 downto 0));				
 						shift <= links;		--signed data		
 					ELSE
---						shift <= (rechts(14)& NOT rechts(14)& rechts(13 downto 0));			
 						shift <= rechts;	--signed data		
 				   	END IF;
 				ELSE
