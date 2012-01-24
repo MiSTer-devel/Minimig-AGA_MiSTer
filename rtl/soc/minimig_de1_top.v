@@ -161,7 +161,6 @@ wire           hd_frd;
 
 // cfide
 wire [  8-1:0] sd_cs;
-//wire [  0:8-1] sd_cs;
 wire           sd_do;
 wire           sd_clk;
 wire           cfide_memce;
@@ -206,11 +205,20 @@ assign FL_RST_N     = 1'b1;
 assign FL_OE_N      = 1'b1;
 assign FL_CE_N      = 1'b0;
 
+// input synchronizers
+wire   sw_0, sw_3, sw_8, sw_9;
+
+i_sync #(.DW(4)) i_sync_sw (
+  .clk  (clk_7),
+  .i    ({SW[0], SW[3], SW[8], SW[9]}),
+  .o    ({sw_0,  sw_3,  sw_8,  sw_9})
+);
+
 // clock
 assign pll_in_clk   = CLOCK_27[0];
 
 // reset
-assign pll_rst      = !(SW[0]);
+assign pll_rst      = !SW[0];
 assign n_rst        = reset_out  & SW[3];
 assign sdctl_rst    = pll_locked & SW[0];
 
@@ -218,10 +226,10 @@ assign sdctl_rst    = pll_locked & SW[0];
 assign tg68_clkena  = 1'b1;
 
 // minimig
-assign _15khz       = SW[9];
+assign _15khz       = sw_9;
 
 // audio
-assign exchan       = SW[8];
+assign exchan       = sw_8;
 
 // SD card
 assign SD_DAT3      = sd_cs[1];
@@ -397,28 +405,12 @@ cfide cfide (
   .lds          (tg68_fast_lds    ),
   .uds          (tg68_fast_uds    ),
   .sd_di        (SD_DAT           ),
-  .idedata      (                 ),
-  .idedata_in   (16'hffff         ),
-  .idea         (                 ),
-  .ide_wr       (                 ),
-  .ide_rd       (                 ),
-  .ide_csp0     (                 ),
-  .ide_css0     (                 ),
-  .ide_csp1     (                 ),
   .memce        (cfide_memce      ),
   .cpuena       (tg68_fast_clkena ),
   .TxD          (UART_TXD         ),
   .sd_cs        (sd_cs            ),
   .sd_clk       (sd_clk           ),
   .sd_do        (sd_do            ),
-  .A_addr       (24'hffffff       ),
-  .A_cpudata_in (16'hffff         ),
-  .A_rw         (1'b1             ),
-  .A_selide     (1'b0             ),
-  .A_cpudata    (                 ),
-  .A_iderdy     (                 ),
-  .ideirq       (                 ),
-  .support_run  (                 ),
   .sd_dimm      (sdo              ),
   .enaWRreg     (tg68_fast_enaWR  )
 );
@@ -485,7 +477,7 @@ sdram sdram (
 
 
 /* audio shifter */
-Audio_shifter audio_shifter (
+audio_shifter audio_shifter (
   .clk          (clk_28           ),
   .nreset       (reset_out        ),
   .rechts       ({rdata, 1'b0}    ),
