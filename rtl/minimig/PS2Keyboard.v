@@ -62,7 +62,9 @@ module ps2keyboard
 	output	_lmb,				//emulated left mouse button
 	output	_rmb,				//emulated right mouse button
 	output	[5:0] _joy2,		//joystick emulation
-	output	freeze				//Action Replay freeze button
+	output	freeze,				//Action Replay freeze button
+  output [5:0] mou_emu,
+  output [5:0] joy_emu
 );
 
 //local signals
@@ -273,7 +275,9 @@ ps2keyboardmap km1
 	._lmb(_lmb),
 	._rmb(_rmb),
 	._joy2(_joy2),
-	.freeze(freeze)
+	.freeze(freeze),
+  .mou_emu(mou_emu),
+  .joy_emu(joy_emu)
 );
 
 //Duplicate key filter and caps lock handling.
@@ -369,7 +373,9 @@ module ps2keyboardmap
 	output	reg _lmb,			//mouse button emulation
 	output	reg _rmb,			//mouse button emulation
 	output	reg [5:0] _joy2,	//joystick emulation
-	output	reg freeze			//int7 freeze button
+	output	reg freeze,			//int7 freeze button
+  output [5:0] mou_emu,
+  output reg [5:0] joy_emu
 );
 //local parameters
 localparam JOY2KEY_UP    = 7'h3E;
@@ -515,6 +521,64 @@ begin
 	else if (enable2 && keyrom[15] && keyrom[7:0]==JOY1KEY_FIRE1)
 		_rmb <= upstroke;
 end
+
+
+reg guileft;
+reg guiright;
+reg altleft;
+reg altright;
+
+always @(posedge clk)
+begin
+  if (reset)
+  begin
+    guileft <= 0;
+    guiright <= 0;
+    altleft <= 0;
+    altright <= 0;
+  end
+  else
+  if (enable2)
+  begin
+    if (keyrom[7:0] == 8'h66)
+      guileft <= ~upstroke;
+    else if (keyrom[7:0] == 8'h67)
+      guiright <= ~upstroke;
+    else if (aleft)
+      altleft <= ~upstroke;
+    else if (aright)
+      altright <= ~upstroke;
+  end
+end
+
+// active low
+assign mou_emu[5] = ~(guiright & altright);
+assign mou_emu[4] = ~(guileft & altleft);
+assign mou_emu[3:0] = 4'b1111;
+
+always @(posedge clk)
+begin
+  if (reset)
+    joy_emu <= 6'b11_1111;
+  else
+  if (enable2)
+  begin
+    if (keyrom[7:0] == 8'h4c)
+      joy_emu[3] <= upstroke;  // UP
+    else if (keyrom[7:0] == 8'h4d)
+      joy_emu[2] <= upstroke;  // DOWN
+    else if (keyrom[7:0] == 8'h4f)
+      joy_emu[1] <= upstroke;  // LEFT
+    else if (keyrom[7:0] == 8'h4e)
+      joy_emu[0] <= upstroke;  // RIGHT
+    else if (ctrl)
+      joy_emu[4] <= upstroke;  // FIRE
+    else if (aleft & ~guileft)
+      joy_emu[5] <= upstroke;  // FIRE2
+  end
+end
+
+
 
 //-------------------------------------------------------------------------------------------------
 

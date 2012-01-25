@@ -371,6 +371,9 @@ wire	disk_led;				//floppy disk activity LED
 
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
+wire  [5:0] mou_emu;
+wire  [5:0] joy_emu;
+
 // RK: missing nets
 //wire  init_b;
 wire  aflock;
@@ -553,7 +556,9 @@ userio USERIO1
 	._fire1(_fire1),
   .aflock(aflock),
 	._joy1(_joy1),
-	._joy2(_joy2 & kb_joy2),
+	._joy2(_joy2 & joy_emu),
+//  ._joy1(mou_emu),
+//  ._joy2(joy_emu),
   ._lmb(kb_lmb),
   ._rmb(kb_rmb),
 	.osd_ctrl(osd_ctrl),
@@ -650,7 +655,9 @@ ciaa CIAA1
   ._joy2(kb_joy2),
   .aflock(aflock),
 	.freeze(freeze),
-	.disk_led(disk_led)
+	.disk_led(disk_led),
+  .mou_emu (mou_emu),
+  .joy_emu (joy_emu)
 );
 
 //instantiate cia B
