@@ -45,7 +45,7 @@ entity cfide is
   sd_clk     : out std_logic;
   sd_do    : out std_logic;
   sd_dimm    : in std_logic;
-  enaWRreg    : in std_logic:='1'
+  enaWRreg    : in std_logic :='1'
   );
 end cfide;
 
@@ -96,19 +96,25 @@ signal rom_data: std_logic_vector(15 downto 0);
 signal timecnt: std_logic_vector(15 downto 0);
 signal timeprecnt: std_logic_vector(15 downto 0);
 
+signal byteena_in: std_logic_vector(1 downto 0);
+signal wren_in: std_logic;
 
 begin
+
+byteena_in <= (not uds)&(not lds);
+wren_in <= RAM_write AND enaWRreg;
 
 srom: startram
   PORT MAP
   (
     address => addr(10 downto 1),  --: IN STD_LOGIC_VECTOR (10 DOWNTO 0);
-    byteena(0)  => not lds,      --  : IN STD_LOGIC_VECTOR (1 DOWNTO 0),
-    byteena(1)  => not uds,      --  : IN STD_LOGIC_VECTOR (1 DOWNTO 0),
+--    byteena  => byteena_in ,      --  : IN STD_LOGIC_VECTOR (1 DOWNTO 0),
+    byteena(0) => not lds,
+    byteena(1) => not uds,
     clock   => sysclk,                --: IN STD_LOGIC ;
     data  => cpudata_in,    --  : IN STD_LOGIC_VECTOR (15 DOWNTO 0),
     wren  => RAM_write AND enaWRreg,    --   : IN STD_LOGIC ,
-    q    => rom_data                  --: OUT STD_LOGIC_VECTOR (15 DOWNTO 0)
+    q    => rom_data
     );
 
 
@@ -148,12 +154,18 @@ SPI_select <= '1' when addr(23 downto 12)=X"DA4" ELSE '0';
       ELSE
         sd_di_in <= sd_dimm;
       END IF;
+  END process;
+
+
+
+  PROCESS (sysclk, n_reset, scs, sd_di, sd_dimm) BEGIN
     IF n_reset ='0' THEN
       shiftcnt <= (OTHERS => '0');
       spi_div <= (OTHERS => '0');
       scs <= (OTHERS => '0');
       sck <= '0';
       spi_speed <= "00000000";
+
     ELSIF rising_edge(sysclk) THEN
     IF enaWRreg='1' THEN
       IF SPI_select='1' AND state="11" AND SD_busy='0' THEN   --SD write
@@ -259,14 +271,15 @@ end process;
 -- Simple UART only TxD
 -----------------------------------------------------------------
 TxD <= not shiftout;
-process(n_reset, sysclk, shift)
-begin
+process(n_reset, sysclk, shift) begin
   if shift="0000000000" then
     txbusy <= '0';
   else
     txbusy <= '1';
   end if;
+end process;
 
+process(n_reset, sysclk, shift) begin
   if n_reset='0' then
     shiftout <= '0';
     shift <= "0000000000";
