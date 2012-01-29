@@ -170,6 +170,9 @@ module Minimig1
 	//I/O
 	input	[5:0]_joy1,			//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
 	input	[5:0]_joy2,			//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  input mouse_btn1, // mouse button 1
+  input mouse_btn2, // mouse button 2
+  input joy_emu_en, // enable keyboard joystick emulation
 	input	_15khz,				//scandoubler disable
 	output	pwrled,				//power led
 	inout	msdat,				//PS2 mouse data
@@ -559,8 +562,8 @@ userio USERIO1
 	._joy2(_joy2 & joy_emu),
 //  ._joy1(mou_emu),
 //  ._joy2(joy_emu),
-  ._lmb(kb_lmb),
-  ._rmb(kb_rmb),
+  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
+  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
 	.osd_ctrl(osd_ctrl),
 	.keyboard_disabled(keyboard_disabled),
 	._scs(_scs[1]),
@@ -657,7 +660,8 @@ ciaa CIAA1
 	.freeze(freeze),
 	.disk_led(disk_led),
   .mou_emu (mou_emu),
-  .joy_emu (joy_emu)
+  .joy_emu (joy_emu),
+  .joy_emu_en(joy_emu_en)
 );
 
 //instantiate cia B

@@ -64,7 +64,8 @@ module ps2keyboard
 	output	[5:0] _joy2,		//joystick emulation
 	output	freeze,				//Action Replay freeze button
   output [5:0] mou_emu,
-  output [5:0] joy_emu
+  output [5:0] joy_emu,
+  input joy_emu_en
 );
 
 //local signals
@@ -277,7 +278,8 @@ ps2keyboardmap km1
 	._joy2(_joy2),
 	.freeze(freeze),
   .mou_emu(mou_emu),
-  .joy_emu(joy_emu)
+  .joy_emu(joy_emu),
+  .joy_emu_en(joy_emu_en)
 );
 
 //Duplicate key filter and caps lock handling.
@@ -375,7 +377,8 @@ module ps2keyboardmap
 	output	reg [5:0] _joy2,	//joystick emulation
 	output	reg freeze,			//int7 freeze button
   output [5:0] mou_emu,
-  output reg [5:0] joy_emu
+  output reg [5:0] joy_emu,
+  input joy_emu_en
 );
 //local parameters
 localparam JOY2KEY_UP    = 7'h3E;
@@ -560,9 +563,9 @@ always @(posedge clk)
 begin
   if (reset)
     joy_emu <= 6'b11_1111;
-  else
-  if (enable2)
-  begin
+  else if (~joy_emu_en)
+    joy_emu <= #1 6'b11_1111;
+  else if (enable2) begin
     if (keyrom[7:0] == 8'h4c)
       joy_emu[3] <= upstroke;  // UP
     else if (keyrom[7:0] == 8'h4d)

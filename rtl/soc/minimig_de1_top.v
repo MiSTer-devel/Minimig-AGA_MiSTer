@@ -151,6 +151,7 @@ wire           _ram_ble;      // sram lower byte select
 wire           _ram_we;       // sram write enable
 wire           _ram_oe;       // sram output enable
 wire           _15khz;        // scandoubler disable
+wire           joy_emu_en;    // joystick emulation enable
 wire           sdo;           // SPI data output
 wire [ 15-1:0] ldata;         // left DAC data
 wire [ 15-1:0] rdata;         // right DAC data
@@ -206,12 +207,19 @@ assign FL_OE_N      = 1'b1;
 assign FL_CE_N      = 1'b0;
 
 // input synchronizers
-wire   sw_0, sw_3, sw_8, sw_9;
+wire   sw_7, sw_8, sw_9;
+wire   key_3, key_2;
 
-i_sync #(.DW(4)) i_sync_sw (
+i_sync #(.DW(3)) i_sync_sw (
   .clk  (clk_7),
-  .i    ({SW[0], SW[3], SW[8], SW[9]}),
-  .o    ({sw_0,  sw_3,  sw_8,  sw_9})
+  .i    ({SW[7], SW[8], SW[9]}),
+  .o    ({sw_7,  sw_8,  sw_9})
+);
+
+i_sync #(.DW(2)) i_sync_key (
+  .clk  (clk_7),
+  .i    ({KEY[3], KEY[2]}),
+  .o    ({key_3,  key_2})
 );
 
 // clock
@@ -219,17 +227,18 @@ assign pll_in_clk   = CLOCK_27[0];
 
 // reset
 assign pll_rst      = !SW[0];
-assign n_rst        = reset_out  & SW[3];
+assign n_rst        = reset_out  & SW[1];
 assign sdctl_rst    = pll_locked & SW[0];
 
 // tg68
 assign tg68_clkena  = 1'b1;
 
 // minimig
-assign _15khz       = sw_9;
+assign _15khz       = sw_8;
+assign joy_emu_en   = sw_9;
 
 // audio
-assign exchan       = sw_8;
+assign exchan       = sw_7;
 
 // SD card
 assign SD_DAT3      = sd_cs[1];
@@ -331,7 +340,7 @@ Minimig1 minimig (
   .cpu_r_w      (tg68_rw          ), // M68K read / write
   ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
   ._cpu_reset   (tg68_rst         ), // M68K reset
-  .cpu_clk      (clk_7           ), // M68K clock
+  .cpu_clk      (clk_7            ), // M68K clock
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
@@ -350,8 +359,11 @@ Minimig1 minimig (
   .cts          (1'b0             ), // RS232 clear to send
   .rts          (                 ), // RS232 request to send
   //I/O
-  ._joy1        (Joya            ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (Joyb            ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  ._joy1        (Joya             ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+  ._joy2        (Joyb             ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  .mouse_btn1   (key_3            ), // mouse button 1
+  .mouse_btn2   (key_2            ), // mouse button 2
+  .joy_emu_en   (joy_emu_en       ), // enable keyboard joystick emulation
   ._15khz       (_15khz           ), // scandoubler disable
   .pwrled       (                 ), // power led
   .msdat        (PS2_MDAT         ), // PS2 mouse data
