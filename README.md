@@ -33,6 +33,7 @@ You need at least an SD card for the software and a PS/2 keyboard connected to t
 DE1 board switches / keys:
 
 * SW[9] - enables/disables keyboard joystick emulation
+* SW[8] - enables/disables the scandoubler
 * SW[7] - switches left/right audio
 * SW[1] - reset (internal)
 * SW[0] - reset (PLL reset)
