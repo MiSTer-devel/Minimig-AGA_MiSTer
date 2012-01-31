@@ -31,21 +31,20 @@ You need at least an SD card for the software and a PS/2 keyboard connected to t
 
 ### Controling minimig
 DE1 board switches / keys:
-- SW[9] - enables/disables keyboard joystick emulation
-- SW[8] - enables/disables the scandoubler
-- SW[7] - switches left/right audio
-- SW[1] - reset (internal)
-- SW[0] - reset (PLL reset)
-- KEY[3] - left mouse button
-- KEY[2] - right mouse button
+* SW[9] - enables/disables keyboard joystick emulation
+* SW[7] - switches left/right audio
+* SW[1] - reset (internal)
+* SW[0] - reset (PLL reset)
+* KEY[3] - left mouse button
+* KEY[2] - right mouse button
 
 Keyboard emulation:
-- Cursor movement keys for joystick up,down,left,right.
-- LCTRL - fire1
-- LALT - fire2
-- LWIN + LALT - left mouse button
-- RWIN + RALT - right mouse button
-- F12 - menu
+* Cursor movement keys for joystick up,down,left,right
+* LCTRL - fire1
+* LALT - fire2
+* LWIN + LALT - left mouse button
+* RWIN + RALT - right mouse button
+* F12 - menu
 
 
 ## Links & info
