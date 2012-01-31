@@ -1,7 +1,7 @@
 # minimig-de1
 
 
-## Description
+## Description  
 
 This is a port of minimig to the [Altera DE1 board](http://www.altera.com/education/univ/materials/boards/de1/unv-de1-board.html).
 
@@ -23,15 +23,18 @@ Some updates are from user boing4000 from the Minimig forum.
 
 ### Software
 Under Downloads, there's a [zip](https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-config-latest.zip) file with the latest build. It contains a .sof file that is used to program the FPGA, and a menue.sys file, which should be placed on the root of a FAT16 - formatted SD card no larger than 2GB.
+
 Also needed are a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
+
 The minimig can then read any ADF floppy images you place on the SD card. Recommended are at least Workbench 1.3 or 3.1 (AmigaOS), some of the Amigas great games (I recommend Ruff'n'Tumble) or some of the amazing demos from the vast Amiga demoscene (like State of the Art from Spaceballs).
+
+The minimig can also use HDF harddisk images, which can be created with [WinUAE](http://www.winuae.net/).
 
 ### Hardware
 You need at least an SD card for the software and a PS/2 keyboard connected to the DE1 board's PS/2 port. And, of course, a VGA monitor and a set of speakers. There's a way to also connect a PS/2 mouse and two real Amiga joysticks, but you have to make an adapter board (there's a schematic [here](https://github.com/rkrajnc/minimig-de1/tree/master/minimig-src/minimigtg68/other)).
 
 ### Controling minimig
-DE1 board switches / keys:
-
+DE1 board switches / keys:  
 * SW[9] - enables/disables keyboard joystick emulation
 * SW[8] - enables/disables the scandoubler
 * SW[7] - switches left/right audio
@@ -40,8 +43,7 @@ DE1 board switches / keys:
 * KEY[3] - left mouse button
 * KEY[2] - right mouse button
 
-Keyboard emulation:
-
+Keyboard emulation:  
 * Cursor movement keys for joystick up,down,left,right
 * LCTRL - fire1
 * LALT - fire2
