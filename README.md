@@ -46,6 +46,5 @@ Keyboard emulation:
 * RWIN + RALT - right mouse button
 * F12 - menu
 
-
 ## Links & info
 Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/)
