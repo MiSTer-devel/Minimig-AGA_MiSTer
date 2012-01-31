@@ -19,5 +19,13 @@ Original minimig sources with updates from yaqube (and possibly others) are publ
 Some updates are from user boing4000 from the Minimig forum.
 
 
+## Usage
+
+### Software
+Under Downloads, there's a [zip](https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-config-latest.zip) file with the latest build. It contains a .sof file that is used to program the FPGA, and a menue.sys file, which should be placed on the root of a FAT16 - formatted SD card no larger than 2GB.
+Also needed are a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
+The minimig can then read any ADF floppy images you place on the SD card. Recommended are at least Workbench 1.3 or 3.1 (AmigaOS), some of the Amigas great games (I recommend Ruff'n'Tumble) or some of the amazing demos from the vast Amiga demoscene (like Start of the Art from Spaceballs).
+
+
 ## Links & info
 Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/)
