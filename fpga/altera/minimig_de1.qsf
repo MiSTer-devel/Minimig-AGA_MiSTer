@@ -601,7 +601,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/de1/sseg_decode.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/sram_ctl.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/cfide.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/startram.v
-set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/sdram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/audio_shifter.v
@@ -629,4 +629,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+
+
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
