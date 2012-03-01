@@ -108,8 +108,9 @@ TG68_fast TG68_fast_inst(
 );
 
 
+// TODO new version is not clock edge sensitive (convert this to always_comb ?)
+//always @ (*) begin
 always @(posedge clk) begin
-  // TODO new version is not edge sensitive (convert this to always_comb ?)
   if((clkena_in == 1'b1) && ((clkena_e == 1'b1) || (state == 2'b01))) begin
     clkena <= 1'b1;
   end else begin
