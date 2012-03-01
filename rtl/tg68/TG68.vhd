@@ -79,6 +79,7 @@ ARCHITECTURE logic OF TG68 IS
         data_write    : out std_logic_vector(15 downto 0);
         state_out     : out std_logic_vector(1 downto 0);
         decodeOPC     : buffer std_logic;
+--        decodeOPC     : out std_logic;
 		wr			  : out std_logic;
 		UDS, LDS	  : out std_logic;
         enaRDreg      : in std_logic;
@@ -158,6 +159,10 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			uds <= uds_s AND uds_e;
 			lds <= lds_s AND lds_e;
 		END IF;
+END PROCESS;
+
+PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
+	BEGIN
 		IF reset='0' THEN
 			S_state <= "11";
 			as_s <= '1';
@@ -196,6 +201,11 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 								 END IF;
 			END IF;
 		END IF;	
+END PROCESS;
+
+
+PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
+	BEGIN
 		IF reset='0' THEN
 			as_e <= '1';
 			rw_e <= '1';
