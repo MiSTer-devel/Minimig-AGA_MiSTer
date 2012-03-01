@@ -170,6 +170,9 @@ module Minimig1
 	//I/O
 	input	[5:0]_joy1,			//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
 	input	[5:0]_joy2,			//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  input mouse_btn1, // mouse button 1
+  input mouse_btn2, // mouse button 2
+  input joy_emu_en, // enable keyboard joystick emulation
 	input	_15khz,				//scandoubler disable
 	output	pwrled,				//power led
 	inout	msdat,				//PS2 mouse data
@@ -205,7 +208,11 @@ module Minimig1
 	output  [12:0]fifooutptr,
 	input   [15:0]fifodrd,
 	output  [7:0]trackdisp,
-	output  [13:0]secdisp
+	output  [13:0]secdisp,
+  output  floppy_fwr,
+  output  floppy_frd,
+  output  hd_fwr,
+  output  hd_frd
 );
 
 //--------------------------------------------------------------------------------------
@@ -367,6 +374,9 @@ wire	disk_led;				//floppy disk activity LED
 
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
+wire  [5:0] mou_emu;
+wire  [5:0] joy_emu;
+
 // RK: missing nets
 //wire  init_b;
 wire  aflock;
@@ -525,7 +535,9 @@ Paula PAULA1
 	.fifooutptr(fifooutptr),
 	.fifodrd(fifodrd),
 	.trackdisp(trackdisp),
-	.secdisp(secdisp)
+	.secdisp(secdisp),
+  .floppy_fwr (floppy_fwr),
+  .floppy_frd (floppy_frd)
 );
 
 //instantiate user IO
@@ -547,9 +559,11 @@ userio USERIO1
 	._fire1(_fire1),
   .aflock(aflock),
 	._joy1(_joy1),
-	._joy2(_joy2 & kb_joy2),
-  ._lmb(kb_lmb),
-  ._rmb(kb_rmb),
+	._joy2(_joy2 & joy_emu),
+//  ._joy1(mou_emu),
+//  ._joy2(joy_emu),
+  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
+  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
 	.osd_ctrl(osd_ctrl),
 	.keyboard_disabled(keyboard_disabled),
 	._scs(_scs[1]),
@@ -644,7 +658,10 @@ ciaa CIAA1
   ._joy2(kb_joy2),
   .aflock(aflock),
 	.freeze(freeze),
-	.disk_led(disk_led)
+	.disk_led(disk_led),
+  .mou_emu (mou_emu),
+  .joy_emu (joy_emu),
+  .joy_emu_en(joy_emu_en)
 );
 
 //instantiate cia B
@@ -834,8 +851,9 @@ gayle GAYLE1
 	.hdd_wr(hdd_wr),
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd)
-	
+	.hdd_data_rd(hdd_data_rd),
+  .hd_fwr(hd_fwr),
+  .hd_frd(hd_frd)
 );
 	
 //instantiate boot rom

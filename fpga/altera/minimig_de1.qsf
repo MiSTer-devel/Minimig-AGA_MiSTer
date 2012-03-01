@@ -589,17 +589,24 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
 set_global_assignment -name MISC_FILE minimig_de1.dpf
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+
+set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de1_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
-set_global_assignment -name VHDL_FILE ../../rtl/de1/startram.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/de1/SRAM.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
+set_global_assignment -name VERILOG_FILE ../../lib/altera/i_sync.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/indicators.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/sseg_decode.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/sram_ctl.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/cfide.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/startram.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/sdram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_AV_Config.v
-set_global_assignment -name VHDL_FILE ../../rtl/de1/cfide.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/de1/Audio_shifter.vhd
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/audio_shifter.v
 set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68_fast.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68.vhd
+set_global_assignment -name VERILOG_FILE ../../rtl/tg68/tg68.v
 set_global_assignment -name VERILOG_FILE ../../lib/altera/srl16e.v
 set_global_assignment -name VERILOG_FILE ../../lib/altera/MULT18X18.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
@@ -622,5 +629,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
