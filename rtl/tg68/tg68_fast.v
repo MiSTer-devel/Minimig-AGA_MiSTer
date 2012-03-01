@@ -84,6 +84,339 @@ module TG68_fast(
 
 
 
+reg  [1:0] state;
+reg  clkena;
+reg  clkenareg;
+reg  [31:0] TG68_PC;
+reg  [31:0] TG68_PC_add;
+reg  [31:0] memaddr;
+reg  [31:0] memaddr_in;
+reg  [31:0] ea_data;
+reg  ea_data_OP1;
+reg  setaddrlong;
+reg  [31:0] OP1out;
+reg  [31:0] OP2out;
+reg  [15:0] OP1outbrief;
+reg  [31:0] OP1in;
+reg  [31:0] data_write_tmp;
+reg  [31:0] Xtmp;
+reg  [31:0] PC_dataa;
+reg  [31:0] PC_datab;
+reg  [31:0] PC_result;
+reg  setregstore;
+reg  [1:0] datatype;
+reg  longread;
+reg  longreaddirect;
+reg  long_done;
+reg  nextpass;
+reg  setnextpass;
+reg  setdispbyte;
+reg  setdisp;
+reg  setdispbrief;
+reg  regdirectsource;
+reg  endOPC;
+reg  postadd;
+reg  presub;
+reg  [31:0] addsub_a;
+reg  [31:0] addsub_b;
+reg  [31:0] addsub_q;
+reg  [31:0] briefext;
+reg  setbriefext;
+reg  addsub;
+reg  [3:0] c_in;
+reg  [2:0] c_out;
+reg  [33:0] add_result;
+reg  [2:0] addsub_ofl;
+reg  [2:0] flag_z;
+reg  [15:0] last_data_read;
+reg  [31:0] data_read;
+reg  [31:0] registerin;
+reg  [31:0] reg_QA;
+reg  [31:0] reg_QB;
+reg  Hwrena;
+reg  Lwrena;
+reg  Regwrena;
+reg  [6:0] rf_dest_addr;
+reg  [6:0] rf_source_addr;
+reg  [6:0] rf_dest_addr_tmp;
+reg  [6:0] rf_source_addr_tmp;
+reg  [15:0] opcode;
+reg  [1:0] laststate;
+reg  [1:0] setstate;
+reg  [31:0] mem_address;
+reg  [31:0] memaddr_a;
+reg  [31:0] mem_data_read;
+reg  [31:0] mem_data_write;
+reg  set_mem_rega;
+reg  [31:0] data_read_ram;
+reg  [7:0] data_read_uart;
+reg  [31:0] counter_reg;
+reg  TG68_PC_br8;
+reg  TG68_PC_brw;
+reg  TG68_PC_nop;
+reg  setgetbrief;
+reg  getbrief;
+reg  [15:0] brief;
+reg  dest_areg;
+reg  source_areg;
+reg  data_is_source;
+reg  set_store_in_tmp;
+reg  store_in_tmp;
+reg  write_back;
+reg  setaddsub;
+reg  setstackaddr;
+reg  writePC;
+reg  writePC_add;
+reg  set_TG68_PC_dec;
+reg  [1:0] TG68_PC_dec;
+reg  directPC;
+reg  set_directPC;
+reg  execOPC;
+reg  fetchOPC;
+reg  [15:0] Flags;  //T.S..III ...XNZVC
+reg  [3:0] set_Flags;  //NZVC
+reg  exec_ADD;
+reg  exec_OR;
+reg  exec_AND;
+reg  exec_EOR;
+reg  exec_MOVE;
+reg  exec_MOVEQ;
+reg  exec_MOVESR;
+reg  exec_DIRECT;
+reg  exec_ADDQ;
+reg  exec_CMP;
+reg  exec_ROT;
+reg  exec_exg;
+reg  exec_swap;
+reg  exec_write_back;
+reg  exec_tas;
+reg  exec_EXT;
+reg  exec_ABCD;
+reg  exec_SBCD;
+reg  exec_MULU;
+reg  exec_DIVU;
+reg  exec_Scc;
+reg  exec_CPMAW;
+reg  set_exec_ADD;
+reg  set_exec_OR;
+reg  set_exec_AND;
+reg  set_exec_EOR;
+reg  set_exec_MOVE;
+reg  set_exec_MOVEQ;
+reg  set_exec_MOVESR;
+reg  set_exec_ADDQ;
+reg  set_exec_CMP;
+reg  set_exec_ROT;
+reg  set_exec_tas;
+reg  set_exec_EXT;
+reg  set_exec_ABCD;
+reg  set_exec_SBCD;
+reg  set_exec_MULU;
+reg  set_exec_DIVU;
+reg  set_exec_Scc;
+reg  set_exec_CPMAW;
+reg  condition;
+reg  OP2out_one;
+reg  OP1out_zero;
+reg  ea_to_pc;
+reg  ea_build;
+reg  ea_only;
+reg  get_ea_now;
+reg  source_lowbits;
+reg  dest_hbits;
+reg  rot_rot;
+reg  rot_lsb;
+reg  rot_msb;
+reg  rot_XC;
+reg  set_rot_nop;
+reg  rot_nop;
+reg  [31:0] rot_out;
+reg  [1:0] rot_bits;
+reg  [5:0] rot_cnt;
+reg  [5:0] set_rot_cnt;
+reg  movem_busy;
+reg  set_movem_busy;
+reg  movem_addr;
+reg  [3:0] movem_regaddr;
+reg  [15:0] movem_mask;
+reg  set_get_movem_mask;
+reg  get_movem_mask;
+reg  maskzero;
+reg  test_maskzero;
+reg  [7:0] movem_muxa;
+reg  [3:0] movem_muxb;
+reg  [1:0] movem_muxc;
+reg  movem_presub;
+reg  save_memaddr;
+reg  [4:0] movem_bits;
+reg  [31:0] ea_calc_b;
+reg  set_mem_addsub;
+reg  [1:0] bit_bits;
+reg  [4:0] bit_number_reg;
+reg  [4:0] bit_number;
+reg  exec_Bits;
+reg  [31:0] bits_out;
+reg  one_bit_in;
+reg  one_bit_out;
+reg  set_get_bitnumber;
+reg  get_bitnumber;
+reg  mem_byte;
+reg  wait_mem_byte;
+reg  movepl;
+reg  movepw;
+reg  set_movepl;
+reg  set_movepw;
+reg  set_direct_data;
+reg  use_direct_data;
+reg  direct_data;
+reg  set_get_extendedOPC;
+reg  get_extendedOPC;
+reg  [1:0] setstate_delay;
+reg  [1:0] setstate_mux;
+reg  use_XZFlag;
+reg  use_XFlag;
+reg  [8:0] dummy_a;
+reg  [5:0] niba_l;
+reg  [5:0] niba_h;
+reg  niba_lc;
+reg  niba_hc;
+reg  bcda_lc;
+reg  bcda_hc;
+reg  [8:0] dummy_s;
+reg  [5:0] nibs_l;
+reg  [5:0] nibs_h;
+reg  nibs_lc;
+reg  nibs_hc;
+reg  [31:0] dummy_mulu;
+reg  [31:0] dummy_div;
+reg  [16:0] dummy_div_sub;
+reg  [16:0] dummy_div_over;
+reg  set_V_Flag;
+reg  OP1sign;
+reg  set_sign;
+reg  sign;
+reg  sign2;
+reg  muls_msb;
+reg  [31:0] mulu_reg;
+reg  [31:0] div_reg;
+reg  div_sign;
+reg  [31:0] div_quot;
+reg  div_ovl;
+reg  pre_V_Flag;
+reg  set_vectoraddr;
+reg  writeSR;
+reg  trap_illegal;
+reg  trap_priv;
+reg  trap_1010;
+reg  trap_1111;
+reg  trap_trap;
+reg  trap_trapv;
+reg  trap_interrupt;
+reg  trapmake;
+reg  trapd;  //   signal trap_PC        : std_logic_vector(31 downto 0);
+reg  [15:0] trap_SR;
+reg  set_directSR;
+reg  directSR;
+reg  set_directCCR;
+reg  directCCR;
+reg  set_stop;
+reg  stop;
+reg  [31:0] trap_vector;
+reg  to_USP;
+reg  from_USP;
+reg  to_SR;
+reg  from_SR;
+reg  illegal_write_mode;
+reg  illegal_read_mode;
+reg  illegal_byteaddr;
+reg  use_SP;
+reg  no_Flags;
+wire [2:0] IPL_nr;
+reg  [2:0] rIPL_nr;
+reg  interrupt;
+reg  SVmode;
+reg  trap_chk;
+reg  [2:0] test_delay;
+reg  set_PCmarker;
+reg  PCmarker;
+reg  set_Z_error;
+reg  Z_error;
+
+parameter [6:0]
+  idle = 0,
+  nop = 1,
+  ld_nn = 2,
+  st_nn = 3,
+  ld_dAn1 = 4,
+  ld_dAn2 = 5,
+  ld_AnXn1 = 6,
+  ld_AnXn2 = 7,
+  ld_AnXn3 = 8,
+  st_dAn1 = 9,
+  st_dAn2 = 10,
+  st_AnXn1 = 11,
+  st_AnXn2 = 12,
+  st_AnXn3 = 13,
+  bra1 = 14,
+  bra2 = 15,
+  bsr1 = 16,
+  bsr2 = 17,
+  dbcc1 = 18,
+  dbcc2 = 19,
+  movem = 20,
+  andi = 21,
+  op_AxAy = 22,
+  cmpm = 23,
+  link = 24,
+  int1 = 25,
+  int2 = 26,
+  int3 = 27,
+  int4 = 28,
+  rte = 29,
+  trap1 = 30,
+  trap2 = 31,
+  trap3 = 32,
+  movep1 = 33,
+  movep2 = 34,
+  movep3 = 35,
+  movep4 = 36,
+  movep5 = 37,
+  init1 = 38,
+  init2 = 39,
+  mul1 = 40,
+  mul2 = 41,
+  mul3 = 42,
+  mul4 = 43,
+  mul5 = 44,
+  mul6 = 45,
+  mul7 = 46,
+  mul8 = 47,
+  mul9 = 48,
+  mul10 = 49,
+  mul11 = 50,
+  mul12 = 51,
+  mul13 = 52,
+  mul14 = 53,
+  mul15 = 54,
+  div1 = 55,
+  div2 = 56,
+  div3 = 57,
+  div4 = 58,
+  div5 = 59,
+  div6 = 60,
+  div7 = 61,
+  div8 = 62,
+  div9 = 63,
+  div10 = 64,
+  div11 = 65,
+  div12 = 66,
+  div13 = 67,
+  div14 = 68,
+  div15 = 69;
+
+reg [6:0] micro_state;
+reg [6:0] next_micro_state; 
+
 reg  [ 16-1:0] regfile_low  [0:16];
 reg  [ 16-1:0] regfile_high [0:16];
 wire [ 32-1:0] RWindex_A;
@@ -99,47 +432,50 @@ assign RWindex_B = {rf_source_addr[4], rf_source_addr[3:0] ^ 4'b1111};
 
 
 always @(posedge clk) begin
-  if(clkenareg == 1'b 1) begin
-    //    IF falling_edge(clk) THEN
-    //        IF clkena='1' THEN
+  if(clkenareg == 1'b1) begin
     reg_QA <= {regfile_high[RWindex_A],regfile_low[RWindex_A]};
     reg_QB <= {regfile_high[RWindex_B],regfile_low[RWindex_B]};
   end
 end
 
+
 always @(posedge clk) begin
-  if(clkena == 1'b 1) begin
-    if(Lwrena == 1'b 1) begin
+  if(clkena == 1'b1) begin
+    if(Lwrena == 1'b1) begin
       regfile_low[RWindex_A] <= registerin[15:0];
     end
-    if(Hwrena == 1'b 1) begin
+    if(Hwrena == 1'b1) begin
       regfile_high[RWindex_A] <= registerin[31:16];
     end
   end
 end
 
-assign address = state == 2'b 00 ? TG68_PC : state == 2'b 01 ? 32'h ffffffff : memaddr;
-assign LDS = (datatype != 2'b 00 || state == 2'b 00 || memaddr[0] == 1'b 1) && state != 2'b 01 ? 1'b 0 : 1'b 1;
-assign UDS = (datatype != 2'b 00 || state == 2'b 00 || memaddr[0] == 1'b 0) && state != 2'b 01 ? 1'b 0 : 1'b 1;
+
+assign address = (state == 2'b00) ? TG68_PC : (state == 2'b01) ? 32'hffffffff : memaddr;
+assign LDS = ((datatype != 2'b00) || (state == 2'b00) || (memaddr[0] == 1'b1)) && state != 2'b01 ? 1'b0 : 1'b1;
+assign UDS = ((datatype != 2'b00) || (state == 2'b00) || (memaddr[0] == 1'b0)) && state != 2'b01 ? 1'b0 : 1'b1;
 assign state_out = state;
-assign wr = state == 2'b 11 ? 1'b 0 : 1'b 1;
-assign IPL_nr =  ~IPL;
+assign wr = (state == 2'b11) ? 1'b0 : 1'b1;
+assign IPL_nr = ~IPL;
+
+
+
 //---------------------------------------------------------------------------
 // "ALU"
 //---------------------------------------------------------------------------
-always @(addsub_a or addsub_b or addsub or add_result or c_in) begin
-  if(addsub == 1'b 1) begin
+always @(*) begin
+  if(addsub == 1'b1) begin
     //ADD
-    add_result <= (({1'b 0,addsub_a,c_in[0]}) + ({1'b 0,addsub_b,c_in[0]}));
+    add_result <= (({1'b0, addsub_a, c_in[0]}) + ({1'b0, addsub_b, c_in[0]}));
   end
   else begin
     //SUB
-    add_result <= (({1'b 0,addsub_a,1'b 0}) - ({1'b 0,addsub_b,c_in[0]}));
+    add_result <= (({1'b0, addsub_a, 1'b0}) - ({1'b0, addsub_b, c_in[0]}));
   end
   addsub_q <= add_result[32:1];
-  c_in[1] <= add_result[9] ^ addsub_a[8] ^ addsub_b[8];
-  c_in[2] <= add_result[17] ^ addsub_a[16] ^ addsub_b[16];
-  c_in[3] <= add_result[33];
+  c_in[1]  <= add_result[9] ^ addsub_a[8] ^ addsub_b[8];
+  c_in[2]  <= add_result[17] ^ addsub_a[16] ^ addsub_b[16];
+  c_in[3]  <= add_result[33];
   addsub_ofl[0] <= (c_in[1] ^ add_result[8] ^ addsub_a[7] ^ addsub_b[7]);
   //V Byte
   addsub_ofl[1] <= (c_in[2] ^ add_result[16] ^ addsub_a[15] ^ addsub_b[15]);
@@ -149,67 +485,56 @@ always @(addsub_a or addsub_b or addsub or add_result or c_in) begin
   c_out <= c_in[3:1];
 end
 
+
+
 //---------------------------------------------------------------------------
 // MEM_IO 
 //---------------------------------------------------------------------------
-always @(clk or reset or clkena_in or opcode or rIPL_nr or longread or get_extendedOPC or memaddr or memaddr_a or set_mem_addsub or movem_presub or movem_busy or state or PCmarker or execOPC or datatype or setdisp or setdispbrief or briefext or setdispbyte or brief or set_mem_rega or reg_QA or setaddrlong or data_read or decodeOPC or TG68_PC or data_in or long_done or last_data_read or mem_byte or data_write_tmp or addsub_q or set_vectoraddr or trap_vector or interrupt or enaWRreg or enaRDreg) begin
-  clkena <= clkena_in &  ~longread &  ~get_extendedOPC & enaWRreg;
-  clkenareg <= clkena_in &  ~longread &  ~get_extendedOPC & enaRDreg;
+always @(*) begin
+  clkena <= clkena_in & ~longread & ~get_extendedOPC & enaWRreg;
+  clkenareg <= clkena_in & ~longread & ~get_extendedOPC & enaRDreg;
 end
 
-always @(posedge clk or posedge reset or posedge clkena_in or posedge opcode or posedge rIPL_nr or posedge longread or posedge get_extendedOPC or posedge memaddr or posedge memaddr_a or posedge set_mem_addsub or posedge movem_presub or posedge movem_busy or posedge state or posedge PCmarker or posedge execOPC or posedge datatype or posedge setdisp or posedge setdispbrief or posedge briefext or posedge setdispbyte or posedge brief or posedge set_mem_rega or posedge reg_QA or posedge setaddrlong or posedge data_read or posedge decodeOPC or posedge TG68_PC or posedge data_in or posedge long_done or posedge last_data_read or posedge mem_byte or posedge data_write_tmp or posedge addsub_q or posedge set_vectoraddr or posedge trap_vector or posedge interrupt or posedge enaWRreg or posedge enaRDreg) begin
-  if(clkena == 1'b 1) begin
+
+always @(posedge clk) begin
+  if(clkena == 1'b1) begin
     trap_vector[31:8] <= {24{1'b0}};
-    //    IF trap_addr_fault='1' THEN
-    //      trap_vector(7 downto 0) <= X"08";
-    //    END IF;  
-    //    IF trap_addr_error='1' THEN
-    //      trap_vector(7 downto 0) <= X"0C";
-    //    END IF;  
-    if(trap_illegal == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 10;
+    if(trap_illegal == 1'b1) begin
+      trap_vector[7:0] <= 8'h10;
     end
-    if(z_error == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 14;
+    if(Z_error == 1'b1) begin
+      trap_vector[7:0] <= 8'h14;
     end
-    //        IF trap_chk='1' THEN
-    //          trap_vector(7 downto 0) <= X"18";
-    //        END IF;  
-    if(trap_trapv == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 1C;
+    if(trap_trapv == 1'b1) begin
+      trap_vector[7:0] <= 8'h1C;
     end
-    if(trap_priv == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 20;
+    if(trap_priv == 1'b1) begin
+      trap_vector[7:0] <= 8'h20;
     end
-    //    IF trap_trace='1' THEN
-    //      trap_vector(7 downto 0) <= X"24";
-    //    END IF;  
-    if(trap_1010 == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 28;
+    if(trap_1010 == 1'b1) begin
+      trap_vector[7:0] <= 8'h28;
     end
-    if(trap_1111 == 1'b 1) begin
-      trap_vector[7:0] <= 8'h 2C;
+    if(trap_1111 == 1'b1) begin
+      trap_vector[7:0] <= 8'h2C;
     end
-    if(trap_trap == 1'b 1) begin
-      trap_vector[7:2] <= {2'b 10,opcode[3:0]};
+    if(trap_trap == 1'b1) begin
+      trap_vector[7:2] <= {2'b10, opcode[3:0]};
     end
-    if(interrupt == 1'b 1) begin
-      trap_vector[7:2] <= {3'b 011,rIPL_nr};
+    if(interrupt == 1'b1) begin
+      trap_vector[7:2] <= {3'b011, rIPL_nr};
     end
   end
 end
 
-always @(clk or reset or clkena_in or opcode or rIPL_nr or longread or get_extendedOPC or memaddr or memaddr_a or set_mem_addsub or movem_presub or movem_busy or state or PCmarker or execOPC or datatype or setdisp or setdispbrief or briefext or setdispbyte or brief or set_mem_rega or reg_QA or setaddrlong or data_read or decodeOPC or TG68_PC or data_in or long_done or last_data_read or mem_byte or data_write_tmp or addsub_q or set_vectoraddr or trap_vector or interrupt or enaWRreg or enaRDreg) begin
-  memaddr_a[3:0] <= 4'b 0000;
-  memaddr_a[7:4] <= 4'b 0000;
-  // RK (OTHERS=>memaddr_a(3));
-  memaddr_a[15:8] <= 4'b 0000;
-  // RK (OTHERS=>memaddr_a(7));
-  memaddr_a[31:16] <= 4'b 0000;
-  // RK (OTHERS=>memaddr_a(15));
-  if(movem_presub == 1'b 1) begin
-    if(movem_busy == 1'b 1 || longread == 1'b 1) begin
-      memaddr_a[3:0] <= 4'b 1110;
+
+always @(*) begin
+  memaddr_a[3:0]   <= 4'b0000;
+  memaddr_a[7:4]   <= {4{memaddr_a[3]}};
+  memaddr_a[15:8]  <= {4{memaddr_a[7]}};
+  memaddr_a[31:16] <= {4{memaddr_a[15]}};
+  if(movem_presub == 1'b1) begin
+    if(movem_busy == 1'b1 || longread == 1'b1) begin
+      memaddr_a[3:0] <= 4'b1110;
     end
   end
   else if(state[1] == 1'b 1 || (get_extendedOPC == 1'b 1 && PCmarker == 1'b 1)) begin
@@ -723,7 +1048,7 @@ end
 //---------------------------------------------------------------------------
 // set OP2
 //---------------------------------------------------------------------------
-always @(OP2out or reg_QB or opcode or datatype or OP2out_one or exec_EXT or exec_MOVEQ or EXEC_ADDQ or use_direct_data or data_write_tmp or ea_data_OP1 or set_store_in_tmp or ea_data or movepl) begin
+always @(OP2out or reg_QB or opcode or datatype or OP2out_one or exec_EXT or exec_MOVEQ or exec_ADDQ or use_direct_data or data_write_tmp or ea_data_OP1 or set_store_in_tmp or ea_data or movepl) begin
   OP2out[15:0] <= reg_QB[15:0];
   OP2out[31:16] <= 16'b 0000000000000000;
   // RK (OTHERS => OP2out(15));
@@ -793,7 +1118,7 @@ end
 //---------------------------------------------------------------------------
 // Write Reg
 //---------------------------------------------------------------------------
-always @(clkena or OP1in or datatype or presub or postadd or endOPC or regwrena or state or execOPC or last_data_read or movem_addr or rf_dest_addr or reg_QA or maskzero) begin
+always @(clkena or OP1in or datatype or presub or postadd or endOPC or Regwrena or state or execOPC or last_data_read or movem_addr or rf_dest_addr or reg_QA or maskzero) begin
   Lwrena <= 1'b 0;
   Hwrena <= 1'b 0;
   registerin <= OP1in;
@@ -885,13 +1210,13 @@ always @(opcode or OP1in or OP1out or OP2out or datatype or c_out or exec_ABCD o
   else if(exec_swap == 1'b 1) begin
     OP1in <= {OP1out[15:0],OP1out[31:16]};
   end
-  else if(exec_bits == 1'b 1) begin
+  else if(exec_Bits == 1'b 1) begin
     OP1in <= bits_out;
   end
   else if(exec_MOVESR == 1'b 1) begin
     OP1in[15:0] <= Flags;
   end
-  if(use_XZFlag == 1'b 1 && flags[2] == 1'b 0) begin
+  if(use_XZFlag == 1'b 1 && Flags[2] == 1'b 0) begin
     flag_z <= 3'b 000;
   end
   else if(OP1in[7:0] == 8'b 00000000) begin
@@ -906,21 +1231,21 @@ always @(opcode or OP1in or OP1out or OP2out or datatype or c_out or exec_ABCD o
   //          --Flags NZVC
   if(datatype == 2'b 00) begin
     //Byte
-    set_flags <= {OP1IN[7],flag_z[0],addsub_ofl[0],c_out[0]};
+    set_Flags <= {OP1in[7],flag_z[0],addsub_ofl[0],c_out[0]};
     if(exec_ABCD == 1'b 1) begin
-      set_flags[0] <= dummy_a[8];
+      set_Flags[0] <= dummy_a[8];
     end
     else if(exec_SBCD == 1'b 1) begin
-      set_flags[0] <= dummy_s[8];
+      set_Flags[0] <= dummy_s[8];
     end
   end
   else if(datatype == 2'b 10 || exec_CPMAW == 1'b 1) begin
     //Long
-    set_flags <= {OP1IN[31],flag_z[2],addsub_ofl[2],c_out[2]};
+    set_Flags <= {OP1in[31],flag_z[2],addsub_ofl[2],c_out[2]};
   end
   else begin
     //Word
-    set_flags <= {OP1IN[15],flag_z[1],addsub_ofl[1],c_out[1]};
+    set_Flags <= {OP1in[15],flag_z[1],addsub_ofl[1],c_out[1]};
   end
 end
 
@@ -970,13 +1295,13 @@ always @(posedge clk or posedge reset or posedge opcode) begin
       end
       else if(no_Flags == 1'b 0 && trapmake == 1'b 0) begin
         if(exec_ADD == 1'b 1) begin
-          Flags[4] <= set_flags[0];
+          Flags[4] <= set_Flags[0];
         end
         else if(exec_ROT == 1'b 1 && rot_bits != 2'b 11 && rot_nop == 1'b 0) begin
           Flags[4] <= rot_XC;
         end
         if(((exec_ADD | exec_CMP)) == 1'b 1) begin
-          Flags[3:0] <= set_flags;
+          Flags[3:0] <= set_Flags;
         end
         else if(decodeOPC == 1'b 1 && set_exec_ROT == 1'b 1) begin
           Flags[1] <= 1'b 0;
@@ -986,21 +1311,21 @@ always @(posedge clk or posedge reset or posedge opcode) begin
             Flags[3:0] <= 4'b 1010;
           end
           else begin
-            Flags[3:0] <= {OP1IN[15],flag_z[1],2'b 00};
+            Flags[3:0] <= {OP1in[15],flag_z[1],2'b 00};
           end
         end
         else if(exec_OR == 1'b 1 || exec_AND == 1'b 1 || exec_EOR == 1'b 1 || exec_MOVE == 1'b 1 || exec_swap == 1'b 1 || exec_MULU == 1'b 1) begin
-          Flags[3:0] <= {set_flags[3:2],2'b 00};
+          Flags[3:0] <= {set_Flags[3:2],2'b 00};
         end
         else if(exec_ROT == 1'b 1) begin
-          Flags[3:2] <= set_flags[3:2];
+          Flags[3:2] <= set_Flags[3:2];
           Flags[0] <= rot_XC;
           if(rot_bits == 2'b 00) begin
             //ASL/ASR
-            Flags[1] <= (((set_flags[3] ^ rot_rot)) | Flags[1]);
+            Flags[1] <= (((set_Flags[3] ^ rot_rot)) | Flags[1]);
           end
         end
-        else if(exec_bits == 1'b 1) begin
+        else if(exec_Bits == 1'b 1) begin
           Flags[2] <=  ~one_bit_in;
         end
       end
@@ -1011,7 +1336,7 @@ end
 //---------------------------------------------------------------------------
 // execute opcode
 //---------------------------------------------------------------------------
-always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or endOPC or nextpass or condition or set_V_flag or trapmake or trapd or interrupt or trap_interrupt or rot_nop or Z_error or c_in or rot_cnt or one_bit_in or bit_number_reg or bit_number or ea_only or get_ea_now or ea_build or datatype or exec_write_back or get_extendedOPC or Flags or SVmode or movem_addr or movem_busy or getbrief or set_exec_AND or set_exec_OR or set_exec_EOR or TG68_PC_dec or c_out or OP1out or micro_state) begin
+always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or endOPC or nextpass or condition or set_V_Flag or trapmake or trapd or interrupt or trap_interrupt or rot_nop or Z_error or c_in or rot_cnt or one_bit_in or bit_number_reg or bit_number or ea_only or get_ea_now or ea_build or datatype or exec_write_back or get_extendedOPC or Flags or SVmode or movem_addr or movem_busy or getbrief or set_exec_AND or set_exec_OR or set_exec_EOR or TG68_PC_dec or c_out or OP1out or micro_state) begin
   TG68_PC_br8 <= 1'b 0;
   TG68_PC_brw <= 1'b 0;
   TG68_PC_nop <= 1'b 0;
@@ -1144,20 +1469,20 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
         end
       end
       if(opcode[4:3] != 2'b 10) begin
-        regwrena <= 1'b 1;
+        Regwrena <= 1'b 1;
       end
     end
     3'b 101 : begin
       //(d16,An)
       next_micro_state <= ld_dAn1;
       setgetbrief <= 1'b 1;
-      set_mem_regA <= 1'b 1;
+      set_mem_rega <= 1'b 1;
     end
     3'b 110 : begin
       //(d8,An,Xn)
       next_micro_state <= ld_AnXn1;
       setgetbrief <= 1'b 1;
-      set_mem_regA <= 1'b 1;
+      set_mem_rega <= 1'b 1;
     end
     3'b 111 : begin
       case(opcode[2:0])
@@ -1240,7 +1565,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
       use_SP <= 1'b 1;
       no_Flags <= 1'b 1;
       if(opcode[7] == 1'b 0) begin
-        set_exec_move <= 1'b 1;
+        set_exec_MOVE <= 1'b 1;
         set_movepl <= 1'b 1;
       end
       if(decodeOPC == 1'b 1) begin
@@ -1249,7 +1574,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
         end
         next_micro_state <= movep1;
         setgetbrief <= 1'b 1;
-        set_mem_regA <= 1'b 1;
+        set_mem_rega <= 1'b 1;
       end
       if(opcode[7] == 1'b 0 && endOPC == 1'b 1) begin
         if(opcode[6] == 1'b 1) begin
@@ -1261,7 +1586,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
           //Word
         end
         dest_hbits <= 1'b 1;
-        regwrena <= 1'b 1;
+        Regwrena <= 1'b 1;
       end
     end
     else begin
@@ -1269,7 +1594,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
         //Bits
         if(execOPC == 1'b 1 && get_extendedOPC == 1'b 0) begin
           if(opcode[7:6] != 2'b 00 && endOPC == 1'b 1) begin
-            regwrena <= 1'b 1;
+            Regwrena <= 1'b 1;
           end
           exec_Bits <= 1'b 1;
           ea_data_OP1 <= 1'b 1;
@@ -1446,7 +1771,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
           end
         end
         if(opcode[7:6] != 2'b 10) begin
-          regwrena <= 1'b 1;
+          Regwrena <= 1'b 1;
         end
         setstate <= 2'b 11;
         next_micro_state <= nop;
@@ -1454,13 +1779,13 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
       3'b 101 : begin
         //(d16,An)
         next_micro_state <= st_dAn1;
-        set_mem_regA <= 1'b 1;
+        set_mem_rega <= 1'b 1;
         setgetbrief <= 1'b 1;
       end
       3'b 110 : begin
         //(d8,An,Xn)
         next_micro_state <= st_AnXn1;
-        set_mem_regA <= 1'b 1;
+        set_mem_rega <= 1'b 1;
         setgetbrief <= 1'b 1;
       end
       3'b 111 : begin
@@ -1494,7 +1819,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
           ea_only <= 1'b 1;
           if(opcode[5:3] == 3'b 010) begin
             //lea (Am),An
-            set_exec_move <= 1'b 1;
+            set_exec_MOVE <= 1'b 1;
             no_Flags <= 1'b 1;
             dest_areg <= 1'b 1;
             dest_hbits <= 1'b 1;
@@ -1512,7 +1837,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
           if(get_ea_now == 1'b 1) begin
             dest_areg <= 1'b 1;
             dest_hbits <= 1'b 1;
-            regwrena <= 1'b 1;
+            Regwrena <= 1'b 1;
           end
         end
         else begin
@@ -1678,14 +2003,14 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
             source_lowbits <= 1'b 1;
             if(decodeOPC == 1'b 1) begin
               set_exec_EXT <= 1'b 1;
-              set_exec_move <= 1'b 1;
+              set_exec_MOVE <= 1'b 1;
             end
             if(opcode[6] == 1'b 0) begin
               datatype <= 2'b 01;
               //WORD
             end
             if(execOPC == 1'b 1) begin
-              regwrena <= 1'b 1;
+              Regwrena <= 1'b 1;
             end
           end
           else begin
@@ -1719,7 +2044,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
             end
             if(execOPC == 1'b 1) begin
               if(opcode[5:3] == 3'b 100 || opcode[5:3] == 3'b 011) begin
-                regwrena <= 1'b 1;
+                Regwrena <= 1'b 1;
                 save_memaddr <= 1'b 1;
               end
             end
@@ -1737,7 +2062,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
             end
             if(movem_addr == 1'b 1) begin
               if(opcode[10] == 1'b 1) begin
-                regwrena <= 1'b 1;
+                Regwrena <= 1'b 1;
               end
             end
             if(movem_busy == 1'b 1) begin
@@ -1764,7 +2089,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
                 //swap
                 if(execOPC == 1'b 1) begin
                   exec_swap <= 1'b 1;
-                  regwrena <= 1'b 1;
+                  Regwrena <= 1'b 1;
                 end
               end
               else if(opcode[5:3] == 3'b 001) begin
@@ -1836,7 +2161,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
             datatype <= 2'b 00;
             //Byte
             if(execOPC == 1'b 1 && endOPC == 1'b 1) begin
-              regwrena <= 1'b 1;
+              Regwrena <= 1'b 1;
             end
           end
         end
@@ -1896,7 +2221,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
             end
             if(execOPC == 1'b 1) begin
               setstackaddr <= 1'b 1;
-              regwrena <= 1'b 1;
+              Regwrena <= 1'b 1;
             end
           end
           7'b 1011000,7'b 1011001,7'b 1011010,7'b 1011011,7'b 1011100,7'b 1011101,7'b 1011110,7'b 1011111 : begin
@@ -1907,12 +2232,12 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
               set_mem_rega <= 1'b 1;
             end
             else if(execOPC == 1'b 1) begin
-              regwrena <= 1'b 1;
+              Regwrena <= 1'b 1;
               exec_exg <= 1'b 1;
             end
             else begin
               setstackaddr <= 1'b 1;
-              regwrena <= 1'b 1;
+              Regwrena <= 1'b 1;
               get_ea_now <= 1'b 1;
               ea_only <= 1'b 1;
             end
@@ -1928,7 +2253,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
               set_exec_MOVE <= 1'b 1;
               datatype <= 2'b 10;
               if(execOPC == 1'b 1) begin
-                regwrena <= 1'b 1;
+                Regwrena <= 1'b 1;
               end
             end
             else begin
@@ -1944,7 +2269,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
               set_exec_MOVE <= 1'b 1;
               datatype <= 2'b 10;
               if(execOPC == 1'b 1) begin
-                regwrena <= 1'b 1;
+                Regwrena <= 1'b 1;
               end
             end
             else begin
@@ -2072,7 +2397,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
         if(execOPC == 1'b 1) begin
           if(condition == 1'b 1) begin
             OP2out_one <= 1'b 1;
-            exec_EXG <= 1'b 1;
+            exec_exg <= 1'b 1;
           end
           else begin
             OP1out_zero <= 1'b 1;
@@ -2169,8 +2494,8 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
       if(decodeOPC == 1'b 1) begin
         ea_build <= 1'b 1;
       end
-      if(execOPC == 1'b 1 && z_error == 1'b 0 && set_V_Flag == 1'b 0) begin
-        regwrena <= 1'b 1;
+      if(execOPC == 1'b 1 && Z_error == 1'b 0 && set_V_Flag == 1'b 0) begin
+        Regwrena <= 1'b 1;
       end
       if((micro_state != idle && nextpass == 1'b 1) || execOPC == 1'b 1) begin
         dest_hbits <= 1'b 1;
@@ -2394,7 +2719,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
         ea_build <= 1'b 1;
       end
       if(execOPC == 1'b 1) begin
-        regwrena <= 1'b 1;
+        Regwrena <= 1'b 1;
       end
       if((micro_state != idle && nextpass == 1'b 1) || execOPC == 1'b 1) begin
         dest_hbits <= 1'b 1;
@@ -2434,7 +2759,7 @@ always @(clk or reset or OP2out or opcode or fetchOPC or decodeOPC or execOPC or
       else begin
         //exg
         datatype <= 2'b 10;
-        regwrena <= 1'b 1;
+        Regwrena <= 1'b 1;
         if(opcode[6] == 1'b 1 && opcode[3] == 1'b 1) begin
           dest_areg <= 1'b 1;
           source_areg <= 1'b 1;
@@ -2725,7 +3050,7 @@ always @(micro_state) begin
     // link
     setstate <= 2'b 11;
     save_memaddr <= 1'b 1;
-    regwrena <= 1'b 1;
+    Regwrena <= 1'b 1;
   end
   int1 : begin
     // interrupt
@@ -2853,7 +3178,7 @@ always @(micro_state) begin
     //-  OP1in <= memaddr_in
     setaddrlong <= 1'b 1;
     //   memaddr_in <= data_read
-    regwrena <= 1'b 1;
+    Regwrena <= 1'b 1;
     setstackaddr <= 1'b 1;
     //   dest_addr <= SP
     set_directPC <= 1'b 1;
@@ -3108,7 +3433,7 @@ end
 //---------------------------------------------------------------------------
 // Bits
 //---------------------------------------------------------------------------
-always @(opcode or OP1out or OP2out or one_bit_in or one_bit_out or bit_Number or bit_number_reg) begin
+always @(opcode or OP1out or OP2out or one_bit_in or one_bit_out or bit_number or bit_number_reg) begin
   case(opcode[7:6])
   2'b 00 : begin
     //btst
@@ -3146,7 +3471,7 @@ always @(opcode or OP1out or OP2out or one_bit_in or one_bit_out or bit_Number o
     end
   end
   bits_out <= OP1out;
-  case(bit_Number)
+  case(bit_number)
   5'b 00000 : begin
     one_bit_in <= OP1out[0];
     bits_out[0] <= one_bit_out;
