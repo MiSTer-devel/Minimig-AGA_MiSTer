@@ -1,0 +1,218 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 16 16 192 464)
+	(text "chameleon_cdtv_remote" (rect 5 0 126 12)(font "Arial" ))
+	(text "inst" (rect 8 432 25 444)(font "Arial" ))
+	(port
+		(pt 0 32)
+		(input)
+		(text "clk" (rect 0 0 14 12)(font "Arial" ))
+		(text "clk" (rect 21 27 35 39)(font "Arial" ))
+		(line (pt 0 32)(pt 16 32)(line_width 1))
+	)
+	(port
+		(pt 0 48)
+		(input)
+		(text "ena_1mhz" (rect 0 0 49 12)(font "Arial" ))
+		(text "ena_1mhz" (rect 21 43 70 55)(font "Arial" ))
+		(line (pt 0 48)(pt 16 48)(line_width 1))
+	)
+	(port
+		(pt 0 64)
+		(input)
+		(text "ir" (rect 0 0 5 12)(font "Arial" ))
+		(text "ir" (rect 21 59 26 71)(font "Arial" ))
+		(line (pt 0 64)(pt 16 64)(line_width 1))
+	)
+	(port
+		(pt 176 32)
+		(output)
+		(text "trigger" (rect 0 0 30 12)(font "Arial" ))
+		(text "trigger" (rect 125 27 155 39)(font "Arial" ))
+		(line (pt 176 32)(pt 160 32)(line_width 1))
+	)
+	(port
+		(pt 176 48)
+		(output)
+		(text "key_1" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_1" (rect 125 43 155 55)(font "Arial" ))
+		(line (pt 176 48)(pt 160 48)(line_width 1))
+	)
+	(port
+		(pt 176 64)
+		(output)
+		(text "key_2" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_2" (rect 125 59 155 71)(font "Arial" ))
+		(line (pt 176 64)(pt 160 64)(line_width 1))
+	)
+	(port
+		(pt 176 80)
+		(output)
+		(text "key_3" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_3" (rect 125 75 155 87)(font "Arial" ))
+		(line (pt 176 80)(pt 160 80)(line_width 1))
+	)
+	(port
+		(pt 176 96)
+		(output)
+		(text "key_4" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_4" (rect 125 91 155 103)(font "Arial" ))
+		(line (pt 176 96)(pt 160 96)(line_width 1))
+	)
+	(port
+		(pt 176 112)
+		(output)
+		(text "key_5" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_5" (rect 125 107 155 119)(font "Arial" ))
+		(line (pt 176 112)(pt 160 112)(line_width 1))
+	)
+	(port
+		(pt 176 128)
+		(output)
+		(text "key_6" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_6" (rect 125 123 155 135)(font "Arial" ))
+		(line (pt 176 128)(pt 160 128)(line_width 1))
+	)
+	(port
+		(pt 176 144)
+		(output)
+		(text "key_7" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_7" (rect 125 139 155 151)(font "Arial" ))
+		(line (pt 176 144)(pt 160 144)(line_width 1))
+	)
+	(port
+		(pt 176 160)
+		(output)
+		(text "key_8" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_8" (rect 125 155 155 167)(font "Arial" ))
+		(line (pt 176 160)(pt 160 160)(line_width 1))
+	)
+	(port
+		(pt 176 176)
+		(output)
+		(text "key_9" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_9" (rect 125 171 155 183)(font "Arial" ))
+		(line (pt 176 176)(pt 160 176)(line_width 1))
+	)
+	(port
+		(pt 176 192)
+		(output)
+		(text "key_0" (rect 0 0 30 12)(font "Arial" ))
+		(text "key_0" (rect 125 187 155 199)(font "Arial" ))
+		(line (pt 176 192)(pt 160 192)(line_width 1))
+	)
+	(port
+		(pt 176 208)
+		(output)
+		(text "key_escape" (rect 0 0 60 12)(font "Arial" ))
+		(text "key_escape" (rect 95 203 155 215)(font "Arial" ))
+		(line (pt 176 208)(pt 160 208)(line_width 1))
+	)
+	(port
+		(pt 176 224)
+		(output)
+		(text "key_enter" (rect 0 0 49 12)(font "Arial" ))
+		(text "key_enter" (rect 106 219 155 231)(font "Arial" ))
+		(line (pt 176 224)(pt 160 224)(line_width 1))
+	)
+	(port
+		(pt 176 240)
+		(output)
+		(text "key_genlock" (rect 0 0 62 12)(font "Arial" ))
+		(text "key_genlock" (rect 93 235 155 247)(font "Arial" ))
+		(line (pt 176 240)(pt 160 240)(line_width 1))
+	)
+	(port
+		(pt 176 256)
+		(output)
+		(text "key_cdtv" (rect 0 0 47 12)(font "Arial" ))
+		(text "key_cdtv" (rect 108 251 155 263)(font "Arial" ))
+		(line (pt 176 256)(pt 160 256)(line_width 1))
+	)
+	(port
+		(pt 176 272)
+		(output)
+		(text "key_power" (rect 0 0 53 12)(font "Arial" ))
+		(text "key_power" (rect 102 267 155 279)(font "Arial" ))
+		(line (pt 176 272)(pt 160 272)(line_width 1))
+	)
+	(port
+		(pt 176 288)
+		(output)
+		(text "key_rew" (rect 0 0 41 12)(font "Arial" ))
+		(text "key_rew" (rect 114 283 155 295)(font "Arial" ))
+		(line (pt 176 288)(pt 160 288)(line_width 1))
+	)
+	(port
+		(pt 176 304)
+		(output)
+		(text "key_play" (rect 0 0 46 12)(font "Arial" ))
+		(text "key_play" (rect 109 299 155 311)(font "Arial" ))
+		(line (pt 176 304)(pt 160 304)(line_width 1))
+	)
+	(port
+		(pt 176 320)
+		(output)
+		(text "key_ff" (rect 0 0 34 12)(font "Arial" ))
+		(text "key_ff" (rect 121 315 155 327)(font "Arial" ))
+		(line (pt 176 320)(pt 160 320)(line_width 1))
+	)
+	(port
+		(pt 176 336)
+		(output)
+		(text "key_stop" (rect 0 0 46 12)(font "Arial" ))
+		(text "key_stop" (rect 109 331 155 343)(font "Arial" ))
+		(line (pt 176 336)(pt 160 336)(line_width 1))
+	)
+	(port
+		(pt 176 352)
+		(output)
+		(text "key_vol_up" (rect 0 0 57 12)(font "Arial" ))
+		(text "key_vol_up" (rect 98 347 155 359)(font "Arial" ))
+		(line (pt 176 352)(pt 160 352)(line_width 1))
+	)
+	(port
+		(pt 176 368)
+		(output)
+		(text "key_vol_dn" (rect 0 0 57 12)(font "Arial" ))
+		(text "key_vol_dn" (rect 98 363 155 375)(font "Arial" ))
+		(line (pt 176 368)(pt 160 368)(line_width 1))
+	)
+	(port
+		(pt 176 384)
+		(output)
+		(text "joystick_a[5..0]" (rect 0 0 76 12)(font "Arial" ))
+		(text "joystick_a[5..0]" (rect 79 379 155 391)(font "Arial" ))
+		(line (pt 176 384)(pt 160 384)(line_width 3))
+	)
+	(port
+		(pt 176 400)
+		(output)
+		(text "joystick_b[5..0]" (rect 0 0 76 12)(font "Arial" ))
+		(text "joystick_b[5..0]" (rect 79 395 155 407)(font "Arial" ))
+		(line (pt 176 400)(pt 160 400)(line_width 3))
+	)
+	(drawing
+		(rectangle (rect 16 16 160 432)(line_width 1))
+	)
+)

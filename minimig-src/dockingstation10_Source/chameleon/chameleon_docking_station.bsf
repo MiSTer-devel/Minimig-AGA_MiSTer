@@ -1,0 +1,148 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 16 16 264 240)
+	(text "chameleon_docking_station" (rect 5 0 140 12)(font "Arial" ))
+	(text "inst" (rect 8 208 25 220)(font "Arial" ))
+	(port
+		(pt 0 32)
+		(input)
+		(text "clk" (rect 0 0 14 12)(font "Arial" ))
+		(text "clk" (rect 21 27 35 39)(font "Arial" ))
+		(line (pt 0 32)(pt 16 32)(line_width 1))
+	)
+	(port
+		(pt 0 48)
+		(input)
+		(text "dotclock_n" (rect 0 0 53 12)(font "Arial" ))
+		(text "dotclock_n" (rect 21 43 74 55)(font "Arial" ))
+		(line (pt 0 48)(pt 16 48)(line_width 1))
+	)
+	(port
+		(pt 0 64)
+		(input)
+		(text "io_ef_n" (rect 0 0 36 12)(font "Arial" ))
+		(text "io_ef_n" (rect 21 59 57 71)(font "Arial" ))
+		(line (pt 0 64)(pt 16 64)(line_width 1))
+	)
+	(port
+		(pt 0 80)
+		(input)
+		(text "rom_lh_n" (rect 0 0 44 12)(font "Arial" ))
+		(text "rom_lh_n" (rect 21 75 65 87)(font "Arial" ))
+		(line (pt 0 80)(pt 16 80)(line_width 1))
+	)
+	(port
+		(pt 0 96)
+		(input)
+		(text "irq_d" (rect 0 0 23 12)(font "Arial" ))
+		(text "irq_d" (rect 21 91 44 103)(font "Arial" ))
+		(line (pt 0 96)(pt 16 96)(line_width 1))
+	)
+	(port
+		(pt 0 112)
+		(input)
+		(text "amiga_power_led" (rect 0 0 83 12)(font "Arial" ))
+		(text "amiga_power_led" (rect 21 107 104 119)(font "Arial" ))
+		(line (pt 0 112)(pt 16 112)(line_width 1))
+	)
+	(port
+		(pt 0 128)
+		(input)
+		(text "amiga_drive_led" (rect 0 0 80 12)(font "Arial" ))
+		(text "amiga_drive_led" (rect 21 123 101 135)(font "Arial" ))
+		(line (pt 0 128)(pt 16 128)(line_width 1))
+	)
+	(port
+		(pt 248 32)
+		(output)
+		(text "irq_q" (rect 0 0 23 12)(font "Arial" ))
+		(text "irq_q" (rect 204 27 227 39)(font "Arial" ))
+		(line (pt 248 32)(pt 232 32)(line_width 1))
+	)
+	(port
+		(pt 248 48)
+		(output)
+		(text "joystick1[5..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "joystick1[5..0]" (rect 157 43 227 55)(font "Arial" ))
+		(line (pt 248 48)(pt 232 48)(line_width 3))
+	)
+	(port
+		(pt 248 64)
+		(output)
+		(text "joystick2[5..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "joystick2[5..0]" (rect 157 59 227 71)(font "Arial" ))
+		(line (pt 248 64)(pt 232 64)(line_width 3))
+	)
+	(port
+		(pt 248 80)
+		(output)
+		(text "joystick3[5..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "joystick3[5..0]" (rect 157 75 227 87)(font "Arial" ))
+		(line (pt 248 80)(pt 232 80)(line_width 3))
+	)
+	(port
+		(pt 248 96)
+		(output)
+		(text "joystick4[5..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "joystick4[5..0]" (rect 157 91 227 103)(font "Arial" ))
+		(line (pt 248 96)(pt 232 96)(line_width 3))
+	)
+	(port
+		(pt 248 112)
+		(output)
+		(text "keys[63..0]" (rect 0 0 56 12)(font "Arial" ))
+		(text "keys[63..0]" (rect 171 107 227 119)(font "Arial" ))
+		(line (pt 248 112)(pt 232 112)(line_width 3))
+	)
+	(port
+		(pt 248 128)
+		(output)
+		(text "restore_key_n" (rect 0 0 70 12)(font "Arial" ))
+		(text "restore_key_n" (rect 157 123 227 135)(font "Arial" ))
+		(line (pt 248 128)(pt 232 128)(line_width 1))
+	)
+	(port
+		(pt 248 144)
+		(output)
+		(text "amiga_reset_n" (rect 0 0 71 12)(font "Arial" ))
+		(text "amiga_reset_n" (rect 156 139 227 151)(font "Arial" ))
+		(line (pt 248 144)(pt 232 144)(line_width 1))
+	)
+	(port
+		(pt 248 160)
+		(output)
+		(text "amiga_trigger" (rect 0 0 66 12)(font "Arial" ))
+		(text "amiga_trigger" (rect 161 155 227 167)(font "Arial" ))
+		(line (pt 248 160)(pt 232 160)(line_width 1))
+	)
+	(port
+		(pt 248 176)
+		(output)
+		(text "amiga_scancode[7..0]" (rect 0 0 108 12)(font "Arial" ))
+		(text "amiga_scancode[7..0]" (rect 119 171 227 183)(font "Arial" ))
+		(line (pt 248 176)(pt 232 176)(line_width 3))
+	)
+	(drawing
+		(rectangle (rect 16 16 232 208)(line_width 1))
+	)
+)

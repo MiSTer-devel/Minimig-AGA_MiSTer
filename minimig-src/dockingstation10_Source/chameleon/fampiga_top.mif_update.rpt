@@ -1,0 +1,76 @@
+MIF/HEX Update report for fampiga_top
+Tue May 03 20:46:21 2011
+Quartus II Version 9.0 Build 184 04/29/2009 Service Pack 1 SJ Web Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. MIF/HEX Update Summary
+  3. MIF/HEX Update Processed Files
+  4. MIF/HEX Update Messages
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+
+
+
++---------------------------------------------------------------+
+; MIF/HEX Update Summary                                        ;
++-----------------------+---------------------------------------+
+; MIF/HEX Update Status ; Successful - Tue May 03 20:46:21 2011 ;
+; Revision Name         ; fampiga_top                           ;
+; Top-level Entity Name ; fampiga_top                           ;
+; Family                ; Cyclone III                           ;
+; Device                ; EP3C25E144C8                          ;
++-----------------------+---------------------------------------+
+
+
++---------------------------------------------------------------------------------+
+; MIF/HEX Update Processed Files                                                  ;
++---------------------------------------------------------------------------------+
+; File Name                                                                       ;
++---------------------------------------------------------------------------------+
+; D:/_chameleon/fampiga/chameleon/db/fAMpIGA.rom0_ps2keyboardmap_8d0ca61e.hdl.mif ;
+; D:/_chameleon/fampiga/software/Bootfirmware/hostboot.hex                        ;
+; D:/_chameleon/fampiga/software/Bootfirmware/osdload.hex                         ;
++---------------------------------------------------------------------------------+
+
+
++-------------------------+
+; MIF/HEX Update Messages ;
++-------------------------+
+Info: *******************************************************************
+Info: Running Quartus II MIF/HEX Update
+    Info: Version 9.0 Build 184 04/29/2009 Service Pack 1 SJ Web Edition
+    Info: Processing started: Tue May 03 20:46:19 2011
+Info: Command: quartus_cdb fAMpIGA -c fampiga_top --update_mif
+Critical Warning: Memory depth (2048) in the design file differs from memory depth (1024) in the Memory Initialization File "osdload.hex" -- setting initial value for remaining addresses to 0
+Info: Processed the following Memory Initialization File(s)
+    Info: Processed Memory Initialization File D:/_chameleon/fampiga/chameleon/db/fAMpIGA.rom0_ps2keyboardmap_8d0ca61e.hdl.mif
+    Info: Processed Memory Initialization File D:/_chameleon/fampiga/software/Bootfirmware/hostboot.hex
+    Info: Processed Memory Initialization File D:/_chameleon/fampiga/software/Bootfirmware/osdload.hex
+Info: Quartus II MIF/HEX Update was successful. 0 errors, 1 warning
+    Info: Peak virtual memory: 210 megabytes
+    Info: Processing ended: Tue May 03 20:46:22 2011
+    Info: Elapsed time: 00:00:03
+    Info: Total CPU time (on all processors): 00:00:02
+
+
