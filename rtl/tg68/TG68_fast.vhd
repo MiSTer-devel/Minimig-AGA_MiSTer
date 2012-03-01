@@ -79,7 +79,7 @@ entity TG68_fast is
         data_write        : out std_logic_vector(15 downto 0);
         state_out         : out std_logic_vector(1 downto 0);
 		LDS, UDS		  : out std_logic;		
-        decodeOPC         : buffer std_logic;
+       decodeOPC         : buffer std_logic;
 		wr				  : out std_logic;
         enaRDreg         : in std_logic:='1';
         enaWRreg         : in std_logic:='1'
@@ -376,9 +376,8 @@ BEGIN
 
 	RWindex_A <= conv_integer(rf_dest_addr(4)&(rf_dest_addr(3 downto 0) XOR "1111"));
 	RWindex_B <= conv_integer(rf_source_addr(4)&(rf_source_addr(3 downto 0) XOR "1111"));
-	
-	PROCESS (clk)
-	BEGIN
+
+	PROCESS (clk) BEGIN
 		IF rising_edge(clk) THEN
 		    IF clkenareg='1' THEN
 --		IF falling_edge(clk) THEN
@@ -387,6 +386,9 @@ BEGIN
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
 		END IF;
+  END PROCESS;
+
+	PROCESS (clk) BEGIN
 		IF rising_edge(clk) THEN
 		    IF clkena='1' THEN
 				IF Lwrena='1' THEN
@@ -439,7 +441,14 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
 	BEGIN
 		clkena <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaWRreg;
 		clkenareg <= clkena_in AND NOT longread AND NOT get_extendedOPC AND enaRDreg;
-		
+END PROCESS;
+
+	PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, memaddr, memaddr_a, set_mem_addsub, movem_presub, 
+         movem_busy, state, PCmarker, execOPC, datatype, setdisp, setdispbrief, briefext, setdispbyte, brief,
+         set_mem_rega, reg_QA, setaddrlong, data_read, decodeOPC, TG68_PC, data_in, long_done, last_data_read, mem_byte,
+         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
+	BEGIN
+	
 		IF rising_edge(clk) THEN
 			IF clkena='1' THEN
 				trap_vector(31 downto 8) <= (others => '0');
@@ -481,10 +490,17 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
 				END IF;	
 			END IF;
 		END IF;
+  END PROCESS;
 
-		memaddr_a(3 downto 0) <= "0000";
-		memaddr_a(7 downto 4) <= (OTHERS=>memaddr_a(3));
-		memaddr_a(15 downto 8) <= (OTHERS=>memaddr_a(7));
+
+	PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, memaddr, memaddr_a, set_mem_addsub, movem_presub, 
+         movem_busy, state, PCmarker, execOPC, datatype, setdisp, setdispbrief, briefext, setdispbyte, brief,
+         set_mem_rega, reg_QA, setaddrlong, data_read, decodeOPC, TG68_PC, data_in, long_done, last_data_read, mem_byte,
+         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
+	BEGIN
+	memaddr_a(3 downto 0) <= "0000";
+		memaddr_a(7 downto 4)   <= (OTHERS=>memaddr_a(3));
+		memaddr_a(15 downto 8)  <= (OTHERS=>memaddr_a(7));
 		memaddr_a(31 downto 16) <= (OTHERS=>memaddr_a(15));
 		IF movem_presub='1' THEN
 			IF movem_busy='1' OR longread='1' THEN
@@ -547,7 +563,14 @@ PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, mema
 				END IF;	
 			END IF;
 		END IF;	
-		
+  END PROCESS;
+
+
+	PROCESS (clk, reset, clkena_in, opcode, rIPL_nr, longread, get_extendedOPC, memaddr, memaddr_a, set_mem_addsub, movem_presub, 
+         movem_busy, state, PCmarker, execOPC, datatype, setdisp, setdispbrief, briefext, setdispbyte, brief,
+         set_mem_rega, reg_QA, setaddrlong, data_read, decodeOPC, TG68_PC, data_in, long_done, last_data_read, mem_byte,
+         data_write_tmp, addsub_q, set_vectoraddr, trap_vector, interrupt, enaWRreg, enaRDreg)
+	BEGIN
 		IF reset='0' THEN
 			longread <= '0';
 			long_done <= '0';
@@ -580,6 +603,11 @@ process (clk, brief, OP1out)
 		ELSE
 			OP1outbrief <= (OTHERS=>OP1out(15));
 		END IF;
+end process;
+
+
+process (clk, brief, OP1out)
+	begin
 		IF rising_edge(clk) THEN
         	IF clkena='1' THEN
 				briefext <= OP1outbrief&OP1out(15 downto 0);
@@ -622,8 +650,12 @@ process (clk, reset, opcode, TG68_PC, TG68_PC_dec, TG68_PC_br8, TG68_PC_brw, PC_
 		ELSE
 			setstate_mux <= setstate;
 		END IF;
-		
-		
+end process;
+
+	
+	process (clk, reset, opcode, TG68_PC, TG68_PC_dec, TG68_PC_br8, TG68_PC_brw, PC_dataa, PC_datab, execOPC, last_data_read, get_extendedOPC,
+		 setstate_delay, setstate)
+	begin
       	IF reset = '0' THEN
 			opcode(15 downto 12) <= X"7";		--moveq
 			opcode(8 downto 6) <= "010";		--long
@@ -1496,8 +1528,11 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 						END IF;
 					ELSE
 						IF decodeOPC='1' THEN
-							IF opcode(11 downto 8)="0010" OR opcode(11 downto 8)="0000" OR opcode(11 downto 8)="0100"  	--ANDI, ORI, SUBI
-							   OR opcode(11 downto 8)="0110" OR opcode(11 downto 8)="1010" OR opcode(11 downto 8)="1100" THEN	--ADDI, EORI, CMPI
+  	          --ANDI, ORI, SUBI
+							IF opcode(11 downto 8)="0010" OR opcode(11 downto 8)="0000" OR opcode(11 downto 8)="0100"
+							   OR opcode(11 downto 8)="0110" OR opcode(11 downto 8)="1010" OR opcode(11 downto 8)="1100" THEN
+	              --ADDI, EORI, CMPI
+
 	--						IF (set_exec_AND OR set_exec_OR OR set_exec_ADD  	--ANDI, ORI, SUBI
 	--						   OR set_exec_EOR OR set_exec_CMP)='1' THEN	--ADDI, EORI, CMPI
 								
@@ -1935,7 +1970,8 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 								END IF;
 							ELSE						--
 								CASE opcode(6 downto 0) IS
-									WHEN "1000000"|"1000001"|"1000010"|"1000011"|"1000100"|"1000101"|"1000110"|"1000111"|		--trap
+		              --trap
+									WHEN "1000000"|"1000001"|"1000010"|"1000011"|"1000100"|"1000101"|"1000110"|"1000111"|
 									     "1001000"|"1001001"|"1001010"|"1001011"|"1001100"|"1001101"|"1001110"|"1001111" =>		--trap
 											trap_trap <='1';
 											trapmake <= '1';
@@ -2527,7 +2563,10 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 			setstate <= "10";
 --			datatype <= "01";		--wirkt sich auf Flags aus
 		END IF;	
+END PROCESS;
 
+
+PROCESS(micro_state) BEGIN
 		IF reset='0' THEN
 			micro_state <= init1;
 		ELSIF rising_edge(clk) THEN
@@ -2540,6 +2579,9 @@ PROCESS (clk, reset, OP2out, opcode, fetchOPC, decodeOPC, execOPC, endOPC, nextp
 				END IF;	
 			END IF;
 		END IF;
+END PROCESS;
+
+PROCESS(micro_state) BEGIN
 			CASE micro_state IS
 				WHEN ld_nn =>		-- (nnnn).w/l=>
 					get_ea_now <='1';
@@ -3085,7 +3127,10 @@ PROCESS (clk, opcode, OP2out, muls_msb, mulu_reg, OP1sign, sign2)
 				END IF;
 			END IF;
 		END IF;
-		
+END PROCESS;
+
+PROCESS (clk, opcode, OP2out, muls_msb, mulu_reg, OP1sign, sign2)
+	BEGIN	
 		IF (opcode(8)='1' AND OP2out(15)='1') OR OP1sign='1' THEN
 			muls_msb <= mulu_reg(31);
 		ELSE
@@ -3115,7 +3160,11 @@ PROCESS (clk, opcode, OP2out, muls_msb, mulu_reg, OP1sign, sign2)
 PROCESS (clk, execOPC, opcode, OP1out, OP2out, div_reg, dummy_div_sub, div_quot, div_sign, dummy_div_over, dummy_div)
 	BEGIN
 		set_V_Flag <= '0';
-		
+END PROCESS;
+
+	PROCESS (clk, execOPC, opcode, OP1out, OP2out, div_reg, dummy_div_sub, div_quot, div_sign, dummy_div_over, dummy_div)
+	BEGIN
+	
 		IF rising_edge(clk) THEN
 			IF clkena='1' THEN
 				IF decodeOPC='1' THEN
@@ -3131,6 +3180,10 @@ PROCESS (clk, execOPC, opcode, OP1out, OP2out, div_reg, dummy_div_sub, div_quot,
 				END IF;
 			END IF;
 		END IF;
+	END PROCESS;
+
+	PROCESS (clk, execOPC, opcode, OP1out, OP2out, div_reg, dummy_div_sub, div_quot, div_sign, dummy_div_over, dummy_div)
+	BEGIN
 		
 		dummy_div_over <= ('0'&OP1out(31 downto 16))-('0'&OP2out(15 downto 0));
 		
@@ -3159,9 +3212,11 @@ PROCESS (clk, execOPC, opcode, OP1out, OP2out, div_reg, dummy_div_sub, div_quot,
 		ELSE
 			dummy_div(31 downto 16) <= div_quot(31 downto 16);
 		END IF;	
-		
-		IF (opcode(8)='1' AND (OP2out(15) XOR div_sign XOR dummy_div(15))='1' AND dummy_div(15 downto 0)/=X"0000")	--Overflow DIVS
-			OR (opcode(8)='0' AND dummy_div_over(16)='0') THEN	--Overflow DIVU
+			--Overflow DIVS
+
+		IF (opcode(8)='1' AND (OP2out(15) XOR div_sign XOR dummy_div(15))='1' AND dummy_div(15 downto 0)/=X"0000")
+			OR (opcode(8)='0' AND dummy_div_over(16)='0') THEN
+	--Overflow DIVU
 			set_V_Flag <= '1';
 		END IF;
 	END PROCESS;
@@ -3202,7 +3257,11 @@ PROCESS (reset, clk, movem_mask, movem_muxa ,movem_muxb, movem_muxc)
 						("0000"&movem_mask(4))+("0000"&movem_mask(5))+("0000"&movem_mask(6))+("0000"&movem_mask(7))+
 						("0000"&movem_mask(8))+("0000"&movem_mask(9))+("0000"&movem_mask(10))+("0000"&movem_mask(11))+
 						("0000"&movem_mask(12))+("0000"&movem_mask(13))+("0000"&movem_mask(14))+("0000"&movem_mask(15));
-						
+  END PROCESS;
+
+	PROCESS (reset, clk, movem_mask, movem_muxa ,movem_muxb, movem_muxc)
+	BEGIN
+					
       	IF reset = '0' THEN
 			movem_busy <= '0';
 			movem_addr <= '0';
