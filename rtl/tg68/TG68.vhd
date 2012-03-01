@@ -115,11 +115,13 @@ BEGIN
 
 TG68_fast_inst: TG68_fast
 	PORT MAP (
+-- originally n_clk was used
 --		clk => n_clk, 			-- : in std_logic;
 		clk => clk, 			-- : in std_logic;
         reset => reset, 		-- : in std_logic;
         clkena_in => clkena, 	-- : in std_logic;
         data_in => data_in, 	-- : in std_logic_vector(15 downto 0);
+-- originally cpuIPL was used
 --		IPL => cpuIPL, 			-- : in std_logic_vector(2 downto 0);
  		IPL => IPL, 			-- : in std_logic_vector(2 downto 0);
        test_IPL => '0', 		-- : in std_logic;
@@ -137,7 +139,7 @@ TG68_fast_inst: TG68_fast
 		
 	PROCESS (clk)
 	BEGIN
-		IF rising_edge(clk) THEN -- TODO new version is not edge sensitive (remove this)
+		IF rising_edge(clk) THEN -- TODO new version is not edge sensitive (try to remove this)
 			IF clkena_in='1' AND (clkena_e='1' OR state="01") THEN
 				clkena <= '1';
 			ELSE 
@@ -170,7 +172,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			uds_s <= '1';
 			lds_s <= '1';
 		ELSIF rising_edge(clk) THEN
-        	IF clkena_in='1' AND enaWRreg='1' THEN
+        	IF clkena_in='1' AND enaWRreg='1' THEN -- enaWRreg added
 				as_s <= '1';
 				rw_s <= '1';
 				uds_s <= '1';
@@ -215,8 +217,9 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
       cpuIPL <= "111";
       drive_data <= '0';
 		ELSIF rising_edge(clk) THEN
+-- originally it was falling_edge sensitive
 --		ELSIF falling_edge(clk) THEN
-        	IF clkena_in='1' AND enaRDreg='1' THEN
+        	IF clkena_in='1' AND enaRDreg='1' THEN -- enaRDreg added
 				as_e <= '1';
 				rw_e <= '1';
 				uds_e <= '1';

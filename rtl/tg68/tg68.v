@@ -53,71 +53,63 @@ module TG68(
   output reg            uds,
   output reg            lds,
   output reg            rw,
-  output reg            drive_data,
-  //enable for data_out driver
+  output reg            drive_data, //enable for data_out driver
   input  wire           enaRDreg,
   input  wire           enaWRreg
 );
 
 
 
-reg as_s;
-reg as_e;
-reg uds_s;
-reg uds_e;
-reg lds_s;
-reg lds_e;
-reg rw_s;
-reg rw_e;
-reg waitm;
-reg clkena_e;
-reg [1:0] S_state;
-wire decode;
-wire wr;
-wire uds_in;
-wire lds_in;
-wire [1:0] state;
-reg clkena;  //   SIGNAL n_clk		  : std_logic;
-reg [2:0] cpuIPL;
+reg            as_s;
+reg            as_e;
+reg            uds_s;
+reg            uds_e;
+reg            lds_s;
+reg            lds_e;
+reg            rw_s;
+reg            rw_e;
+reg            waitm;
+reg            clkena_e;
+reg  [  2-1:0] S_state;
+wire           decode;
+wire           wr;
+wire           uds_in;
+wire           lds_in;
+wire [  2-1:0] state;
+reg            clkena;  
+wire           n_clk;
+reg  [  3-1:0] cpuIPL;
 
 
 
-//	n_clk <= NOT clk;
+assign n_clk = ~clk;
+
+
 TG68_fast TG68_fast_inst(
-    //		clk => n_clk, 			-- : in std_logic;
-  .clk(clk),
-  // : in std_logic;
-  .reset(reset),
-  // : in std_logic;
-  .clkena_in(clkena),
-  // : in std_logic;
-  .data_in(data_in),
-  // : in std_logic_vector(15 downto 0);
-  //		IPL => cpuIPL, 			-- : in std_logic_vector(2 downto 0);
-  .IPL(IPL),
-  // : in std_logic_vector(2 downto 0);
-  .test_IPL(1'b 0),
-  // : in std_logic;
-  .address(addr),
-  // : out std_logic_vector(31 downto 0);
-  .data_write(data_out),
-  // : out std_logic_vector(15 downto 0);
-  .state_out(state),
-  // : out std_logic_vector(1 downto 0);
-  .decodeOPC(decode),
-  // : buffer std_logic;
-  .wr(wr),
-  // : out std_logic;
-  .UDS(uds_in),
-  // : out std_logic;
-  .LDS(lds_in),
-  // : out std_logic;
-  .enaRDreg(enaWRreg),
-  .enaWRreg(enaRDreg));
+  // originally n_clk was used
+  //.clk        (n_clk),
+  .clk        (clk),
+  .reset      (reset),
+  .clkena_in  (clkena),
+  .data_in    (data_in),
+  // originally cpuIPL was used
+  //.IPL        (cpuIPL),
+  .IPL        (IPL),
+  .test_IPL   (1'b0),
+  .address    (addr),
+  .data_write (data_out),
+  .state_out  (state),
+  .decodeOPC  (decode),
+  .wr         (wr),
+  .UDS        (uds_in),
+  .LDS        (lds_in),
+  .enaRDreg   (enaWRreg),
+  .enaWRreg   (enaRDreg)
+);
 
 
 always @(posedge clk) begin
-  // TODO new version is not edge sensitive (remove this)
+  // TODO new version is not edge sensitive (convert this to always_comb ?)
   if((clkena_in == 1'b1) && ((clkena_e == 1'b1) || (state == 2'b01))) begin
     clkena <= 1'b1;
   end else begin
@@ -149,7 +141,7 @@ always @(posedge clk or negedge reset) begin
     uds_s   <= 1'b1;
     lds_s   <= 1'b1;
   end else begin
-    if((clkena_in == 1'b1) && (enaWRreg == 1'b1)) begin
+    if((clkena_in == 1'b1) && (enaWRreg == 1'b1)) begin // enaWRreg added
       as_s  <= 1'b1;
       rw_s  <= 1'b1;
       uds_s <= 1'b1;
@@ -190,6 +182,7 @@ always @(posedge clk or negedge reset) begin
 end
 
 
+// originally it was falling edge clock sensitive
 always @(posedge clk or negedge reset) begin
   if(reset == 1'b0) begin
     as_e       <= 1'b1;
@@ -200,8 +193,7 @@ always @(posedge clk or negedge reset) begin
     cpuIPL     <= 3'b111;
     drive_data <= 1'b0;
   end else begin
-    //    ELSIF falling_edge(clk) THEN
-    if(clkena_in == 1'b1 && enaRDreg == 1'b1) begin
+    if(clkena_in == 1'b1 && enaRDreg == 1'b1) begin // enaRDreg added
       as_e       <= 1'b1;
       rw_e       <= 1'b1;
       uds_e      <= 1'b1;
