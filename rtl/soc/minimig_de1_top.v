@@ -105,10 +105,17 @@ module minimig_de1_top (
 
 // clock
 wire           pll_in_clk;
+`ifdef SOC_SIM
+reg            clk_114;
+reg            clk_28;
+reg            clk_sdram;
+reg            pll_locked;
+`else
 wire           clk_114;
 wire           clk_28;
 wire           clk_sdram;
 wire           pll_locked;
+`endif
 wire           clk_7;
 wire           clk_14;
 
@@ -261,6 +268,28 @@ assign DRAM_BA_1    = sdram_ba[1];
 ////////////////////////////////////////
 
 /* clock */
+`define SOC_SIM
+`ifdef SOC_SIM
+// generated clocks
+initial begin
+  pll_locked  = 1'b0;
+  #50;
+  pll_locked  = 1'b1;
+end
+initial begin
+  clk_114     = 1'b1;
+  forever #4.357  clk_114   = ~clk_114;
+end
+initial begin
+  clk_28      = 1'b1;
+  forever #17.428 clk_28    = ~clk_28;
+end
+initial begin
+  clk_sdram   = 1'b1;
+  forever #4.357  clk_sdram = ~clk_sdram;
+end
+`else
+// use pll
 amigaclk amigaclk (
   .areset       (pll_rst          ), // async reset input
   .inclk0       (pll_in_clk       ), // input clock (27MHz)
@@ -269,6 +298,7 @@ amigaclk amigaclk (
   .c2           (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
   .locked       (pll_locked       )  // pll locked output
 );
+`endif
 
 
 /* indicators */
@@ -488,6 +518,8 @@ sdram sdram (
 );
 
 
+// don't include these two modules for sim, as they have some probems in simulation
+`ifndef SOC_SIM
 /* audio shifter */
 audio_shifter audio_shifter (
   .clk          (clk_28           ),
@@ -511,7 +543,7 @@ I2C_AV_Config audio_config (
   .oI2C_SCLK    (I2C_SCLK         ),
   .oI2C_SDAT    (I2C_SDAT         )
 );
-
+`endif
 
 
 endmodule
