@@ -22,7 +22,7 @@
 
 
 module sdram (
-  inout  reg  [ 16-1:0] sdata,
+  inout  wire [ 16-1:0] sdata,
   output reg  [ 12-1:0] sdaddr,
   output reg            sd_we,
   output reg            sd_ras,
@@ -236,12 +236,16 @@ end
 //-----------------------------------------------------------------------
 assign reset_out = init_done;
 
+assign sdata = (sdwrite) ? datain : 16'bzzzzzzzzzzzzzzzz;
+
+/*
 always @(*) begin
   if(sdwrite == 1'b1)
     sdata <= datain;
   else
     sdata <= 16'bzzzzzzzzzzzzzzzz;
 end
+*/
 
 always @(posedge sysclk) begin
   // sample SDRAM data
