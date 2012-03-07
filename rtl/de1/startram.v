@@ -93,7 +93,11 @@ module startram (
 `ifdef NO_PLI
 		altsyncram_component.init_file = "../../fw/menueboot/testcode.rif"
 `else
+`ifdef SOC_SIM
+		altsyncram_component.init_file = "../../../../fw/menueboot/testcode.hex"
+`else
 		altsyncram_component.init_file = "../../fw/menueboot/testcode.hex"
+`endif
 `endif
 ,
 		altsyncram_component.intended_device_family = "Cyclone II",
