@@ -7,6 +7,7 @@
 
 
 `define MINIMIG_DE1
+//`define SOC_SIM
 
 
 module minimig_de1_top (
@@ -268,7 +269,6 @@ assign DRAM_BA_1    = sdram_ba[1];
 ////////////////////////////////////////
 
 /* clock */
-`define SOC_SIM
 `ifdef SOC_SIM
 // generated clocks
 initial begin
