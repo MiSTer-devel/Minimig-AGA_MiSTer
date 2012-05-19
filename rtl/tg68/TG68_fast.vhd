@@ -379,10 +379,11 @@ BEGIN
 	
 	PROCESS (clk)
 	BEGIN
-		IF rising_edge(clk) THEN
-		    IF clkenareg='1' THEN
---		IF falling_edge(clk) THEN
+--  originally falling edge  & clkena was used
+		IF falling_edge(clk) THEN
 --        IF clkena='1' THEN
+--		IF rising_edge(clk) THEN
+		    IF clkenareg='1' THEN
 				reg_QA <= regfile_high(RWindex_A) & regfile_low(RWindex_A);
 				reg_QB <= regfile_high(RWindex_B) & regfile_low(RWindex_B); 
 			END IF;
