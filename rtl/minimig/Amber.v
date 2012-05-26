@@ -153,13 +153,13 @@ always @(posedge clk28m)
 //horizontal interpolation enable	
 always @(posedge clk28m)
 	if (hss)
-		hfilter <= hires ? hr_filter[0] : lr_filter[0];		//horizontal interpolation enable
+		hfilter <= 1'b0;//hires ? hr_filter[0] : lr_filter[0];		//horizontal interpolation enable
 
 
 //vertical interpolation enable
 always @(posedge clk28m)
 	if (hss)
-		vfilter <= hires ? hr_filter[1] : lr_filter[1];		//vertical interpolation enable
+		vfilter <= 1'b0;//hires ? hr_filter[1] : lr_filter[1];		//vertical interpolation enable
 
 reg	[17:0] lbf [1023:0];	// line buffer for scan doubling (there are 908/910 hires pixels in every line)
 reg [17:0] lbfo;			// line buffer output register
