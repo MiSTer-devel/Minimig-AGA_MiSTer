@@ -3,13 +3,15 @@
 module sram_ctl (
   // system
   input  wire           clk,
-  input  wire           pulse,
-  // fifo if
-  input  wire [ 13-1:0] fifoinptr,
-  input  wire [ 13-1:0] fifooutptr,
-  input  wire           fifowr,
-  input  wire [ 16-1:0] fifodwr,
-  output reg  [ 16-1:0] fifodrd,
+  input  wire           rst,
+  // cpu if
+  output reg            cpu_clken,
+  input  wire [ 24-1:0] adr,
+  input  wire           rw,
+  input  wire           lds,
+  input  wire           uds, 
+  input  wire [ 16-1:0] dat_w,
+  output wire [ 16-1:0] dat_r,
   // sram if
   output wire           ce,
   output wire           oe,
@@ -19,16 +21,22 @@ module sram_ctl (
   inout  wire [ 16-1:0] data
 );
 
-assign ce   = 1'b0;
-assign oe   = ~clk | pulse;
-assign wr   = clk | pulse | ~fifowr;
-assign bs   = 2'b00;
-assign addr = clk ? {5'b00000, fifooutptr} : {5'b00000, fifoinptr};
-assign data = ~clk ? fifodwr : 16'bzzzzzzzzzzzzzzzz;
-
-always @(posedge pulse) begin
-  if (clk) fifodrd <= #1 data;
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    cpu_clken <= #1 1'b0;
+  else if (cpu_clken == 1'b1)
+    cpu_clken <= #1 1'b0;
+  else if ((adr != 24'hffffff) && (!lds | !uds))
+    cpu_clken <= #1 1'b1;
 end
+
+assign ce    = 1'b0;
+assign oe    = ~rw;
+assign wr    = rw;
+assign bs    = {uds, lds};
+assign addr  = adr[18:1];
+assign data  = oe ? dat_w : 16'bzzzzzzzzzzzzzzzz;
+assign dat_r = data;
 
 endmodule
 
