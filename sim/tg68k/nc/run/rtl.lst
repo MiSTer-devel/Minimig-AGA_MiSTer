@@ -1,0 +1,4 @@
+../../../../rtl/tg68k/TG68K_Pack.vhd
+../../../../rtl/tg68k/TG68K_ALU.vhd
+../../../../rtl/tg68k/TG68KdotC_Kernel.vhd
+

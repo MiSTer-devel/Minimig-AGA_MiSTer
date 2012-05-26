@@ -321,13 +321,14 @@ indicators indicators(
 
 /* sram controller */
 sram_ctl sram_ctl(
-  .clk          (clk_7            ),
-  .pulse        (pulse            ),
-  .fifoinptr    (fifoinptr        ),
-  .fifooutptr   (fifooutptr       ),
-  .fifowr       (fifowr           ),
-  .fifodwr      (fifodwr          ),
-  .fifodrd      (sram_fifodrd     ),
+  .clk          (clk_114          ),
+  .rst          (!n_rst           ),
+  .adr          (tg68_fast_adr    ),
+  .rw           (tg68_fast_rw     ),
+  .lds          (tg68_fast_uds    ),
+  .uds          (tg68_fast_lds    ), 
+  .dat_w        (tg68_fast_dat_out),
+  .dat_r        (/*zdataout*/         ),
   .ce           (SRAM_CE_N        ),
   .oe           (SRAM_OE_N        ),
   .wr           (SRAM_WE_N        ),

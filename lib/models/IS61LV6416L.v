@@ -32,7 +32,7 @@
 // Please include "+define+ OEb" in running script if you want to check 
 // timing in the case of OE_ being set. 
 
-`define OEb
+//`define OEb
 `timescale 1ns/10ps
 
 module IS61LV6416L (A, IO, CE_, OE_, WE_, LB_, UB_);
@@ -42,7 +42,7 @@ parameter memdepth = 65535;
 parameter addbits = 16;
 parameter Taa   = 10;
 parameter Toha  = 3;
-parameter Thzce = 5;
+parameter Thzce = 4;
 parameter Tsa   = 0;
 parameter Thzwe = 5;
 
@@ -81,7 +81,7 @@ specify
     tAW   = 8,
     tSCE  = 8,
     tSD   = 6,
-    tPWE2 = 8,
+    tPWE2 = 10,
     tPWE1 = 8,
     tPBW  = 8;
 
