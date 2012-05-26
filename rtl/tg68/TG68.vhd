@@ -79,7 +79,6 @@ ARCHITECTURE logic OF TG68 IS
         data_write    : out std_logic_vector(15 downto 0);
         state_out     : out std_logic_vector(1 downto 0);
         decodeOPC     : buffer std_logic;
---        decodeOPC     : out std_logic;
 		wr			  : out std_logic;
 		UDS, LDS	  : out std_logic;
         enaRDreg      : in std_logic;
@@ -105,25 +104,25 @@ ARCHITECTURE logic OF TG68 IS
    SIGNAL lds_in	  : std_logic;
    SIGNAL state       : std_logic_vector(1 downto 0);
    SIGNAL clkena	  : std_logic;
---   SIGNAL n_clk		  : std_logic;
+   SIGNAL n_clk		  : std_logic;
    SIGNAL cpuIPL      : std_logic_vector(2 downto 0);
 
 
 BEGIN  
 
---	n_clk <= NOT clk;
+	n_clk <= NOT clk;
 
 TG68_fast_inst: TG68_fast
 	PORT MAP (
 -- originally n_clk was used
---		clk => n_clk, 			-- : in std_logic;
-		clk => clk, 			-- : in std_logic;
+		clk => n_clk, 			-- : in std_logic;
+--		clk => clk, 			-- : in std_logic;
         reset => reset, 		-- : in std_logic;
         clkena_in => clkena, 	-- : in std_logic;
         data_in => data_in, 	-- : in std_logic_vector(15 downto 0);
 -- originally cpuIPL was used
---		IPL => cpuIPL, 			-- : in std_logic_vector(2 downto 0);
- 		IPL => IPL, 			-- : in std_logic_vector(2 downto 0);
+		IPL => cpuIPL, 			-- : in std_logic_vector(2 downto 0);
+-- 		IPL => IPL, 			-- : in std_logic_vector(2 downto 0);
        test_IPL => '0', 		-- : in std_logic;
         address => addr, 		-- : out std_logic_vector(31 downto 0);
         data_write => data_out, -- : out std_logic_vector(15 downto 0);
@@ -139,13 +138,13 @@ TG68_fast_inst: TG68_fast
 		
 	PROCESS (clk)
 	BEGIN
-		IF rising_edge(clk) THEN -- TODO new version is not edge sensitive (try to remove this)
+--		IF rising_edge(clk) THEN -- TODO new version is not edge sensitive (try to remove this)
 			IF clkena_in='1' AND (clkena_e='1' OR state="01") THEN
 				clkena <= '1';
 			ELSE 
 				clkena <= '0';
 			END IF;	
-		END IF;	
+--		END IF;	
 	END PROCESS;
 				
 PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
@@ -161,10 +160,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			uds <= uds_s AND uds_e;
 			lds <= lds_s AND lds_e;
 		END IF;
-END PROCESS;
 
-PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
-	BEGIN
 		IF reset='0' THEN
 			S_state <= "11";
 			as_s <= '1';
@@ -203,11 +199,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 								 END IF;
 			END IF;
 		END IF;	
-END PROCESS;
 
-
-PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
-	BEGIN
 		IF reset='0' THEN
 			as_e <= '1';
 			rw_e <= '1';
@@ -216,9 +208,9 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
 			clkena_e <= '0';
       cpuIPL <= "111";
       drive_data <= '0';
-		ELSIF rising_edge(clk) THEN
 -- originally it was falling_edge sensitive
---		ELSIF falling_edge(clk) THEN
+--		ELSIF rising_edge(clk) THEN
+		ELSIF falling_edge(clk) THEN
         	IF clkena_in='1' AND enaRDreg='1' THEN -- enaRDreg added
 				as_e <= '1';
 				rw_e <= '1';
