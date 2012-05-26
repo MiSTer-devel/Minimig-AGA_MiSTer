@@ -14,16 +14,17 @@
 
 
 module qmem_bus #(
-  parameter QAW = 24,
-  parameter QDW = 32,
-  parameter QSW = QDW/8
+  parameter MAW = 24,             // master address width
+  parameter SAW = 22,             // slave address width
+  parameter QDW = 32,             // data width
+  parameter QSW = QDW/8           // select width
 )(
   // system
   input  wire           clk,
   input  wire           rst,
 
   // master 0 (dcpu)
-  input  wire [QAW-1:0] m0_adr,
+  input  wire [MAW-1:0] m0_adr,
   input  wire           m0_cs,
   input  wire           m0_we,
   input  wire [QSW-1:0] m0_sel,
@@ -32,7 +33,7 @@ module qmem_bus #(
   output wire           m0_ack,
   output wire           m0_err,
   // master 1 (icpu)
-  input  wire [QAW-1:0] m1_adr,
+  input  wire [MAW-1:0] m1_adr,
   input  wire           m1_cs,
   input  wire           m1_we,
   input  wire [QSW-1:0] m1_sel,
@@ -42,7 +43,7 @@ module qmem_bus #(
   output wire           m1_err,
 
   // slave 0 (ram)
-  output wire [QAW-1:0] s0_adr,
+  output wire [SAW-1:0] s0_adr,
   output wire           s0_cs,
   output wire           s0_we,
   output wire [QSW-1:0] s0_sel,
@@ -51,7 +52,7 @@ module qmem_bus #(
   input  wire           s0_ack,
   input  wire           s0_err,
   // slave 1 (rom)
-  output wire [QAW-1:0] s1_adr,
+  output wire [SAW-1:0] s1_adr,
   output wire           s1_cs,
   output wire           s1_we,
   output wire [QSW-1:0] s1_sel,
@@ -60,7 +61,7 @@ module qmem_bus #(
   input  wire           s1_ack,
   input  wire           s1_err,
   // slave 2 (regs)
-  output wire [QAW-1:0] s2_adr,
+  output wire [SAW-1:0] s2_adr,
   output wire           s2_cs,
   output wire           s2_we,
   output wire [QSW-1:0] s2_sel,
@@ -87,7 +88,7 @@ localparam SN = 3;
 //              s1 (rom)              //
 //              s2 (regs)             // 
 ////////////////////////////////////////
-wire [QAW-1:0] m0_s0_adr   , m0_s1_adr   , m0_s2_adr  ;
+wire [MAW-1:0] m0_s0_adr   , m0_s1_adr   , m0_s2_adr  ;
 wire           m0_s0_cs    , m0_s1_cs    , m0_s2_cs   ;
 wire           m0_s0_we    , m0_s1_we    , m0_s2_we   ;
 wire [QSW-1:0] m0_s0_sel   , m0_s1_sel   , m0_s2_sel  ;
@@ -100,14 +101,14 @@ localparam M0_SN = 3;
 wire [M0_SN-1:0] m0_ss;
 wire m0_s0_select, m0_s1_select, m0_s2_select;
 
-assign m0_s0_select = (m2_adr[23:22] == 2'b00);
-assign m0_s1_select = (m2_adr[23:22] == 2'b01);
-assign m0_s2_select = (m2_adr[23:22] == 2'b10);
+assign m0_s0_select = (m0_adr[23:22] == 2'b00); // ~(|m0_adr[32:22])
+assign m0_s1_select = (m0_adr[23:22] == 2'b01); // m0_adr[22]
+assign m0_s2_select = (m0_adr[23:22] == 2'b10); // m0_adr[23]
 assign m0_ss = {m0_s2_select, m0_s1_select, m0_s0_select};
 
 // m0 decoder
 qmem_decoder #(
-  .QAW    (QAW),
+  .QAW    (MAW),
   .QDW    (QDW),
   .QSW    (QSW),
   .SN     (M0_SN)
@@ -142,7 +143,7 @@ qmem_decoder #(
 // Master 1 (icpu)                    //
 // connects to: s0 (ram)              //
 ////////////////////////////////////////
-wire [QAW-1:0] m1_s0_adr   ;
+wire [MAW-1:0] m1_s0_adr   ;
 wire           m1_s0_cs    ;
 wire           m1_s0_we    ;
 wire [QSW-1:0] m1_s0_sel   ;
@@ -175,7 +176,7 @@ wire [S0_MN-1:0] s0_ms;
 
 // s0 arbiter
 qmem_arbiter #(
-  .QAW    (QAW),
+  .QAW    (SAW),
   .QDW    (QDW),
   .QSW    (QSW),
   .MN     (S0_MN)
@@ -187,7 +188,7 @@ qmem_arbiter #(
   .qm_cs    ({m1_s0_cs   , m0_s0_cs   }),
   .qm_we    ({m1_s0_we   , m0_s0_we   }),
   .qm_sel   ({m1_s0_sel  , m0_s0_sel  }),
-  .qm_adr   ({m1_s0_adr  , m0_s0_adr  }),
+  .qm_adr   ({m1_s0_adr[SAW-1:0]  , m0_s0_adr[SAW-1:0]  }),
   .qm_dat_w ({m1_s0_dat_w, m0_s0_dat_w}),
   .qm_dat_r ({m1_s0_dat_r, m0_s0_dat_r}),
   .qm_ack   ({m1_s0_ack  , m0_s0_ack  }),
@@ -211,7 +212,7 @@ qmem_arbiter #(
 // masters:     m0 (dcpu)             //
 ////////////////////////////////////////
 
-assign s1_adr   = m0_s1_adr  ;
+assign s1_adr   = m0_s1_adr[SAW-1:0]  ;
 assign s1_cs    = m0_s1_cs   ;
 assign s1_we    = m0_s1_we   ;
 assign s1_sel   = m0_s1_sel  ;
@@ -226,7 +227,7 @@ assign m0_s1_err   = s1_err  ;
 // masters:     m0 (dcpu)             //
 ////////////////////////////////////////
 
-assign s2_adr   = m0_s2_adr  ;
+assign s2_adr   = m0_s2_adr[SAW-1:0]  ;
 assign s2_cs    = m0_s2_cs   ;
 assign s2_we    = m0_s2_we   ;
 assign s2_sel   = m0_s2_sel  ;
