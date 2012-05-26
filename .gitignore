@@ -1,0 +1,9 @@
+# ignore backup files
+*~
+
+# ignore vi swapfiles
+.*.swp
+
+# ignore compiled python
+*pyc
+
