@@ -7,6 +7,7 @@
 
 
 `define MINIMIG_DE1
+//`define SOC_SIM
 
 
 module minimig_de1_top (
