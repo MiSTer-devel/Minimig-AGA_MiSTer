@@ -153,7 +153,7 @@ module floppy
 	wire	fifo_rd;					//fifo read enable
 	wire	fifo_empty;				//fifo is empty
 	wire	fifo_full;				//fifo is full
-  wire  [13:0] fifo_cnt;
+  wire  [11:0] fifo_cnt;
 
 	wire	[15:0] dskbytr;			
 	wire	[15:0] dskdatr;
@@ -369,7 +369,7 @@ always @(spi_tx_cnt or spi_tx_data_0 or spi_tx_data_1 or spi_tx_data_2 or spi_tx
 	endcase
 
 always @(sel or drives or hdd_dat_req or hdd_cmd_req or trackwr or trackrd or track or fifo_cnt)
-	spi_tx_data_0 = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd&~fifo_cnt[12],track[7:0]};
+	spi_tx_data_0 = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd&~fifo_cnt[10],track[7:0]};
 
 always @(dsksync)
 //	if (trackrd)
@@ -403,7 +403,7 @@ always @(cmd_fdd or trackrd or dmaen or dsklen or trackwr or fifo_out	or cmd_hdd
 //it guarantees that when latching the status data into spi transmit register setup and hold times are met
 always @(posedge clk)
 	if (tx_flag)
-		wr_fifo_status <= {dmaen&dsklen[14],1'b0,fifo_cnt[13:0]};
+		wr_fifo_status <= {dmaen&dsklen[14],3'b000,fifo_cnt[11:0]};
 
 //-----------------------------------------------------------------------------------------------//
 //active floppy drive number, updated during reset
@@ -603,8 +603,8 @@ fifo db1
 	.reset(fifo_reset),
 	.in(fifo_in),
 	.out(fifo_out),
-	.rd(fifo_rd),
-	.wr(fifo_wr),
+	.rd(fifo_rd & ~fifo_empty),
+	.wr(fifo_wr & ~fifo_full),
 	.empty(fifo_empty),
 	.full(fifo_full),
 	.cnt(fifo_cnt),
@@ -744,7 +744,7 @@ module fifo
 	input	wr,					//write to fifo
 	output	reg empty,			//fifo is empty
 	output	full,				//fifo is full
-	output	[13:0] cnt,       // number of entries in FIFO
+	output	[11:0] cnt,       // number of entries in FIFO
 // DE1 Ext. SRAM for FIFO
 	output  [12:0]fifoinptr,
 	output  [15:0]fifodwr,
@@ -754,53 +754,53 @@ module fifo
 );
 
 //local signals and registers
-//reg 	[15:0] mem [8191:0];	//8192 words by 16 bit wide fifo memory
-reg		[13:0] in_ptr;			//fifo input pointer
-reg		[13:0] out_ptr;			//fifo output pointer
+reg 	[15:0] mem [2047:0];	//8192 words by 16 bit wide fifo memory
+reg		[11:0] in_ptr;			//fifo input pointer
+reg		[11:0] out_ptr;			//fifo output pointer
 wire	equal;					//lower 13 bits of in_ptr and out_ptr are equal
 
 assign fifodwr = in;
-assign fifoinptr = in_ptr[12:0];
-assign fifooutptr = out_ptr[12:0];
+assign fifoinptr = in_ptr[10:0];
+assign fifooutptr = out_ptr[10:0];
 assign fifowr = wr && !full;
 
 // count of FIFO entries
 assign cnt = in_ptr - out_ptr;
 
 //main fifo memory (implemented using synchronous block ram)
-//always @(posedge clk)
-//	if (wr && !full)
-//		mem[in_ptr[12:0]] <= in;
+always @(posedge clk)
+	if (wr)
+		mem[in_ptr[10:0]] <= in;
 
 always @(posedge clk)
-//	out=mem[out_ptr[12:0]];
-	out <= fifodrd;
+	out=mem[out_ptr[10:0]];
+//	out <= fifodrd;
 
 //fifo write pointer control
 always @(posedge clk)
 	if (reset)
-		in_ptr[13:0] <= 0;
-	else if(wr && !full)
-		in_ptr[13:0] <= in_ptr[13:0] + 14'd1;
+		in_ptr[11:0] <= 0;
+	else if(wr)
+		in_ptr[11:0] <= in_ptr[11:0] + 12'd1;
 
 // fifo read pointer control
 always @(posedge clk)
 	if (reset)
-		out_ptr[13:0] <= 0;
-	else if (rd && !empty)
-		out_ptr[13:0] <= out_ptr[13:0] + 14'd1;
+		out_ptr[11:0] <= 0;
+	else if (rd)
+		out_ptr[11:0] <= out_ptr[11:0] + 12'd1;
 
-// check lower 13 bits of pointer to generate equal signal
-assign equal = (in_ptr[12:0]==out_ptr[12:0]) ? 1'b1 : 1'b0;
+// check lower 11 bits of pointer to generate equal signal
+assign equal = (in_ptr[10:0]==out_ptr[10:0]) ? 1'b1 : 1'b0;
 
 // assign output flags, empty is delayed by one clock to handle ram delay
 always @(posedge clk)
-	if (equal && (in_ptr[13]==out_ptr[13]))
+	if (equal && (in_ptr[11]==out_ptr[11]))
 		empty <= 1'b1;
 	else
 		empty <= 1'b0;
 		
-assign full = (equal && (in_ptr[13]!=out_ptr[13])) ? 1'b1 : 1'b0;	
+assign full = (equal && (in_ptr[11]!=out_ptr[11])) ? 1'b1 : 1'b0;	
 
 endmodule
 
