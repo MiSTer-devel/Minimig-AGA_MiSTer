@@ -513,7 +513,8 @@ def ncsim (top_sim=SIM_TOP, opt_waves=WAVES, opt_mems=MEMS, opt_tasks=TASKS, do_
   arg +=    " -CDSLIB %s/%s" % (arg_dir, CDS_LIB)
   arg +=    " -HDLVAR %s/%s" % (arg_dir, HDL_VAR)
   arg +=    " -INPUT %s/%s" % (arg_dir, "ncsim.tcl")
-  arg +=    " -LOGFILE %s/%s" % (log_dir, SIM_LOG) # TODO add testname
+#  arg +=    " -LOGFILE %s/%s" % (log_dir, SIM_LOG) # TODO add testname
+  arg +=    " -LOGFILE /dev/null"
   if (profile) :
     arg +=  " -profile -profoutput %s/%s" % (log_dir, "ncprof.out") ## Option added to debug performance issue
   arg +=    " work.bench:rtl"
