@@ -26,6 +26,27 @@ module ctrl_top (
 // PLL clock generation               //
 ////////////////////////////////////////
 
+`ifdef SOC_SIM
+reg            clk_100;
+initial begin
+  clk_100 = 1;
+  forever #5 clk_100 = ~clk_100; 
+end
+reg            clk_50;
+initial begin
+  clk_50 = 1;
+  forever #10 clk_50 = ~clk_50; 
+end
+reg            clk_25;
+initial begin
+  clk_25 = 1;
+  forever #20 clk_25 = ~clk_25; 
+end
+reg            pll_locked;
+initial begin
+  pll_locked = 1;
+end
+`else
 wire           clk_100;
 wire           clk_50;
 wire           clk_25;
@@ -33,12 +54,13 @@ wire           pll_locked;
 
 // ctrl_clk
 ctrl_clk ctrl_clk(
-  .inclk0   (clk_in),       // 50MHz input clock
-  .c0       (clk_100),      // 100MHz output clock
-  .c1       (clk_50),       // 50MHz output clock
-  .c2       (clk_25),       // 25MHz output clock
-  .locked   (pll_locked)    // pll locked output, active high
+  .inclk0     (clk_in     ),  // 50MHz input clock
+  .c0         (clk_100    ),  // 100MHz output clock
+  .c1         (clk_50     ),  // 50MHz output clock
+  .c2         (clk_25     ),  // 25MHz output clock
+  .locked     (pll_locked )   // pll locked output, active high
 );
+`endif
 
 
 
@@ -50,7 +72,11 @@ wire           clk;
 wire           rst;
 
 // ctrl_rst
+`ifdef SOC_SIM
+`define RST_CNT 16'h00ff      // reset counter length used in simulations
+`else
 `define RST_CNT 16'hffff      // reset counter length
+`endif
 ctrl_rst ctrl_rst (
   .clk        (clk_50     ),  // system clock
   .pll_lock   (pll_locked ),  // pll locked input, active high
@@ -239,6 +265,20 @@ qmem_sram #(
 );
 
 
+
+////////////////////////////////////////
+// ROM                                //
+////////////////////////////////////////
+
+// TODO
+
+
+
+////////////////////////////////////////
+// REGS                               //
+////////////////////////////////////////
+
+// TODO
 
 
 endmodule
