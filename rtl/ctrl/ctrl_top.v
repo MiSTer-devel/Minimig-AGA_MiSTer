@@ -7,6 +7,15 @@ module ctrl_top (
   input  wire           rst_ext,
   output wire           clk_out,
   output wire           rst_out,
+  // SRAM interface
+  output wire [18-1:0]  sram_adr,
+  output wire           sram_ce_n,
+  output wire           sram_we_n,
+  output wire           sram_ub_n,
+  output wire           sram_lb_n,
+  output wire           sram_oe_n,
+  output wire [16-1:0]  sram_dat_w,
+  input  wire [16-1:0]  sram_dat_r,
   // UART
   output wire           uart_txd
 );
@@ -192,6 +201,43 @@ or1200_top_wrapper #(
   .icpu_dat_r (icpu_dat_r ),
   .icpu_ack   (icpu_ack   )
 );
+
+
+
+////////////////////////////////////////
+// RAM                                //
+////////////////////////////////////////
+
+// TODO check data register!
+qmem_sram #(
+  .AW         (SAW),
+  .DW         (QDW),
+  .SW         (QSW)
+) ctrl_ram (
+  // system signals
+  .clk50      (clk_50     ),
+  .clk100     (clk_100    ),
+  .rst        (rst        ),
+  // qmem bus
+  .adr        (ram_adr    ),
+  .cs         (ram_cs     ),
+  .we         (ram_we     ),
+  .sel        (ram_sel    ),
+  .dat_w      (ram_dat_w  ),
+  .dat_r      (ram_dat_r  ),
+  .ack        (ram_ack    ),
+  .err        (ram_err    ),
+  // SRAM interface
+  .sram_adr   (sram_adr   ),
+  .sram_ce_n  (sram_ce_n  ),
+  .sram_we_n  (sram_we_n  ),
+  .sram_ub_n  (sram_ub_n  ),
+  .sram_lb_n  (sram_lb_n  ),
+  .sram_oe_n  (sram_oe_n  ),
+  .sram_dat_w (sram_dat_w ),
+  .sram_dat_r (sram_dat_r )
+);
+
 
 
 
