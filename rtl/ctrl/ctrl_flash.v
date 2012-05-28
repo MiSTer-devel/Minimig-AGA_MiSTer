@@ -36,7 +36,7 @@ module ctrl_flash #(
   output reg            fl_we_n,
   output reg            fl_oe_n,
   output reg            fl_rst_n,
-  output reg  [FDW-1:0] fl_dat_w,
+  output wire [FDW-1:0] fl_dat_w,
   input  wire [FDW-1:0] fl_dat_r
 );
 
@@ -104,9 +104,9 @@ end
 // state machine
 localparam S_ID = 3'h0;
 localparam S_R1 = 3'h4;
-localparam S_R1 = 3'h5;
-localparam S_R1 = 3'h6;
-localparam S_R1 = 3'h7;
+localparam S_R2 = 3'h5;
+localparam S_R3 = 3'h6;
+localparam S_R4 = 3'h7;
 
 reg  [   3-1:0] state;
 
@@ -129,7 +129,7 @@ always @ (posedge clk, posedge rst) begin
       S_R1 : begin
         if ((~|timer) && !timer_start) begin
           fl_adr <= #1 {adr[21:2], 2'b01};
-          timer_start <= #1 #1 1'b1;
+          timer_start <= #1 1'b1;
           state <= #1 S_R2;
           if (BE == 1)
             dat_r[31:24] <= #1 fl_dat_r;
@@ -140,7 +140,7 @@ always @ (posedge clk, posedge rst) begin
       S_R2 : begin
         if ((~|timer) && !timer_start) begin
           fl_adr <= #1 {adr[21:2], 2'b10};
-          timer_start <= #1 #1 1'b1;
+          timer_start <= #1 1'b1;
           state <= #1 S_R3;
           if (BE == 1)
             dat_r[23:16] <= #1 fl_dat_r;
@@ -151,7 +151,7 @@ always @ (posedge clk, posedge rst) begin
       S_R3 : begin
         if ((~|timer) && !timer_start) begin
           fl_adr <= #1 {adr[21:2], 2'b11};
-          timer_start <= #1 #1 1'b1;
+          timer_start <= #1 1'b1;
           state <= #1 S_R4;
           if (BE == 1)
             dat_r[15: 8] <= #1 fl_dat_r;
