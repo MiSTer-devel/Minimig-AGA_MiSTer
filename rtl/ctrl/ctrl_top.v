@@ -1,6 +1,7 @@
 /********************************************/
 /* ctrl_top.v                               */
 /* Control top module                       */
+/* external tristate drivers needed!        */
 /*                                          */
 /* 2012, rok.krajnc@gmail.com               */
 /********************************************/
