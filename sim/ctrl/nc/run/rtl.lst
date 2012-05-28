@@ -56,7 +56,6 @@
 ../../../../rtl/or1200/or1200_wb_biu.v
 ../../../../rtl/or1200/or1200_wbmux.v
 ../../../../rtl/or1200/or1200_xcv_ram32x8d.v
-../../../../rtl/ctrl/ctrl_clk.v
 ../../../../rtl/ctrl/ctrl_flash.v
 ../../../../rtl/ctrl/ctrl_regs.v
 ../../../../rtl/ctrl/ctrl_rst.v
