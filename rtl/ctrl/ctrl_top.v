@@ -1,4 +1,10 @@
-/* ctrl_top.v */
+/********************************************/
+/* ctrl_top.v                               */
+/* Control top module                       */
+/*                                          */
+/* 2012, rok.krajnc@gmail.com               */
+/********************************************/
+
 
 
 module ctrl_top (
@@ -284,7 +290,8 @@ ctrl_flash #(
   .QAW      (SAW),            // qmem address width
   .QDW      (QDW),            // qmem data width
   .QSW      (QSW),            // qmem select width
-  .DLY      (4  )             // delay - for S29AL032D70 (70ns access part)
+  .DLY      (4  ),            // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part)
+  .BE       (1  )             // big endianness - 1 = big endian, 2 = little endian
 ) ctrl_rom (
   // system
   .clk        (clk        ),
