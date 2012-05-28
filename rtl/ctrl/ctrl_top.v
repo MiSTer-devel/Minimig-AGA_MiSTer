@@ -8,14 +8,22 @@ module ctrl_top (
   output wire           clk_out,
   output wire           rst_out,
   // SRAM interface
-  output wire [18-1:0]  sram_adr,
+  output wire [ 18-1:0] sram_adr,
   output wire           sram_ce_n,
   output wire           sram_we_n,
   output wire           sram_ub_n,
   output wire           sram_lb_n,
   output wire           sram_oe_n,
-  output wire [16-1:0]  sram_dat_w,
-  input  wire [16-1:0]  sram_dat_r,
+  output wire [ 16-1:0] sram_dat_w,
+  input  wire [ 16-1:0] sram_dat_r,
+  // FLASH interface
+  output wire [ 22-1:0] fl_adr,
+  output wire           fl_ce_n,
+  output wire           fl_we_n,
+  output wire           fl_oe_n,
+  output wire           fl_rst_n,
+  output wire [  8-1:0] fl_dat_w,
+  input  wire [  8-1:0] fl_dat_r,
   // UART
   output wire           uart_txd
 );
@@ -205,7 +213,7 @@ qmem_bus #(
 ////////////////////////////////////////
 
 or1200_top_wrapper #(
-  .AW       (MAW)
+  .AW       (MAW)             // address bus width
 ) ctrl_cpu (
   // system
   .clk        (clk        ),
@@ -236,9 +244,9 @@ or1200_top_wrapper #(
 
 // TODO check data register!
 qmem_sram #(
-  .AW         (SAW),
-  .DW         (QDW),
-  .SW         (QSW)
+  .AW         (SAW),          // address bus width
+  .DW         (QDW),          // data bus width
+  .SW         (QSW)           // select width
 ) ctrl_ram (
   // system signals
   .clk50      (clk_50     ),
@@ -270,7 +278,35 @@ qmem_sram #(
 // ROM                                //
 ////////////////////////////////////////
 
-// TODO
+ctrl_flash #(
+  .FAW      (22 ),            // flash address width
+  .FDW      (8  ),            // flash data width
+  .QAW      (SAW),            // qmem address width
+  .QDW      (QDW),            // qmem data width
+  .QSW      (QSW),            // qmem select width
+  .DLY      (4  )             // delay - for S29AL032D70 (70ns access part)
+) ctrl_rom (
+  // system
+  .clk        (clk        ),
+  .rst        (rst        ),
+  // qmem interface
+  .adr        (rom_adr    ),
+  .cs         (rom_cs     ),
+  .we         (rom_we     ),
+  .sel        (rom_sel    ),
+  .dat_w      (rom_dat_w  ),
+  .dat_r      (rom_dat_r  ),
+  .ack        (rom_ack    ),
+  .err        (rom_err    ),
+  // flash interface
+  .fl_adr     (fl_adr     ),
+  .fl_ce_n    (fl_ce_n    ),
+  .fl_we_n    (fl_we_n    ),
+  .fl_oe_n    (fl_oe_n    ),
+  .fl_rst_n   (fl_rst_n   ),
+  .fl_dat_w   (fl_dat_w   ),
+  .fl_dat_r   (fl_dat_r   )
+);
 
 
 
