@@ -27,6 +27,7 @@ module ctrl_tb();
 reg            CLK;
 reg            RST;
 reg            ERR;
+reg [ 32-1:0]  MEM [0:4096-1];
 // SD Card
 wire           SD_DAT;      // SD Card Data
 wire           SD_DAT3;     // SD Card Data 3
@@ -73,7 +74,9 @@ initial begin
   ERR = 0;
 
   // load RAM
-
+  $display("BENCH : %t : loading memory ...", $time);
+  $readmemh("../../../../fw/ctrl/out/fw.hex", MEM);
+  ram_write;
 
   repeat(2) @ (posedge CLK);
   #1;
@@ -91,6 +94,27 @@ initial begin
   $finish;
 end
 
+
+
+////////////////////////////////////////
+// tasks                              //
+////////////////////////////////////////
+
+task ram_write;
+  integer i;
+  reg [32-1:0] dat;
+begin
+  for (i=0; i<4096; i=i+1) begin
+    if (MEM[i] !== 32'hxxxxxxxx) begin
+      dat = MEM[i];
+      ctrl_tb.ram.bank1[2*i + 0] = dat[31:24];
+      ctrl_tb.ram.bank0[2*i + 0] = dat[23:16];
+      ctrl_tb.ram.bank1[2*i + 1] = dat[15: 8];
+      ctrl_tb.ram.bank0[2*i + 1] = dat[ 7: 0];
+    end
+  end
+end
+endtask
 
 
 ////////////////////////////////////////
@@ -160,8 +184,10 @@ IS61LV6416L #(
 
 
 // FLASH model
-s29al032d_00 rom
-(
+s29al032d_00 #(
+  .UserPreload (1'b1),
+  .mem_file_name("../../../../fw/ctrl/out/rom.hex")
+) rom (
   .A21          (FL_ADDR[21]),
   .A20          (FL_ADDR[20]),
   .A19          (FL_ADDR[19]),
