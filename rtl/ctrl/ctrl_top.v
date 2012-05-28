@@ -87,11 +87,6 @@ wire           clk;
 wire           rst;
 
 // ctrl_rst
-`ifdef SOC_SIM
-`define RST_CNT 16'h00ff      // reset counter length used in simulations
-`else
-`define RST_CNT 16'hffff      // reset counter length
-`endif
 ctrl_rst ctrl_rst (
   .clk        (clk_50     ),  // system clock
   .pll_lock   (pll_locked ),  // pll locked input, active high
@@ -184,24 +179,24 @@ qmem_bus #(
   .m1_dat_r   (icpu_dat_r ),
   .m1_ack     (icpu_ack   ),
   .m1_err     (icpu_err   ),
-  // slave 0 (ram)
-  .s0_adr     (ram_adr    ),
-  .s0_cs      (ram_cs     ),
-  .s0_we      (ram_we     ),
-  .s0_sel     (ram_sel    ),
-  .s0_dat_w   (ram_dat_w  ),
-  .s0_dat_r   (ram_dat_r  ),
-  .s0_ack     (ram_ack    ),
-  .s0_err     (ram_err    ),
-  // slave 1 (rom)
-  .s1_adr     (rom_adr    ),
-  .s1_cs      (rom_cs     ),
-  .s1_we      (rom_we     ),
-  .s1_sel     (rom_sel    ),
-  .s1_dat_w   (rom_dat_w  ),
-  .s1_dat_r   (rom_dat_r  ),
-  .s1_ack     (rom_ack    ),
-  .s1_err     (rom_err    ),
+  // slave 0 (rom)
+  .s0_adr     (rom_adr    ),
+  .s0_cs      (rom_cs     ),
+  .s0_we      (rom_we     ),
+  .s0_sel     (rom_sel    ),
+  .s0_dat_w   (rom_dat_w  ),
+  .s0_dat_r   (rom_dat_r  ),
+  .s0_ack     (rom_ack    ),
+  .s0_err     (rom_err    ),
+  // slave 1 (ram)
+  .s1_adr     (ram_adr    ),
+  .s1_cs      (ram_cs     ),
+  .s1_we      (ram_we     ),
+  .s1_sel     (ram_sel    ),
+  .s1_dat_w   (ram_dat_w  ),
+  .s1_dat_r   (ram_dat_r  ),
+  .s1_ack     (ram_ack    ),
+  .s1_err     (ram_err    ),
   // slave 2 (regs)
   .s2_adr     (regs_adr   ),
   .s2_cs      (regs_cs    ),
@@ -291,7 +286,7 @@ ctrl_flash #(
   .QAW      (SAW),            // qmem address width
   .QDW      (QDW),            // qmem data width
   .QSW      (QSW),            // qmem select width
-  .DLY      (4  ),            // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part)
+  .DLY      (3  ),            // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part)
   .BE       (1  )             // big endianness - 1 = big endian, 2 = little endian
 ) ctrl_rom (
   // system
