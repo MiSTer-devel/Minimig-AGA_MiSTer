@@ -1,6 +1,13 @@
 /* ctrl_rst.v */
 
 
+`ifdef SOC_SIM
+`define RST_CNT 16'h00ff      // reset counter length used in simulations
+`else
+`define RST_CNT 16'hffff      // reset counter length
+`endif
+
+
 module ctrl_rst (
   // system
   input  wire           clk,
