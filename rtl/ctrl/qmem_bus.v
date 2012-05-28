@@ -7,8 +7,8 @@
 
 
 //// slave address map ////
-// 0 - (0x000000 - 0x3fffff) adr[23:22] == 2'b00 - RAM
-// 1 - (0x400000 - 0x7fffff) adr[23:22] == 2'b01 - ROM
+// 0 - (0x000000 - 0x3fffff) adr[23:22] == 2'b00 - ROM
+// 1 - (0x400000 - 0x7fffff) adr[23:22] == 2'b01 - RAM
 // 2 - (0x800000 - 0xbfffff) adr[23:22] == 2'b10 - REGS
 // 3 - (0xc00000 - 0xffffff) adr[23:22] == 2'b11 - N.A.
 
@@ -42,7 +42,7 @@ module qmem_bus #(
   output wire           m1_ack,
   output wire           m1_err,
 
-  // slave 0 (ram)
+  // slave 0 (rom)
   output wire [SAW-1:0] s0_adr,
   output wire           s0_cs,
   output wire           s0_we,
@@ -51,7 +51,7 @@ module qmem_bus #(
   input  wire [QDW-1:0] s0_dat_r,
   input  wire           s0_ack,
   input  wire           s0_err,
-  // slave 1 (rom)
+  // slave 1 (ram)
   output wire [SAW-1:0] s1_adr,
   output wire           s1_cs,
   output wire           s1_we,
@@ -143,30 +143,61 @@ qmem_decoder #(
 // Master 1 (icpu)                    //
 // connects to: s0 (ram)              //
 ////////////////////////////////////////
-wire [MAW-1:0] m1_s0_adr   ;
-wire           m1_s0_cs    ;
-wire           m1_s0_we    ;
-wire [QSW-1:0] m1_s0_sel   ;
-wire [QDW-1:0] m1_s0_dat_w ;
-wire [QDW-1:0] m1_s0_dat_r ;
-wire           m1_s0_ack   ;
-wire           m1_s0_err   ;
+wire [MAW-1:0] m1_s0_adr   , m1_s1_adr   ;
+wire           m1_s0_cs    , m1_s1_cs    ;
+wire           m1_s0_we    , m1_s1_we    ;
+wire [QSW-1:0] m1_s0_sel   , m1_s1_sel   ;
+wire [QDW-1:0] m1_s0_dat_w , m1_s1_dat_w ;
+wire [QDW-1:0] m1_s0_dat_r , m1_s1_dat_r ;
+wire           m1_s0_ack   , m1_s1_ack   ;
+wire           m1_s0_err   , m1_s1_err   ;
 
-assign m1_s0_adr    = m1_adr;
-assign m1_s0_cs     = m1_cs;
-assign m1_s0_we     = m1_we;
-assign m1_s0_sel    = m1_sel;
-assign m1_s0_dat_w  = m1_dat_w;
-assign m1_dat_r     = m1_s0_dat_r;
-assign m1_ack       = m1_s0_ack;
-assign m1_err       = m1_s0_err;
+localparam M1_SN = 2;
+wire [M1_SN-1:0] m1_ss;
+wire m1_s0_select, m1_s1_select;
+
+assign m1_s0_select = (m1_adr[23:22] == 2'b00); // ~(|m1_adr[32:22])
+assign m1_s1_select = (m1_adr[23:22] == 2'b01); // m1_adr[22]
+assign m1_ss = {m1_s1_select, m1_s0_select};
+
+// m1 decoder
+qmem_decoder #(
+  .QAW    (MAW),
+  .QDW    (QDW),
+  .QSW    (QSW),
+  .SN     (M1_SN)
+) m1_decoder (
+  // system
+  .clk      (clk),
+  .rst      (rst),
+  // slave port for requests from masters
+  .qm_cs    (m1_cs),
+  .qm_we    (m1_we),
+  .qm_sel   (m1_sel),
+  .qm_adr   (m1_adr),
+  .qm_dat_w (m1_dat_w),
+  .qm_dat_r (m1_dat_r),
+  .qm_ack   (m1_ack),
+  .qm_err   (m1_err),
+  // master port for requests to a slave
+  .qs_cs    ({m1_s1_cs   , m1_s0_cs   }),
+  .qs_we    ({m1_s1_we   , m1_s0_we   }),
+  .qs_sel   ({m1_s1_sel  , m1_s0_sel  }),
+  .qs_adr   ({m1_s1_adr  , m1_s0_adr  }),
+  .qs_dat_w ({m1_s1_dat_w, m1_s0_dat_w}),
+  .qs_dat_r ({m1_s1_dat_r, m1_s0_dat_r}),
+  .qs_ack   ({m1_s1_ack  , m1_s0_ack  }),
+  .qs_err   ({m1_s1_err  , m1_s0_err  }),
+  // one hot slave select signal
+  .ss       (m1_ss)
+);
 
 
 
 //// SLAVES ////
 
 ////////////////////////////////////////
-// Slave 0 (ram)                      //
+// Slave 0 (rom)                      //
 // masters:     m0 (dcpu)             //
 //              m1 (icpu)             //
 ////////////////////////////////////////
@@ -208,18 +239,45 @@ qmem_arbiter #(
 
 
 ////////////////////////////////////////
-// Slave 1 (rom)                      //
+// Slave 1 (ram)                      //
 // masters:     m0 (dcpu)             //
+// masters:     m1 (icpu)             //
 ////////////////////////////////////////
 
-assign s1_adr   = m0_s1_adr[SAW-1:0]  ;
-assign s1_cs    = m0_s1_cs   ;
-assign s1_we    = m0_s1_we   ;
-assign s1_sel   = m0_s1_sel  ;
-assign s1_dat_w = m0_s1_dat_w;
-assign m0_s1_dat_r = s1_dat_r;
-assign m0_s1_ack   = s1_ack  ;
-assign m0_s1_err   = s1_err  ;
+localparam S1_MN = 2;
+wire [S1_MN-1:0] s1_ms;
+
+// s1 arbiter
+qmem_arbiter #(
+  .QAW    (SAW),
+  .QDW    (QDW),
+  .QSW    (QSW),
+  .MN     (S1_MN)
+) s1_arbiter (
+  // system
+  .clk      (clk),
+  .rst      (rst),
+  // slave port for requests from masters
+  .qm_cs    ({m1_s1_cs   , m0_s1_cs   }),
+  .qm_we    ({m1_s1_we   , m0_s1_we   }),
+  .qm_sel   ({m1_s1_sel  , m0_s1_sel  }),
+  .qm_adr   ({m1_s1_adr[SAW-1:0]  , m0_s0_adr[SAW-1:0]  }),
+  .qm_dat_w ({m1_s1_dat_w, m0_s1_dat_w}),
+  .qm_dat_r ({m1_s1_dat_r, m0_s1_dat_r}),
+  .qm_ack   ({m1_s1_ack  , m0_s1_ack  }),
+  .qm_err   ({m1_s1_err  , m0_s1_err  }),
+  // master port for requests to a slave
+  .qs_cs    (s1_cs),
+  .qs_we    (s1_we),
+  .qs_sel   (s1_sel),
+  .qs_adr   (s1_adr),
+  .qs_dat_w (s1_dat_w),
+  .qs_dat_r (s1_dat_r),
+  .qs_ack   (s1_ack),
+  .qs_err   (s1_err),
+  // one hot master (bit MN is always 1'b0)
+  .ms       (s1_ms)
+);
 
 
 ////////////////////////////////////////
