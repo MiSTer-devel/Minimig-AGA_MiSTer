@@ -15,7 +15,7 @@ module ctrl_flash #(
   parameter QAW = 22,             // qmem address width
   parameter QDW = 32,             // qmem data width
   parameter QSW = QDW/8,          // qmem select width
-  parameter DLY = 4,              // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part)
+  parameter DLY = 3,              // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part) //// if 3 isn't enough, try 4 ////
   parameter BE  = 1               // big endianness - 1 = big endian, 2 = little endian
 )(
   // system
@@ -72,20 +72,6 @@ end
 ////////////////////////////////////////
 
 // TODO faster byte / half-word reads (using byte selects)
-// TODO test if cs posedge can be removed - just use cs
-
-// detect cs posedge
-reg            cs_d;
-always @ (posedge clk, posedge rst) begin
-  if (rst)
-    cs_d <= #1 1'b0;
-  else
-    cs_d <= #1 cs;
-end
-
-wire           cs_pos;
-assign cs_pos = !cs_d && cs;
-
 
 // read timer
 reg            timer_start;
@@ -96,7 +82,7 @@ always @ (posedge clk, posedge rst) begin
     timer <= #1 2'h0;
   else if (timer_start)
     timer <= #1 DLY-1;
-  else if (~|timer)
+  else if (|timer)
     timer <= #1 timer - 2'h1;
 end
 
@@ -120,7 +106,7 @@ always @ (posedge clk, posedge rst) begin
     if (timer_start) timer_start <= #1 1'b0;
     case (state)
       S_ID : begin
-        if (cs_pos) begin
+        if (cs) begin
           fl_adr <= #1 {adr[21:2], 2'b00};
           timer_start <= #1 1'b1;
           state <= #1 S_R1;
