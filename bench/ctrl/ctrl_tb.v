@@ -76,7 +76,7 @@ initial begin
   // load RAM
   $display("BENCH : %t : loading memory ...", $time);
   $readmemh("../../../../fw/ctrl/out/fw.hex", MEM);
-  ram_write;
+  //ram_write;
 
   repeat(2) @ (posedge CLK);
   #1;
@@ -84,7 +84,7 @@ initial begin
   RST = 0;
 
   // wait
-  repeat(1000) @ (posedge CLK);
+  repeat(50000) @ (posedge CLK);
 
   // display result
   if (ERR) $display("BENCH : %t : ctrl test FAILED - there were errors!", $time);
@@ -137,6 +137,7 @@ ctrl_top ctrl_top (
   .rst_ext      (RST        ),
   .clk_out      (           ),
   .rst_out      (           ),
+  .rst_minimig  (           ),
   // SRAM interface
   .sram_adr     (SRAM_ADDR  ),
   .sram_ce_n    (SRAM_CE_N  ),
