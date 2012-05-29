@@ -14,6 +14,7 @@ module ctrl_top (
   input  wire           rst_ext,
   output wire           clk_out,
   output wire           rst_out,
+  output wire           rst_minimig,
   // SRAM interface
   output wire [ 18-1:0] sram_adr,
   output wire           sram_ce_n,
@@ -77,14 +78,19 @@ ctrl_clk ctrl_clk(
 );
 `endif
 
+wire           clk;
+assign clk = clk_50;
+assign clk_out = clk_50;
+
 
 
 ////////////////////////////////////////
 // reset generation                   //
 ////////////////////////////////////////
 
-wire           clk;
 wire           rst;
+wire           rst_reg;
+assign rst_out = rst;
 
 // ctrl_rst
 ctrl_rst ctrl_rst (
@@ -94,10 +100,6 @@ ctrl_rst ctrl_rst (
   .rst_reg    (1'b0       ),  // register reset input, active high
   .rst        (rst        )   // reset signal output, active high
 );
-
-assign clk = clk_50;
-assign clk_out = clk_50;
-assign rst_out = rst;
 
 
 
@@ -317,7 +319,29 @@ ctrl_flash #(
 // REGS                               //
 ////////////////////////////////////////
 
-// TODO
+ctrl_regs #(
+  .QAW      (SAW),            // qmem address width
+  .QDW      (QDW),            // qmem data width
+  .QSW      (QSW)             // qmem select width
+) ctrl_regs (
+  // system
+  .clk        (clk        ),
+  .rst        (rst        ),
+  // qmem bus
+  .adr        (regs_adr   ),
+  .cs         (regs_cs    ),
+  .we         (regs_we    ),
+  .sel        (regs_sel   ),
+  .dat_w      (regs_dat_w ),
+  .dat_r      (regs_dat_r ),
+  .ack        (regs_ack   ),
+  .err        (regs_err   ),
+  // registers
+  .sys_rst    (rst_reg    ),
+  .minimig_rst(rst_minimig),
+  .uart_txd   (uart_txd   )
+);
+
 
 
 endmodule
