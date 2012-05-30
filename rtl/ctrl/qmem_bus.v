@@ -22,7 +22,10 @@ module qmem_bus #(
   // system
   input  wire           clk,
   input  wire           rst,
-
+  // status
+  output reg            rom_s,
+  output reg            ram_s,
+  output reg            reg_s,
   // master 0 (dcpu)
   input  wire [MAW-1:0] m0_adr,
   input  wire           m0_cs,
@@ -293,6 +296,18 @@ assign s2_dat_w = m0_s2_dat_w;
 assign m0_s2_dat_r = s2_dat_r;
 assign m0_s2_ack   = s2_ack  ;
 assign m0_s2_err   = s2_err  ;
+
+
+
+////////////////////////////////////////
+// slave status                       //
+////////////////////////////////////////
+
+always @ (posedge clk) begin
+  rom_s <= #1 s0_cs;
+  ram_s <= #1 s1_cs;
+  reg_s <= #1 s2_cs;
+end
 
 
 

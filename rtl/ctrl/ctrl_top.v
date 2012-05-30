@@ -15,6 +15,10 @@ module ctrl_top (
   output wire           clk_out,
   output wire           rst_out,
   output wire           rst_minimig,
+  // status
+  output wire           rom_status,
+  output wire           ram_status,
+  output wire           reg_status,
   // SRAM interface
   output wire [ 18-1:0] sram_adr,
   output wire           sram_ce_n,
@@ -97,7 +101,7 @@ ctrl_rst ctrl_rst (
   .clk        (clk_50     ),  // system clock
   .pll_lock   (pll_locked ),  // pll locked input, active high
   .rst_ext    (rst_ext    ),  // external reset (button) input, active high
-  .rst_reg    (1'b0       ),  // register reset input, active high
+  .rst_reg    (rst_reg    ),  // register reset input, active high
   .rst        (rst        )   // reset signal output, active high
 );
 
@@ -163,6 +167,10 @@ qmem_bus #(
   // system
   .clk        (clk        ),
   .rst        (rst        ),
+  // status
+  .rom_s      (rom_status ),
+  .ram_s      (ram_status ),
+  .reg_s      (reg_status ),
   // master 0 (dcpu)
   .m0_adr     (dcpu_adr   ),
   .m0_cs      (dcpu_cs    ),

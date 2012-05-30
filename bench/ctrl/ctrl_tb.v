@@ -84,7 +84,7 @@ initial begin
   RST = 0;
 
   // wait
-  repeat(50000) @ (posedge CLK);
+  repeat(120000) @ (posedge CLK);
 
   // display result
   if (ERR) $display("BENCH : %t : ctrl test FAILED - there were errors!", $time);
@@ -138,6 +138,10 @@ ctrl_top ctrl_top (
   .clk_out      (           ),
   .rst_out      (           ),
   .rst_minimig  (           ),
+  // status
+  .rom_status   (           ),
+  .ram_status   (           ),
+  .reg_status   (           ),
   // SRAM interface
   .sram_adr     (SRAM_ADDR  ),
   .sram_ce_n    (SRAM_CE_N  ),
