@@ -21,7 +21,7 @@ module ctrl_regs #(
   input  wire           we,
   input  wire [QSW-1:0] sel,
   input  wire [QDW-1:0] dat_w,
-  output wire [QDW-1:0] dat_r,
+  output reg  [QDW-1:0] dat_r,
   output reg            ack,
   output wire           err,
   // registers
@@ -53,52 +53,16 @@ end
 
 
 ////////////////////////////////////////
-// register enable                    //
-////////////////////////////////////////
-
-reg            tx_en;
-
-always @ (*) begin
-  if (cs && we) begin
-    case(adr[5:2])
-      3'h2    : tx_en = 1'b1;
-      default : begin
-        tx_en = 1'b0;
-      end
-    endcase
-  end else begin
-    tx_en = 1'b0;
-  end
-end
-
-
-
-////////////////////////////////////////
-// register write                     //
-////////////////////////////////////////
-
-always @ (posedge clk, posedge rst) begin
-  if (rst) begin
-    sys_rst       <= #1 1'b0;
-    minimig_rst   <= #1 1'b1;
-  end else if (cs && we) begin
-    case(adr[5:2])
-      3'h0  : sys_rst       <= #1 dat_w[    0];
-      3'h1  : minimig_rst   <= #1 dat_w[    0];
-    endcase
-  end
-end
-
-
-
-////////////////////////////////////////
 // UART transmit                      //
 ////////////////////////////////////////
+
+// TODO maye add TX buffer - fifo?
 
 // TX counter
 reg  [  4-1:0] tx_counter;
 reg  [  9-1:0] tx_timer;
 wire           tx_ready;
+reg            tx_en;
 
 always @ (posedge clk, posedge rst) begin
   if (rst)
@@ -143,22 +107,105 @@ assign uart_txd = tx_reg[0];
 
 
 ////////////////////////////////////////
+// timer                              //
+////////////////////////////////////////
+
+reg  [ 16-1:0] timer;
+reg  [ 16-1:0] pre_timer;
+reg            timer_en;
+
+// pre counter
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    pre_timer <= #1 16'd50_000 - 16'd1;
+  else if (timer_en)
+    pre_timer <= #1 16'd50_000 - 16'd1;
+  else if (~|pre_timer)
+    pre_timer <= #1 16'd50_000 - 16'd1;
+  else 
+    pre_timer <= #1 pre_timer - 16'd1;
+end
+
+// counter
+// using pre_timer, this increases each milisecond
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    timer <= #1 16'h0000;
+  else if (timer_en)
+    timer <= #1 dat_w[15:0];
+  else if (~|pre_timer)
+    timer <= #1 timer + 16'h1;
+end
+
+
+
+////////////////////////////////////////
+// register enable                    //
+////////////////////////////////////////
+
+always @ (*) begin
+  if (cs && we) begin
+    case(adr[5:2])
+      3'h2    : tx_en     = 1'b1;
+      3'h3    : timer_en  = 1'b1;
+      default : begin
+        tx_en     = 1'b0;
+        timer_en  = 1'b0;
+      end
+    endcase
+  end else begin
+    tx_en     = 1'b0;
+    timer_en  = 1'b0;
+  end
+end
+
+
+
+////////////////////////////////////////
+// register write                     //
+////////////////////////////////////////
+
+always @ (posedge clk, posedge rst) begin
+  if (rst) begin
+    sys_rst       <= #1 1'b0;
+    minimig_rst   <= #1 1'b1;
+  end else if (cs && we) begin
+    case(adr[5:2])
+      3'h0  : sys_rst       <= #1 dat_w[    0];
+      3'h1  : minimig_rst   <= #1 dat_w[    0];
+    endcase
+  end
+end
+
+
+
+////////////////////////////////////////
+// register read                      //
+////////////////////////////////////////
+
+always @ (*) begin
+  case(adr_r[5:2])
+    3'h3    : dat_r = {16'h0000, timer}; 
+    default : dat_r = 32'hxxxxxxxx;
+  endcase
+end
+
+
+
+////////////////////////////////////////
 // ack & err                          //
 ////////////////////////////////////////
 
 // ack
 always @ (*) begin
   case(adr[5:2])
-    3'h2    : ack = tx_ready;
+    3'h2    : ack = cs && tx_ready;
     default : ack = cs;
   endcase
 end
 
 // err
 assign err = 1'b0;
-
-
-
 
 
 
