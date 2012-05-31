@@ -37,7 +37,12 @@ module ctrl_top (
   output wire [  8-1:0] fl_dat_w,
   input  wire [  8-1:0] fl_dat_r,
   // UART
-  output wire           uart_txd
+  output wire           uart_txd,
+  // SPI
+  output wire [  4-1:0] spi_cs_n,
+  output wire           spi_clk,
+  output wire           spi_do,
+  input  wire           spi_di
 );
 
 
@@ -347,7 +352,11 @@ ctrl_regs #(
   // registers
   .sys_rst    (rst_reg    ),
   .minimig_rst(rst_minimig),
-  .uart_txd   (uart_txd   )
+  .uart_txd   (uart_txd   ),
+  .spi_cs_n   (spi_cs_n   ),
+  .spi_clk    (spi_clk    ),
+  .spi_do     (spi_do     ),
+  .spi_di     (spi_di     )
 );
 
 

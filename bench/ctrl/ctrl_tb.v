@@ -160,7 +160,11 @@ ctrl_top ctrl_top (
   .fl_dat_w     (FL_DAT_W   ),
   .fl_dat_r     (FL_DAT_R   ),
   // UART
-  .uart_txd     (UART_TXD   )
+  .uart_txd     (UART_TXD   ),
+  .spi_cs_n     (SPI_CS_N   ),
+  .spi_clk      (SD_CLK     ),
+  .spi_do       (SD_CMD     ),
+  .spi_di       (SD_DAT     )
 );
 
 
@@ -237,7 +241,7 @@ sdModel sdcard (
   .spiClk       (SD_CLK     ),
   .spiDataIn    (SD_CMD     ),
   .spiDataOut   (SD_DAT     ),
-  .spiCS_n      (SD_DAT3    )
+  .spiCS_n      (SPI_CS_N   )
 );
 
 

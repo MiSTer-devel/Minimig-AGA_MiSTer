@@ -27,13 +27,38 @@ module ctrl_regs #(
   // registers
   output reg            sys_rst,
   output reg            minimig_rst,
-  output wire           uart_txd
+  output wire           uart_txd,
+  output reg  [  4-1:0] spi_cs_n,
+  output wire           spi_clk,
+  output wire           spi_do,
+  input  wire           spi_di
 );
 
 
-localparam RAW = 6; // address width for register decoding
-
 initial sys_rst = 1'b0; // initial value for sys_rst
+
+
+
+////////////////////////////////////////
+// registers                          //
+////////////////////////////////////////
+
+// system reset       = 0x800000
+localparam REG_SYS_RST  = 3'h0;
+// minimig reset      = 0x800004
+localparam REG_MIN_RST  = 3'h1;
+// UART TxD           = 0x800008
+localparam REG_UART_TX  = 3'h2;
+// timer              = 0x80000c
+localparam REG_TIMER    = 3'h3;
+// SPI clock divider  = 0x800010
+localparam REG_SPI_DIV  = 3'h4;
+// SPI CS             = 0x800014
+localparam REG_SPI_CS   = 3'h5;
+// SPI_DAT            = 0x800018
+localparam REG_SPI_DAT  = 3'h6;
+
+localparam RAW = 3; // address width for register decoding
 
 
 
@@ -41,13 +66,13 @@ initial sys_rst = 1'b0; // initial value for sys_rst
 // address register                   //
 ////////////////////////////////////////
 
-reg  [RAW-1:0] adr_r;
+reg  [RAW+2-1:0] adr_r;
 
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    adr_r <= #1 {RAW{1'b0}};
+    adr_r <= #1 {(RAW+2){1'b0}};
   else
-    adr_r <= #1 adr[RAW-1:0];
+    adr_r <= #1 adr[RAW+2-1:0];
 end
 
 
@@ -56,7 +81,7 @@ end
 // UART transmit                      //
 ////////////////////////////////////////
 
-// TODO maye add TX buffer - fifo?
+// TODO maybe add TX buffer - fifo?
 
 // TX counter
 reg  [  4-1:0] tx_counter;
@@ -74,7 +99,7 @@ always @ (posedge clk, posedge rst) begin
 end
 
 // TX timer
-
+// set for 115200 Baud
 always @ (posedge clk, posedge rst) begin
   if (rst)
     tx_timer <= #1 9'd434 - 9'd1;
@@ -87,6 +112,7 @@ always @ (posedge clk, posedge rst) begin
 end
 
 // TX register
+// 8N1 transmit format
 reg  [ 10-1:0] tx_reg;
 
 always @ (posedge clk, posedge rst) begin
@@ -140,22 +166,96 @@ end
 
 
 ////////////////////////////////////////
+// SPI                                //
+////////////////////////////////////////
+
+// this is SPI mode 3 (CPOL=1, CPHA=1) - clock default state is 1, data are captured on clock's rising edge and data are propagated on a falling edge
+
+reg            spi_act;
+reg  [  6-1:0] spi_div;
+reg  [  6-1:0] spi_div_r;
+reg            spi_div_en;
+reg  [  4-1:0] spi_cnt;
+reg  [  8-1:0] spi_dat_w;
+reg            spi_dat_en;
+reg            spi_dat_en_d;
+reg  [  8-1:0] spi_dat_r;
+
+// SPI active
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_act <= #1 1'b0;
+  else if (spi_act && (~|spi_cnt) && (~|spi_div))
+    spi_act <= #1 1'b0;
+  else if (spi_dat_en)
+    spi_act <= #1 1'b1;
+end
+
+// SPI clock divider
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_div <= #1 6'd63;
+  else if (spi_div_en)
+    spi_div <= #1 dat_w[5:0];
+  else if (spi_act && (~|spi_div))
+    spi_div <= #1 spi_div_r;
+  else if (spi_act && ( |spi_div))
+    spi_div <= #1 spi_div - 6'd1;
+end
+
+// SPI counter
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_cnt <= #1 4'b1111;
+  else if (spi_act && (~|spi_div))
+    spi_cnt <= #1 spi_cnt - 1;
+end
+
+// SPI clock
+assign spi_clk = spi_cnt[0];
+
+// SPI write data
+always @ (posedge clk) begin
+  if (spi_dat_en && !spi_act)
+    spi_dat_w <= #1 dat_w[7:0];
+  else if (spi_act && spi_clk && (~|spi_div) && (~(&spi_cnt)))
+    spi_dat_w <= #1 {spi_dat_w[6:0], 1'b1};
+end
+
+// SPI data out
+assign spi_do = spi_dat_w[7];
+
+// SPI read data
+always @ (posedge clk) begin
+  if (spi_act && !spi_clk && (~|spi_div))
+    spi_dat_r <= #1 {spi_dat_r[6:0], spi_di};
+end
+
+
+
+////////////////////////////////////////
 // register enable                    //
 ////////////////////////////////////////
 
 always @ (*) begin
   if (cs && we) begin
     case(adr[5:2])
-      3'h2    : tx_en     = 1'b1;
-      3'h3    : timer_en  = 1'b1;
+      REG_UART_TX : tx_en       = 1'b1;
+      REG_TIMER   : timer_en    = 1'b1;
+      REG_SPI_DIV : spi_div_en  = 1'b1;
+      REG_SPI_DAT : spi_dat_en  = 1'b1;
       default : begin
-        tx_en     = 1'b0;
-        timer_en  = 1'b0;
+        tx_en       = 1'b0;
+        timer_en    = 1'b0;
+        spi_div_en  = 1'b0;
+        spi_dat_en  = 1'b0;
       end
     endcase
   end else begin
-    tx_en     = 1'b0;
-    timer_en  = 1'b0;
+    tx_en       = 1'b0;
+    timer_en    = 1'b0;
+    spi_div_en  = 1'b0;
+    spi_dat_en  = 1'b0;
   end
 end
 
@@ -169,10 +269,14 @@ always @ (posedge clk, posedge rst) begin
   if (rst) begin
     sys_rst       <= #1 1'b0;
     minimig_rst   <= #1 1'b1;
+    spi_div_r     <= #1 6'd63;
+    spi_cs_n      <= #1 4'b1111;
   end else if (cs && we) begin
-    case(adr[5:2])
-      3'h0  : sys_rst       <= #1 dat_w[    0];
-      3'h1  : minimig_rst   <= #1 dat_w[    0];
+    case(adr[4:2])
+      REG_SYS_RST : sys_rst       <= #1 dat_w[    0];
+      REG_MIN_RST : minimig_rst   <= #1 dat_w[    0];
+      REG_SPI_DIV : spi_div_r     <= #1 dat_w[ 5: 0];
+      REG_SPI_CS  : spi_cs_n      <= #1 ~((|dat_w[7:4]) ? ((dat_w[7:4] & dat_w[3:0]) | (~dat_w[7:4] & ~spi_cs_n)) : dat_w[3:0]);
     endcase
   end
 end
@@ -184,9 +288,10 @@ end
 ////////////////////////////////////////
 
 always @ (*) begin
-  case(adr_r[5:2])
-    3'h3    : dat_r = {16'h0000, timer}; 
-    default : dat_r = 32'hxxxxxxxx;
+  case(adr_r[4:2])
+    REG_TIMER     : dat_r = {16'h0000, timer}; 
+    REG_SPI_DAT   : dat_r = {24'h000000, spi_dat_r};
+    default       : dat_r = 32'hxxxxxxxx;
   endcase
 end
 
@@ -198,9 +303,10 @@ end
 
 // ack
 always @ (*) begin
-  case(adr[5:2])
-    3'h2    : ack = cs && tx_ready;
-    default : ack = cs;
+  case(adr[4:2])
+    REG_UART_TX   : ack = cs && tx_ready;
+    REG_SPI_DAT   : ack = cs && !spi_act;
+    default       : ack = cs;
   endcase
 end
 
