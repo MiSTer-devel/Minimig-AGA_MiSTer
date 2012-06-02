@@ -6,6 +6,85 @@
 /* 2012, rok.krajnc@gmail.com               */
 /********************************************/
 
+/*
+DESCRIPTION
+This is minimig-de1's control sub-module. It contains a PLL for clock generation, a reset generator,
+OR1200 CPU, SRAM & FLASH controllers, and a register slave, which contains reset controls,
+timer, UART serial transmitter and a SPI master.
+The control submodule requires external 50MHz clock for proper functioning.
+
+BUS
+     --------    --------
+     | ICPU |    | DCPU |
+     --------    --------
+        |             |
+     -------      -------
+     | DEC |      | DEC |
+     -------      -------
+       | |         | | |
+   ----- -------   | | |
+   |           |   | | |
+   |   --------|---- | |
+   |   |       |     | |
+   |   |       |  ---- -------
+   |   |       |  |          |
+  -------     -------        |
+  | ARB |     | ARB |        |
+  -------     -------        |
+     |           |           |
+  -------     -------     -------
+  | ROM |     | RAM |     | REG |
+  -------     -------     -------
+
+ICPU - CPU instruction bus
+DCPU - CPU data bus
+DEC  - slave decoder
+ARB  - master arbiter
+ROM  - FLASH
+RAM  - SRAM
+REG  - registers
+
+Bus is multilayered - accesses from different masters to different slaves can be started independently.
+Masters: There are two masters, CPU inctruction bus and CPU data bus.
+Slaves:  There are three slaves, FLASH, SRAM and REGS.
+
+Bus type is QMEM, which is a bus modeled after zero wait state memory, with added back pressure flow control.
+bus signals:
+  CS    (chip select)       - signals a valid master access
+  ADR   (address)           - master address
+  SEL   (byte select)       - selects valid bytes
+  WE    (write enable)      - signals write (1) or read (0) access
+  DAT_W (write data)        - master data output
+  DAT_R (read data)         - master data input
+  ACK   (data acknowledge)  - slave data acknowledge
+
+Acknowledge for writes is asserted in the same cycle as write data.
+Acknowledge for reads is asserted one cycle ahead of read data - reads are pipelined.
+Master can assert new cycle on the bus after receiving an ack.
+Master can't change the active cycle without receiving an ack.
+
+MEMORY ORGANIZATION
+0 - (0x000000 - 0x3fffff) adr[23:22] == 2'b00 - ROM
+1 - (0x400000 - 0x7fffff) adr[23:22] == 2'b01 - RAM
+2 - (0x800000 - 0xbfffff) adr[23:22] == 2'b10 - REGS
+3 - (0xc00000 - 0xffffff) adr[23:22] == 2'b11 - N.A.
+
+Both masters see the same address space, but only data bus can access the REGS slave.
+Address space is minimally decoded - that means that the all slaves are seen aliased at many different addresses.
+Don't write to undefined addresses, or bad things could happen!
+
+REGISTERS
+system reset       = 0x800000
+minimig reset      = 0x800004
+UART TxD           = 0x800008
+timer              = 0x80000c
+SPI clock divider  = 0x800010
+SPI CS             = 0x800014
+SPI_DAT            = 0x800018
+
+The CPU boots from address 0x000004 (ROM). The startup code is written in such a way, that it copies itself into RAM,
+and then jumps to RAM and continues executing.
+*/
 
 
 module ctrl_top (
@@ -302,7 +381,7 @@ ctrl_flash #(
   .QDW      (QDW),            // qmem data width
   .QSW      (QSW),            // qmem select width
   .DLY      (3  ),            // 80ns delay @ 50MHz clock - for S29AL032D70 (70ns access part)
-  .BE       (1  )             // big endianness - 1 = big endian, 2 = little endian
+  .BE       (1  )             // big endianness - 1 = big endian, 0 = little endian
 ) ctrl_rom (
   // system
   .clk        (clk        ),
