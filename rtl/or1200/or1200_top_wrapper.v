@@ -32,6 +32,9 @@ assign icpu_we = 1'b0;
 // icpu_sel is always all-ones
 assign icpu_sel = 4'b1111;
 
+// icpu_dat_w is don't care
+assign icpu_dat_w = 32'hxxxxxxxx;
+
 // cut address to desired width
 wire [ 32-1:0] iadr;
 wire [ 32-1:0] dadr;
