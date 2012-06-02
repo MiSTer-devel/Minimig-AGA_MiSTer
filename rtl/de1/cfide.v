@@ -282,7 +282,11 @@ end
 //---------------------------------------------------------------
 // timer
 //---------------------------------------------------------------
-always @(posedge sysclk) begin
+always @(posedge sysclk, negedge n_reset) begin
+  if (!n_reset) begin
+    timeprecnt <= 0;
+    timecnt <= 0;
+  end
   if(enaWRreg == 1'b1) begin
     if(timeprecnt == 0) begin
       timeprecnt <= 16'h3808;
