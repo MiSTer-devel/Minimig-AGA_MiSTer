@@ -273,7 +273,7 @@ always @ (posedge clk, posedge rst) begin
   if (rst)
     spi_cnt <= #1 4'b1111;
   else if (spi_act && (~|spi_div))
-    spi_cnt <= #1 spi_cnt - 1;
+    spi_cnt <= #1 spi_cnt - 4'd1;
 end
 
 // SPI clock
@@ -304,6 +304,13 @@ end
 
 always @ (*) begin
   if (cs && we) begin
+      sys_rst_en      = 1'b0;
+      minimig_rst_en  = 1'b0;
+      tx_en           = 1'b0;
+      timer_en        = 1'b0;
+      spi_div_en      = 1'b0;
+      spi_cs_n_en     = 1'b0;
+      spi_dat_en      = 1'b0;
     case(adr[5:2])
       REG_SYS_RST : sys_rst_en      = 1'b1;
       REG_MIN_RST : minimig_rst_en  = 1'b1;
