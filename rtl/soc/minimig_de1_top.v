@@ -170,10 +170,10 @@ wire           hd_frd;
 
 // cfide
 wire [  8-1:0] sd_cs;
-wire           sd_do;
 wire           sd_clk;
 wire           cfide_memce;
 
+/*
 // tg68_fast
 wire           tg68_fast_clkena;
 wire [ 16-1:0] tg68_fast_dat_in;
@@ -185,6 +185,7 @@ wire           tg68_fast_uds;
 wire           tg68_fast_lds;
 wire           tg68_fast_enaRD;
 wire           tg68_fast_enaWR;
+*/
 
 // sdram
 wire           reset_out;
@@ -208,11 +209,6 @@ wire           exchan;
 
 // assign unused outputs
 assign TDO          = 1'b1;
-assign FL_ADDR      = 22'h3fffff;
-assign FL_WE_N      = 1'b1;
-assign FL_RST_N     = 1'b1;
-assign FL_OE_N      = 1'b1;
-assign FL_CE_N      = 1'b0;
 
 // input synchronizers
 wire   sw_7, sw_8, sw_9;
@@ -249,9 +245,7 @@ assign joy_emu_en   = sw_9;
 assign exchan       = sw_7;
 
 // SD card
-assign SD_DAT3      = sd_cs[1];
-assign SD_CMD       = sd_do;
-assign SD_CLK       = sd_clk;
+assign SD_DAT3      = SPI_CS_N[0];
 
 // SDRAM
 assign DRAM_CKE     = 1'b1;
@@ -267,6 +261,57 @@ assign DRAM_BA_1    = sdram_ba[1];
 ////////////////////////////////////////
 // modules                            //
 ////////////////////////////////////////
+
+//// control block ////
+wire [ 16-1:0]  SRAM_DAT_W;
+wire [ 16-1:0]  SRAM_DAT_R;
+wire [ 16-1:0]  FL_DAT_W;
+wire [ 16-1:0]  FL_DAT_R;
+wire [  4-1:0]  SPI_CS_N;
+wire            SPI_DI;
+
+assign SRAM_DQ    = SRAM_OE_N ? SRAM_DAT_W : 16'bzzzzzzzzzzzzzzzz;
+assign SRAM_DAT_R = SRAM_DQ;
+assign FL_DQ      = FL_OE_N   ? FL_DAT_W   : 8'bzzzzzzzz;
+assign FL_DAT_R   = FL_DQ;
+assign SPI_DI     = !SPI_CS_N[0] ? SD_DAT : sdo;
+
+ctrl_top ctrl_top (
+  // system
+  .clk_in       (CLOCK_50   ),
+  .rst_ext      (!KEY[0]    ),
+  .clk_out      (clk_50     ),
+  .rst_out      (rst_50     ),
+  .rst_minimig  (rst_minimig),
+  // status
+  .rom_status   (rom_status ),
+  .ram_status   (ram_status ),
+  .reg_status   (reg_status ),
+  // SRAM interface
+  .sram_adr     (SRAM_ADDR  ),
+  .sram_ce_n    (SRAM_CE_N  ),
+  .sram_we_n    (SRAM_WE_N  ),
+  .sram_ub_n    (SRAM_UB_N  ),
+  .sram_lb_n    (SRAM_LB_N  ),
+  .sram_oe_n    (SRAM_OE_N  ),
+  .sram_dat_w   (SRAM_DAT_W ),
+  .sram_dat_r   (SRAM_DAT_R ),
+  // FLASH interface
+  .fl_adr       (FL_ADDR    ),
+  .fl_ce_n      (FL_CE_N    ),
+  .fl_we_n      (FL_WE_N    ),
+  .fl_oe_n      (FL_OE_N    ),
+  .fl_rst_n     (FL_RST_N   ),
+  .fl_dat_w     (FL_DAT_W   ),
+  .fl_dat_r     (FL_DAT_R   ),
+  // UART
+  .uart_txd     (UART_TXD   ),
+  .spi_cs_n     (SPI_CS_N   ),
+  .spi_clk      (SD_CLK     ),
+  .spi_do       (SD_CMD     ),
+  .spi_di       (SPI_DI     )
+);
+
 
 /* clock */
 `ifdef SOC_SIM
@@ -310,6 +355,7 @@ indicators indicators(
   .f_rd         (floppy_frd       ),
   .h_wr         (hd_fwr           ),
   .h_rd         (hd_frd           ),
+  .status       ({rom_status, ram_status, reg_status}),
   .hex_0        (HEX0             ),
   .hex_1        (HEX1             ),
   .hex_2        (HEX2             ),
@@ -317,26 +363,6 @@ indicators indicators(
   .led_g        (LEDG             ),
   .led_r        (LEDR             )
 );
-
-
-/* sram controller */
-sram_ctl sram_ctl(
-  .clk          (clk_114          ),
-  .rst          (!n_rst           ),
-  .adr          (tg68_fast_adr    ),
-  .rw           (tg68_fast_rw     ),
-  .lds          (tg68_fast_uds    ),
-  .uds          (tg68_fast_lds    ), 
-  .dat_w        (tg68_fast_dat_out),
-  .dat_r        (/*zdataout*/         ),
-  .ce           (SRAM_CE_N        ),
-  .oe           (SRAM_OE_N        ),
-  .wr           (SRAM_WE_N        ),
-  .bs           ({SRAM_UB_N, SRAM_LB_N}),
-  .addr         (SRAM_ADDR        ),
-  .data         (SRAM_DQ          )
-);
-
 
 /* tg68 main cpu */
 TG68 tg68 (
@@ -402,11 +428,11 @@ Minimig1 minimig (
   .kbddat       (PS2_DAT          ), // PS2 keyboard data
   .kbdclk       (PS2_CLK          ), // PS2 keyboard clk
   //host controller interface (SPI)
-  ._scs         (sd_cs[6:4]       ), // SPI chip select
+  ._scs         (SPI_CS_N[3:1]    ), // SPI chip select
   .direct_sdi   (SD_DAT           ), // SD Card direct in
-  .sdi          (sd_do            ), // SPI data input
+  .sdi          (SD_CMD           ), // SPI data input
   .sdo          (sdo              ), // SPI data output
-  .sck          (sd_clk           ), // SPI clock
+  .sck          (SD_CLK           ), // SPI clock
   //video
   ._hsync       (VGA_HS           ), // horizontal sync
   ._vsync       (VGA_VS           ), // vertical sync
@@ -436,6 +462,7 @@ Minimig1 minimig (
 
 
 /* cfide */
+/*
 cfide cfide (
   .sysclk       (clk_114          ),
   .n_reset      (n_rst            ),
@@ -457,9 +484,11 @@ cfide cfide (
   .sd_dimm      (sdo              ),
   .enaWRreg     (tg68_fast_enaWR  )
 );
+*/
 
 
 /* tg68_fast control cpu */
+/*
 TG68_fast tg68_fast (
   .clk          (clk_114          ),
   .reset        (n_rst            ),
@@ -477,6 +506,7 @@ TG68_fast tg68_fast (
   .enaRDreg     (tg68_fast_enaRD  ),
   .enaWRreg     (tg68_fast_enaWR  )
 );
+*/
 
 
 /* sdram */
@@ -491,9 +521,9 @@ sdram sdram (
   .sd_cs        (sdram_cs         ),
   .dqm          (sdram_dqm        ),
   .ba           (sdram_ba         ),
-  .zdatawr      (tg68_fast_dat_out),
-  .zAddr        (tg68_fast_adr[23:0]),
-  .zstate       ({cfide_memce, tg68_fast_state}),
+  .zdatawr      (16'b0            ),
+  .zAddr        (24'b0            ),
+  .zstate       ({1'b0, 2'b01}),
   .datawr       (ram_data         ),
   .rAddr        ({2'b01, ram_address[21:1], 1'b0}),
   .rwr          (_ram_we          ),
@@ -505,7 +535,7 @@ sdram sdram (
   .cpu_dma      (_ram_oe          ),
   .c_28min      (clk_28           ),
   .dataout      (ramdata_in       ),
-  .zdataout     (zdataout         ),
+  .zdataout     (/*zdataout*/         ),
   .c_14m        (clk_14           ),
   .zena_o       (zena_o           ),
   .c_28m        (                 ),
