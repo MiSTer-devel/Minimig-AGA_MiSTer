@@ -40,7 +40,7 @@ initial sys_rst = 1'b0; // initial value for sys_rst
 
 
 ////////////////////////////////////////
-// registers                          //
+// parameters                         //
 ////////////////////////////////////////
 
 // system reset       = 0x800000
@@ -58,7 +58,17 @@ localparam REG_SPI_CS   = 3'h5;
 // SPI_DAT            = 0x800018
 localparam REG_SPI_DAT  = 3'h6;
 
-localparam RAW = 3; // address width for register decoding
+// address width for register decoding
+localparam RAW          = 3; 
+
+// UART TxD counter value for 115200 @ 50MHz system clock
+localparam TXD_CNT      = 9'd434;
+
+// timer precounter value for 1ms @ 50MHz system clock
+localparam TIMER_CNT    = 16'd50_000;
+
+// SPI counter value for 400kHz @ 50MHz system clock (SD init clock)
+localparam SPI_CNT      = 6'd63;
 
 
 
@@ -102,13 +112,13 @@ end
 // set for 115200 Baud
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    tx_timer <= #1 9'd434 - 9'd1;
+    tx_timer <= #1 TXD_CNT - 9'd1;
   else if (tx_en && tx_ready)
-    tx_timer <= #1 9'd434 - 9'd1;
+    tx_timer <= #1 TXD_CNT - 9'd1;
   else if (|tx_timer)
     tx_timer <= #1 tx_timer - 9'd1;
   else if (|tx_counter)
-    tx_timer <= #1 9'd434 - 9'd1;
+    tx_timer <= #1 TXD_CNT - 9'd1;
 end
 
 // TX register
@@ -143,11 +153,11 @@ reg            timer_en;
 // pre counter
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    pre_timer <= #1 16'd50_000 - 16'd1;
+    pre_timer <= #1 TIMER_CNT - 16'd1;
   else if (timer_en)
-    pre_timer <= #1 16'd50_000 - 16'd1;
+    pre_timer <= #1 TIMER_CNT - 16'd1;
   else if (~|pre_timer)
-    pre_timer <= #1 16'd50_000 - 16'd1;
+    pre_timer <= #1 TIMER_CNT - 16'd1;
   else 
     pre_timer <= #1 pre_timer - 16'd1;
 end
@@ -169,16 +179,17 @@ end
 // SPI                                //
 ////////////////////////////////////////
 
-// this is SPI mode 3 (CPOL=1, CPHA=1) - clock default state is 1, data are captured on clock's rising edge and data are propagated on a falling edge
+// this is SPI mode 3 (CPOL=1, CPHA=1)
+// clock default state is HI, data are captured on clock's rising edge and data are propagated on a falling edge
 
 reg            spi_act;
+reg            spi_act_d;
 reg  [  6-1:0] spi_div;
 reg  [  6-1:0] spi_div_r;
 reg            spi_div_en;
 reg  [  4-1:0] spi_cnt;
 reg  [  8-1:0] spi_dat_w;
 reg            spi_dat_en;
-reg            spi_dat_en_d;
 reg  [  8-1:0] spi_dat_r;
 
 // SPI active
@@ -187,19 +198,29 @@ always @ (posedge clk, posedge rst) begin
     spi_act <= #1 1'b0;
   else if (spi_act && (~|spi_cnt) && (~|spi_div))
     spi_act <= #1 1'b0;
-  else if (spi_dat_en)
+  else if (spi_dat_en && !spi_act_d)
     spi_act <= #1 1'b1;
+end
+
+// SPI active - last cycle
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_act_d <= #1 1'b0;
+  else if (spi_act && (~|spi_cnt) && (~|spi_div))
+    spi_act_d  <= #1 1'b1;
+  else if (spi_act_d && (~|spi_div))
+    spi_act_d  <= #1 1'b0;
 end
 
 // SPI clock divider
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    spi_div <= #1 6'd63;
+    spi_div <= #1 SPI_CNT - 6'd1;
   else if (spi_div_en)
     spi_div <= #1 dat_w[5:0];
   else if (spi_act && (~|spi_div))
     spi_div <= #1 spi_div_r;
-  else if (spi_act && ( |spi_div))
+  else if ((spi_act || spi_act_d) && ( |spi_div))
     spi_div <= #1 spi_div - 6'd1;
 end
 
@@ -216,7 +237,7 @@ assign spi_clk = spi_cnt[0];
 
 // SPI write data
 always @ (posedge clk) begin
-  if (spi_dat_en && !spi_act)
+  if (spi_dat_en && !(spi_act || spi_act_d))
     spi_dat_w <= #1 dat_w[7:0];
   else if (spi_act && spi_clk && (~|spi_div) && (~(&spi_cnt)))
     spi_dat_w <= #1 {spi_dat_w[6:0], 1'b1};
@@ -269,7 +290,7 @@ always @ (posedge clk, posedge rst) begin
   if (rst) begin
     sys_rst       <= #1 1'b0;
     minimig_rst   <= #1 1'b1;
-    spi_div_r     <= #1 6'd63;
+    spi_div_r     <= #1 SPI_CNT - 6'd1;
     spi_cs_n      <= #1 4'b1111;
   end else if (cs && we) begin
     case(adr[4:2])
@@ -305,7 +326,7 @@ end
 always @ (*) begin
   case(adr[4:2])
     REG_UART_TX   : ack = cs && tx_ready;
-    REG_SPI_DAT   : ack = cs && !spi_act;
+    REG_SPI_DAT   : ack = cs && !(spi_act | spi_act_d);
     default       : ack = cs;
   endcase
 end
