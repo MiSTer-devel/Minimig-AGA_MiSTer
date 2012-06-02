@@ -229,7 +229,7 @@
 // To enable *wb_cti_o/*wb_bte_o ports,
 // define this macro.
 //
-`define OR1200_WB_B3
+//`define OR1200_WB_B3
 
 //
 // Enable additional synthesis directives if using
