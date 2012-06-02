@@ -35,9 +35,6 @@ module ctrl_regs #(
 );
 
 
-initial sys_rst = 1'b0; // initial value for sys_rst
-
-
 
 ////////////////////////////////////////
 // parameters                         //
@@ -83,6 +80,34 @@ always @ (posedge clk, posedge rst) begin
     adr_r <= #1 {(RAW+2){1'b0}};
   else
     adr_r <= #1 adr[RAW+2-1:0];
+end
+
+
+
+////////////////////////////////////////
+// reset                              //
+////////////////////////////////////////
+
+reg              sys_rst_en;
+reg              minimig_rst_en;
+
+// set initial system reset state
+initial sys_rst = 0;
+
+// system reset
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    sys_rst <= #1 1'b0;
+  else if (sys_rst_en)
+    sys_rst <= #1 dat_w[0];
+end
+
+// minimig reset
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    minimig_rst <= #1 1'b0;
+  else if (minimig_rst_en)
+    minimig_rst <= #1 dat_w[0];
 end
 
 
@@ -182,6 +207,7 @@ end
 // this is SPI mode 3 (CPOL=1, CPHA=1)
 // clock default state is HI, data are captured on clock's rising edge and data are propagated on a falling edge
 
+reg            spi_cs_n_en;
 reg            spi_act;
 reg            spi_act_d;
 reg  [  6-1:0] spi_div;
@@ -191,6 +217,16 @@ reg  [  4-1:0] spi_cnt;
 reg  [  8-1:0] spi_dat_w;
 reg            spi_dat_en;
 reg  [  8-1:0] spi_dat_r;
+
+// SPI chip-select (active low)
+// masked set  : if any of the upper 4 bits of first byte are set, only bits with same position in lower four bits are changed
+// unmasket set: if none of the upper 4 bits are set, all four lower bits get overwritten
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_cs_n <= #1 4'b1111;
+  else if (spi_cs_n_en)
+    spi_cs_n <= #1 ~((|dat_w[7:4]) ? ((dat_w[7:4] & dat_w[3:0]) | (~dat_w[7:4] & ~spi_cs_n)) : dat_w[3:0]);
+end
 
 // SPI active
 always @ (posedge clk, posedge rst) begin
@@ -212,11 +248,19 @@ always @ (posedge clk, posedge rst) begin
     spi_act_d  <= #1 1'b0;
 end
 
+// SPI clock divider register
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    spi_div_r <= #1 SPI_CNT - 6'd1;
+  else if (spi_div_en && !(spi_act || spi_act_d))
+    spi_div_r <= #1 dat_w[5:0];
+end
+
 // SPI clock divider
 always @ (posedge clk, posedge rst) begin
   if (rst)
     spi_div <= #1 SPI_CNT - 6'd1;
-  else if (spi_div_en)
+  else if (spi_div_en && !(spi_act || spi_act_d))
     spi_div <= #1 dat_w[5:0];
   else if (spi_act && (~|spi_div))
     spi_div <= #1 spi_div_r;
@@ -261,44 +305,31 @@ end
 always @ (*) begin
   if (cs && we) begin
     case(adr[5:2])
-      REG_UART_TX : tx_en       = 1'b1;
-      REG_TIMER   : timer_en    = 1'b1;
-      REG_SPI_DIV : spi_div_en  = 1'b1;
-      REG_SPI_DAT : spi_dat_en  = 1'b1;
+      REG_SYS_RST : sys_rst_en      = 1'b1;
+      REG_MIN_RST : minimig_rst_en  = 1'b1;
+      REG_UART_TX : tx_en           = 1'b1;
+      REG_TIMER   : timer_en        = 1'b1;
+      REG_SPI_DIV : spi_div_en      = 1'b1;
+      REG_SPI_CS  : spi_cs_n_en     = 1'b1;
+      REG_SPI_DAT : spi_dat_en      = 1'b1;
       default : begin
-        tx_en       = 1'b0;
-        timer_en    = 1'b0;
-        spi_div_en  = 1'b0;
-        spi_dat_en  = 1'b0;
+        sys_rst_en      = 1'b0;
+        minimig_rst_en  = 1'b0;
+        tx_en           = 1'b0;
+        timer_en        = 1'b0;
+        spi_div_en      = 1'b0;
+        spi_cs_n_en     = 1'b0;
+        spi_dat_en      = 1'b0;
       end
     endcase
   end else begin
-    tx_en       = 1'b0;
-    timer_en    = 1'b0;
-    spi_div_en  = 1'b0;
-    spi_dat_en  = 1'b0;
-  end
-end
-
-
-
-////////////////////////////////////////
-// register write                     //
-////////////////////////////////////////
-
-always @ (posedge clk, posedge rst) begin
-  if (rst) begin
-    sys_rst       <= #1 1'b0;
-    minimig_rst   <= #1 1'b1;
-    spi_div_r     <= #1 SPI_CNT - 6'd1;
-    spi_cs_n      <= #1 4'b1111;
-  end else if (cs && we) begin
-    case(adr[4:2])
-      REG_SYS_RST : sys_rst       <= #1 dat_w[    0];
-      REG_MIN_RST : minimig_rst   <= #1 dat_w[    0];
-      REG_SPI_DIV : spi_div_r     <= #1 dat_w[ 5: 0];
-      REG_SPI_CS  : spi_cs_n      <= #1 ~((|dat_w[7:4]) ? ((dat_w[7:4] & dat_w[3:0]) | (~dat_w[7:4] & ~spi_cs_n)) : dat_w[3:0]);
-    endcase
+    sys_rst_en      = 1'b0;
+    minimig_rst_en  = 1'b0;
+    tx_en           = 1'b0;
+    timer_en        = 1'b0;
+    spi_div_en      = 1'b0;
+    spi_cs_n_en     = 1'b0;
+    spi_dat_en      = 1'b0;
   end
 end
 
