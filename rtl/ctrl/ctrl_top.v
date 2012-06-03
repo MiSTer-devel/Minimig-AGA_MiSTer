@@ -81,6 +81,7 @@ timer              = 0x80000c
 SPI clock divider  = 0x800010
 SPI CS             = 0x800014
 SPI_DAT            = 0x800018
+SPI_BLOCK          = 0x80001c
 
 The CPU boots from address 0x000004 (ROM). The startup code is written in such a way, that it copies itself into RAM,
 and then jumps to RAM and continues executing.
