@@ -62,8 +62,8 @@ or1200_top or1200 (
   .iwb_sel_o              (),
   .iwb_dat_o              (),
 //  .iwb_cab_o              (),
-  .iwb_cti_o              (),
-  .iwb_bte_o              (),
+//  .iwb_cti_o              (),
+//  .iwb_bte_o              (),
   // Data wishbone
   .dwb_clk_i              (1'b0),
   .dwb_rst_i              (1'b1),
@@ -78,8 +78,8 @@ or1200_top or1200 (
   .dwb_sel_o              (),
   .dwb_dat_o              (),
 //  .dwb_cab_o              (),
-  .dwb_cti_o              (),
-  .dwb_bte_o              (),
+//  .dwb_cti_o              (),
+//  .dwb_bte_o              (),
   // Debug interface
   .dbg_stall_i            (1'b0),
   .dbg_ewt_i              (1'b0),
