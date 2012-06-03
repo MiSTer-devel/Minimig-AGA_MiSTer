@@ -245,7 +245,6 @@ assign joy_emu_en   = sw_9;
 assign exchan       = sw_7;
 
 // SD card
-assign SD_DAT3      = SPI_CS_N[0];
 
 // SDRAM
 assign DRAM_CKE     = 1'b1;
@@ -270,11 +269,14 @@ wire [ 16-1:0]  FL_DAT_R;
 wire [  4-1:0]  SPI_CS_N;
 wire            SPI_DI;
 
+assign SD_DAT3      = SPI_CS_N[0];
+
 assign SRAM_DQ    = SRAM_OE_N ? SRAM_DAT_W : 16'bzzzzzzzzzzzzzzzz;
 assign SRAM_DAT_R = SRAM_DQ;
 assign FL_DQ      = FL_OE_N   ? FL_DAT_W   : 8'bzzzzzzzz;
 assign FL_DAT_R   = FL_DQ;
 assign SPI_DI     = !SPI_CS_N[0] ? SD_DAT : sdo;
+
 
 ctrl_top ctrl_top (
   // system
