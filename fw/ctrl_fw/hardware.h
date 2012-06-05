@@ -21,8 +21,8 @@
 #define DisableCard()  *(volatile unsigned int *)0x800014=0x10
 #define EnableFpga()   *(volatile unsigned int *)0x800014=0x22
 #define DisableFpga()  *(volatile unsigned int *)0x800014=0x20
-#define EnableOsd()    *(volatile unsigned int *)0x800014=0x44
-#define DisableOsd()   *(volatile unsigned int *)0x800014=0x40
+#define EnableOsd()    (*(volatile unsigned int *)0x800010=0x6, *(volatile unsigned int *)0x800014=0x44)
+#define DisableOsd()   (*(volatile unsigned int *)0x800010=0x0, *(volatile unsigned int *)0x800014=0x40)
 #define EnableDMode()  *(volatile unsigned int *)0x800014=0x88
 #define DisableDMode() *(volatile unsigned int *)0x800014=0x80
 
