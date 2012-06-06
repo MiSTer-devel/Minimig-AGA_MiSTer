@@ -152,7 +152,7 @@ always @(posedge clk)
 	if (reset)
 		cop2lch[20:16]<=0;
 	else if (reg_address_in[8:1]==COP2LCH[8:1])
-		cop2lch[20:16]<=data_in[4:0];
+		cop2lch[20:16] <= data_in[4:0];
 
 always @(posedge clk)
 	if (reset)

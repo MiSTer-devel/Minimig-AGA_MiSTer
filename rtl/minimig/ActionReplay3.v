@@ -114,11 +114,11 @@ assign sel_custom = sel_cart & cpu_address_in[18] & (cpu_address_in[17:9]==9'b00
 assign sel_mode = sel_cart & ~|cpu_address_in[18:1];
 assign sel_status = sel_cart & ~|cpu_address_in[18:2] & cpu_rd;
 assign sel_ovl = ram_ovl & (cpu_address_in[23:19]==5'b0000_0) & cpu_rd;
-assign selmem = (sel_rom & boot) | (((sel_rom & cpu_rd) | sel_ram | sel_ovl));
+assign selmem = (sel_rom & boot) | ((sel_rom & cpu_rd) | sel_ram | sel_ovl);
 
 // Action Replay is activated by writing to its ROM area during bootloading
-//always @(clk) // TODO rkrajnc
-always @(posedge clk)
+//always @(posedge clk)
+always @(negedge clk)
 	if (!reset && boot && cpu_address_in[23:18]==6'b0100_00 && cpu_lwr)
 		aron <= 1'b1;	// rom will miss first write but since 2 first words of rom are not readable it doesn't matter
 
@@ -264,6 +264,6 @@ always @(posedge _cpu_as)
 	cpu_address_hit <= cpu_address[23:10]==14'h00 ? 1'b1 : 1'b0;
 
 // access of $BFE001 from $000-$3FF memory range
-assign break_req = aron && mode[1] && cpu_address_hit && cpu_address==(24'hBFE001>>1) && !_cpu_as ? 1'b1 : 1'b0;
+assign break_req = ~active && aron && mode[1] && cpu_address_hit && cpu_address==(24'hBFE001>>1) && !_cpu_as ? 1'b1 : 1'b0;
 
 endmodule

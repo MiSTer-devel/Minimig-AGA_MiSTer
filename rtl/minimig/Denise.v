@@ -55,6 +55,9 @@
 // 2009-12-16	- added ECS enable input (only chip id is affected)
 // 2009-12-20	- DIWHIGH is written only in ECS mode
 // 2010-04-22	- ECS border blank implemented
+//
+// SB:
+// 2012-03-23 - fixed sprite enable signal (coppermaster demo)
 
 module Denise
 (
@@ -137,13 +140,6 @@ always @(posedge clk)
 
 //--------------------------------------------------------------------------------------
 
-// sprite display enable signal - sprites are visible after the first write to the BPL1DAT register in a scanline
-always @(posedge clk)
-	if (reset || strhor)
-		display_ena <= 0;
-	else if (reg_address_in[8:1]==BPL1DAT[8:1])
-		display_ena <= 1;
-
 // bpu is updated when bpl1dat register is written
 always @(posedge clk)
 	if (reg_address_in[8:1]==BPL1DAT[8:1])
@@ -183,6 +179,13 @@ always @(posedge clk)
 		bplcon3 <= 16'h00_00;
 	else if (reg_address_in[8:1]==BPLCON3[8:1])
 		bplcon3[15:0] <= data_in[15:0];
+
+// sprite display enable signal - sprites are visible after the first write to the BPL1DAT register in a scanline
+always @(posedge clk)
+  if (reset || (hpos[8:0]==8))
+    display_ena <= 0;
+  else if (reg_address_in[8:1]==BPL1DAT[8:1])
+    display_ena <= 1;
 
 assign brdrblnk = bplcon3[5];
 		
@@ -482,7 +485,7 @@ wire	[11:0] selcolor;			// selected colour output from colour table
 //--------------------------------------------------------------------------------------
 
 //writing of HAM colour table from bus (implemented using dual port distributed ram)
-always @(posedge clk)
+always @(posedge clk28m)
 	if (reg_address_in[8:5]==COLORBASE[8:5])
 		colortable[reg_address_in[4:1]] <= data_in[11:0];
 

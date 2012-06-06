@@ -71,7 +71,8 @@
 // 2010-08-15	- added joystick emulation
 // 
 // SB:
-// 2011-04-02 - added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data
+// 2011-04-02 - added ciaa port b (parallel) register to let Unreal game work and some trainer store data
+// 2011-04-24 - fixed TOD read
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
@@ -172,8 +173,8 @@ ps2keyboard	kbd1
 	.reset(reset),
 	.ps2kdat(kbddat),
 	.ps2kclk(kbdclk),
-	.leda(~porta_out[1]),	// power/filter LED
-	.ledb(disk_led),		// disk activity LED
+	.leda(~porta_out[1]),	// keyboard joystick LED - num lock
+	.ledb(disk_led),		// disk activity LED - scroll lock
   .aflock(aflock),
 	.kbdrst(kbdrst),
 	.keydat(keydat[7:0]),
@@ -444,7 +445,7 @@ assign	crb  = (enable && rs==4'hF) ? 1'b1 : 1'b0;
 //----------------------------------------------------------------------------------
 // data_out multiplexer
 //----------------------------------------------------------------------------------
-assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | pa_out | pb_out | sdr_out;
+assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | pa_out;
 
 // fake serial port data register
 always @(posedge clk)
@@ -460,7 +461,7 @@ assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;
 // porta
 //----------------------------------------------------------------------------------
 reg [5:3] porta_in2;
-reg [7:6] regporta;
+reg [7:0] regporta;
 reg [7:0] ddrporta;
 
 // synchronizing of input data
@@ -470,9 +471,9 @@ always @(posedge clk)
 // writing of output port
 always @(posedge clk)
 	if (reset)
-		regporta[7:6] <= 2'd0;
+		regporta[7:0] <= 2'd0;
 	else if (wr && pra)
-		regporta[7:6] <= data_in[7:6];
+		regporta[7:0] <= data_in[7:0];
 
 // writing of ddr register 
 always @(posedge clk)
@@ -899,7 +900,7 @@ module timerd
 	reg		crb7;					// bit 7 of control register B
 	reg		[23:0] tod;				// timer d
 	reg		[23:0] alarm;			// alarm
-	reg		[15:0] tod_latch;		// timer d latch
+	reg		[23:0] tod_latch;		// timer d latch
 	reg		count_del;				// delayed count signal for interrupt requesting
 
 // timer D output latch control
@@ -910,19 +911,19 @@ always @(posedge clk)
 	begin
 		if (thi) // if MSB read, hold data for subsequent reads
 			latch_ena <= 1'd0;
-		else if (tlo) // if LSB read, update data every clock
+		else if (!thi) // if LSB read, update data every clock
 			latch_ena <= 1'd1;
 	end
 always @(posedge clk)
 	if (latch_ena)
-		tod_latch[15:0] <= tod[15:0];
+		tod_latch[23:0] <= tod[23:0];
 
 // timer D and crb7 read 
 always @(wr or tlo or tme or thi or tcr or tod or tod_latch or crb7)
 	if (!wr)
 	begin
 		if (thi) // high byte of timer D
-			data_out[7:0] = tod[23:16];
+			data_out[7:0] = tod_latch[23:16];
 		else if (tme) // medium byte of timer D (latched)
 			data_out[7:0] = tod_latch[15:8];
 		else if (tlo) // low byte of timer D (latched)

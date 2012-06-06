@@ -145,7 +145,7 @@
 // 2009-12-27	- OCS Denise compatible display window generation
 // 2010-04-13	- undocumented 7 bitplane mode implemented
 // 2010-06-29	- added more magic to ddf logic
-//
+
 //SB:
 // 2011-03-08 - added DIP and FatAgnus handling of scanline 0 (fix for RoboCop2 game)
 
@@ -1151,7 +1151,7 @@ always @(posedge clk28m)
 //--------------------------------------------------------------------------------------
 
 //check if we are allowed to allocate dma slots for sprites
-//dma slots for sprites: even cycles from 1A to 38 (inclusive)
+//dma slots for sprites: even cycles from 18 to 38 (inclusive)
 always @(posedge clk)
 	if (hpos[8:1]==8'h18 && hpos[0])
 		enable <= 1;

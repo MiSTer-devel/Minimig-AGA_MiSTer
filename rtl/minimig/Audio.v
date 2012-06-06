@@ -19,17 +19,17 @@
 //
 // This is the audio part of Paula
 //
-// 27-12-2005		-started coding
-// 28-12-2005		-done lots of work
-// 29-12-2005		-done lots of work
-// 01-01-2006		-we are having OK sound in dma mode now
-// 02-01-2006		-fixed last state
-// 03-01-2006		-added dmas to avoid interference with copper cycles
-// 04-01-2006		-experimented with DAC
-// 06-01-2006		-experimented some more with DAC and decided to leave it as it is for now
-// 07-01-2006		-cleaned up code
-// 21-02-2006		-improved audio state machine
-// 22-02-2006		-fixed dma interrupt timing, Turrican-3 theme now plays correct!
+// 27-12-2005	- started coding
+// 28-12-2005	- done lots of work
+// 29-12-2005	- done lots of work
+// 01-01-2006	- we are having OK sound in dma mode now
+// 02-01-2006	- fixed last state
+// 03-01-2006	- added dmas to avoid interference with copper cycles
+// 04-01-2006	- experimented with DAC
+// 06-01-2006	- experimented some more with DAC and decided to leave it as it is for now
+// 07-01-2006	- cleaned up code
+// 21-02-2006	- improved audio state machine
+// 22-02-2006	- fixed dma interrupt timing, Turrican-3 theme now plays correct!
 //
 // -- JB --
 // 2008-10-12	- code clean-up
@@ -64,7 +64,7 @@
 // #1 : 122 (121)
 // #2 : 123 (122)
 // #3 : 124 (123)
-//
+
 // SB:
 // 2011-01-18 - fixed sound output, no more high pitch noise at game Gods
 
@@ -83,9 +83,12 @@ module audio
 	output	reg [3:0] dmal,			//dma request 
 	output	reg [3:0] dmas,			//dma special 
 	output	left,					//audio bitstream out left
-	output	right,					//audio bitstream out right
+	output	right					//audio bitstream out right
+`ifdef MINIMIG_DE1
+  ,
 	output	[14:0]ldata,		//left DAC data
 	output	[14:0]rdata 		//right DAC data
+`endif
 );
 
 //register names and addresses
@@ -126,8 +129,8 @@ assign aen[3] = (reg_address_in[8:4]==AUD3BASE[8:4]) ? 1'b1 : 1'b0;
 always @(posedge clk)
 	if (strhor)
 	begin
-		dmal <= dmareq;
-		dmas <= dmaspc;
+		dmal <= (dmareq);
+		dmas <= (dmaspc);
 	end
 		
 //--------------------------------------------------------------------------------------
@@ -222,9 +225,12 @@ sigmadelta dac0
 	.vol3(vol3),
   .strhor(strhor),
 	.left(left),
-	.right(right),	
+	.right(right)
+`ifdef MINIMIG_DE1
+  ,
 	.ldatasum(ldata),
 	.rdatasum(rdata)
+`endif
 );
 
 //--------------------------------------------------------------------------------------
@@ -253,9 +259,12 @@ module sigmadelta
 	input	[6:0] vol3,			//volume 3 input
   input strhor,
 	output	left,				//left bitstream output
-	output	right,				//right bitsteam output
-	output	reg [14:0]ldatasum,		//left DAC data
-	output	reg [14:0]rdatasum		//right DAC data
+	output	right				//right bitsteam output
+`ifdef MINIMIG_DE1
+  ,
+	output	[14:0]ldatasum,		//left DAC data
+	output	[14:0]rdatasum		//right DAC data
+`endif
 );
 
 //local signals
@@ -269,6 +278,8 @@ wire	[13:0] ldata;			//left DAC data
 wire	[13:0] rdata; 			//right DAC data
 reg		[13:0]ldatatmp;			//left DAC data
 reg		[13:0]rdatatmp; 		//right DAC data
+reg [14:0]ldatasum;   //left DAC data
+reg [14:0]rdatasum;     //right DAC data
 reg		mxc;					//multiplex control
 
 //--------------------------------------------------------------------------------------
@@ -281,7 +292,7 @@ always @(posedge clk)
   else
     mxc <= ~mxc;
 
-// 
+ 
 always @(posedge clk)
 begin
 	if(mxc) begin
@@ -372,7 +383,7 @@ assign 	sesample[13:0] = {{6{sample[7]}},sample[7:0]};
 assign	sevolume[13:0] = {8'b00000000,volume[5:0]};
 
 //multiply, synthesizer should infer multiplier here
-assign out[13:0] = sesample[13:0] * sevolume[13:0];
+assign out[13:0] = {sesample[13:0] * sevolume[13:0]};
 
 endmodule
 
@@ -416,7 +427,7 @@ reg		[2:0] audio_state;		//audio current state
 reg		[2:0] audio_next;	 	//audio next state
 
 wire	datwrite;				//data register is written
-//reg		volcntrld;				//not used
+reg		volcntrld;				//not used
 
 reg		pbufld1;				//load output sample from sample buffer
 
@@ -449,21 +460,21 @@ reg		penhi;					//enable high byte of sample buffer
 //length register bus write
 always @(posedge clk)
 	if (reset)
-		audlen[15:0] <= 0;	
+		audlen[15:0] <= 16'h00_00;
 	else if (aen && (reg_address_in[3:1]==AUDLEN[3:1]))
 		audlen[15:0] <= data[15:0];
 
 //period register bus write
 always @(posedge clk)
 	if (reset)
-		audper[15:0] <= 0;	
+		audper[15:0] <= 16'h00_00;
 	else if (aen && (reg_address_in[3:1]==AUDPER[3:1]))
 		audper[15:0] <= data[15:0];
 
 //volume register bus write
 always @(posedge clk)
 	if (reset)
-		audvol[6:0] <= 0;	
+		audvol[6:0] <= 7'b000_0000;
 	else if (aen && (reg_address_in[3:1]==AUDVOL[3:1]))
 		audvol[6:0] <= data[6:0];
 
@@ -473,7 +484,7 @@ assign datwrite = (aen && (reg_address_in[3:1]==AUDDAT[3:1])) ? 1'b1 : 1'b0;
 //data register bus write
 always @(posedge clk)
 	if (reset)
-		auddat[15:0] <= 0;	
+		auddat[15:0] <= 16'h00_00;
 	else if (datwrite)
 		auddat[15:0] <= data[15:0];
 
@@ -516,7 +527,7 @@ assign lenfin = (lencnt[15:0]==1 && cck) ? 1'b1 : 1'b0;
 //audio buffer
 always @(posedge clk)
 	if (reset)
-		datbuf[15:0] <= 0;
+		datbuf[15:0] <= 16'h00_00;
 	else if (pbufld1 && cck)
 		datbuf[15:0] <= auddat[15:0];
 
@@ -593,7 +604,7 @@ begin
 				dmasen = 1'b1;
 				lencntrld = 1'b1;
 				pbufld1 = 1'b0;
-				//volcntrld = 0;	
+				volcntrld = 1'b0;	
 			end
 			else if (AUDxDAT && !AUDxON && !AUDxIP)	//CPU driven audio playback
 			begin
@@ -603,7 +614,7 @@ begin
 				dmasen = 1'b0;
 				lencntrld = 1'b0;
 				pbufld1 = 1'b1;
-				//volcntrld = 1;
+				volcntrld = 1'b1;
 			end
 			else
 			begin
@@ -613,7 +624,7 @@ begin
 				dmasen = 1'b0;
 				lencntrld = 1'b0;
 				pbufld1 = 1'b0;
-				//volcntrld = 0;	
+				volcntrld = 1'b0;	
 			end
 		end
 
@@ -634,7 +645,7 @@ begin
 				lencount = ~lenfin;
         pbufld1 = 1'b0;  //first data received, discard it since first data access is used to reload pointer   
         percntrld = 1'b0;        
-        //volcntrld = 0;
+        volcntrld = 1'b0;
       end
       else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
       begin
@@ -644,7 +655,7 @@ begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0; 
-        //volcntrld = 0;
+        volcntrld = 1'b0;
       end
       else
       begin
@@ -654,7 +665,7 @@ begin
         lencount = 1'b0;
         pbufld1 = 1'b0;        
         percntrld = 1'b0;
-        //volcntrld = 0;
+        volcntrld = 1'b0;
       end
     end
 
@@ -675,7 +686,7 @@ begin
         lencount = ~lenfin;
 				pbufld1 = 1'b1;	//new data has been just received so put it in the output buffer		
 				percntrld = 1'b1; 				
-				//volcntrld = 1;
+				volcntrld = 1'b1;
 			end
 			else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
 			begin
@@ -685,7 +696,7 @@ begin
 				lencount = 1'b0;
 				pbufld1 = 1'b0;
 				percntrld = 1'b0; 
-				//volcntrld = 0;
+				volcntrld = 1'b0;
 			end
 			else
 			begin
@@ -695,7 +706,7 @@ begin
 				lencount = 1'b0;
 				pbufld1 = 1'b0;				
 				percntrld = 1'b0;
-				//volcntrld = 0;
+				volcntrld = 1'b0;
 			end
 		end
 
@@ -710,7 +721,7 @@ begin
 			lencntrld = lenfin & AUDxON & AUDxDAT;
 			pbufld1 = 1'b0;
 			penhi = 1'b1;
-			//volcntrld = 0;
+			volcntrld = 1'b0;
 		
 			if (perfin) //if period counter expired output other sample from buffer
 			begin
@@ -733,7 +744,7 @@ begin
 			lencount = ~lenfin & AUDxON & AUDxDAT;
 			lencntrld = lenfin & AUDxON & AUDxDAT;
 			penhi = 1'b0;
-			//volcntrld = 0;
+			volcntrld = 1'b0;
 			
 			if (perfin && (AUDxON || !AUDxIP)) //period counter expired and audio DMA active
 			begin
@@ -781,7 +792,7 @@ begin
 			penhi = 1'b0;
 			percount = 1'b0;
 			percntrld = 1'b0;
-			//volcntrld = 0;	
+			volcntrld = 1'b0;	
 		end		
 		
 	endcase

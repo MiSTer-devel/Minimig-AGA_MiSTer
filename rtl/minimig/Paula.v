@@ -167,7 +167,7 @@ assign data_out = uartdata_out | intdata_out | diskdata_out | adkconr;
 always @(posedge clk)
 	if (reset) begin
     dmaen <= 0;
-		dmacon <= 0;
+		dmacon <= 16'd0;
 	end else if (reg_address_in[8:1]==DMACON[8:1]) begin
 		if (data_in[15])
 			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} | {data_in[9],data_in[4:0]};
@@ -187,7 +187,7 @@ assign	auden[0] = dmacon[0] & dmaen;
 //ADKCON register write
 always @(posedge clk)
 	if (reset)
-		adkcon <= 0;
+		adkcon <= 15'd0;
 	else if (reg_address_in[8:1]==ADKCON[8:1])
 	begin
 		if (data_in[15])
@@ -389,14 +389,14 @@ always @(reg_address_in or intena)
 	if (reg_address_in[8:1]==INTENAR[8:1])
 		intenar[15:0] = {1'b0,intena[14:0]};
 	else
-		intenar = 0;
+		intenar = 16'd0;
 
 //intreqr register
 always @(reg_address_in or intreq)
 	if (reg_address_in[8:1]==INTREQR[8:1])
 		intreqr[15:0] = {1'b0,intreq[14:0]};
 	else
-		intreqr = 0;
+		intreqr = 16'd0;
 
 // control all interrupts, intterupts are registered at the rising edge of clk
 reg [14:0]tmp;

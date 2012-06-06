@@ -126,14 +126,15 @@ parameter JOY1DAT = 9'h00c;
 parameter POTINP  = 9'h016;
 parameter JOYTEST = 9'h036;
 
-parameter KEY_MENU  = 8'h88;
-//parameter KEY_MENU  = 8'h69; // TODO rkrajnc
+parameter KEY_MENU  = 8'h69;
 parameter KEY_ESC   = 8'h45;
 parameter KEY_ENTER = 8'h44;
 parameter KEY_UP    = 8'h4C;
 parameter KEY_DOWN  = 8'h4D;
 parameter KEY_LEFT  = 8'h4F;
 parameter KEY_RIGHT = 8'h4E;
+parameter KEY_PGUP   = 8'h6c;
+parameter KEY_PGDOWN = 9'h6d;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -161,14 +162,6 @@ always @(posedge clk)
 // disable keyboard when OSD is displayed
 always @(key_disable)
   keyboard_disabled <= key_disable;
-/*
-//disable keyboard when OSD is displayed
-always @(posedge clk)
-	if (osd_enable)
-		keydis <= 1;
-	else if (t_osd_ctrl==0) //enable keyboard when OSD is not displayed and all keys are released
-		keydis <= 0;											   
-*/
 										   
 //input synchronization of external signals
 always @(posedge clk)
@@ -202,6 +195,10 @@ always @(joy2enable or _xjoy2 or osd_ctrl)
 			t_osd_ctrl = KEY_LEFT;
 		else if (~_xjoy2[0])
 			t_osd_ctrl = KEY_RIGHT;
+    else if (~_xjoy2[1] && ~_xjoy2[3])
+      t_osd_ctrl = KEY_PGUP;
+    else if (~_xjoy2[0] && ~_xjoy2[2])
+      t_osd_ctrl = KEY_PGDOWN;
 		else
 			t_osd_ctrl = osd_ctrl;
 	else
@@ -234,8 +231,8 @@ always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mrigh
 		data_out[15:0] = 16'h0000;
 
 //assign fire outputs to cia A
-assign _fire1 = _sjoy2[4];
 assign _fire0 = _sjoy1[4] & _mleft & _lmb;
+assign _fire1 = _sjoy2[4];
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1'b1 : 1'b0;
@@ -342,7 +339,6 @@ reg		[8:0] verbeam;			//vertical beamcounter
 reg		[7:0] osdbuf [2047:0];	//osd video buffer
 wire	osdframe;				//true if beamcounters within osd frame
 reg		[7:0] bufout;			//osd buffer read data
-reg 	osd_enable1;				//osd display enable 1
 reg 	[10:0] wraddr;			//osd buffer write address
 wire	[7:0] wrdat;			//osd buffer write data
 wire	wren;					//osd buffer write enable
@@ -365,11 +361,11 @@ always @(posedge clk)
   if (reset)
   begin
     chipset_config[1] <= t_chipset_config[1];
-    memory_config <= t_memory_config;
     ide_config <= t_ide_config;
+    memory_config <= t_memory_config;
   end
 
-always @(t_chipset_config)
+always @(posedge clk)
 begin
   chipset_config[3:2] <= t_chipset_config[3:2];
   chipset_config[0] <= t_chipset_config[0];
@@ -459,7 +455,6 @@ always @(posedge clk28m)//output part
 //--------------------------------------------------------------------------------------
 wire	rx;
 wire	cmd;
-reg 	[2:0] spicmd;		//spi command
 reg   wrcmd;    // spi write command
 
 //instantiate spi interface
@@ -491,31 +486,9 @@ spi8 spi0
 // 8'b1110HHLL  set interpolation filter (H - Hires, L - Lores)
 // 8'b1111SSCC  set memory configuration (S - Slow, C - Chip)
 
-//command latch
-// commands are:
-//
-// 8'b00000000 	nop
-// 8'b00100NNN 	write data to osd buffer line <NNN>
-// 8'b01000000	disable displaying of osd
-// 8'b01100000	enable displaying of osd
-// 8'b10100000	read osd_ctrl (controls for osd)
-// 8'b10000000	reset Minimig
-// 8'b1010xxSS	set scanline mode
-// 8'b1011xxxH	set hdd config (H-enable IDE0)
-// 8'b1100FFxS	set floppy speed and drive number
-// 8'b1101xxxS	set cpu speed
-// 8'b1110HHLL	set interpolation filter
-// 8'b1111xxMM	set memory configuration
-
 always @(posedge clk)
   if (rx && cmd)
     wrcmd <= wrdat[7:5]==3'b001 ? 1'b1 : 1'b0;
-
-
-always @(posedge clk)
-	if (rx && cmd)
-		spicmd <= wrdat[7:5];
-
 
 //scanline mode
 always @(posedge clk)
@@ -560,12 +533,11 @@ always @(posedge clk)
 		wraddr[10:0] <= wraddr[10:0] + 11'd1;
 
 always @(posedge clk)
-	if (~osd_enable1)
+	if (~osd_enable)
 		highlight <= 4'b1000;
 	else if (rx && cmd && wrdat[7:4]==4'b0011)
 		highlight <= wrdat[3:0];
 
-/*
 // disable/enable osd display
 // memory configuration
 always @(posedge clk)
@@ -579,29 +551,7 @@ assign usrrst = rx && cmd && wrdat[7:1]==7'b1000_000 ? 1'b1 : 1'b0;
 
 // reset to bootloader
 assign bootrst = rx && cmd && wrdat[7:0]==8'b1000_0001 ? 1'b1 : 1'b0;
-*/
 		
-//disable/enable osd display
-always @(posedge clk)
-begin
-	if (spicmd[2:0]==3'b010)//disable
-		osd_enable1 <= 1'b0;
-	else if (spicmd[2:0]==3'b011)//enable
-		osd_enable1 <= 1'b1;
-end
-
-//synchronize osd_enable 1 to start-of-frame
-always @(posedge clk)
-	osd_enable <= osd_enable1;
-	
-assign wren = rx && ~cmd && spicmd==3'b001 ? 1'b1 : 1'b0;
-
-//user reset request (from osd menu)		
-assign usrrst = rx && cmd && wrdat[7:5]==3'b100 ? 1'b1 : 1'b0;
-
-//reset to bootloader
-assign bootrst = rx && cmd && wrdat[7:5]==3'b100 && wrdat[0] ? 1'b1 : 1'b0;
-
 
 endmodule
 

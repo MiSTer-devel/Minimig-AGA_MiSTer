@@ -320,8 +320,8 @@ barrel_shifter barrel_shifter_A
 (
 	.desc(desc),
 	.shift(ash),
-	.new_val(bltadat & bltamask),
-	.old_val(bltaold),
+	.new(bltadat & bltamask),
+	.old(bltaold),
 	.out(shiftaout)
 );
 
@@ -366,8 +366,8 @@ barrel_shifter barrel_shifter_B
 (
 	.desc(desc),
 	.shift(bsh),
-	.new_val(bltbdat),
-	.old_val(bltbold),
+	.new(bltbdat),
+	.old(bltbold),
 	.out(shiftbout)
 );
 
@@ -838,9 +838,9 @@ assign done = (blt_state==BLT_C && !used || blt_state==BLT_D) && last_word && la
 always @(posedge clk)
 	if (enable)
 		if (blt_state==BLT_INIT)
-			first_pixel = 1'b1;
+			first_pixel <= 1'b1;
 		else if (blt_state==BLT_L4)
-			first_pixel = ~sign_del;
+			first_pixel <= ~sign_del;
 
 always @(posedge clk)
 	if (reg_address_in[8:1]==BLTCON1[8:1])
@@ -870,8 +870,8 @@ module barrel_shifter
 (
 	input	desc,			// select descending mode (shift to the left)
 	input	[3:0] shift,	// shift value (0 to 15)
-	input 	[15:0] new_val,		// barrel shifter data in
-	input 	[15:0] old_val,		// barrel shifter data in
+	input 	[15:0] new,		// barrel shifter data in
+	input 	[15:0] old,		// barrel shifter data in
 	output	[15:0] out		// barrel shifter data out
 );
 
@@ -924,7 +924,7 @@ MULT18X18 multiplier_1
 	.result(shifted_new)			// 36-bit multiplier output
 );
 */
-assign shifted_new = ({2'b00,new_val[15:0]})*shift_onehot;
+assign shifted_new = ({2'b00,new[15:0]})*shift_onehot;
 
 /*
 MULT18X18 multiplier_2
@@ -934,7 +934,7 @@ MULT18X18 multiplier_2
 	.result(shifted_old)			// 36-bit multiplier output
 );
 */
-assign shifted_old = ({2'b00,old_val[15:0]})*shift_onehot;
+assign shifted_old = ({2'b00,old[15:0]})*shift_onehot;
 
 assign out = desc ? shifted_new[15:0] | shifted_old[31:16] : shifted_new[31:16] | shifted_old[15:0];
 

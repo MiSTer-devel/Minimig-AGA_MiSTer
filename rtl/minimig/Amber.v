@@ -17,7 +17,7 @@
 //
 //
 //
-// This is Amber 
+// This is Amber
 // Amber is a scandoubler to allow connection to a VGA monitor. 
 // In addition, it can overlay an OSD (on-screen-display) menu.
 // Amber also has a pass-through mode in which
@@ -87,6 +87,7 @@ reg		hfilter;					//horizontal interpolation enable
 reg		vfilter;					//vertical interpolation enable
 	
 reg		scanline_ena;				//signal active when the scan-doubled line is displayed
+reg   do_scanline;
 
 //-----------------------------------------------------------------------------//
 
@@ -149,6 +150,9 @@ always @(posedge clk28m)
 	else if (eol)
 		scanline_ena <= 1'b1;
 
+// do scanline
+always @ (posedge clk28m)
+  do_scanline <= #1 scanline[0] && scanline_ena;
 		
 //horizontal interpolation enable	
 always @(posedge clk28m)
