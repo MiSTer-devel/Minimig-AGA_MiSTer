@@ -614,9 +614,9 @@ set_global_assignment -name VERILOG_FILE ../../rtl/de1/sram_ctl.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/cfide.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/startram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/sdram.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_Controller.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/I2C_AV_Config.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/audio_shifter.v
+set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
+set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
+set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/tg68/tg68.v
 set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68_fast.vhd
 set_global_assignment -name VERILOG_FILE ../../lib/altera/srl16e.v
