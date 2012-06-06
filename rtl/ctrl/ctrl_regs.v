@@ -381,7 +381,9 @@ end
 always @ (*) begin
   case(adr[4:2])
     REG_UART_TX   : ack = cs && tx_ready;
-    REG_SPI_DAT   : ack = cs && !(spi_act | spi_act_d);
+    REG_SPI_DIV,
+    REG_SPI_CS,
+    REG_SPI_DAT,
     REG_SPI_BLOCK : ack = cs && !(spi_act | spi_act_d);
     default       : ack = cs;
   endcase
