@@ -608,12 +608,9 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
 set_global_assignment -name VERILOG_FILE ../../lib/altera/i_sync.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/indicators.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/sseg_decode.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/sram_ctl.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/cfide.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/startram.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/sdram.v
+set_global_assignment -name VERILOG_FILE ../../rtl/io/indicators.v
+set_global_assignment -name VERILOG_FILE ../../rtl/io/sseg_decode.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
