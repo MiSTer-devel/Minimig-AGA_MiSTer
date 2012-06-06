@@ -463,54 +463,6 @@ Minimig1 minimig (
 );
 
 
-/* cfide */
-/*
-cfide cfide (
-  .sysclk       (clk_114          ),
-  .n_reset      (n_rst            ),
-  .cpuena_in    (zena_o           ),
-  .memdata_in   (zdataout         ),
-  .addr         (tg68_fast_adr[23:0]),
-  .cpudata      (tg68_fast_dat_in ),
-  .cpudata_in   (tg68_fast_dat_out),
-  .state        (tg68_fast_state  ),
-  .lds          (tg68_fast_lds    ),
-  .uds          (tg68_fast_uds    ),
-  .sd_di        (SD_DAT           ),
-  .memce        (cfide_memce      ),
-  .cpuena       (tg68_fast_clkena ),
-  .TxD          (UART_TXD         ),
-  .sd_cs        (sd_cs            ),
-  .sd_clk       (sd_clk           ),
-  .sd_do        (sd_do            ),
-  .sd_dimm      (sdo              ),
-  .enaWRreg     (tg68_fast_enaWR  )
-);
-*/
-
-
-/* tg68_fast control cpu */
-/*
-TG68_fast tg68_fast (
-  .clk          (clk_114          ),
-  .reset        (n_rst            ),
-  .clkena_in    (tg68_fast_clkena ),
-  .data_in      (tg68_fast_dat_in ),
-  .data_write   (tg68_fast_dat_out),
-  .IPL          (3'b111           ),
-  .test_IPL     (1'b1             ),
-  .address      (tg68_fast_adr    ),
-  .state_out    (tg68_fast_state  ),
-  .LDS          (tg68_fast_lds    ),
-  .UDS          (tg68_fast_uds    ),
-  .decodeOPC    (                 ),
-  .wr           (tg68_fast_rw     ),
-  .enaRDreg     (tg68_fast_enaRD  ),
-  .enaWRreg     (tg68_fast_enaWR  )
-);
-*/
-
-
 /* sdram */
 sdram sdram (
   .sysclk       (clk_114          ),
@@ -551,32 +503,23 @@ sdram sdram (
 );
 
 
-// don't include these two modules for sim, as they have some probems in simulation
-`ifndef SOC_SIM
-/* audio shifter */
-audio_shifter audio_shifter (
+//// audio ////
+audio_top audio_top (
   .clk          (clk_28           ),
-  .nreset       (reset_out        ),
-  .rechts       ({rdata, 1'b0}    ),
-  .links        ({ldata, 1'b0}    ),
+  .rst_n        (reset_out        ),
+  // audio shifter
+  .rdata        (rdata            ),
+  .ldata        (ldata            ),
   .exchan       (exchan           ),
   .aud_bclk     (AUD_BCLK         ),
   .aud_daclrck  (AUD_DACLRCK      ),
   .aud_dacdat   (AUD_DACDAT       ),
-  .aud_xck      (AUD_XCK          )
+  .aud_xck      (AUD_XCK          ),
+  // I2C audio config
+  .i2c_sclk     (I2C_SCLK         ),
+  .i2c_sdat     (I2C_SDAT         )
 );
 
-
-/* i2c audio config */
-I2C_AV_Config audio_config (
-  // host side
-  .iCLK         (clk_28           ),
-  .iRST_N       (reset_out        ),
-  // i2c side
-  .oI2C_SCLK    (I2C_SCLK         ),
-  .oI2C_SDAT    (I2C_SDAT         )
-);
-`endif
 
 
 endmodule
