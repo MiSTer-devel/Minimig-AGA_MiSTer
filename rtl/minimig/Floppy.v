@@ -112,12 +112,7 @@ module floppy
 	output	hdd_status_wr,			//status register write strobe (MCU->HDD)
 	output	hdd_data_wr,			//data write strobe
 	output	hdd_data_rd,			//data read strobe
-// DE1 Ext. SRAM for FIFO
-	output  [12:0]fifoinptr,
-	output  [15:0]fifodwr,
-	output  fifowr,
-	output  [12:0]fifooutptr,
-	input   [15:0]fifodrd,
+  // fifo / track display
 	output  [7:0]trackdisp,
 	output  [13:0]secdisp,
   output  floppy_fwr,
@@ -607,13 +602,7 @@ fifo db1
 	.wr(fifo_wr & ~fifo_full),
 	.empty(fifo_empty),
 	.full(fifo_full),
-	.cnt(fifo_cnt),
-// DE1 Ext. SRAM for FIFO
-	.fifoinptr(fifoinptr),
-	.fifodwr(fifodwr),
-	.fifowr(fifowr),
-	.fifooutptr(fifooutptr),
-	.fifodrd(fifodrd)
+	.cnt(fifo_cnt)
 );
 
 
@@ -744,13 +733,7 @@ module fifo
 	input	wr,					//write to fifo
 	output	reg empty,			//fifo is empty
 	output	full,				//fifo is full
-	output	[11:0] cnt,       // number of entries in FIFO
-// DE1 Ext. SRAM for FIFO
-	output  [12:0]fifoinptr,
-	output  [15:0]fifodwr,
-	output  fifowr,
-	output  [12:0]fifooutptr,
-	input   [15:0]fifodrd
+	output	[11:0] cnt       // number of entries in FIFO
 );
 
 //local signals and registers
@@ -759,10 +742,6 @@ reg		[11:0] in_ptr;			//fifo input pointer
 reg		[11:0] out_ptr;			//fifo output pointer
 wire	equal;					//lower 13 bits of in_ptr and out_ptr are equal
 
-assign fifodwr = in;
-assign fifoinptr = in_ptr[10:0];
-assign fifooutptr = out_ptr[10:0];
-assign fifowr = wr && !full;
 
 // count of FIFO entries
 assign cnt = in_ptr - out_ptr;
@@ -774,7 +753,6 @@ always @(posedge clk)
 
 always @(posedge clk)
 	out=mem[out_ptr[10:0]];
-//	out <= fifodrd;
 
 //fifo write pointer control
 always @(posedge clk)

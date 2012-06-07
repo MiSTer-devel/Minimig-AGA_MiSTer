@@ -119,17 +119,20 @@ wire           pll_locked;
 `endif
 wire           clk_7;
 wire           clk_14;
+wire           clk_50;
 
 // reset
 wire           pll_rst;
-wire           n_rst;
 wire           sdctl_rst;
+wire           rst_50;
+wire           rst_minimig;
+
+// ctrl
+wire           rom_status;
+wire           ram_status;
+wire           reg_status;
 
 // sram
-wire [ 13-1:0] fifoinptr;
-wire [ 16-1:0] fifodwr;
-wire           fifowr;
-wire [ 13-1:0] fifooutptr;
 wire [  8-1:0] track;
 wire [ 14-1:0] dsklen;
 wire [ 16-1:0] sram_fifodrd;
@@ -167,25 +170,6 @@ wire           floppy_fwr;
 wire           floppy_frd;
 wire           hd_fwr;
 wire           hd_frd;
-
-// cfide
-wire [  8-1:0] sd_cs;
-wire           sd_clk;
-wire           cfide_memce;
-
-/*
-// tg68_fast
-wire           tg68_fast_clkena;
-wire [ 16-1:0] tg68_fast_dat_in;
-wire [ 16-1:0] tg68_fast_dat_out;
-wire [ 32-1:0] tg68_fast_adr;
-wire [  2-1:0] tg68_fast_state;
-wire           tg68_fast_rw;
-wire           tg68_fast_uds;
-wire           tg68_fast_lds;
-wire           tg68_fast_enaRD;
-wire           tg68_fast_enaWR;
-*/
 
 // sdram
 wire           reset_out;
@@ -231,7 +215,6 @@ assign pll_in_clk   = CLOCK_27[0];
 
 // reset
 assign pll_rst      = !SW[0];
-assign n_rst        = reset_out  & SW[1];
 assign sdctl_rst    = pll_locked & SW[0];
 
 // tg68
@@ -386,7 +369,67 @@ TG68 tg68 (
 );
 
 
-/* minimig top */
+
+
+//// sdram ////
+sdram sdram (
+  .sysclk       (clk_114          ),
+  .reset        (sdctl_rst        ),
+  .sdata        (DRAM_DQ          ),
+  .sdaddr       (DRAM_ADDR        ),
+  .sd_we        (DRAM_WE_N        ),
+  .sd_ras       (DRAM_RAS_N       ),
+  .sd_cas       (DRAM_CAS_N       ),
+  .sd_cs        (sdram_cs         ),
+  .dqm          (sdram_dqm        ),
+  .ba           (sdram_ba         ),
+  .zdatawr      (16'b0            ),
+  .zAddr        (24'b0            ),
+  .zstate       ({1'b0, 2'b01}),
+  .datawr       (ram_data         ),
+  .rAddr        ({2'b01, ram_address[21:1], 1'b0}),
+  .rwr          (_ram_we          ),
+  .dwrL         (_ram_ble         ),
+  .dwrU         (_ram_bhe         ),
+  .ZwrL         (1'b1             ),
+  .ZwrU         (1'b1             ),
+  .dma          (_ram_we          ),
+  .cpu_dma      (_ram_oe          ),
+  .c_28min      (clk_28           ),
+  .dataout      (ramdata_in       ),
+  .zdataout     (                 ),
+  .c_14m        (clk_14           ),
+  .zena_o       (zena_o           ),
+  .c_28m        (                 ),
+  .c_7m         (clk_7            ),
+  .reset_out    (reset_out        ),
+  .pulse        (pulse            ),
+  .enaRDreg     (                 ),
+  .enaWRreg     (                 ),
+  .ena7RDreg    (tg68_enaWR       ),
+  .ena7WRreg    (tg68_enaRD       )
+);
+
+
+//// audio ////
+audio_top audio_top (
+  .clk          (clk_28           ),
+  .rst_n        (reset_out        ),
+  // audio shifter
+  .rdata        (rdata            ),
+  .ldata        (ldata            ),
+  .exchan       (exchan           ),
+  .aud_bclk     (AUD_BCLK         ),
+  .aud_daclrck  (AUD_DACLRCK      ),
+  .aud_dacdat   (AUD_DACDAT       ),
+  .aud_xck      (AUD_XCK          ),
+  // I2C audio config
+  .i2c_sclk     (I2C_SCLK         ),
+  .i2c_sdat     (I2C_SDAT         )
+);
+
+
+//// minimig top ////
 Minimig1 minimig (
   //m68k pins
   .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
@@ -448,76 +491,13 @@ Minimig1 minimig (
   .rdata        (rdata            ), // right DAC data
   //user i/o
   .gpio         (                 ), // spare GPIO
-  // DE1 Ext. SRAM for FIFO
-  .fifoinptr    (fifoinptr        ),
-  .fifodwr      (fifodwr          ),
-  .fifowr       (fifowr           ),
-  .fifooutptr   (fifooutptr       ),
-  .fifodrd      (sram_fifodrd     ),
+  // fifo / track display
   .trackdisp    (track            ),
   .secdisp      (dsklen           ),
   .floppy_fwr   (floppy_fwr       ),
   .floppy_frd   (floppy_frd       ),
   .hd_fwr       (hd_fwr           ),
   .hd_frd       (hd_frd           )
-);
-
-
-/* sdram */
-sdram sdram (
-  .sysclk       (clk_114          ),
-  .reset        (sdctl_rst        ),
-  .sdata        (DRAM_DQ          ),
-  .sdaddr       (DRAM_ADDR        ),
-  .sd_we        (DRAM_WE_N        ),
-  .sd_ras       (DRAM_RAS_N       ),
-  .sd_cas       (DRAM_CAS_N       ),
-  .sd_cs        (sdram_cs         ),
-  .dqm          (sdram_dqm        ),
-  .ba           (sdram_ba         ),
-  .zdatawr      (16'b0            ),
-  .zAddr        (24'b0            ),
-  .zstate       ({1'b0, 2'b01}),
-  .datawr       (ram_data         ),
-  .rAddr        ({2'b01, ram_address[21:1], 1'b0}),
-  .rwr          (_ram_we          ),
-  .dwrL         (_ram_ble         ),
-  .dwrU         (_ram_bhe         ),
-  .ZwrL         (tg68_fast_lds    ),
-  .ZwrU         (tg68_fast_uds    ),
-  .dma          (_ram_we          ),
-  .cpu_dma      (_ram_oe          ),
-  .c_28min      (clk_28           ),
-  .dataout      (ramdata_in       ),
-  .zdataout     (/*zdataout*/         ),
-  .c_14m        (clk_14           ),
-  .zena_o       (zena_o           ),
-  .c_28m        (                 ),
-  .c_7m         (clk_7            ),
-  .reset_out    (reset_out        ),
-  .pulse        (pulse            ),
-  .enaRDreg     (tg68_fast_enaRD  ),
-  .enaWRreg     (tg68_fast_enaWR  ),
-  .ena7RDreg    (tg68_enaWR       ),
-  .ena7WRreg    (tg68_enaRD       )
-);
-
-
-//// audio ////
-audio_top audio_top (
-  .clk          (clk_28           ),
-  .rst_n        (reset_out        ),
-  // audio shifter
-  .rdata        (rdata            ),
-  .ldata        (ldata            ),
-  .exchan       (exchan           ),
-  .aud_bclk     (AUD_BCLK         ),
-  .aud_daclrck  (AUD_DACLRCK      ),
-  .aud_dacdat   (AUD_DACDAT       ),
-  .aud_xck      (AUD_XCK          ),
-  // I2C audio config
-  .i2c_sclk     (I2C_SCLK         ),
-  .i2c_sdat     (I2C_SDAT         )
 );
 
 

@@ -262,8 +262,8 @@ module sigmadelta
 	output	right				//right bitsteam output
 `ifdef MINIMIG_DE1
   ,
-	output	[14:0]ldatasum,		//left DAC data
-	output	[14:0]rdatasum		//right DAC data
+	output reg	[14:0]ldatasum,		//left DAC data
+	output reg	[14:0]rdatasum		//right DAC data
 `endif
 );
 
@@ -278,8 +278,10 @@ wire	[13:0] ldata;			//left DAC data
 wire	[13:0] rdata; 			//right DAC data
 reg		[13:0]ldatatmp;			//left DAC data
 reg		[13:0]rdatatmp; 		//right DAC data
+`ifndef MINIMIG_DE1
 reg [14:0]ldatasum;   //left DAC data
 reg [14:0]rdatasum;     //right DAC data
+`endif
 reg		mxc;					//multiplex control
 
 //--------------------------------------------------------------------------------------

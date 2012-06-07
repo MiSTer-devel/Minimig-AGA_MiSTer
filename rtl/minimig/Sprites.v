@@ -248,7 +248,7 @@ begin
 	end
 	else if (nsprite[7:6]!=2'b00) // sprites 6,7 non transparant ?
 	begin
-		if (/*ecs && attach6*/ || attach7) // sprites are attached -> 15 colors + transparant
+		if (/*ecs && attach6 ||*/ attach7) // sprites are attached -> 15 colors + transparant
 			sprdata[3:0] = {sprdat7[1:0],sprdat6[1:0]};
 	   	else if (nsprite[6]) // output lowered number sprite
 			sprdata[3:0] = {2'b11,sprdat6[1:0]};

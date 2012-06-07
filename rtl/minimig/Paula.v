@@ -116,12 +116,7 @@ module Paula
 	output	hdd_status_wr,      // drive status write enable
 	output	hdd_data_wr,      // data port write enable
 	output	hdd_data_rd,        // data port read enable
-// DE1 Ext. SRAM for FIFO
-	output  [12:0]fifoinptr,
-	output  [15:0]fifodwr,
-	output  fifowr,
-	output  [12:0]fifooutptr,
-	input   [15:0]fifodrd,
+  // fifo / track display
 	output  [7:0]trackdisp,
 	output  [13:0]secdisp,
   output  floppy_fwr,
@@ -284,12 +279,7 @@ floppy pf1
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
 	.hdd_data_rd(hdd_data_rd),
-// DE1 Ext. SRAM for FIFO
-	.fifoinptr(fifoinptr),
-	.fifodwr(fifodwr),
-	.fifowr(fifowr),
-	.fifooutptr(fifooutptr),
-	.fifodrd(fifodrd),
+  // fifo / track diaply
 	.trackdisp(trackdisp),
 	.secdisp(secdisp),
   .floppy_fwr (floppy_fwr),

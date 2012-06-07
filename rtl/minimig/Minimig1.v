@@ -201,12 +201,7 @@ module Minimig1
 	
 	input	[15:0]ramdata_in,		//sram data bus in
 	input	clk28m,				//28.37516 MHz clock
-// DE1 Ext. SRAM for FIFO
-	output  [12:0]fifoinptr,
-	output  [15:0]fifodwr,
-	output  fifowr,
-	output  [12:0]fifooutptr,
-	input   [15:0]fifodrd,
+  // fifo / track display
 	output  [7:0]trackdisp,
 	output  [13:0]secdisp,
   output  floppy_fwr,
@@ -416,19 +411,6 @@ always @(posedge clk)
 
 
 //--------------------------------------------------------------------------------------
-/*
-//index signal generation, this signal is the disk index interrupt and is needed to let some loaders function correctly
-//index is asserted every 10 video frames to simulate disk at 300 RPM
-reg [3:0] index_cnt;
-always @(posedge clk)
-	if (index)
-		index_cnt[3:0] <= 4'b0000;
-	else if (sof)
-		index_cnt[3:0] <= index_cnt[3:0] + 1;
-		
-assign index = index_cnt[3:0]==9 && sof ? 1'b1 : 1'b0;
-*/
-//--------------------------------------------------------------------------------------
 
 //instantiate agnus
 Agnus AGNUS1
@@ -528,12 +510,7 @@ Paula PAULA1
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
 	.hdd_data_rd(hdd_data_rd),
-// DE1 Ext. SRAM for FIFO
-	.fifoinptr(fifoinptr),
-	.fifodwr(fifodwr),
-	.fifowr(fifowr),
-	.fifooutptr(fifooutptr),
-	.fifodrd(fifodrd),
+  // fifo / track display
 	.trackdisp(trackdisp),
 	.secdisp(secdisp),
   .floppy_fwr (floppy_fwr),
@@ -954,18 +931,20 @@ module syscontrol
 );
 
 //local signals
-reg		smrst;					//registered input
+reg		smrst0, smrst1;					//registered input
 reg		_boot = 0;
 reg		[1:0] rst_cnt = 0;		//reset timer SHOULD BE CLEARED BY CONFIG
 wire	_rst;					//local reset signal
 
 //asynchronous mrst input synchronizer
-always @(posedge clk)
-	smrst <= mrst;
+always @(posedge clk) begin
+  smrst0 <= mrst;
+	smrst1 <= smrst0;
+end
 
 //reset timer and mrst control
 always @(posedge clk)
-	if (smrst || (boot && boot_done && _rst))
+	if (smrst1 || (boot && boot_done && _rst))
 		rst_cnt <= 2'd0;
 	else if (!_rst && cnt)
 		rst_cnt <= rst_cnt + 2'd1;

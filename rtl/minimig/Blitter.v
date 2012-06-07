@@ -320,8 +320,8 @@ barrel_shifter barrel_shifter_A
 (
 	.desc(desc),
 	.shift(ash),
-	.new(bltadat & bltamask),
-	.old(bltaold),
+	.new_val(bltadat & bltamask),
+	.old_val(bltaold),
 	.out(shiftaout)
 );
 
@@ -366,8 +366,8 @@ barrel_shifter barrel_shifter_B
 (
 	.desc(desc),
 	.shift(bsh),
-	.new(bltbdat),
-	.old(bltbold),
+	.new_val(bltbdat),
+	.old_val(bltbold),
 	.out(shiftbout)
 );
 
@@ -870,8 +870,8 @@ module barrel_shifter
 (
 	input	desc,			// select descending mode (shift to the left)
 	input	[3:0] shift,	// shift value (0 to 15)
-	input 	[15:0] new,		// barrel shifter data in
-	input 	[15:0] old,		// barrel shifter data in
+	input 	[15:0] new_val,		// barrel shifter data in
+	input 	[15:0] old_val,		// barrel shifter data in
 	output	[15:0] out		// barrel shifter data out
 );
 
@@ -924,7 +924,7 @@ MULT18X18 multiplier_1
 	.result(shifted_new)			// 36-bit multiplier output
 );
 */
-assign shifted_new = ({2'b00,new[15:0]})*shift_onehot;
+assign shifted_new = ({2'b00,new_val[15:0]})*shift_onehot;
 
 /*
 MULT18X18 multiplier_2
@@ -934,7 +934,7 @@ MULT18X18 multiplier_2
 	.result(shifted_old)			// 36-bit multiplier output
 );
 */
-assign shifted_old = ({2'b00,old[15:0]})*shift_onehot;
+assign shifted_old = ({2'b00,old_val[15:0]})*shift_onehot;
 
 assign out = desc ? shifted_new[15:0] | shifted_old[31:16] : shifted_new[31:16] | shifted_old[15:0];
 
