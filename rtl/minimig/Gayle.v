@@ -359,7 +359,7 @@ always @(posedge clk)
 	if (reset)
 		outptr <= 0;
 	else if (rd)
-		outptr <= outptr + 1;
+		outptr <= outptr + 13'd1;
 
 // the empty flag is set immediately after reading the last word from the fifo
 assign empty_rd = inptr==outptr ? 1'b1 : 1'b0;

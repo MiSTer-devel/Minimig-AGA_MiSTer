@@ -162,7 +162,7 @@ assign data_out = uartdata_out | intdata_out | diskdata_out | adkconr;
 always @(posedge clk)
 	if (reset) begin
     dmaen <= 0;
-		dmacon <= 16'd0;
+		dmacon <= 5'd0;
 	end else if (reg_address_in[8:1]==DMACON[8:1]) begin
 		if (data_in[15])
 			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} | {data_in[9],data_in[4:0]};

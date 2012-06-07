@@ -247,8 +247,8 @@ assign DRAM_BA_1    = sdram_ba[1];
 //// control block ////
 wire [ 16-1:0]  SRAM_DAT_W;
 wire [ 16-1:0]  SRAM_DAT_R;
-wire [ 16-1:0]  FL_DAT_W;
-wire [ 16-1:0]  FL_DAT_R;
+wire [  8-1:0]  FL_DAT_W;
+wire [  8-1:0]  FL_DAT_R;
 wire [  4-1:0]  SPI_CS_N;
 wire            SPI_DI;
 

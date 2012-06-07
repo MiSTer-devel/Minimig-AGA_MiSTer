@@ -134,7 +134,7 @@ parameter KEY_DOWN  = 8'h4D;
 parameter KEY_LEFT  = 8'h4F;
 parameter KEY_RIGHT = 8'h4E;
 parameter KEY_PGUP   = 8'h6c;
-parameter KEY_PGDOWN = 9'h6d;
+parameter KEY_PGDOWN = 8'h6d;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
