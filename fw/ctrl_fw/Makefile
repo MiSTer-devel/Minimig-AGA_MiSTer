@@ -115,5 +115,5 @@ bin/de1_boot.bin: bin/de1_boot.or32
 # clean
 clean:
 	@echo clean
-	@rm -rf ./bin/*
+	@rm -rf ./bin
 
