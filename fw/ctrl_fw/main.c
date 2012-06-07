@@ -1,4 +1,4 @@
- /*
+/*
 Copyright 2005, 2006, 2007 Dennis van Weeren
 Copyright 2008, 2009 Jakub Bednarski
 
@@ -25,31 +25,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 2009-06-26   - SDHC and FAT32 support
 // 2009-08-10   - hardfile selection
 // 2009-09-11   - minor changes to hardware initialization routine
+// 2009-10-10   - any length fpga core file support
+// 2009-11-14   - adapted floppy gap size
+//              - changes to OSD labels
+// 2009-12-24   - updated version number
+// 2010-01-09   - changes to floppy handling
+// 2010-07-28   - improved menu button handling
+//              - improved FPGA configuration routines
+//              - added support for OSD vsync
+// 2010-08-15   - support for joystick emulation
+// 2010-08-18   - clean-up
 
-#include "stdio.h"
+// FIXME - detect number of partitions on the SD card, and allow that many to be selected as hard files.
+
+//#include "AT91SAM7S256.h"
+#include "fw_stdio.h"
 #include "string.h"
 #include "errors.h"
 #include "hardware.h"
-#include "MMC.h"
-#include "FAT.h"
-#include "OSD.h"
-#include "FPGA.h"
-#include "FDD.h"
-#include "HDD.h"
+#include "mmc.h"
+#include "fat.h"
+#include "osd.h"
+#include "fpga.h"
+#include "fdd.h"
+#include "hdd.h"
+#include "firmware.h"
 #include "menu.h"
 #include "config.h"
 
-const char version[] = {"$VER:AYQ090911"};
 
-extern const char *config_filter_msg[];
-extern const char *config_memory_chip_msg[];
-extern const char *config_memory_slow_msg[];
-extern char *config_scanline_msg[];
+const char version[] = {"$VER:AYQ100818_RB2"};
 
-configTYPE config;
-fileTYPE file;
-
-extern hdfTYPE hdf[2];
 extern adfTYPE df[4];
 
 unsigned char Error;
@@ -59,7 +65,9 @@ void FatalError(unsigned long error)
 {
     unsigned long i;
 
-    printf("Fatal error: %lu\r", error);
+    sprintf(s,"Fatal error: %lu\n", error);
+    BootPrint("FatalError...\n");
+	BootPrint(s);
 
     while (1)
     {
@@ -74,124 +82,6 @@ void FatalError(unsigned long error)
     }
 }
 
-char UploadKickstart(char *name)
-{
-    char filename[12];
-    strncpy(filename, name, 8); // copy base name
-    strcpy(&filename[8], "ROM"); // add extension
-
-    if (FileOpen(&file, filename))
-    {
-        if (file.size == 0x80000)
-        { // 512KB Kickstart ROM
-            BootPrint("Uploading 512 KB Kickstart...");
-            BootUpload(&file, 0xF8, 0x08);
-            return(1);
-        }
-        else if (file.size == 0x40000)
-        { // 256KB Kickstart ROM
-            BootPrint("Uploading 256 KB Kickstart...");
-            BootUpload(&file, 0xF8, 0x04);
-            return(1);
-        }
-        else
-        {
-//            BootPrint("Unsupported ROM file size!");
-			sprintf(s, "Unsupported ROM file size! %X", file.size);
-			BootPrint(s);
-        }
-    }
-    else
-    {
-        sprintf(s, "No \"%s\" file!", filename);
-        BootPrint(s);
-    }
-    return(0);
-}
-
-unsigned char LoadConfiguration(char *filename)
-{
-    static const char config_id[] = "MNMGCFG0";
-
-    // load configurastion data
-    if (FileOpen(&file, filename))
-    {
-        printf("Configuration file size: %lu\r", file.size);
-        if (file.size == sizeof(config))
-        {
-            FileRead(&file);
-
-            // check file id and version
-            if (strncmp((char*)sector_buffer, config_id, sizeof(config.id)) == 0)
-            {
-                memcpy((void*)&config, (void*)sector_buffer, sizeof(config));
-                return(1);
-            }
-            else
-                printf("Wrong configuration file format!\r");
-        }
-        else
-            printf("Wrong configuration file size: %lu (expected: %u)\r", file.size, sizeof(config));
-    }
-    else
-        printf("Can not open configuration file!\r");
-
-    // set default configuration
-    memset((void*)&config, sizeof(config), 0);
-    strncpy(config.id, config_id, sizeof(config.id));
-    strncpy(config.kickstart.name, "KICK    ", sizeof(config.kickstart.name));
-    config.kickstart.long_name[0] = 0;
-    config.memory = 0x05;
-    config.hardfile[0].enabled = 1;
-    strncpy(config.hardfile[0].name, "HARDFILE", sizeof(config.hardfile[0].name));
-    return(0);
-}
-
-unsigned char SaveConfiguration(char *filename)
-{
-    // save configuration data
-    if (FileOpen(&file, filename))
-    {
-        printf("Configuration file size: %lu\r", file.size);
-        if (file.size != sizeof(config))
-        {
-            file.size = sizeof(config);
-            if (!UpdateEntry(&file))
-                return(0);
-        }
-
-        memset((void*)&sector_buffer, 0, sizeof(sector_buffer));
-        memcpy((void*)&sector_buffer, (void*)&config, sizeof(config));
-        FileWrite(&file);
-        return(1);
-    }
-    else
-    {
-        printf("Configuration file not found!\r");
-        printf("Trying to create a new one...\r");
-        strncpy(file.name, filename, 11);
-        file.attributes = 0;
-        file.size = sizeof(config);
-        if (FileCreate(0, &file))
-        {
-            printf("File created.\r");
-            printf("Trying to write new data...\r");
-            memset((void*)sector_buffer, 0, sizeof(sector_buffer));
-            memcpy((void*)sector_buffer, (void*)&config, sizeof(config));
-
-            if (FileWrite(&file))
-            {
-                printf("File written successfully.\r");
-                return(1);
-            }
-            else
-                printf("File write failed!\r");
-        }
-        else
-            printf("File creation failed!\r");
-    }
-    return(0);
-}
 
 void HandleFpga(void)
 {
@@ -212,12 +102,20 @@ void HandleFpga(void)
     UpdateDriveStatus();
 }
 
+#ifdef __GNUC__
 void main(void)
+#else
+__geta4 void main(void)
+#endif
 {
-    unsigned char rc;
-    unsigned char key;
+	debugmsg[0]=0;
+	debugmsg2[0]=0;
 //    unsigned long time;
-    unsigned short spiclk;
+//    unsigned short spiclk;
+
+	ShowSplash();
+
+    BootPrint("OSD_CA01.SYS is here...\n");
 
     DISKLED_ON;
 
@@ -228,21 +126,29 @@ void main(void)
     printf("\rMinimig by Dennis van Weeren");
     printf("\rARM Controller by Jakub Bednarski\r\r");
     printf("Version %s\r\r", version+5);
-    
+
+    sprintf(s, "** ARM firmware %s **\n", version + 5);
+    BootPrint(s);
+
+//	OsdDisable();
+
 //    SPI_Init();
 
 //    if (CheckButton()) // if menu button pressed fall back to slow SPI mode
 //       SetSPIMode(SPIMODE_NORMAL);
 
-    printf("\rStarting MMC_Init()\r");
     if (!MMC_Init())
         FatalError(1);
 
-    spiclk = 7;//MCLK / ((AT91C_SPI_CSR[0] & AT91C_SPI_SCBR) >> 8) / 1000000;
-    printf("spiclk: %u MHz\r", spiclk);
+    BootPrint("Init done again - hunting for drive...\n");
+
+//    spiclk = 7;//MCLK / ((AT91C_SPI_CSR[0] & AT91C_SPI_SCBR) >> 8) / 1000000;
+//    printf("spiclk: %u MHz\r", spiclk);
 
     if (!FindDrive())
         FatalError(2);
+        
+    BootPrint("found DRIVE...\n");
 
     ChangeDirectory(DIRECTORY_ROOT);
 
@@ -265,124 +171,13 @@ void main(void)
 	df[2].status = 0;
 	df[3].status = 0;
 
-    key = OsdGetCtrl();
-    rc = LoadConfiguration("MINIMIG CFG");
+	config.kickstart.name[0]=0;
+	SetConfigurationFilename(0); // Use default config
+    LoadConfiguration(0);	// Use slot-based config filename
 
-    if (key == KEY_F1)
-       config.chipset |= CONFIG_NTSC; // force NTSC mode if F1 pressed
-
-    if (key == KEY_F2)
-       config.chipset &= ~CONFIG_NTSC; // force PAL mode if F2 pressed
-
-    ConfigChipset(config.chipset | CONFIG_TURBO); // set CPU in turbo mode   //bug!!!
-
-    OsdReset(RESET_BOOTLOADER);
-
-    ConfigFloppy(1, CONFIG_FLOPPY2X); // set floppy speed
-
-    sprintf(s, "** ARM firmware %s **\n", version + 5);
-    BootPrint(s);
-
-    sprintf(s, "SPI clock: %u MHz\n", spiclk);
-    BootPrint(s);
-
-    if (!rc)
-        BootPrint("Configuration file not found...\n");
-
-    sprintf(s, "CPU clock     : %s MHz", config.chipset & 0x01 ? "28.36": "7.09");
-    BootPrint(s);
-    sprintf(s, "Chip RAM size : %s", config_memory_chip_msg[config.memory & 0x03]);
-    BootPrint(s);
-    sprintf(s, "Slow RAM size : %s", config_memory_slow_msg[config.memory >> 2 & 0x03]);
-    BootPrint(s);
-
-    sprintf(s, "Floppy drives : %u", config.floppy.drives + 1);
-    BootPrint(s);
-    sprintf(s, "Floppy speed  : %s", config.floppy.speed ? "2x": "1x");
-    BootPrint(s);
-
-    BootPrint("");
-
-    if (!UploadKickstart(config.kickstart.name))
-    {
-        strcpy(config.kickstart.name, "KICK    ");
-        if (!UploadKickstart(config.kickstart.name))
-            FatalError(6);
-    }
-
-    if (!CheckButton() && !config.disable_ar3) // if menu button pressed don't load Action Replay
-    {
-        if (FileOpen(&file, "AR3     ROM"))
-        {
-            if (file.size == 0x40000)
-            { // 256 KB Action Replay 3 ROM
-                BootPrint("\nUploading Action Replay ROM...");
-                BootUpload(&file, 0x40, 0x04);
-                ClearMemory(0x440000, 0x40000);
-            }
-            else
-            {
-//                BootPrint("\nUnsupported AR3.ROM file size!!!");
-				sprintf(s, "\nUnsupported AR3.ROM file size!!! %X", file.size);
-				BootPrint(s);
-                FatalError(6);
-            }
-        }
-    }
-
-    if (OpenHardfile(0))
-    {
-
-        sprintf(s, "\nHardfile 0: %.8s.%.3s", hdf[0].file.name, &hdf[0].file.name[8]);
-        BootPrint(s);
-        sprintf(s, "CHS: %u.%u.%u", hdf[0].cylinders, hdf[0].heads, hdf[0].sectors);
-        BootPrint(s);
-        sprintf(s, "Size: %lu MB", ((((unsigned long) hdf[0].cylinders) * hdf[0].heads * hdf[0].sectors) >> 11));
-        BootPrint(s);
-    }
-
-    if (OpenHardfile(1))
-    {
-
-        sprintf(s, "\nHardfile 1: %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
-        BootPrint(s);
-        sprintf(s, "CHS: %u.%u.%u", hdf[1].cylinders, hdf[1].heads, hdf[1].sectors);
-        BootPrint(s);
-        sprintf(s, "Size: %lu MB", ((((unsigned long) hdf[1].cylinders) * hdf[1].heads * hdf[1].sectors) >> 11));
-        BootPrint(s);
-    }
-
-    sprintf(s, "\nA600 IDE HDC is %s.", config.enable_ide ? "enabled" : "disabled");
-    BootPrint(s);
-    sprintf(s, "Master HDD is %s.", config.hardfile[0].present ? config.hardfile[0].enabled ? "enabled" : "disabled" : "not present");
-    BootPrint(s);
-    sprintf(s, "Slave HDD is %s.", config.hardfile[1].present ? config.hardfile[1].enabled ? "enabled" : "disabled" : "not present");
-    BootPrint(s);
-
-    if (cluster_size < 64)
-    {
-        BootPrint("\n***************************************************");
-        BootPrint(  "*  It's recommended to reformat your memory card  *");
-        BootPrint(  "*   using 32 KB clusters to improve performance   *");
-        BootPrint(  "***************************************************");
-    }
-
-    ConfigIDE(config.enable_ide, config.hardfile[0].present && config.hardfile[0].enabled, config.hardfile[1].present && config.hardfile[1].enabled);
-    WaitTimer(1000);
-
-    printf("Bootloading is complete.\r");
-
-    BootPrint("\nExiting bootloader...");
-    WaitTimer(500);
-
-    ConfigMemory(config.memory);
-    ConfigFloppy(config.floppy.drives, config.floppy.speed);
-
-    BootExit();
-
-    ConfigChipset(config.chipset);
-    ConfigFilter(config.filter.lores, config.filter.hires);
-    ConfigScanlines(config.scanlines);
+//    sprintf(s, "SPI clock: %u MHz\n", spiclk);
+//    BootPrint(s);
+ 	HideSplash();
 
     while (1)
     {
@@ -391,3 +186,4 @@ void main(void)
     }
 
 }
+

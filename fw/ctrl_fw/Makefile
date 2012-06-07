@@ -1,16 +1,14 @@
-# fw makefile
+# MINIMIG-DE1
+# ctrl boot firmware
 # 2012, rok.krajnc@gmail.com
-
 
 ### tools ###
 
-# tools path
-ifndef OR32_OLD_TOOLCHAIN_PATH
-OR32_OLD_TOOLCHAIN_PATH=~/Dropbox/work/electronics/fpga/jpegdec/sw/or32-toolchain-3.2-old/bin/
-endif
+# make sure or32-elf-gcc is in path, or comment next line and set path
+OR32_TOOLCHAIN_PATH=
 
 ifndef OR32_TOOLCHAIN_PATH
-OR32_TOOLCHAIN_PATH=~/Dropbox/work/electronics/fpga/jpegdec/sw/or32-elf-1.0rc1/bin/
+OR32_TOOLCHAIN_PATH=/opt/or32-elf-1.0rc1/bin/
 endif
 
 ifndef CROSS_COMPILE
@@ -19,15 +17,15 @@ endif
 
 
 # programs
-AS	= $(CROSS_COMPILE)as
-LD	= $(CROSS_COMPILE)ld
-CC	= $(CROSS_COMPILE)gcc
-AR	= $(CROSS_COMPILE)ar
-NM	= $(CROSS_COMPILE)nm
-STRIP	= $(CROSS_COMPILE)strip
+AS      = $(CROSS_COMPILE)as
+LD      = $(CROSS_COMPILE)ld
+CC      = $(CROSS_COMPILE)gcc
+AR      = $(CROSS_COMPILE)ar
+NM      = $(CROSS_COMPILE)nm
+STRIP   = $(CROSS_COMPILE)strip
 OBJCOPY = $(CROSS_COMPILE)objcopy
 OBJDUMP = $(CROSS_COMPILE)objdump
-RANLIB	= $(CROSS_COMPILE)ranlib
+RANLIB  = $(CROSS_COMPILE)ranlib
 
 
 # flags
@@ -38,7 +36,6 @@ CFLAGS +=   -W -Wall -std=gnu99 -g \
             -fno-builtin -nostdlib \
             -Wl,--relax \
             -msoft-mul -msoft-div
-            #-ffunction-sections -fdata-sections -Wl,--gc-sections
 
 LDFLAGS +=
 
@@ -47,26 +44,33 @@ LDFLAGS +=
 BUILD_USER=\"$(USER)\"
 BUILD_T=$$(date +%Y-%m-%d)
 BUILD_TIME=\"$(BUILD_T)\"
-BUILD_NUM=$$(cat build_num.txt)
+BUILD_N=$$(cat build_num.txt)
+BUILD_NUM=\"$(BUILD_N)\"
+BUILD_R=$$(git rev-parse --verify HEAD)
+BUILD_REV=\"$(BUILD_R)\"
+
+BINDIR=bin
+OBJDIR=obj
 
 
 ### fw specific ###
 
+
+
 # include dirs
-CINCLUDES += -I. -I./include
+CINCLUDES +=
 
 # headers
-CHEADERS=or32_defs.h spr_defs.h config.h errors.h FAT.h FDD.h FPGA.h hardware.h HDD.h menu.h MMC.h OSD.h
+CHEADERS=or32_defs.h spr_defs.h system.h fw_stdio.h hardware.h firmware.h config.h errors.h charrom.h fat.h fdd.h fpga.h hdd.h hdd_internal.h logo.h menu.h mmc.h osd.h rafile.h string.h swap.h
 
 # asm sources
 ASM_SOURCES=start.S
 
 # common sources
-COMMON_SOURCES=FAT.c FDD.c FPGA.c hardware.c HDD.c main.c menu.c MMC.c OSD.c swap.c printf.c
-KLIBC_SOURCES=klibc/memcmp.c klibc/memcpy.c klibc/memset.c klibc/sprintf.c klibc/strcat.c klibc/strchr.c klibc/strcpy.c klibc/strlen.c klibc/strncat.c klibc/strncmp.c klibc/strncpy.c klibc/vsnprintf.c
+COMMON_SOURCES=system.c fw_stdio.c string.c hardware.c config.c fat.c fdd.c fpga.c hardware.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c
 
 # all sources
-ALL_SOURCES = $(ASM_SOURCES) $(KLIBC_SOURCES) $(COMMON_SOURCES)
+ALL_SOURCES = $(ASM_SOURCES) $(COMMON_SOURCES)
 
 # linker script
 ROM_LD=rom.ld
@@ -93,41 +97,23 @@ FW_SOURCES=
 
 # all
 all:
-	@echo "There is no all rule."
-	@echo $@
-	@make out/fw.hex
+	@mkdir -p bin
+	@make bin/de1_boot.bin
 
-
-bin/firmware.or32: $(LD_SCRIPT) $(ALL_SOURCES) $(FW_SOURCES)
+bin/de1_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
 	@echo $(MSG)
-	@echo bin/firmware.or32
-	@$(CC) -Wl,-Map,bin/firmware.map -D__BUILD_USER=$(BUILD_USER) -D__BUILD_TIME=$(BUILD_TIME) -D__BUILD_NUM=$(BUILD_NUM) $(CFLAGS) $(CINCLUDES) $(ALL_SOURCES) -T$(LD_SCRIPT) -o bin/firmware.or32
-	@echo $$(($$(cat build_num.txt) + 1)) > build_num.txt
-	@$(OBJDUMP) -DSx bin/firmware.or32 > bin/firmware.dis.S
+	@echo $@
+	@$(CC) -Wl,-Map,$(@:.or32=.map) -D__BUILD_USER=$(BUILD_USER) -D__BUILD_TIME=$(BUILD_TIME) -D__BUILD_NUM=$(BUILD_NUM) -D__BUILD_REV=$(BUILD_REV) $(CFLAGS) $(CINCLUDES) $(ALL_SOURCES) -T$(LD_SCRIPT) -o $@
+	@echo -n $$(($$(cat build_num.txt) + 1)) > build_num.txt
+	@$(OBJDUMP) -DSx $@ > $(@:.or32=.dis.S)
 
 # bin file
-bin/firmware.bin: bin/firmware.or32
-	@echo bin/firmware.bin
-	@$(OBJCOPY) -O binary bin/firmware.or32 bin/firmware.bin
-
-# hex file
-out/fw.hex out/rom.hex: bin/firmware.bin
-	@echo out/fw.hex
-	@xxd -ps -c 4 bin/firmware.bin > out/fw.hex
-	@xxd -ps -c 1 bin/firmware.bin > out/rom.hex
-	@cat $@ | sed 's/^/0x/' > out/fw.serial
-	@unix2dos out/fw.serial
-	@wc -l out/fw.serial
-
-# altera memory initialization file
-out/fw.mif: out/fw.hex
-	@echo out/fw.mif
-	@../sw/hex2mif/hex2mif.py out/fw.hex out/fw.mif
+bin/de1_boot.bin: bin/de1_boot.or32
+	@echo $@
+	@$(OBJCOPY) -O binary $< $@
 
 # clean
 clean:
 	@echo clean
-	@rm -rf ./out/*
 	@rm -rf ./bin/*
-	@rm -rf ./obj/*
 

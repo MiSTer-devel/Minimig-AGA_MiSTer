@@ -1,4 +1,7 @@
+#ifndef MENU_H
+#define MENU_H
 
+#include "fdd.h" // for adfTYPE definition
 
 /*menu states*/
 enum MENU
@@ -7,11 +10,17 @@ enum MENU
     MENU_NONE2,
     MENU_MAIN1,
     MENU_MAIN2,
+    MENU_MISC1,
+    MENU_MISC2,
+    MENU_ABOUT1,
+    MENU_ABOUT2,
     MENU_FILE_SELECT1,
     MENU_FILE_SELECT2,
     MENU_FILE_SELECTED,
     MENU_RESET1,
     MENU_RESET2,
+    MENU_RECONF1,
+    MENU_RECONF2,
     MENU_SETTINGS1,
     MENU_SETTINGS2,
     MENU_ROMFILE_SELECTED,
@@ -33,8 +42,16 @@ enum MENU
     MENU_HARDFILE_EXIT,
     MENU_HARDFILE_CHANGED1,
     MENU_HARDFILE_CHANGED2,
+    MENU_SYNTHRDB1,
+    MENU_SYNTHRDB2,
+    MENU_SYNTHRDB2_1,
+    MENU_SYNTHRDB2_2,
     MENU_MAIN2_1,
     MENU_MAIN2_2,
+    MENU_LOADCONFIG_1,
+    MENU_LOADCONFIG_2,
+    MENU_SAVECONFIG_1,
+    MENU_SAVECONFIG_2,
     MENU_FIRMWARE1,
     MENU_FIRMWARE2,
     MENU_FIRMWARE_UPDATE1,
@@ -49,13 +66,27 @@ enum MENU
     MENU_FIRMWARE_OPTIONS_ENABLE2,
     MENU_FIRMWARE_OPTIONS_ENABLED1,
     MENU_FIRMWARE_OPTIONS_ENABLED2,
-    MENU_ERROR
+    MENU_ERROR,
+    MENU_INFO,
 };
+
+// UI strings, used by boot messages
+extern const char *config_filter_msg[];
+extern const char *config_memory_chip_msg[];
+extern const char *config_memory_slow_msg[];
+extern const char *config_scanline_msg[];
+
 
 void InsertFloppy(adfTYPE *drive);
 void HandleUI(void);
 void PrintDirectory(void);
 void ScrollLongName(void);
-void ErrorMessage(const char *message, unsigned char code);
+void ErrorMessage(char *message, unsigned char code);
+void InfoMessage(char *message);
+void DebugMessage(char *message);
+void _showdebugmessages();
+void ShowSplash();
+void HideSplash();
 
+#endif
 
