@@ -261,6 +261,7 @@ assign FL_DAT_R   = FL_DQ;
 assign SPI_DI     = !SPI_CS_N[0] ? SD_DAT : sdo;
 
 
+//// ctrl block ////
 ctrl_top ctrl_top (
   // system
   .clk_in       (CLOCK_50   ),
@@ -298,7 +299,7 @@ ctrl_top ctrl_top (
 );
 
 
-/* clock */
+//// clock ////
 `ifdef SOC_SIM
 // generated clocks
 initial begin
@@ -331,7 +332,7 @@ amigaclk amigaclk (
 `endif
 
 
-/* indicators */
+//// indicators ////
 indicators indicators(
   .clk          (clk_7            ),
   .rst          (~pll_locked      ),
@@ -349,7 +350,82 @@ indicators indicators(
   .led_r        (LEDR             )
 );
 
-/* tg68 main cpu */
+
+//// TG68K main CPU ////
+//TG68K tg68k (
+//  .clk          (clk_114          ),
+//  .reset        (tg68_rst         ),
+//  .clkena_in    (1'b1             ),
+//  .IPL          (tg68_IPL         ),
+//  .dtack        (tg68_dtack       ),
+//  .vpa          (1'b1             ),
+//  .ein          (1'b1             ),
+//  .addr         (tg68_adr         ),
+//  .data_read    (tg68_dat_in      ),
+//  .data_write   (tg68_dat_out     ),
+//  .as           (tg68_as          ),
+//  .uds          (tg68_uds         ),
+//  .lds          (tg68_lds         ),
+//  .rw           (tg68_rw          ),
+//  .e            (                 ),
+//  .vma          (                 ),
+//  .wrd          (),
+//  .ena7RDreg    (tg68_enaRD       ),
+//  .ena7WRreg    (tg68_enaRW       ),
+//  .enaWRreg     (/* to sdram */     ),
+//  .fromram      (/* ? */          ),
+//  .ramready     (1'b1 /* from sdram */),
+//  .cpu          (2'b0 /* cpu config from minimig */),
+//  .memcfg       (6'b0 /* memory config from minimig */),
+//  .ramaddr      (/* to sdram */),
+//  .cpustate     (/* to sdram */),
+//  .skipFetch    (                 ),
+//  .cpuDMA       (/* to sdram */),
+//  .ramlds       (/* to sdram */),
+//  .ramuds       (/* to sdram */)
+//);
+
+/*
+entity TG68K is
+   port(
+		clk           : in std_logic;
+		reset         : in std_logic;
+        clkena_in     : in std_logic:='1';
+        IPL           : in std_logic_vector(2 downto 0):="111";
+        dtack         : in std_logic;
+        vpa           : in std_logic:='1';
+        ein           : in std_logic:='1';
+        addr          : buffer std_logic_vector(31 downto 0);
+        data_read  	  : in std_logic_vector(15 downto 0);
+        data_write 	  : out std_logic_vector(15 downto 0);
+        as            : out std_logic;
+        uds           : out std_logic;
+        lds           : out std_logic;
+        rw            : out std_logic;
+        e             : out std_logic;
+        vma           : buffer std_logic:='1';
+        wrd           : out std_logic;
+        ena7RDreg      : in std_logic:='1';
+        ena7WRreg      : in std_logic:='1';
+        enaWRreg      : in std_logic:='1';
+        
+        fromram    	  : in std_logic_vector(15 downto 0);
+        ramready      : in std_logic:='0';
+        cpu           : in std_logic_vector(1 downto 0);
+        memcfg           : in std_logic_vector(5 downto 0);
+        ramaddr    	  : out std_logic_vector(31 downto 0);
+        cpustate      : out std_logic_vector(5 downto 0);
+		nResetOut	  : out std_logic;
+        skipFetch     : buffer std_logic;
+        cpuDMA         : buffer std_logic;
+        ramlds        : out std_logic;
+        ramuds        : out std_logic
+        );
+end TG68K;
+*/
+
+
+//// TG68 main CPU ////
 TG68 tg68 (
   .clk          (clk_114          ),
   .reset        (tg68_rst         ),
@@ -367,8 +443,6 @@ TG68 tg68 (
   .enaRDreg     (tg68_enaRD       ),
   .enaWRreg     (tg68_enaWR       )
 );
-
-
 
 
 //// sdram ////
