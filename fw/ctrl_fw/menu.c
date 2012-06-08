@@ -24,8 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //#include "AT91SAM7S256.h"
 //#include "stdbool.h"
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
+#include "hardware.h"
+
 #include "errors.h"
 #include "mmc.h"
 #include "fat.h"
@@ -33,7 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fpga.h"
 #include "fdd.h"
 #include "hdd.h"
-#include "hardware.h"
 #include "firmware.h"
 #include "config.h"
 #include "menu.h"
@@ -2363,7 +2364,7 @@ void InsertFloppy(adfTYPE *drive)
     tracks = file.size / (512*11);
     if (tracks > MAX_TRACKS)
     {
-        printf("UNSUPPORTED ADF SIZE!!! Too many tracks: %lu\r", tracks);
+        printf("UNSUPPORTED ADF SIZE!!! Too many tracks: %u\r", tracks);
         tracks = MAX_TRACKS;
     }
     drive->tracks = (unsigned char)tracks;
@@ -2408,7 +2409,7 @@ void InsertFloppy(adfTYPE *drive)
         printf("Inserting floppy: \"%.11s\"\r", file.name);
 
     printf("file attributes: 0x%02X\r", file.attributes);
-    printf("file size: %lu (%lu KB)\r", file.size, file.size >> 10);
+    printf("file size: %u (%u KB)\r", file.size, file.size >> 10);
     printf("drive tracks: %u\r", drive->tracks);
     printf("drive status: 0x%02X\r", drive->status);
 }

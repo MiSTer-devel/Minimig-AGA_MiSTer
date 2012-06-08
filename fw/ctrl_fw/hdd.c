@@ -20,10 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 2009-11-22 - read/write multiple implemented
 
 //#include "AT91SAM7S256.h"
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
-#include "errors.h"
 #include "hardware.h"
+
+#include "errors.h"
 #include "fat.h"
 #include "hdd.h"
 #include "hdd_internal.h"
@@ -385,8 +386,8 @@ void HandleHDD(unsigned char c1, unsigned char c2)
 				case HDF_FILE | HDF_SYNTHRDB:
 				case HDF_FILE:
 					lba=chs2lba(cylinder, head, sector, unit);
-					DEBUG2("Read HDF_File %ld",lba+hdf[unit].offset);
-					DEBUG2("Offset %ld",hdf[unit].offset);
+					DEBUG2("Read HDF_File %d",lba+hdf[unit].offset);
+					DEBUG2("Offset %d",hdf[unit].offset);
 				    if (hdf[unit].file.size)
 				        HardFileSeek(&hdf[unit], (lba+hdf[unit].offset) < 0 ? 0 : lba+hdf[unit].offset);
 
@@ -411,7 +412,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
 			
 						if((lba+hdf[unit].offset)<0)
 						{
-							DEBUG2("RDB %ld",lba);
+							DEBUG2("RDB %d",lba);
 
 							FakeRDB(unit,lba);
 
@@ -459,7 +460,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
 					{
 			            WriteStatus(IDE_STATUS_RDY); // pio in (class 1) command type
 				        lba=chs2lba(cylinder, head, sector, unit)+hdf[unit].offset;
-						DEBUG2("Read HDF_Card: %ld",lba);
+						DEBUG2("Read HDF_Card: %d",lba);
 					    while (sector_count)
 					    {
 //				 decrease sector count
@@ -520,7 +521,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
 				case HDF_FILE | HDF_SYNTHRDB:
 				case HDF_FILE:
 					lba=chs2lba(cylinder, head, sector, unit);
-					DEBUG2("ReadM HDF_File, %ld",lba);
+					DEBUG2("ReadM HDF_File, %d",lba);
 				    if (hdf[unit].file.size)
 				        HardFileSeek(&hdf[unit], (lba+hdf[unit].offset) < 0 ? 0 : lba + hdf[unit].offset);
 					// FIXME - READM could cross the fake RDB -> real disk boundary.
@@ -571,7 +572,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
 				case HDF_CARDPART3:
 					{
 				        long lba=chs2lba(cylinder, head, sector, unit)+hdf[unit].offset;
-						DEBUG2("ReadM HDF_Card, %ld",lba);
+						DEBUG2("ReadM HDF_Card, %d",lba);
 					    while (sector_count)
 					    {
 					        while (!(GetFPGAStatus() & CMD_IDECMD)); // wait for empty sector buffer
@@ -624,7 +625,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
                 sector_count = 0x100;
 
 		    long lba=chs2lba(cylinder, head, sector, unit);
-			DEBUG2("Write lba %ld",lba);
+			DEBUG2("Write lba %d",lba);
 //			if(hdf[unit].type>=HDF_CARDPART0)
 				lba+=hdf[unit].offset;
 
@@ -707,7 +708,7 @@ void HandleHDD(unsigned char c1, unsigned char c2)
                 sector_count = 0x100;
 
 		    long lba=chs2lba(cylinder, head, sector, unit);
-			DEBUG2("WriteM lba %ld",lba);
+			DEBUG2("WriteM lba %d",lba);
 //			if(hdf[unit].type>=HDF_CARDPART0)
 				lba+=hdf[unit].offset;
 
@@ -924,14 +925,14 @@ unsigned char OpenHardfile(unsigned char unit)
 
 				    printf("HARDFILE %d:\r", unit);
 				    printf("file: \"%.8s.%.3s\"\r", hdf[unit].file.name, &hdf[unit].file.name[8]);
-				    printf("size: %lu (%lu MB)\r", hdf[unit].file.size, hdf[unit].file.size >> 20);
+				    printf("size: %u (%u MB)\r", hdf[unit].file.size, hdf[unit].file.size >> 20);
 				    printf("CHS: %u.%u.%u", hdf[unit].cylinders, hdf[unit].heads, hdf[unit].sectors);
-				    printf(" (%lu MB)\r", ((((unsigned long) hdf[unit].cylinders) * hdf[unit].heads * hdf[unit].sectors) >> 11));
+				    printf(" (%u MB)\r", ((((unsigned long) hdf[unit].cylinders) * hdf[unit].heads * hdf[unit].sectors) >> 11));
 
 				    time = GetTimer(0);
 				    BuildHardfileIndex(&hdf[unit]);
 				    time = GetTimer(0) - time;
-				    printf("Hardfile indexed in %lu ms\r", time >> 16);
+				    printf("Hardfile indexed in %u ms\r", time >> 16);
 
 					if(config.hardfile[unit].enabled & HDF_SYNTHRDB)
 						hdf[unit].offset=-(hdf[unit].heads*hdf[unit].sectors);

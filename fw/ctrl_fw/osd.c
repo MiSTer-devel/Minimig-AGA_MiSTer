@@ -34,9 +34,10 @@ This is the Minimig OSD (on-screen-display) handler.
 */
 
 //#include "AT91SAM7S256.h"
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
 #include "hardware.h"
+
 #include "osd.h"
 #include "charrom.h"
 #include "logo.h"

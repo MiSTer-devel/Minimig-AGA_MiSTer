@@ -24,10 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 2010-01-09   - support for variable number of tracks
 
 //#include "AT91SAM7S256.h"
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
-#include "errors.h"
 #include "hardware.h"
+
+#include "errors.h"
 #include "fat.h"
 #include "fdd.h"
 #include "config.h"

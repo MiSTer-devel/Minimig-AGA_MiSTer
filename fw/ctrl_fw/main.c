@@ -39,10 +39,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // FIXME - detect number of partitions on the SD card, and allow that many to be selected as hard files.
 
 //#include "AT91SAM7S256.h"
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
-#include "errors.h"
 #include "hardware.h"
+
+#include "errors.h"
 #include "mmc.h"
 #include "fat.h"
 #include "osd.h"
@@ -65,7 +66,7 @@ void FatalError(unsigned long error)
 {
     unsigned long i;
 
-    sprintf(s,"Fatal error: %lu\n", error);
+    sprintf(s,"Fatal error: %u\n", error);
     BootPrint("FatalError...\n");
 	BootPrint(s);
 
@@ -156,7 +157,7 @@ __geta4 void main(void)
 //    if (ConfigureFpga())
 //    {
 //        time = GetTimer(0) - time;
-//        printf("FPGA configured in %lu ms\r", time >> 20);
+//        printf("FPGA configured in %u ms\r", time >> 20);
 //    }
 //    else
 //    {

@@ -1,5 +1,8 @@
-#include "errors.h"
+#include "stdio.h"
+#include "string.h"
 #include "hardware.h"
+
+#include "errors.h"
 #include "mmc.h"
 #include "fat.h"
 #include "osd.h"
@@ -9,9 +12,6 @@
 #include "firmware.h"
 #include "menu.h"
 #include "config.h"
-
-#include "fw_stdio.h"
-#include "string.h"
 
 configTYPE config;
 fileTYPE file;
@@ -155,7 +155,7 @@ unsigned char LoadConfiguration(char *filename)
     if (FileOpen(&file, filename))
     {
 		BootPrint("Opened configuration file\n");
-        printf("Configuration file size: %lu\r", file.size);
+        printf("Configuration file size: %u\r", file.size);
         if (file.size == sizeof(config))
         {
             FileRead(&file, sector_buffer);
@@ -182,7 +182,7 @@ unsigned char LoadConfiguration(char *filename)
                 BootPrint("Wrong configuration file format!\n");
         }
         else
-            printf("Wrong configuration file size: %lu (expected: %lu)\r", file.size, sizeof(config));
+            printf("Wrong configuration file size: %u (expected: %u)\r", file.size, sizeof(config));
     }
     if(!result)
 	{
@@ -280,9 +280,9 @@ void ApplyConfiguration(char reloadkickstart)
         BootPrint(s);
         sprintf(s, "CHS: %u.%u.%u", hdf[0].cylinders, hdf[0].heads, hdf[0].sectors);
         BootPrint(s);
-        sprintf(s, "Size: %lu MB", ((((unsigned long) hdf[0].cylinders) * hdf[0].heads * hdf[0].sectors) >> 11));
+        sprintf(s, "Size: %u MB", ((((unsigned long) hdf[0].cylinders) * hdf[0].heads * hdf[0].sectors) >> 11));
         BootPrint(s);
-        sprintf(s, "Offset: %ld", hdf[0].offset);
+        sprintf(s, "Offset: %d", hdf[0].offset);
 		BootPrint(s);
 	}
    	if(OpenHardfile(1))
@@ -305,9 +305,9 @@ void ApplyConfiguration(char reloadkickstart)
         BootPrint(s);
         sprintf(s, "CHS: %u.%u.%u", hdf[1].cylinders, hdf[1].heads, hdf[1].sectors);
         BootPrint(s);
-        sprintf(s, "Size: %lu MB", ((((unsigned long) hdf[1].cylinders) * hdf[1].heads * hdf[1].sectors) >> 11));
+        sprintf(s, "Size: %u MB", ((((unsigned long) hdf[1].cylinders) * hdf[1].heads * hdf[1].sectors) >> 11));
         BootPrint(s);
-        sprintf(s, "Offset: %ld", hdf[1].offset);
+        sprintf(s, "Offset: %d", hdf[1].offset);
         BootPrint(s);
 	}
 
@@ -374,7 +374,7 @@ unsigned char SaveConfiguration(char *filename)
     // save configuration data
     if (FileOpen(&file, filename))
     {
-        printf("Configuration file size: %lu\r", file.size);
+        printf("Configuration file size: %u\r", file.size);
         if (file.size != sizeof(config))
         {
             file.size = sizeof(config);

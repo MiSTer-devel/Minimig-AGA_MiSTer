@@ -37,14 +37,14 @@ JB:
 
 */
 
-#include "fw_stdio.h"
+#include "stdio.h"
 #include "string.h"
-//#include <ctype.h>
+#include "hardware.h"
+
 #include "mmc.h"
 #include "fat.h"
 #include "swap.h"
 #include "menu.h"
-#include "hardware.h"
 
 int tolower(int c);
 
@@ -152,16 +152,16 @@ unsigned char FindDrive(void)
 			case 0xaa55:
 				// get start of first partition
 				boot_sector = partitions[0].startlba;
-				bprintfl("Start: %ld\n",partitions[0].startlba);
+				bprintfl("Start: %d\n",partitions[0].startlba);
 				for(partitioncount=4;(partitions[partitioncount-1].sectors==0) && (partitioncount>1); --partitioncount)
 					;
-				bprintfl("PartitionCount: %ld\n",partitioncount);
+				bprintfl("PartitionCount: %d\n",partitioncount);
 				int i;
 				for(i=0;i<partitioncount;++i)
 				{
-					bprintfl("Partition: %ld",i);
-					bprintfl("  Start: %ld",partitions[i].startlba);
-					bprintfl("  Size: %ld\n",partitions[i].sectors);
+					bprintfl("Partition: %d",i);
+					bprintfl("  Start: %d",partitions[i].startlba);
+					bprintfl("  Size: %d\n",partitions[i].sectors);
 				}
 //				WaitTimer(5000);
 				if (!MMC_Read(boot_sector, sector_buffer)) // read discriptor
@@ -269,14 +269,14 @@ unsigned char FindDrive(void)
 
 
     // some debug output
-    printf("fat_size: %lu\r", fat_size);
+    printf("fat_size: %u\r", fat_size);
     printf("fat_number: %u\r", fat_number);
-    printf("fat_start: %lu\r", fat_start);
-    printf("root_directory_start: %lu\r", root_directory_start);
+    printf("fat_start: %u\r", fat_start);
+    printf("root_directory_start: %u\r", root_directory_start);
     printf("dir_entries: %u\r", dir_entries);
-    printf("data_start: %lu\r", data_start);
+    printf("data_start: %u\r", data_start);
     printf("cluster_size: %u\r", cluster_size);
-    printf("cluster_mask: %08lX\r", cluster_mask);
+    printf("cluster_mask: %08X\r", cluster_mask);
 
     return(1);
 }
@@ -983,7 +983,7 @@ char ScanDirectory(unsigned long mode, char *extension, unsigned char options)
     }
     /*
     time = GetTimer(0) - time;
-    printf("ScanDirectory(): %lu ms\r", time >> 20);
+    printf("ScanDirectory(): %u ms\r", time >> 20);
     */
     return rc;
 }
@@ -1234,7 +1234,7 @@ unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file)
 
             if (pEntry->Name[0] == SLOT_EMPTY)
             {
-                printf("Empty entry found in sector %lu at index %lu\r", iDirectorySector-1, iEntry&0x0F);
+                printf("Empty entry found in sector %u at index %u\r", iDirectorySector-1, iEntry&0x0F);
 
                 // free cluster is marked as 0x0000
                 // last cluster in chain is 0xFFFF
@@ -1262,7 +1262,7 @@ unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file)
                         {   // empty cluster found
                             unsigned long cluster = (fat_index << (fat32 ? 7 : 8)) + buffer_index;  // calculate cluster number
 
-                            printf("Empty cluster: %lu\r", cluster);
+                            printf("Empty cluster: %u\r", cluster);
 
                             // mark cluster as used
                             if (fat32)
@@ -1284,7 +1284,7 @@ unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file)
                             {
                                 if (!MMC_Write(fat_start + (i * fat_size) + fat_index, (unsigned char*)&fat_buffer))
                                 {
-                                    printf("FileCreate(): FAT copy #%lu write failed!\r", i);
+                                    printf("FileCreate(): FAT copy #%u write failed!\r", i);
                                     return(0);
                                 }
                             }
@@ -1369,8 +1369,8 @@ unsigned char UpdateEntry(fileTYPE *file)
     if ((SwapBBBB(pEntry->FileSize) + cluster_size - 1) / (cluster_size << 9) != (file->size + cluster_size - 1) / (cluster_size << 9))
     {
         printf("UpdateEntry(): different number of clusters!\r");
-        printf("pEntry->FileSize = %lu\r", SwapBBBB(pEntry->FileSize));
-        printf("file->size = %lu\r", file->size);
+        printf("pEntry->FileSize = %u\r", SwapBBBB(pEntry->FileSize));
+        printf("file->size = %u\r", file->size);
         printf("cluster_size = %u\r", cluster_size);
         return(0);
     }

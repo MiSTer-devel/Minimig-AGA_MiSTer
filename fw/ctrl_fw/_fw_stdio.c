@@ -85,6 +85,7 @@ reformat:
       case '%':
         pc('%');
         break;
+      case 'u':
       case 'd':
         vprintnum(pc, va_arg(args, int), l, 1, 10);
         break;

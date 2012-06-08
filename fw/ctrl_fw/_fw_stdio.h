@@ -47,7 +47,7 @@ void vprintf(char, void (*pc)(const char), const char *fmt0, ...);
 
 extern int __sp;
 extern char __s[256];
-#define sprintf(s, x ...) (__sp = 0, vprintf(1, sputchar, x), strcpy(__s, s))
+#define sprintf(s, x ...) (__sp = 0, vprintf(1, sputchar, x), strcpy(s, __s))
 
 //#define uprintf(x ...) vprintf(0, uputchar, x)
 //#define qprintf(x ...) vprintf(0, qputchar, x)
