@@ -374,10 +374,10 @@
 //`define OR1200_RFRAM_TWOPORT
 //
 // Memory macro dual port (see or1200_dpram_32x32.v)
-//`define OR1200_RFRAM_DUALPORT
+`define OR1200_RFRAM_DUALPORT
 //
 // Generic (flip-flop based) register file (see or1200_rfram_generic.v)
-`define OR1200_RFRAM_GENERIC
+//`define OR1200_RFRAM_GENERIC
 
 //
 // Type of mem2reg aligner to implement.
