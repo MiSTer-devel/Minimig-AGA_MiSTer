@@ -57,7 +57,7 @@ entity TG68K is
         ramaddr    	  : out std_logic_vector(31 downto 0);
         cpustate      : out std_logic_vector(5 downto 0);
 		nResetOut	  : out std_logic;
-        skipFetch     : buffer std_logic;
+        skipFetch     : out std_logic;
         cpuDMA         : buffer std_logic;
         ramlds        : out std_logic;
         ramuds        : out std_logic
