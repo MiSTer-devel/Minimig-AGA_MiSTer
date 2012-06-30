@@ -716,9 +716,9 @@ end
 endmodule
 
 //--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
+// 2048x16 FIFO
 
-//8192 words deep, 16 bits wide, fifo
+//2048 words deep, 16 bits wide, fifo
 //data is written into the fifo when wr=1
 //reading is more or less asynchronous if you read during the rising edge of clk
 //because the output data is updated at the falling edge of the clk
@@ -737,10 +737,10 @@ module fifo
 );
 
 //local signals and registers
-reg 	[15:0] mem [2047:0];	//8192 words by 16 bit wide fifo memory
+reg 	[15:0] mem [2047:0];	// 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)
 reg		[11:0] in_ptr;			//fifo input pointer
 reg		[11:0] out_ptr;			//fifo output pointer
-wire	equal;					//lower 13 bits of in_ptr and out_ptr are equal
+wire	equal;					//lower 11 bits of in_ptr and out_ptr are equal
 
 
 // count of FIFO entries

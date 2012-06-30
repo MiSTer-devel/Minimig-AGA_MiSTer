@@ -89,13 +89,15 @@ module userio
 	input	sck,	  				//SPI clock
 	output	osd_blank,				//osd overlay, normal video blank output
 	output	osd_pixel,				//osd video pixel
+  output  osd_enable,
 	output	[1:0] lr_filter,
 	output	[1:0] hr_filter,
-	output	[3:0] memory_config,
+	output	[5:0] memory_config,
 	output	[3:0] chipset_config,
 	output	[3:0] floppy_config,
 	output	[1:0] scanline,
 	output	[2:0] ide_config,
+  output  [1:0] cpu_config,
 	output	usrrst,					//user reset from osd module
 	output	bootrst					//user reset to bootloader
 );
@@ -110,7 +112,7 @@ wire	_mthird;					//middle mouse button
 wire	_mright;					//right mouse buttons
 reg		joy1enable;					//joystick 1 enable (mouse/joy switch)
 reg		joy2enable;					//joystick 2 enable when no osd
-wire	osd_enable;					// OSD display enable
+//wire	osd_enable;					// OSD display enable
 wire  key_disable;        // Amiga keyboard disable
 reg		[7:0] t_osd_ctrl;			//JB: osd control lines
 wire	test_load;					//load test value to mouse counter 
@@ -287,6 +289,7 @@ osd	osd1
 	.floppy_config(floppy_config),
 	.scanline(scanline),
 	.ide_config(ide_config),
+  .cpu_config(cpu_config),
   .autofire_config(autofire_config),
 	.usrrst(usrrst),
 	.bootrst(bootrst)
@@ -323,11 +326,12 @@ module osd
   output  reg key_disable = 0,      // keyboard disable
 	output	reg [1:0] lr_filter = 0,
 	output	reg [1:0] hr_filter = 0,
-	output	reg [3:0] memory_config = 0,
+	output	reg [5:0] memory_config = 0,
 	output	reg [3:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
 	output	reg	[2:0] ide_config = 0,		//enable hard disk support
+  output  reg [1:0] cpu_config = 0,
   output  reg [1:0] autofire_config = 0,
 	output	usrrst,
 	output	bootrst
@@ -348,8 +352,9 @@ reg		invert;					//invertion of highlighted line
 reg		[5:0] vpos;
 reg		vena;
 
-reg 	[3:0] t_memory_config = 0;
+reg 	[5:0] t_memory_config = 0;
 reg		[2:0] t_ide_config = 0;
+reg   [1:0] t_cpu_config = 0;
 reg   [3:0] t_chipset_config = 0;
 
 //--------------------------------------------------------------------------------------
@@ -362,6 +367,7 @@ always @(posedge clk)
   begin
     chipset_config[1] <= t_chipset_config[1];
     ide_config <= t_ide_config;
+    cpu_config <= t_cpu_config;
     memory_config <= t_memory_config;
   end
 
@@ -484,7 +490,11 @@ spi8 spi0
 // 8'b1100FF-S  set floppy speed and drive number
 // 8'b1101-EAN  set chipset features (N - ntsc, A - OCS A1000, E - ECS)
 // 8'b1110HHLL  set interpolation filter (H - Hires, L - Lores)
-// 8'b1111SSCC  set memory configuration (S - Slow, C - Chip)
+// 8'b111100CC  set memory configuration (S - Slow, C - Chip, F - Fast)
+// 8'b111101SS  set memory configuration (S - Slow, C - Chip, F - Fast)
+// 8'b111110FF  set memory configuration (S - Slow, C - Chip, F - Fast)
+// 8'b111111TT  set cpu type TT=00-68000, 01-68010, 11-68020
+
 
 always @(posedge clk)
   if (rx && cmd)
@@ -515,10 +525,21 @@ always @(posedge clk)
 	if (rx && cmd && wrdat[7:4]==4'b1110)
 		{hr_filter[1:0],lr_filter[1:0]} <= wrdat[3:0];
 
-//memory configuration
+// memory configuration
 always @(posedge clk)
-	if (rx && cmd && wrdat[7:4]==4'b1111)
-		t_memory_config[3:0] <= wrdat[3:0];
+  if (rx && cmd && wrdat[7:2]==6'b1111_00)  //chip
+    t_memory_config[1:0] <= wrdat[1:0];
+always @(posedge clk)
+  if (rx && cmd && wrdat[7:2]==6'b1111_01)  //slow
+    t_memory_config[3:2] <= wrdat[1:0];
+always @(posedge clk)
+  if (rx && cmd && wrdat[7:2]==6'b1111_10)  //fast
+    t_memory_config[5:4] <= wrdat[1:0];
+    
+// cpu config
+always @(posedge clk)
+  if (rx && cmd && wrdat[7:2]==6'b1111_11)
+    t_cpu_config <= wrdat[1:0];
 
 // autofire configuration
 always @(posedge clk)
@@ -581,7 +602,7 @@ module spi8
 	output	sdo,	 		//SPI data out
 	input	sck,	  		//SPI clock
 	input	[7:0] in,		//parallel input data
-	output	[7:0] out,		//parallel output data
+	output reg	[7:0] out,		//parallel output data
 	output	reg rx,		//byte received
 	output	reg cmd			//first byte received
 );
@@ -599,7 +620,9 @@ reg first_byte;		//first byte is going to be received
 always @(posedge sck)
 		sdi_reg <= {sdi_reg[6:0],sdi};
 
-assign out = sdi_reg;
+always @(posedge sck)
+    if (bit_cnt==7)
+      out <= {sdi_reg[6:0],sdi};
 
 //------ receive bit counter ------//
 always @(posedge sck or posedge _scs)

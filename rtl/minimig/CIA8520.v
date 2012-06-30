@@ -103,6 +103,7 @@ module ciaa
   output  aflock,       // auto fire lock
 	output	freeze,				// Action Replay freeze key
 	input	disk_led,			// floppy disk activity LED
+  input osd_enable,
   output [5:0] mou_emu,
   output [5:0] joy_emu,
   input joy_emu_en
@@ -180,6 +181,7 @@ ps2keyboard	kbd1
 	.keydat(keydat[7:0]),
 	.keystrobe(keystrobe),
 	.keyack(keyack),
+  .osd_enable(osd_enable),
 	.osd_ctrl(osd_ctrl),
 	._lmb(_lmb),
 	._rmb(_rmb),
@@ -471,7 +473,7 @@ always @(posedge clk)
 // writing of output port
 always @(posedge clk)
 	if (reset)
-		regporta[7:0] <= 2'd0;
+		regporta[7:0] <= 8'd0;
 	else if (wr && pra)
 		regporta[7:0] <= data_in[7:0];
 

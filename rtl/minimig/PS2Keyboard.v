@@ -62,6 +62,7 @@ module ps2keyboard
 	output	[7:0] keydat,		//keyboard data out
 	output	reg keystrobe,		//keyboard data out strobe
 	input	keyack,				//keyboard data out acknowledge
+  input   osd_enable,
 	output	[7:0] osd_ctrl,		//on-screen-display controll
 	output	_lmb,				//emulated left mouse button
 	output	_rmb,				//emulated right mouse button
@@ -276,6 +277,7 @@ ps2keyboardmap km1
 	.aright(aright),
 	.caps(caps),
 	.numlock(numlock),
+  .osd_enable(osd_enable),
 	.osd_ctrl(osd_ctrl),
 	._lmb(_lmb),
 	._rmb(_rmb),
@@ -375,6 +377,7 @@ module ps2keyboardmap
 	output	aright,	   			//amiga right alt key
 	output	caps,	   			//amiga capslock key
 	output	reg numlock = 0, 	//ps/2 numlock status
+  input osd_enable,
 	output	reg [7:0] osd_ctrl,	//osd menu control
 	output	reg _lmb,			//mouse button emulation
 	output	reg _rmb,			//mouse button emulation
