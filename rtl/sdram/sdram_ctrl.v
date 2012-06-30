@@ -21,7 +21,7 @@
 //----------------------------------------------------------------------------
 
 
-module sdram (
+module sdram_ctrl (
   inout  wire [ 16-1:0] sdata,
   output reg  [ 12-1:0] sdaddr,
   output reg            sd_we,
