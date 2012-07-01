@@ -596,6 +596,17 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 
 
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY out
+set_global_assignment -name SEARCH_PATH ../../rtl/or1200
+set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
+set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
+set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
+
+
+set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de1_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_sram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_decoder.v
@@ -610,11 +621,11 @@ set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
 set_global_assignment -name VERILOG_FILE ../../lib/altera/i_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/indicators.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/sseg_decode.v
-set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
 set_global_assignment -name VERILOG_FILE ../../rtl/tg68/tg68.v
 set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68_fast.vhd
 set_global_assignment -name VERILOG_FILE ../../lib/altera/srl16e.v
@@ -639,7 +650,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
-set_global_assignment -name QIP_FILE ../../rtl/ctrl/ctrl_clk.qip
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_xcv_ram32x8d.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wbmux.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wb_biu.v
@@ -698,10 +708,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cpu.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cfgr.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
-set_global_assignment -name SEARCH_PATH ../../rtl/or1200
-set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 2.0
-set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 2.0
-set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
-
+set_global_assignment -name QIP_FILE ../../rtl/de1/JBboot.qip
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
