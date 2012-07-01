@@ -149,8 +149,18 @@ wire           tg68_as;
 wire           tg68_uds;
 wire           tg68_lds;
 wire           tg68_rw;
-wire           tg68_enaRD;
+wire           tg68_ena7RD;
+wire           tg68_ena7WR;
 wire           tg68_enaWR;
+wire [ 16-1:0] tg68_cout;
+wire           tg68_cpuena;
+wire [  2-1:0] cpu_config;
+wire [  6-1:0] memcfg;
+wire [ 32-1:0] tg68_cad;
+wire [  6-1:0] tg68_cpustate;
+wire           tg68_cdma;
+wire           tg68_clds;
+wire           tg68_cuds;
 
 // minimig
 wire [ 16-1:0] ram_data;      // sram data bus
@@ -352,79 +362,96 @@ indicators indicators(
 
 
 //// TG68K main CPU ////
-//TG68K tg68k (
-//  .clk          (clk_114          ),
-//  .reset        (tg68_rst         ),
-//  .clkena_in    (1'b1             ),
-//  .IPL          (tg68_IPL         ),
-//  .dtack        (tg68_dtack       ),
-//  .vpa          (1'b1             ),
-//  .ein          (1'b1             ),
-//  .addr         (tg68_adr         ),
-//  .data_read    (tg68_dat_in      ),
-//  .data_write   (tg68_dat_out     ),
-//  .as           (tg68_as          ),
-//  .uds          (tg68_uds         ),
-//  .lds          (tg68_lds         ),
-//  .rw           (tg68_rw          ),
-//  .e            (                 ),
-//  .vma          (                 ),
-//  .wrd          (),
-//  .ena7RDreg    (tg68_enaRD       ),
-//  .ena7WRreg    (tg68_enaRW       ),
-//  .enaWRreg     (/* to sdram */     ),
-//  .fromram      (/* ? */          ),
-//  .ramready     (1'b1 /* from sdram */),
-//  .cpu          (2'b0 /* cpu config from minimig */),
-//  .memcfg       (6'b0 /* memory config from minimig */),
-//  .ramaddr      (/* to sdram */),
-//  .cpustate     (/* to sdram */),
-//  .skipFetch    (                 ),
-//  .cpuDMA       (/* to sdram */),
-//  .ramlds       (/* to sdram */),
-//  .ramuds       (/* to sdram */)
-//);
+TG68K tg68k (
+  .clk          (clk_114          ),
+  .reset        (tg68_rst         ),
+  .clkena_in    (1'b1             ),
+  .IPL          (tg68_IPL         ),
+  .dtack        (tg68_dtack       ),
+  .vpa          (1'b1             ),
+  .ein          (1'b1             ),
+  .addr         (tg68_adr         ),
+  .data_read    (tg68_dat_in      ),
+  .data_write   (tg68_dat_out     ),
+  .as           (tg68_as          ),
+  .uds          (tg68_uds         ),
+  .lds          (tg68_lds         ),
+  .rw           (tg68_rw          ),
+  .e            (                 ),
+  .vma          (                 ),
+  .wrd          (                 ),
+  .ena7RDreg    (tg68_ena7RD      ),
+  .ena7WRreg    (tg68_ena7WR      ),
+  .enaWRreg     (tg68_enaWR       ),
+  .fromram      (tg68_cout        ),
+  .ramready     (tg68_cpuena      ),
+  .cpu          (cpu_config       ),
+  .memcfg       (memcfg           ),
+  .ramaddr      (tg68_cad         ),
+  .cpustate     (tg68_cpustate    ),
+  .nResetOut    (                 ),
+  .skipFetch    (                 ),
+  .cpuDMA       (tg68_cdma        ),
+  .ramlds       (tg68_clds        ),
+  .ramuds       (tg68_cuds        )
+);
+
+
+//// 7MHz clock ////
+reg [2-1:0] clk7_cnt;
+always @ (posedge clk_28, negedge pll_locked) begin
+  if (!pll_locked)
+    clk7_cnt <= #1 2'b10;
+  else
+    clk7_cnt <= #1 clk7_cnt + 2'b01;
+end
+
+assign clk_7 = clk7_cnt[1];
+
+//// sdram ////
+sdram sdram (
+  .sdata        (DRAM_DQ          ),
+  .sdaddr       (DRAM_ADDR        ),
+  .dqm          (sdram_dqm        ),
+  .sd_cs        (sdram_cs         ),
+  .ba           (sdram_ba         ),
+  .sd_we        (DRAM_WE_N        ),
+  .sd_ras       (DRAM_RAS_N       ),
+  .sd_cas       (DRAM_CAS_N       ),
+  .sysclk       (clk_114          ),
+  .reset_in     (sdctl_rst        ),
+  .hostWR       (16'h0            ),
+  .hostAddr     (24'h0            ),
+  .hostState    ({1'b0, 2'b01}    ),
+  .hostL        (1'b1             ),
+  .hostU        (1'b1             ),
+  .cpuWR        (tg68_dat_out     ),
+  .cpuAddr      (tg68_cad[24:1]   ),
+  .cpuU         (tg68_cuds        ),
+  .cpuL         (tg68_clds        ),
+  .cpustate     (tg68_cpustate    ),
+  .cpu_dma      (tg68_cdma        ),
+  .chipWR       (ram_data         ),
+  .chipAddr     ({2'b00, ram_address[21:1]}),
+  .chipU        (_ram_bhe         ),
+  .chipL        (_ram_ble         ),
+  .chipRW       (_ram_we          ),
+  .chip_dma     (_ram_oe          ),
+  .c_7m         (clk_7            ),
+  .hostRD       (                 ),
+  .hostena      (                 ),
+  .cpuRD        (tg68_cout        ),
+  .cpuena       (tg68_cpuena      ),
+  .chipRD       (ramdata_in       ),
+  .reset_out    (                 ),
+  .enaRDreg     (                 ),
+  .enaWRreg     (tg68_enaWR       ),
+  .ena7RDreg    (tg68_ena7RD      ),
+  .ena7WRreg    (tg68_ena7WR      )
+);
+
 
 /*
-entity TG68K is
-   port(
-		clk           : in std_logic;
-		reset         : in std_logic;
-        clkena_in     : in std_logic:='1';
-        IPL           : in std_logic_vector(2 downto 0):="111";
-        dtack         : in std_logic;
-        vpa           : in std_logic:='1';
-        ein           : in std_logic:='1';
-        addr          : buffer std_logic_vector(31 downto 0);
-        data_read  	  : in std_logic_vector(15 downto 0);
-        data_write 	  : out std_logic_vector(15 downto 0);
-        as            : out std_logic;
-        uds           : out std_logic;
-        lds           : out std_logic;
-        rw            : out std_logic;
-        e             : out std_logic;
-        vma           : buffer std_logic:='1';
-        wrd           : out std_logic;
-        ena7RDreg      : in std_logic:='1';
-        ena7WRreg      : in std_logic:='1';
-        enaWRreg      : in std_logic:='1';
-        
-        fromram    	  : in std_logic_vector(15 downto 0);
-        ramready      : in std_logic:='0';
-        cpu           : in std_logic_vector(1 downto 0);
-        memcfg           : in std_logic_vector(5 downto 0);
-        ramaddr    	  : out std_logic_vector(31 downto 0);
-        cpustate      : out std_logic_vector(5 downto 0);
-		nResetOut	  : out std_logic;
-        skipFetch     : buffer std_logic;
-        cpuDMA         : buffer std_logic;
-        ramlds        : out std_logic;
-        ramuds        : out std_logic
-        );
-end TG68K;
-*/
-
-
 //// TG68 main CPU ////
 TG68 tg68 (
   .clk          (clk_114          ),
@@ -440,13 +467,14 @@ TG68 tg68 (
   .lds          (tg68_lds         ),
   .rw           (tg68_rw          ),
   .drive_data   (                 ),
-  .enaRDreg     (tg68_enaRD       ),
-  .enaWRreg     (tg68_enaWR       )
+  .enaRDreg     (tg68_ena7RD      ),
+  .enaWRreg     (tg68_ena7WR      )
 );
 
 
+
 //// sdram ////
-sdram sdram (
+sdram_ctrl sdram_ctrl (
   .sysclk       (clk_114          ),
   .reset        (sdctl_rst        ),
   .sdata        (DRAM_DQ          ),
@@ -480,10 +508,10 @@ sdram sdram (
   .pulse        (pulse            ),
   .enaRDreg     (                 ),
   .enaWRreg     (                 ),
-  .ena7RDreg    (tg68_enaWR       ),
-  .ena7WRreg    (tg68_enaRD       )
+  .ena7RDreg    (tg68_ena7WR      ),
+  .ena7WRreg    (tg68_ena7RD      )
 );
-
+*/
 
 //// audio ////
 audio_top audio_top (
@@ -565,6 +593,10 @@ Minimig1 minimig (
   .rdata        (rdata            ), // right DAC data
   //user i/o
   .gpio         (                 ), // spare GPIO
+  .cpu_config   (cpu_config       ), // CPU config
+  .memcfg       (memcfg           ), // memory config
+  .drv_snd      (                 ),
+  .init_b       (                 ), // vertical sync for MCU (sync OSD update)
   // fifo / track display
   .trackdisp    (track            ),
   .secdisp      (dsklen           ),
