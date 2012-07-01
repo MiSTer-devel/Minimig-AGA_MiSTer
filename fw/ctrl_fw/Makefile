@@ -61,13 +61,13 @@ OBJDIR=obj
 CINCLUDES += -I. -Ilib/ -I../
 
 # headers
-CHEADERS=lib/string.h lib/stdio.h hardware.h or32_defs.h spr_defs.h firmware.h config.h errors.h charrom.h fat.h fdd.h fpga.h hdd.h hdd_internal.h logo.h menu.h mmc.h osd.h rafile.h string.h swap.h
+CHEADERS=lib/string.h lib/stdio.h hardware.h or32_defs.h spr_defs.h firmware.h config.h errors.h charrom.h fat.h fdd.h fpga.h hdd.h hdd_internal.h logo.h menu.h mmc.h osd.h rafile.h swap.h
 
 # asm sources
 ASM_SOURCES=start.S
 
 # common sources
-COMMON_SOURCES=lib/string.c lib/stdio.c hardware.c config.c fat.c fdd.c fpga.c hardware.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c
+COMMON_SOURCES=lib/string.c lib/stdio.c hardware.c config.c fat.c fdd.c fpga.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c
 
 # all sources
 ALL_SOURCES = $(ASM_SOURCES) $(COMMON_SOURCES)

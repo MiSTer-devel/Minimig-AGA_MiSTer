@@ -64,9 +64,9 @@ char s[40];
 
 void FatalError(unsigned long error)
 {
-    unsigned long i;
+  unsigned long i;
 
-    sprintf(s,"Fatal error: %u\n", error);
+  sprintf(s,"Fatal error: %u\n", error);
     BootPrint("FatalError...\n");
 	BootPrint(s);
 
@@ -114,7 +114,23 @@ __geta4 void main(void)
 //    unsigned long time;
 //    unsigned short spiclk;
 
-	ShowSplash();
+  // boot message
+  printf("\r\r**** MINIMIG-DE1 startup ****\r\r");
+  printf("Build no. ");
+  printf(__BUILD_NUM);
+  //printf(" by ");
+  //printf(__BUILD_USER);
+  printf("\rgit commit ");
+  printf(__BUILD_REV);
+  printf("\r\r");
+  printf("For updates, see https://github.com/rkrajnc/minimig-de1\r");
+  printf("For support, see http://www.minimig.net/\r\r");
+  printf("Minimig by Dennis van Weeren\r");
+  printf("Updates by Jakub Bednarski, Sascha Boing, Tobias Gubener, \r");
+  printf("DE1 port by Rok Krajnc\r\r");
+  printf("Version %s\r\r", version+5);
+
+	//ShowSplash();
 
     BootPrint("OSD_CA01.SYS is here...\n");
 
@@ -124,9 +140,6 @@ __geta4 void main(void)
 //
 //    USART_Init(115200);
 
-    printf("\rMinimig by Dennis van Weeren");
-    printf("\rARM Controller by Jakub Bednarski\r\r");
-    printf("Version %s\r\r", version+5);
 
     sprintf(s, "** ARM firmware %s **\n", version + 5);
     BootPrint(s);

@@ -1,240 +1,379 @@
-/* string.c */
-/* 2012, rok.krajnc@gmail.com */
-
 
 #include "string.h"
 
 
-
-//// basic string functions ////
-
-// returns number of characters in s (not including terminating null character)
-size_t strlen(const char *s)
+void *memchr(const void *s, int c, size_t n)
 {
-  size_t cnt = 0;
+  const unsigned char *sp = s;
 
-  while (*s++) cnt++;
+  while (n--) {
+    if (*sp == (unsigned char)c)
+      return (void *)sp;
+    sp++;
+  }
 
-  return cnt;
+  return NULL;
 }
 
 
-// copy 'src' to 'dest' (strings may not overlap)
-char *strcpy(char *dest, const char *src)
+int memcmp(const void *s1, const void *s2, size_t n)
 {
-  char *d = dest;
+  const unsigned char *c1 = s1, *c2 = s2;
+  int d = 0;
 
-  while ( (*dest++ = *src++) );
+  while (n--) {
+    d = (int)*c1++ - (int)*c2++;
+    if (d)
+      break;
+  }
 
   return d;
 }
 
 
-// copy 'src' to 'dest' with size limit
-char *strncpy(char *dest, const char *src, size_t n)
+void *memcpy(void *dst, const void *src, size_t n)
 {
-  char *d = dest;
+  const char *p = src;
+  char *q = dst;
 
-  // copy src to dest
-  while ( *src && n ) {
-    *dest++ = *src++;
-    n--;
+  while (n--) {
+    *q++ = *p++;
   }
 
-  // fill the remainder of d with nulls
-  while (n--) *dest++ = '\0';
+  return dst;
+}
+
+
+void *memmove(void *dst, const void *src, size_t n)
+{
+  const char *p = src;
+  char *q = dst;
+
+  if (q < p) {
+    while (n--) {
+      *q++ = *p++;
+    }
+  } else {
+    p += n;
+    q += n;
+    while (n--) {
+      *--q = *--p;
+    }
+  }
+
+  return dst;
+}
+
+
+void *memrchr(const void *s, int c, size_t n)
+{
+  const unsigned char *sp = (const unsigned char *)s + n - 1;
+
+  while (n--) {
+    if (*sp == (unsigned char)c)
+      return (void *)sp;
+    sp--;
+  }
+
+  return NULL;
+}
+
+
+void *memset(void *dst, int c, size_t n)
+{
+  char *q = dst;
+
+  while (n--) {
+    *q++ = c;
+  }
+
+  return dst;
+}
+
+
+void memswap(void *m1, void *m2, size_t n)
+{
+  char *p = m1;
+  char *q = m2;
+  char tmp;
+
+  while (n--) {
+    tmp = *p;
+    *p = *q;
+    *q = tmp;
+
+    p++;
+    q++;
+  }
+}
+
+
+
+
+int strcasecmp(const char *s1, const char *s2)
+{
+  const unsigned char *c1 = (const unsigned char *)s1;
+  const unsigned char *c2 = (const unsigned char *)s2;
+  unsigned char ch;
+  int d = 0;
+
+  while (1) {
+    /* toupper() expects an unsigned char (implicitly cast to int)
+       as input, and returns an int, which is exactly what we want. */
+    d = toupper(ch = *c1++) - toupper(*c2++);
+    if (d || !ch)
+      break;
+  }
 
   return d;
 }
 
 
-// concatenate 'src' to 'dest' string
-char *strcat(char *dest, const char *src)
+char *strcat(char *dst, const char *src)
 {
-  char *d = dest;
-
-  // find the end of the destination string
-  while (*dest++);
-
-  // append the source string to the destination string
-  while ( (*dest++ = *src++) );
-
-  return d;
+  strcpy(strchr(dst, '\0'), src);
+  return dst;
 }
 
 
-// concatenate 'src' to 'dest' string with size limit
-char *strncat(char *dest, const char *src, size_t n)
-{
-  char *d = dest;
-
-  // find the end of the destination string
-  while (*dest++);
-
-  // copy src to dest
-  while ( (*dest = *src) && n-- ) {
-    dest++;
-    src++;
-  }
-
-  // add terminating '\0' character
-  *dest = '\0';
-
-  return d;
-}
-
-
-// compare 's1' to 's2', a zero return value means equal strings
-int strcmp(const char *s1, const char *s2)
-{
-  while ( *s1 && (*s1 == *s2) ) {
-    s1++;
-    s2++;
-  }
-
-  return *s1 - *s2;
-}
-
-
-// compare up to 'n' characters of strings 's1' and 's2'
-int strncmp(const char *s1, const char *s2, size_t n)
-{
-	if (n == 0)
-		return 0;
-
-  while ( *s1 && (*s1 == *s2) && --n ) {
-    s1++;
-    s2++;
-  }
-
-  return *s1 - *s2;
-}
-
-
-// locate first occurence of character 'c' in string 's'
 char *strchr(const char *s, int c)
 {
-  // search for the character c
-  while (*s && (*s != c) ) s++;
+  while (*s != (char)c) {
+    if (!*s)
+      return NULL;
+    s++;
+  }
 
   return (char *)s;
 }
 
 
-// locate last occurence of character 'c' in string 's'
+int strcmp(const char *s1, const char *s2)
+{
+  const unsigned char *c1 = (const unsigned char *)s1;
+  const unsigned char *c2 = (const unsigned char *)s2;
+  unsigned char ch;
+  int d = 0;
+
+  while (1) {
+    d = (int)(ch = *c1++) - (int)*c2++;
+    if (d || !ch)
+      break;
+  }
+
+  return d;
+}
+
+
+char *strcpy(char *dst, const char *src)
+{
+  char *q = dst;
+  const char *p = src;
+  char ch;
+
+  do {
+    *q++ = ch = *p++;
+  } while (ch);
+
+  return dst;
+}
+
+/*
+char *strdup(const char *s)
+{
+  int l = strlen(s) + 1;
+  char *d = malloc(l);
+
+  if (d)
+    memcpy(d, s, l);
+
+  return d;
+}
+*/
+
+size_t strlcat(char *dst, const char *src, size_t size)
+{
+  size_t bytes = 0;
+  char *q = dst;
+  const char *p = src;
+  char ch;
+
+  while (bytes < size && *q) {
+    q++;
+    bytes++;
+  }
+  if (bytes == size)
+    return (bytes + strlen(src));
+
+  while ((ch = *p++)) {
+    if (bytes + 1 < size)
+      *q++ = ch;
+
+    bytes++;
+  }
+
+  *q = '\0';
+  return bytes;
+}
+
+
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+  size_t bytes = 0;
+  char *q = dst;
+  const char *p = src;
+  char ch;
+
+  while ((ch = *p++)) {
+    if (bytes + 1 < size)
+      *q++ = ch;
+
+    bytes++;
+  }
+
+  /* If size == 0 there is no space for a final null... */
+  if (size)
+    *q = '\0';
+
+  return bytes;
+}
+
+
+size_t strlen(const char *s)
+{
+  const char *ss = s;
+  while (*ss)
+    ss++;
+  return ss - s;
+}
+
+
+int strncasecmp(const char *s1, const char *s2, size_t n)
+{
+  const unsigned char *c1 = (const unsigned char *)s1;
+  const unsigned char *c2 = (const unsigned char *)s2;
+  unsigned char ch;
+  int d = 0;
+
+  while (n--) {
+    /* toupper() expects an unsigned char (implicitly cast to int)
+       as input, and returns an int, which is exactly what we want. */
+    d = toupper(ch = *c1++) - toupper(*c2++);
+    if (d || !ch)
+      break;
+  }
+
+  return d;
+}
+
+
+char *strncat(char *dst, const char *src, size_t n)
+{
+  char *q = strchr(dst, '\0');
+  const char *p = src;
+  char ch;
+
+  while (n--) {
+    *q++ = ch = *p++;
+    if (!ch)
+      return dst;
+  }
+  *q = '\0';
+
+  return dst;
+}
+
+
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+  const unsigned char *c1 = (const unsigned char *)s1;
+  const unsigned char *c2 = (const unsigned char *)s2;
+  unsigned char ch;
+  int d = 0;
+
+  while (n--) {
+    d = (int)(ch = *c1++) - (int)*c2++;
+    if (d || !ch)
+      break;
+  }
+
+  return d;
+}
+
+
+char *strncpy(char *dst, const char *src, size_t n)
+{
+  char *q = dst;
+  const char *p = src;
+  char ch;
+
+  while (n) {
+    n--;
+    *q++ = ch = *p++;
+    if (!ch)
+      break;
+  }
+
+  /* The specs say strncpy() fills the entire buffer with NUL.  Sigh. */
+  memset(q, 0, n);
+
+  return dst;
+}
+
+/*
+char *strndup(const char *s, size_t n)
+{
+  size_t l = strnlen(s, n);
+  char *d = malloc(l + 1);
+  if (!d)
+    return NULL;
+
+  memcpy(d, s, l);
+  d[l] = '\0';
+  return d;
+}
+*/
+
+size_t strnlen(const char *s, size_t maxlen)
+{
+  const char *ss = s;
+
+  /* Important: the maxlen test must precede the reference through ss;
+     since the byte beyond the maximum may segfault */
+  while ((maxlen > 0) && *ss) {
+    ss++;
+    maxlen--;
+  }
+  return ss - s;
+}
+
+
 char *strrchr(const char *s, int c)
 {
-  char *fnd = NULL;
+  const char *found = NULL;
 
-  // search for the character c
   while (*s) {
-    if (*s == c)
-      fnd = (char *)s;
+    if (*s == (char)c)
+      found = s;
     s++;
   }
 
-  return fnd;
+  return (char *)found;
 }
 
 
 
-//// basic mem functions ////
 
-// copy block of memory from 'src' to 'dest'
-void *memcpy(void *dest, const void *src, size_t n)
+int toupper(int c)
 {
-  // check if 'src' and 'dest' are on LONG boundaries
-  if ( (sizeof(unsigned long) -1) & ((unsigned long)dest | (unsigned long)src) ) {
-    // no, do a byte-wide copy
-    char *cs = (char *) src;
-    char *cd = (char *) dest;
-    while (n--)
-      *cd++ = *cs++;
-  } else {
-    // yes, speed up copy process - copy as many LONGs as possible
-    long *ls = (long *)src;
-    long *ld = (long *)dest;
-
-    size_t cnt = n >> 2;
-    while (cnt--)
-      *ld++ = *ls++;
-
-    // finally copy the remaining bytes
-    char *cs = (char *) (src + (n & ~0x03));
-    char *cd = (char *) (dest + (n & ~0x03));
-
-    cnt = n & 0x3;
-    while (cnt--)
-      *cd++ = *cs++;
-  }
-
-  return dest;
-}
-
-
-// copy 'n' bytes of memory from 'src' to 'dest'
-void *memmove(void *dest, void *src, size_t n)
-{
-  char *d = dest;
-  char *s = src;
-
-  while (n--)
-    *d++ = *s++;
-
-  return dest;
-}
-
-
-// compare two blocks of memory up to 'n' bytes
-int memcmp(const void *s1, const void *s2, size_t n)
-{
-  char *p1 = (void *)s1;
-  char *p2 = (void *)s2;
-
-  while ( (*p1 == *p2) && n-- ) {
-    p1++;
-    p2++;
-  }
-
-  return *p1 - *p2;
-}
-
-
-// locate character 'c' in the first 'n' bytes of memory block 's'
-void *memchr(const void *s, int c, size_t n)
-{
-  char *p = (void *)s;
-
-  // search for the character c
-  while ( (*p != c) && n-- )
-    p++;
-
-  return (*p == c) ? p : NULL;
-}
-
-
-// fill up to 'n' bytes of memory block 's' with character 'c'
-void *memset(void *s, int c, size_t n)
-{
-  char *p = s;
-
-  while (n--)
-    *p++ = c;
-
-  return s;
-}
-
-
-
-//// other functions ////
-
-// locate start of word in string 'c'
-char *next_word(char *c)
-{
-  while ((*c!=0) && (*c!=' ')) c++;
-  while (*c==' ') c++;
-  if (*c==0) return NULL;
+  if( c>='a' && c<='z') return (c +'A' - 'a');
   else return c;
 }
 
+
+int tolower(int c)
+{
+  if((c>='A')&&(c<='Z')) return (c + 'a' - 'A');
+  else return c;
+}
 

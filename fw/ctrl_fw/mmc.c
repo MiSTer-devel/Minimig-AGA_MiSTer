@@ -75,6 +75,9 @@ unsigned char MMC_Init(void)
     if (MMC_Command(CMD0, 0) == 0x01)
     { // idle state
         timeout = GetTimer(1000); // initialization timeout 1000 ms
+        printf("timeout:%08X\r",timeout);
+        timeout = GetTimer(1000); // initialization timeout 1000 ms
+        printf("timeout:%08X\r",timeout);
         if (MMC_Command(CMD8, 0x1AA) == 0x01) // check if the card can operate with 2.7-3.6V power
         {   // SDHC card
             for (n = 0; n < 4; n++)
@@ -130,6 +133,7 @@ unsigned char MMC_Init(void)
             if (MMC_Command(CMD41, 0) <= 0x01)
             { // SD card detected - wait for the end of initialization
                 printf("SD card detected\r");
+                printf("timeout:%08X\r",GetTimer(0));
                 while (!CheckTimer(timeout))
                 { // now we must wait until CMD41 returns 0 (or timeout elapses)
                     if (MMC_Command(CMD55, 0) == 0x01)
@@ -186,7 +190,7 @@ unsigned char MMC_Init(void)
                 else
                     AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (6 << 8); // 8 MHz SPI clock (no SPI mod)
 #else
-                SPI_fast();
+                SPI_fast(); // TODO this is too fast for MMC (20MHz max)
 #endif
                 CardType = CARDTYPE_MMC;
 
@@ -220,7 +224,7 @@ unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
 
     if (MMC_Command(CMD17, lba))
     {
-        //printf("CMD17 (READ_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
+        printf("CMD17 (READ_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
         DisableCard();
         return(0);
     }
@@ -231,7 +235,7 @@ unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
     {
         if (timeout++ >= 1000000) // we can't wait forever
         {
-            //printf("CMD17 (READ_BLOCK): no data token! (lba=%u)\r", lba);
+            printf("CMD17 (READ_BLOCK): no data token! (lba=%u)\r", lba);
             DisableCard();
             return(0);
         }
@@ -273,7 +277,7 @@ unsigned char MMC_GetCSD()
 
     if (MMC_Command(CMD9,0))
     {
-        //printf("CMD9 (GET_CSD): invalid response 0x%02X \r", response);
+        printf("CMD9 (GET_CSD): invalid response 0x%02X \r", response);
         DisableCard();
         return(0);
     }
@@ -284,7 +288,7 @@ unsigned char MMC_GetCSD()
     {
         if (timeout++ >= 1000000) // we can't wait forever
         {
-            //printf("CMD9 (READ_BLOCK): no data token!\r");
+            printf("CMD9 (READ_BLOCK): no data token!\r");
             DisableCard();
             return(0);
         }
@@ -366,7 +370,7 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
 
     if (MMC_Command(CMD18, lba))
     {
-        //printf("CMD18 (READ_MULTIPLE_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
+        printf("CMD18 (READ_MULTIPLE_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
         DisableCard();
         return(0);
     }
@@ -379,7 +383,7 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
         {
             if (timeout++ >= 1000000) // we can't wait forever
             {
-                //printf("CMD18 (READ_MULTIPLE_BLOCK): no data token! (lba=%u)\r", lba);
+                printf("CMD18 (READ_MULTIPLE_BLOCK): no data token! (lba=%u)\r", lba);
                 DisableCard();
                 return(0);
             }
@@ -430,7 +434,7 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
 
     if (MMC_Command(CMD24, lba))
     {
-        //printf("CMD24 (WRITE_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
+        printf("CMD24 (WRITE_BLOCK): invalid response 0x%02X (lba=%u)\r", response, lba);
         DisableCard();
         return(0);
     }
@@ -453,7 +457,7 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
     response &= 0x1F;
     if (response != 0x05)
     {
-        //printf("CMD24 (WRITE_BLOCK): invalid status 0x%02X (lba=%u)\r", response, lba);
+        printf("CMD24 (WRITE_BLOCK): invalid status 0x%02X (lba=%u)\r", response, lba);
         DisableCard();
         return(0);
     }
@@ -463,7 +467,7 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
     {
         if (timeout++ >= 1000000)
         {
-            //printf("CMD24 (WRITE_BLOCK): busy wait timeout! (lba=%u)\r", lba);
+            printf("CMD24 (WRITE_BLOCK): busy wait timeout! (lba=%u)\r", lba);
             DisableCard();
             return(0);
         }

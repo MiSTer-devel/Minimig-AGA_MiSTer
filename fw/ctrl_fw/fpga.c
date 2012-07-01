@@ -325,6 +325,8 @@ char BootPrint(const char *text)
     const char *p;
     unsigned char n;
 
+    return 0;
+
     p = text;
     n = 0;
     while (*p++ != 0)
