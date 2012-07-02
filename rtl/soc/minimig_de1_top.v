@@ -205,13 +205,19 @@ wire           exchan;
 assign TDO          = 1'b1;
 
 // input synchronizers
-wire   sw_7, sw_8, sw_9;
+wire   sw_6, sw_7, sw_8, sw_9;
 wire   key_3, key_2;
 
-i_sync #(.DW(3)) i_sync_sw (
+i_sync #(.DW(3)) i_sync_sw_7 (
   .clk  (clk_7),
   .i    ({SW[7], SW[8], SW[9]}),
   .o    ({sw_7,  sw_8,  sw_9})
+);
+
+i_sync #(.DW(1)) i_sync_sw_50 (
+  .clk  (clk_50),
+  .i    ({SW[6]}),
+  .o    ({sw_6})
 );
 
 i_sync #(.DW(2)) i_sync_key (
@@ -279,6 +285,8 @@ ctrl_top ctrl_top (
   .clk_out      (clk_50     ),
   .rst_out      (rst_50     ),
   .rst_minimig  (rst_minimig),
+  // config
+  .boot_sel     (sw_6       ),
   // status
   .rom_status   (rom_status ),
   .ram_status   (ram_status ),

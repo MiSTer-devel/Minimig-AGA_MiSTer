@@ -21,6 +21,8 @@ module ctrl_flash #(
   // system
   input  wire           clk,
   input  wire           rst,
+  // config
+  input  wire           boot_sel,
   // qmem interface
   input  wire [QAW-1:0] adr,
   input  wire           cs,
@@ -107,14 +109,14 @@ always @ (posedge clk, posedge rst) begin
     case (state)
       S_ID : begin
         if (cs) begin
-          fl_adr <= #1 {adr[21:2], 2'b00};
+          fl_adr <= #1 {boot_sel, adr[20:2], 2'b00};
           timer_start <= #1 1'b1;
           state <= #1 S_R1;
         end
       end
       S_R1 : begin
         if ((~|timer) && !timer_start) begin
-          fl_adr <= #1 {adr[21:2], 2'b01};
+          fl_adr <= #1 {boot_sel, adr[20:2], 2'b01};
           timer_start <= #1 1'b1;
           state <= #1 S_R2;
           if (BE == 1)
@@ -125,7 +127,7 @@ always @ (posedge clk, posedge rst) begin
       end
       S_R2 : begin
         if ((~|timer) && !timer_start) begin
-          fl_adr <= #1 {adr[21:2], 2'b10};
+          fl_adr <= #1 {boot_sel, adr[20:2], 2'b10};
           timer_start <= #1 1'b1;
           state <= #1 S_R3;
           if (BE == 1)
@@ -136,7 +138,7 @@ always @ (posedge clk, posedge rst) begin
       end
       S_R3 : begin
         if ((~|timer) && !timer_start) begin
-          fl_adr <= #1 {adr[21:2], 2'b11};
+          fl_adr <= #1 {boot_sel, adr[20:2], 2'b11};
           timer_start <= #1 1'b1;
           state <= #1 S_R4;
           if (BE == 1)

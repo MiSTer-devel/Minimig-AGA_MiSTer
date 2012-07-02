@@ -69,6 +69,8 @@ MEMORY ORGANIZATION
 2 - (0x800000 - 0xbfffff) adr[23:22] == 2'b10 - REGS
 3 - (0xc00000 - 0xffffff) adr[23:22] == 2'b11 - N.A.
 
+Only 24 bits of address space is used. This space is divided into four 4Mbyte blocks. The last 4MB block is currently unused.
+
 Both masters see the same address space, but only data bus can access the REGS slave.
 Address space is minimally decoded - that means that the all slaves are seen aliased at many different addresses.
 Don't write to undefined addresses, or bad things could happen!
@@ -85,6 +87,12 @@ SPI_BLOCK          = 0x80001c
 
 The CPU boots from address 0x000004 (ROM). The startup code is written in such a way, that it copies itself into RAM,
 and then jumps to RAM and continues executing.
+
+The boot_sel signal can be used to change ROM bootcode location (offset):
+bootsel = 0 : master address 0 is ROM address 0
+bootsel = 1 : master address 0 is ROM address 2MB
+Only 2MB of the ROM slave can be addressed!
+
 */
 
 
@@ -95,6 +103,8 @@ module ctrl_top (
   output wire           clk_out,
   output wire           rst_out,
   output wire           rst_minimig,
+  // config
+  input  wire           boot_sel,
   // status
   output wire           rom_status,
   output wire           ram_status,
@@ -387,6 +397,8 @@ ctrl_flash #(
   // system
   .clk        (clk        ),
   .rst        (rst        ),
+  // config
+  .boot_sel   (boot_sel   ),
   // qmem interface
   .adr        (rom_adr    ),
   .cs         (rom_cs     ),
