@@ -88,10 +88,10 @@ SPI_BLOCK          = 0x80001c
 The CPU boots from address 0x000004 (ROM). The startup code is written in such a way, that it copies itself into RAM,
 and then jumps to RAM and continues executing.
 
-The boot_sel signal can be used to change ROM bootcode location (offset):
-bootsel = 0 : master address 0 is ROM address 0
-bootsel = 1 : master address 0 is ROM address 2MB
-Only 2MB of the ROM slave can be addressed!
+The boot_sel signal can be used to change ROM bootcode location (offset).
+The signal is XORed with the last address bit (adr[21]):
+bootsel = 0 : master sees flash addresses linearly
+bootsel = 1 : master sees top 2MB at location offset 0, and lower 2MB at location offset 2097152 (2MB).
 
 */
 
