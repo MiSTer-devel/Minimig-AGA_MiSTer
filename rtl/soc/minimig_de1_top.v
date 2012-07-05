@@ -451,7 +451,7 @@ sdram sdram (
   .cpuRD        (tg68_cout        ),
   .cpuena       (tg68_cpuena      ),
   .chipRD       (ramdata_in       ),
-  .reset_out    (                 ),
+  .reset_out    (reset_out        ),
   .enaRDreg     (                 ),
   .enaWRreg     (tg68_enaWR       ),
   .ena7RDreg    (tg68_ena7RD      ),
