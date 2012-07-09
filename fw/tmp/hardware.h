@@ -20,7 +20,7 @@
 #define DisableDMode()  (*((volatile unsigned int *)0x800014)=0x80)
 
 #define SPI_slow()      (*((volatile unsigned int *)0x800010)=0x3f)
-#define SPI_fast()      (*((volatile unsigned int *)0x800010)=0x00)
+#define SPI_fast()      (*((volatile unsigned int *)0x800010)=0x06)
 #define SPI_write(x)    (*((volatile unsigned int *)0x800018)=(x))
 #define SPI_read()      (*((volatile unsigned int *)0x800018))
 #define SPI(x)          (SPI_write(x), SPI_read())
