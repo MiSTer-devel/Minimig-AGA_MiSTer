@@ -8,6 +8,8 @@
 module audio_top (
   input  wire           clk,
   input  wire           rst_n,
+  // config
+  input  wire           mix,
   // audio shifter
   input  wire [ 15-1:0] rdata,
   input  wire [ 15-1:0] ldata,
@@ -35,8 +37,9 @@ module audio_top (
 audio_shifter audio_shifter (
   .clk          (clk              ),
   .nreset       (rst_n            ),
-  .rechts       ({rdata, 1'b0}    ),
-  .links        ({ldata, 1'b0}    ),
+  .mix          (mix              ),
+  .rdata        (rdata            ),
+  .ldata        (ldata            ),
   .exchan       (exchan           ),
   .aud_bclk     (aud_bclk         ),
   .aud_daclrck  (aud_daclrck      ),

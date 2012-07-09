@@ -205,7 +205,7 @@ wire           exchan;
 assign TDO          = 1'b1;
 
 // input synchronizers
-wire   sw_6, sw_7, sw_8, sw_9;
+wire   sw_4, sw_5, sw_6, sw_7, sw_8, sw_9;
 wire   key_3, key_2;
 
 i_sync #(.DW(3)) i_sync_sw_7 (
@@ -218,6 +218,12 @@ i_sync #(.DW(1)) i_sync_sw_50 (
   .clk  (clk_50),
   .i    ({SW[6]}),
   .o    ({sw_6})
+);
+
+i_sync #(.DW(1)) i_sync_sw_28 (
+  .clk  (clk_28),
+  .i    (SW[5]),
+  .o    (sw_5})
 );
 
 i_sync #(.DW(2)) i_sync_key (
@@ -525,6 +531,8 @@ sdram_ctrl sdram_ctrl (
 audio_top audio_top (
   .clk          (clk_28           ),
   .rst_n        (reset_out        ),
+  // config
+  .mix          (sw_5             ),
   // audio shifter
   .rdata        (rdata            ),
   .ldata        (ldata            ),
