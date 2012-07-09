@@ -206,7 +206,7 @@ assign TDO          = 1'b1;
 
 // input synchronizers
 wire   sw_4, sw_5, sw_6, sw_7, sw_8, sw_9;
-wire   key_3, key_2;
+wire   key_3, key_2, key_1, key_0;
 
 i_sync #(.DW(3)) i_sync_sw_7 (
   .clk  (clk_7),
@@ -223,13 +223,13 @@ i_sync #(.DW(1)) i_sync_sw_50 (
 i_sync #(.DW(1)) i_sync_sw_28 (
   .clk  (clk_28),
   .i    (SW[5]),
-  .o    (sw_5})
+  .o    (sw_5)
 );
 
 i_sync #(.DW(2)) i_sync_key (
   .clk  (clk_7),
-  .i    ({KEY[3], KEY[2]}),
-  .o    ({key_3,  key_2})
+  .i    ({KEY[3], KEY[2], KEY[1], KEY[0]}),
+  .o    ({key_3,  key_2, key_1, key_0})
 );
 
 // clock
@@ -533,6 +533,8 @@ audio_top audio_top (
   .rst_n        (reset_out        ),
   // config
   .mix          (sw_5             ),
+  .volup        (key_1            ),
+  .voldown      (key_0            ),
   // audio shifter
   .rdata        (rdata            ),
   .ldata        (ldata            ),
