@@ -177,8 +177,6 @@ always@(posedge mI2C_CTRL_CLK or negedge iRST_N) begin
         end
       endcase
     end
-
-
   end
 end
 ////////////////////////////////////////////////////////////////////

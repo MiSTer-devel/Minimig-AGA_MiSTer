@@ -226,7 +226,7 @@ i_sync #(.DW(1)) i_sync_sw_28 (
   .o    (sw_5)
 );
 
-i_sync #(.DW(2)) i_sync_key (
+i_sync #(.DW(4)) i_sync_key (
   .clk  (clk_7),
   .i    ({KEY[3], KEY[2], KEY[1], KEY[0]}),
   .o    ({key_3,  key_2, key_1, key_0})
