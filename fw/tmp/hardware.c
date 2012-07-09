@@ -37,7 +37,6 @@ void WaitTimer(unsigned long time)
   while (!CheckTimer(time));
 }
 
-
 // heap management
 extern int *_heap_start;
 extern int *_heap_end;

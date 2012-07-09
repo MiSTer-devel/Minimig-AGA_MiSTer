@@ -5,6 +5,23 @@
 #define __HARDWARE_H__
 
 
+// support
+#define DEBUG1
+
+#ifdef DEBUG1
+#define DBGPRINT(...) printf(__VA_ARGS__)
+#else
+#define DBGPRINT(...)
+#endif
+
+#define STR(x)           #x
+#define XSTR(x)          STR(x)
+
+#define DEBUG_FUNC_IN()  DBGPRINT("* DEBUG : FUNC IN  : %s(), file " __FILE__ ", line " XSTR(__LINE__) "\r", __FUNCTION__)
+#define DEBUG_FUNC_OUT() DBGPRINT("* DEBUG : FUNC OUT : %s()\r", __FUNCTION__)
+#define DEBUG_MSG(x)     DBGPRINT("* DEBUG : " x "\r")
+
+
 // minimig stuff
 
 #define DISKLED_ON // *AT91C_PIOA_SODR = DISKLED;
@@ -20,7 +37,7 @@
 #define DisableDMode()  (*((volatile unsigned int *)0x800014)=0x80)
 
 #define SPI_slow()      (*((volatile unsigned int *)0x800010)=0x3f)
-#define SPI_fast()      (*((volatile unsigned int *)0x800010)=0x06)
+#define SPI_fast()      (*((volatile unsigned int *)0x800010)=0x00)
 #define SPI_write(x)    (*((volatile unsigned int *)0x800018)=(x))
 #define SPI_read()      (*((volatile unsigned int *)0x800018))
 #define SPI(x)          (SPI_write(x), SPI_read())
@@ -32,7 +49,9 @@
 #define TIMER_set(x)    (*((volatile unsigned int *)0x80000c)=(x))
 #define TIMER_wait(x)   (TIMER_set(0), while (TIMER_get()<(x)))
 
-#define SPIN            (SPI_read()) // Waste a few cycles to let the FPGA catch up
+//#define SPIN            (SPI_read()) // Waste a few cycles to let the FPGA catch up
+#define SPIN
+
 
 unsigned long CheckButton(void);
 void Timer_Init(void);
@@ -70,8 +89,6 @@ void WaitTimer(unsigned long time);
 #define ALIGN(addr,size) ((addr + (size-1))&(~(size-1)))
 
 // string
-#define XSTR(x)           STR(x)
-#define STR(x)            #x
 
 // func pointer
 #define FUNC(r,n,p...)       r _##n(p); r (*n)(p) = _##n; r _##n(p)
