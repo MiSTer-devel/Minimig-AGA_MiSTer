@@ -38,9 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // FIXME - detect number of partitions on the SD card, and allow that many to be selected as hard files.
 
+
 //#include "AT91SAM7S256.h"
-//#include "stdio.h"
-//#include "string.h"
 #include "errors.h"
 #include "hardware.h"
 #include "mmc.h"
@@ -54,54 +53,62 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 
 #include <stdio.h>
+#include <string.h>
+
 
 const char version[] = {"$VER:AYQ100818_RB2"};
-
 extern adfTYPE df[4];
-
 unsigned char Error;
 char s[40];
 
+
 void FatalError(unsigned long error)
 {
-    unsigned long i;
+  DEBUG_FUNC_IN();
 
-    sprintf(s,"Fatal error: %lu\n", error);
-    BootPrint("FatalError...\n");
-	BootPrint(s);
+  unsigned long i;
 
-    while (1)
-    {
-        for (i = 0; i < error; i++)
-        {
-            DISKLED_ON;
-            WaitTimer(250);
-            DISKLED_OFF;
-            WaitTimer(250);
-        }
-        WaitTimer(1000);
+  sprintf(s,"Fatal error: %lu\n", error);
+  BootPrint("FatalError...\n");
+  BootPrint(s);
+
+  while (1) {
+    for (i = 0; i < error; i++) {
+      DISKLED_ON;
+      WaitTimer(250);
+      DISKLED_OFF;
+      WaitTimer(250);
     }
+    WaitTimer(1000);
+  }
+
+  DEBUG_FUNC_OUT();
 }
 
 
 void HandleFpga(void)
 {
-    unsigned char  c1, c2;
+  DEBUG_FUNC_IN();
 
-    EnableFpga();
-    c1 = SPI(0); // cmd request and drive number
-    c2 = SPI(0); // track number
-    SPI(0);
-    SPI(0);
-    SPI(0);
-    SPI(0);
-    DisableFpga();
+  unsigned char  c1, c2;
 
-    HandleFDD(c1, c2);
-    HandleHDD(c1, c2);
+  EnableFpga();
+  c1 = SPI(0); // cmd request and drive number
+  c2 = SPI(0); // track number
+  SPI(0);
+  SPI(0);
+  SPI(0);
+  SPI(0);
+  DisableFpga();
 
-    UpdateDriveStatus();
+  HandleFDD(c1, c2);
+  HandleHDD(c1, c2);
+
+  UpdateDriveStatus();
+
+  DEBUG_FUNC_OUT();
 }
+
 
 #ifdef __GNUC__
 void main(void)
@@ -109,13 +116,15 @@ void main(void)
 __geta4 void main(void)
 #endif
 {
-	debugmsg[0]=0;
-	debugmsg2[0]=0;
+  DEBUG_FUNC_IN();
+
+  debugmsg[0]=0;
+  debugmsg2[0]=0;
 //    unsigned long time;
 //    unsigned short spiclk;
 
   // boot message
-  printf("\r\r**** MINIMIG-DE1 startup ****\r\r");
+  printf("\r**** MINIMIG-DE1 ****\r\r");
   printf("Build no. ");
   printf(__BUILD_NUM);
   //printf(" by ");
@@ -131,7 +140,7 @@ __geta4 void main(void)
   printf("Version %s\r\r", version+5);
 
 
-	//ShowSplash();
+  //ShowSplash();
 
     BootPrint("OSD_CA01.SYS is here...\n");
 
@@ -148,7 +157,7 @@ __geta4 void main(void)
     sprintf(s, "** ARM firmware %s **\n", version + 5);
     BootPrint(s);
 
-//	OsdDisable();
+//  OsdDisable();
 
 //    SPI_Init();
 
@@ -184,18 +193,18 @@ __geta4 void main(void)
 
 //    WaitTimer(100); // let's wait some time till reset is inactive so we can get a valid keycode
 //eject all disk
-	df[0].status = 0;
-	df[1].status = 0;
-	df[2].status = 0;
-	df[3].status = 0;
+  df[0].status = 0;
+  df[1].status = 0;
+  df[2].status = 0;
+  df[3].status = 0;
 
-	config.kickstart.name[0]=0;
-	SetConfigurationFilename(0); // Use default config
-    LoadConfiguration(0);	// Use slot-based config filename
+  config.kickstart.name[0]=0;
+  SetConfigurationFilename(0); // Use default config
+    LoadConfiguration(0);  // Use slot-based config filename
 
 //    sprintf(s, "SPI clock: %u MHz\n", spiclk);
 //    BootPrint(s);
- 	HideSplash();
+   HideSplash();
 
     while (1)
     {
@@ -203,5 +212,6 @@ __geta4 void main(void)
         HandleUI();
     }
 
+  DEBUG_FUNC_OUT();
 }
 
