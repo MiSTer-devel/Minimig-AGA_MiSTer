@@ -36,7 +36,7 @@ This is the Minimig OSD (on-screen-display) handler.
 //#include "AT91SAM7S256.h"
 #include "osd.h"
 #include "hardware.h"
-//#include "stdio.h"
+#include "stdio.h"
 
 #include "charrom.h"
 #include "logo.h"
@@ -85,7 +85,7 @@ void framebuffer_plot(int x,int y)
 static int quickrand()
 {
 	static int prev;
-	int r=*(volatile unsigned short *)0xDEE010;
+	int r=*(volatile unsigned long *)0x80000c;
 	r^=(prev&0xc75a)<<4;
 	r^=(prev&0x5a7c)>>(prev&7);
 	prev=r;
