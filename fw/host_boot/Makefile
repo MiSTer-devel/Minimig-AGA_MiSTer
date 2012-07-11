@@ -12,7 +12,7 @@ HEX2MEM = ../../sw/hex2mem/hex2mem.py
 ### flags ###
 ASMFLAGS=-m68000 -showopt -Fbin
 XXDFLAGS=-ps -c 2
-HEXFLAGS=
+HEXFLAGS=-a 10 -s 1024 -w 4
 
 
 ### variables ###
@@ -56,7 +56,7 @@ bin/hostboot.hex : Makefile bin bin/hostboot.bin
 
 bin/hostboot.v : Makefile bin bin/hostboot.hex
 	@echo $@
-#	@$(HEX2MEM) $(HEXFLAGS) $(@:.v=.hex) $@
+	@$(HEX2MEM) $(HEXFLAGS) $(@:.v=.hex) $@
 
 # clean
 clean:
