@@ -80,7 +80,7 @@ def main():
 
   # write Verilog memory file
   # the Verilog code follows Altera guidelines for inferring ROM functions from HDL code (Altera Recommended HDL Coding Styles)
-  fmt = "    %d'h%%0%dx : dat = %d'h%%0%dx;\n" % (aw, int(math.ceil((aw+3)/4)), (mw*4), mw)
+  fmt = "    %d'h%%0%dx : dat <= #1 %d'h%%0%dx;\n" % (aw, int(math.ceil((aw+3)/4)), (mw*4), mw)
 
   with open(fon, 'w') as fo:
     # header
