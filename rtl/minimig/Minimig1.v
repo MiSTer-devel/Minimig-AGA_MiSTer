@@ -903,11 +903,17 @@ gayle GAYLE1
 //	.data_out(boot_data_out)
 //);
 
-JBboot BOOTROM1 
-( 
-  .clock(clk),
-  .address(cpu_address[10:1]),
-  .q(boot_data)
+//JBboot BOOTROM1 
+//( 
+//  .clock(clk),
+//  .address(cpu_address[10:1]),
+//  .q(boot_data)
+//);
+
+hostboot BOOTROM1 (
+  .clk    (clk),
+  .adr    (cpu_address[10:1]),
+  .dat    (boot_data)
 );
 
 assign boot_data_out[15:0] = (sel_boot) ? boot_data[15:0] : 16'h0000;
