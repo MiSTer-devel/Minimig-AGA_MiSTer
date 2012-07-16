@@ -160,7 +160,7 @@ begin
 
   tst_adr1 <= hostAddr(2 downto 1)&zcache_addr(2 downto 1);
 	
-	process (sysclk, zmAddr, hostAddr, zcache_addr, zcache, zequal, zvalid, hostRDd) 
+	process (sysclk, zmAddr, hostAddr, zcache_addr, zcache, zequal, zvalid, hostRDd, hostStated, tst_adr1) 
 	begin
 		if zmAddr(23 downto 3)=zcache_addr(23 downto 3) THEN
 			zequal <='1';
@@ -275,7 +275,7 @@ begin
 
   tst_adr2 <= cpuAddr(2 downto 1)&ccache_addr(2 downto 1);
 	
-	process (sysclk, cpuAddr, ccache_addr, ccache, cequal, cvalid, cpuRDd) 
+	process (sysclk, cpuAddr, ccache_addr, ccache, cequal, cvalid, cpuRDd, cpuStated, tst_adr2) 
 	begin
 		if cpuAddr(24 downto 3)=ccache_addr(24 downto 3) THEN
 			cequal <='1';
@@ -401,7 +401,7 @@ begin
 -------------------------------------------------------------------------
 	reset_out <= init_done;
 
-	process (sysclk, reset, sdwrite, datain) begin
+	process (sysclk, reset, sdwrite, datain, datawr) begin
 		IF sdwrite='1' THEN
 			sdata <= datawr;
 		ELSE
