@@ -10,6 +10,7 @@ module audio_top (
   input  wire           rst_n,
   // config
   input  wire           mix,
+  output wire [  7-1:0] volume,
   input  wire           volup,
   input  wire           voldown,
   // audio shifter
@@ -52,6 +53,7 @@ audio_shifter audio_shifter (
 
 // I2C audio config
 I2C_AV_Config audio_config (
+  .volume       (volume),
   // config
   .volup        (volup            ),
   .voldown      (voldown          ),

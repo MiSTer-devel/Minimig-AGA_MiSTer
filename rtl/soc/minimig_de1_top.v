@@ -355,11 +355,12 @@ amigaclk amigaclk (
 );
 `endif
 
-
+wire [7-1:0] volume;
 //// indicators ////
 indicators indicators(
   .clk          (clk_7            ),
   .rst          (~pll_locked      ),
+  .volume       (volume           ),
   .track        (track            ),
   .f_wr         (floppy_fwr       ),
   .f_rd         (floppy_frd       ),
@@ -533,8 +534,9 @@ audio_top audio_top (
   .rst_n        (reset_out        ),
   // config
   .mix          (sw_5             ),
-  .volup        (key_1            ),
-  .voldown      (key_0            ),
+  .volume       (volume           ),
+  .volup        (key_3            ),
+  .voldown      (key_2            ),
   // audio shifter
   .rdata        (rdata            ),
   .ldata        (ldata            ),

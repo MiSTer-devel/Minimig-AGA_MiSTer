@@ -11,6 +11,7 @@
 //agreement for further details.
 
 module I2C_AV_Config (  //Host Side
+    volume, // temp!
     volup,
     voldown,
     iCLK,
@@ -21,6 +22,7 @@ module I2C_AV_Config (  //Host Side
   );
 
 // config
+output [7-1:0] volume;
 input volup;
 input voldown;
 //  Host Side
