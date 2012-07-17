@@ -21,7 +21,6 @@ all:
 	@make map
 	@make fit
 	@make asm
-	@make cpy
 
 map:
 	@echo Running mapper ...
