@@ -50,7 +50,7 @@ sseg_decode #(
 sseg_decode #(
   .REG  (1),
   .INV  (1)
-) sseg_HEX3 (
+) sseg_HEX2 (
   .clk  (clk),
   .rst  (rst),
   .num  (volume[3:0]),
