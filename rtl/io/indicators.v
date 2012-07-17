@@ -63,7 +63,7 @@ sseg_decode #(
 ) sseg_HEX3 (
   .clk  (clk),
   .rst  (rst),
-  .num  ({1'b0, volume[6:4]),
+  .num  ({1'b0, volume[6:4]}),
   .sseg (hex_3)
 );
 
