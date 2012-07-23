@@ -76,8 +76,8 @@ Address space is minimally decoded - that means that the all slaves are seen ali
 Don't write to undefined addresses, or bad things could happen!
 
 REGISTERS
-system reset       = 0x800000
-minimig reset      = 0x800004
+reset control      = 0x800000 (bit 0 = ctrl reset, bit1 = minimig reset)
+ctrl cfg & status  = 0x800004 (bits [3:0] = cfg input, bits [18:15] = status output)
 UART TxD           = 0x800008
 timer              = 0x80000c
 SPI clock divider  = 0x800010
@@ -105,10 +105,12 @@ module ctrl_top (
   output wire           rst_minimig,
   // config
   input  wire           boot_sel,
+  input  wire [  4-1:0] ctrl_cfg,
   // status
   output wire           rom_status,
   output wire           ram_status,
   output wire           reg_status,
+  output wire [  4-1:0] ctrl_status,
   // SRAM interface
   output wire [ 18-1:0] sram_adr,
   output wire           sram_ce_n,
@@ -444,6 +446,8 @@ ctrl_regs #(
   // registers
   .sys_rst    (rst_reg    ),
   .minimig_rst(rst_minimig),
+  .ctrl_cfg   (ctrl_cfg   ),
+  .ctrl_status (ctrl_status),
   .uart_txd   (uart_txd   ),
   .spi_cs_n   (spi_cs_n   ),
   .spi_clk    (spi_clk    ),

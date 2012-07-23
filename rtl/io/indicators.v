@@ -12,6 +12,7 @@ module indicators (
   input wire            h_wr,   // harddisk fifo write
   input wire            h_rd,   // harddisk fifo read
   input wire  [  3-1:0] status, // control block slave status
+  input wire  [  4-1:0] ctrl_status,
   // outputs
   output wire [  7-1:0] hex_0,  // seven segment display 0
   output wire [  7-1:0] hex_1,  // seven segment display 1
@@ -93,8 +94,16 @@ assign r1_out = |r1;
 assign g0_out = |g0;
 assign g1_out = |g1;
 
-assign led_g = {        6'b000000, g1_out, g0_out};
-assign led_r = {status, 5'b00000,  r1_out, r0_out};
+reg  [  4-1:0] ctrl_leds;
+always @ (posedge clk, posedge rst) begin
+  if (rst)
+    ctrl_leds <= #1 4'b0;
+  else
+    ctrl_leds <= #1 ctrl_status;
+end
+
+assign led_g = {ctrl_leds, 2'b00,    g1_out, g0_out};
+assign led_r = {status,    5'b00000, r1_out, r0_out};
 
 
 endmodule

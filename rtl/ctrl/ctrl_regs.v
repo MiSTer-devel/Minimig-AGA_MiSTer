@@ -27,6 +27,8 @@ module ctrl_regs #(
   // registers
   output reg            sys_rst,
   output reg            minimig_rst,
+  input  wire [  4-1:0] ctrl_cfg,
+  output reg  [  4-1:0] ctrl_status, 
   output wire           uart_txd,
   output reg  [  4-1:0] spi_cs_n,
   output wire           spi_clk,
@@ -41,9 +43,9 @@ module ctrl_regs #(
 ////////////////////////////////////////
 
 // system reset       = 0x800000
-localparam REG_SYS_RST    = 3'h0;
-// minimig reset      = 0x800004
-localparam REG_MIN_RST    = 3'h1;
+localparam REG_RST        = 3'h0;
+// ctrl cfg & leds    = 0x800004
+localparam REG_CTRL       = 3'h1;
 // UART TxD           = 0x800008
 localparam REG_UART_TX    = 3'h2;
 // timer              = 0x80000c
@@ -91,25 +93,35 @@ end
 ////////////////////////////////////////
 
 reg              sys_rst_en;
-reg              minimig_rst_en;
 
 // set initial system reset state
 initial sys_rst = 0;
+initial minimig_rst = 0;
 
 // system reset
 always @ (posedge clk, posedge rst) begin
-  if (rst)
-    sys_rst <= #1 1'b0;
-  else if (sys_rst_en)
-    sys_rst <= #1 dat_w[0];
+  if (rst) begin
+    sys_rst     <= #1 1'b0;
+    minimig_rst <= #1 1'b0;
+  end else if (sys_rst_en) begin
+    sys_rst     <= #1 dat_w[0];
+    minimig_rst <= #1 dat_w[1];
+  end
 end
 
-// minimig reset
+
+
+////////////////////////////////////////
+// CTRL config & status               //
+////////////////////////////////////////
+
+reg              ctrl_en;
+
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    minimig_rst <= #1 1'b0;
-  else if (minimig_rst_en)
-    minimig_rst <= #1 dat_w[0];
+    ctrl_status <= #1 4'b0;
+  else if (ctrl_en)
+    ctrl_status <= #1 dat_w[18:15];
 end
 
 
@@ -318,7 +330,7 @@ end
 always @ (*) begin
   if (cs && we) begin
       sys_rst_en      = 1'b0;
-      minimig_rst_en  = 1'b0;
+      ctrl_en         = 1'b0;
       tx_en           = 1'b0;
       timer_en        = 1'b0;
       spi_div_en      = 1'b0;
@@ -326,8 +338,8 @@ always @ (*) begin
       spi_dat_en      = 1'b0;
       spi_block_en    = 1'b0;
     case(adr[5:2])
-      REG_SYS_RST   : sys_rst_en      = 1'b1;
-      REG_MIN_RST   : minimig_rst_en  = 1'b1;
+      REG_RST       : sys_rst_en      = 1'b1;
+      REG_CTRL      : ctrl_en         = 1'b1;
       REG_UART_TX   : tx_en           = 1'b1;
       REG_TIMER     : timer_en        = 1'b1;
       REG_SPI_DIV   : spi_div_en      = 1'b1;
@@ -336,7 +348,7 @@ always @ (*) begin
       REG_SPI_BLOCK : spi_block_en    = 1'b1;
       default : begin
         sys_rst_en      = 1'b0;
-        minimig_rst_en  = 1'b0;
+        ctrl_en         = 1'b0;
         tx_en           = 1'b0;
         timer_en        = 1'b0;
         spi_div_en      = 1'b0;
@@ -347,7 +359,7 @@ always @ (*) begin
     endcase
   end else begin
     sys_rst_en      = 1'b0;
-    minimig_rst_en  = 1'b0;
+    ctrl_en         = 1'b0;
     tx_en           = 1'b0;
     timer_en        = 1'b0;
     spi_div_en      = 1'b0;
@@ -365,6 +377,7 @@ end
 
 always @ (*) begin
   case(adr_r[4:2])
+    REG_CTRL      : dat_r = {28'h0000000, ctrl_cfg};
     REG_TIMER     : dat_r = {16'h0000, timer}; 
     REG_SPI_DAT   : dat_r = {24'h000000, spi_dat_r};
     default       : dat_r = 32'hxxxxxxxx;
