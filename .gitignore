@@ -7,3 +7,6 @@
 # ignore compiled python
 *pyc
 
+# ignore some backup files
+*bak
+
