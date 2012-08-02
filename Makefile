@@ -14,7 +14,7 @@ FPGA_DIR=fpga/altera
 ### files ###
 CTRL_FW=$(CTRL_FW_DIR)/bin/something1.boot
 CTRL_BOOT=$(CTRL_BOOT_DIR)/bin/something2.boot
-HOST_BOOT=$(HOST_BOOT_DIR)/bin/something.boot
+HOST_BOOT=$(HOST_BOOT_DIR)/bin/hostboot.v
 FPGA=$(FPGA_DIR)/out/minimig_de1.sof $(FPGA_DIR)/out/minimig_de1.pof
 
 
@@ -25,8 +25,8 @@ BUILD_OPT=clean all
 all:
 	@echo Building all ...
 	@mkdir -p $(REL_DIR)
-	@make ctrl_fw
-	@make ctrl_boot
+#	@make ctrl_fw
+#	@make ctrl_boot
 	@make host_boot
 	@make fpga
 
