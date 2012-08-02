@@ -5,5 +5,5 @@
 
 extern unsigned char Error;
 
+void ErrorMessage(const char *message, unsigned char code);
 void FatalError(unsigned long error);
-void ErrorMessage(char *message, unsigned char code);

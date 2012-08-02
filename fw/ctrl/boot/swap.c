@@ -1,7 +1,3 @@
-/* swap.c */
-/* 2012, rok.krajnc@gmail.com */
-
-
 unsigned long SwapBBBB(unsigned long i)
 {
   return ((i&0x00ff0000)>>8) | ((i&0xff000000)>>24) | ((i&0x000000ff)<<24) | ((i&0x0000ff00)<<8);

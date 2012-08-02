@@ -1,8 +1,6 @@
 #ifndef MMC_H
 #define MMC_H
 
-#define MMC_DEBUG
-
 #define CARDTYPE_NONE 0
 #define CARDTYPE_MMC  1
 #define CARDTYPE_SD   2

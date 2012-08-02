@@ -29,13 +29,14 @@ RANLIB  = $(CROSS_COMPILE)ranlib
 
 
 # flags
-CFLAGS +=   -W -Wall -std=gnu99 -g \
+CFLAGS +=   -W -Wall -Wpacked -Wpadded -Winline -std=gnu99 -g \
             -Os \
             -fomit-frame-pointer -ffreestanding -static -combine -fwhole-program \
             -fno-strict-aliasing \
             -fno-builtin -nostdlib \
             -Wl,--relax \
             -msoft-mul -msoft-div
+# -fpack_struct
 
 LDFLAGS +=
 
@@ -55,24 +56,29 @@ OBJDIR=obj
 
 ### fw specific ###
 
+
+
 # include dirs
-CINCLUDES +=
+CINCLUDES += -I. -Ilib/ -I../or32/
 
 # headers
-HEADERS=spr_defs.h or32_defs.h system.h hardware.h string.h fw_stdio.h swap.h errors.h mmc.h fat.h
+#CHEADERS=lib/string.h lib/stdio.h hardware.h or32_defs.h spr_defs.h firmware.h config.h errors.h charrom.h fat.h fdd.h fpga.h hdd.h hdd_internal.h logo.h menu.h mmc.h osd.h rafile.h swap.h
 
 # asm sources
-ASM_SOURCES=start.S
+ASM_SOURCES=../or32/start.S
+
+# KLIBC sources
+KLIBC_SOURCES=klibc/memcmp.c klibc/memcpy.c klibc/memset.c klibc/printf.c klibc/sprintf.c klibc/strcat.c klibc/strchr.c klibc/strcpy.c klibc/strlen.c klibc/strncat.c klibc/strncmp.c klibc/strncpy.c klibc/vsnprintf.c
 
 # common sources
-COMMON_SOURCES=main.c system.c hardware.c string.c swap.c mmc.c fat.c
- 
+COMMON_SOURCES=hardware.c config.c fat.c fdd.c fpga.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c
+
 # all sources
-ALL_SOURCES = $(ASM_SOURCES) $(COMMON_SOURCES)
+ALL_SOURCES = $(ASM_SOURCES) $(KLIBC_SOURCES) $(COMMON_SOURCES)
 
 # linker script
-ROM_LD=rom.ld
-RAM_LD=ram.ld
+ROM_LD=../rom.ld
+RAM_LD=../ram.ld
 
 # get target from commandline
 ifeq ($(target),ROM)
@@ -85,14 +91,20 @@ else
 endif
 
 
+### build specific ###
+
+# default fw source
+FW_SOURCES=
+
+
 ### build rules ###
 
 # all
 all:
 	@mkdir -p bin
-	@make bin/ctrl_boot.bin
+	@make bin/de1_boot.bin
 
-bin/ctrl_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
+bin/de1_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
 	@echo $(MSG)
 	@echo $@
 	@$(CC) -Wl,-Map,$(@:.or32=.map) -D__BUILD_USER=$(BUILD_USER) -D__BUILD_TIME=$(BUILD_TIME) -D__BUILD_NUM=$(BUILD_NUM) -D__BUILD_REV=$(BUILD_REV) $(CFLAGS) $(CINCLUDES) $(ALL_SOURCES) -T$(LD_SCRIPT) -o $@
@@ -100,12 +112,12 @@ bin/ctrl_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
 	@$(OBJDUMP) -DSx $@ > $(@:.or32=.dis.S)
 
 # bin file
-bin/ctrl_boot.bin: bin/ctrl_boot.or32
+bin/de1_boot.bin: bin/de1_boot.or32
 	@echo $@
 	@$(OBJCOPY) -O binary $< $@
 
 # clean
 clean:
 	@echo clean
-	@rm -rf ./bin/*
+	@rm -rf ./bin
 
