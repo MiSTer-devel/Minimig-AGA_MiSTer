@@ -72,7 +72,7 @@ const char *config_filter_msg[] =  {"none", "HORIZONTAL", "VERTICAL", "H+V"};
 const char *config_memory_chip_msg[] = {"0.5 MB", "1.0 MB", "1.5 MB", "2.0 MB"};
 const char *config_memory_slow_msg[] = {"none  ", "0.5 MB", "1.0 MB", "1.5 MB"};
 const char *config_scanlines_msg[] = {"off", "dim", "black"};
-const char *config_memory_fast_msg[] = {"none  ", "2.0 MB", "4.0 MB", "8.0 MB"};
+const char *config_memory_fast_msg[] = {"none  ", "2.0 MB", "4.0 MB"};
 const char *config_cpu_msg[] = {"68000 ", "68010", "-----","020 alpha"};
 const char *config_hdf_msg[] = {"Disabled", "Hardfile (disk img)", "MMC/SD card", "MMC/SD partition 1", "MMC/SD partition 2", "MMC/SD partition 3", "MMC/SD partition 4"};
 
@@ -95,7 +95,7 @@ const char *helptexts[]={
 	0
 };
 
-extern unsigned char DEBUG;
+//extern unsigned char DEBUG;
 
 unsigned char config_autofire = 0;
 
@@ -1226,8 +1226,8 @@ void HandleUI(void)
             else if (menusub == 2)
             {
                 config.memory = ((config.memory + 0x10) & 0x30) | (config.memory & ~0x30);
-//                if ((config.memory & 0x30) == 0x30)
-//					config.memory -= 0x30;
+                if ((config.memory & 0x30) == 0x30)
+					config.memory -= 0x30;
 //				if (!(config.disable_ar3 & 0x01)&&(config.memory & 0x20))
 //                    config.memory &= ~0x30;
                 menustate = MENU_SETTINGS_MEMORY1;
