@@ -168,9 +168,11 @@ BEGIN
 	cpustate <= clkena&slower(1 downto 0)&ramcs&state;
 	ramlds <= lds_in;
 	ramuds <= uds_in;
-	ramaddr(23 downto 0) <= cpuaddr(23 downto 0);
-	ramaddr(24) <= sel_fast;
-	ramaddr(31 downto 25) <= cpuaddr(31 downto 25);
+--	ramaddr(23 downto 0) <= cpuaddr(23 downto 0);
+--	ramaddr(24) <= sel_fast;
+--	ramaddr(31 downto 25) <= cpuaddr(31 downto 25);
+  ramaddr(23 downto 0) <= cpuaddr(23) & sel_fast & cpuaddr(21 downto 0);
+  ramaddr(31 downto 24) <= cpuaddr(31 downto 24);
 
 
 pf68K_Kernel_inst: TG68KdotC_Kernel 
