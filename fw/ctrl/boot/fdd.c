@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 
-unsigned char DEBUG = 0;
+unsigned char vDEBUG = 0;
 
 unsigned char drives = 0; // number of active drives reported by FPGA (may change only during reset)
 adfTYPE *pdfx;            // drive select pointer
@@ -181,7 +181,7 @@ void ReadTrack(adfTYPE *drive)
     }
 
     // display track number: cylinder & head
-    if (DEBUG)
+    if (vDEBUG)
         printf("*%u:", drive->track);
 
     if (drive->track != drive->track_prev)
@@ -212,7 +212,7 @@ void ReadTrack(adfTYPE *drive)
     if (track >= drive->tracks)
         track = drive->tracks - 1;
 
-    if (DEBUG)
+    if (vDEBUG)
         printf("(%u)[%04X]:", status >> 6, dsksync);
 
     while (1)
@@ -241,7 +241,7 @@ void ReadTrack(adfTYPE *drive)
         // Prince of Persia: $4891
         // Commando: $A245
 
-        if (DEBUG)
+        if (vDEBUG)
             printf("%X:%04X", sector, dsklen);
 
         // some loaders stop dma if sector header isn't what they expect
@@ -289,10 +289,10 @@ void ReadTrack(adfTYPE *drive)
         drive->sector_offset = sector;
         drive->cluster_offset = file.cluster;
 
-        if (DEBUG)
+        if (vDEBUG)
             printf("->");
     }
-    if (DEBUG)
+    if (vDEBUG)
         printf(":OK\r");
 }
 
@@ -328,7 +328,7 @@ unsigned char FindSync(adfTYPE *drive)
             if (c3 == 0x44 && c4 == 0x89)
             {
                 DisableFpga();
-                if (DEBUG)
+                if (vDEBUG)
                     printf("#SYNC:");
 
                 return 1;
@@ -426,7 +426,7 @@ unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
                 break;
             }
 
-            if (DEBUG)
+            if (vDEBUG)
                 printf("T%uS%u\r", c2, c3);
 
             *pTrack = c2;
@@ -614,7 +614,7 @@ void WriteTrack(adfTYPE *drive)
 
     drive->track_prev = drive->track + 1; // just to force next read from the start of current track
 
-    if (DEBUG)
+    if (vDEBUG)
         printf("*%u:\r", drive->track);
 
     while (FindSync(drive))
