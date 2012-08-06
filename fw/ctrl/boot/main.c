@@ -88,7 +88,7 @@ void FatalError(unsigned long error)
 
 void HandleFpga(void)
 {
-  DEBUG_FUNC_IN();
+//  DEBUG_FUNC_IN();
 
   unsigned char  c1, c2;
 
@@ -106,7 +106,7 @@ void HandleFpga(void)
 
   UpdateDriveStatus();
 
-  DEBUG_FUNC_OUT();
+//  DEBUG_FUNC_OUT();
 }
 
 
