@@ -161,7 +161,7 @@ always@(posedge mI2C_CTRL_CLK or negedge iRST_N) begin
     end else if(vol_event_d) begin
       case(mSetup_ST)
         0:  begin      //ADR?   REG   RHLBOTH RZCEN VOLUME (1111111 = +6dB, 0110000 = -73dB, 0000000 - 0101111 = MUTE)
-          mI2C_DATA  <= {8'h34, 7'h6, 1'b1, 1'b1, volume};
+          mI2C_DATA  <= {8'h34, 7'h6, 1'b1, 1'b0, volume};
           mI2C_GO    <= 1'd1;
           mSetup_ST  <= 2'd1;
         end
@@ -190,11 +190,11 @@ begin
   case(LUT_INDEX)
   //  Audio Config Data
   Dummy_DATA  :  LUT_DATA <= 16'h0000;
-  SET_LIN_L   :  LUT_DATA <= 16'h001A;  //R0 LINVOL = 1Ah (+4.5bB)
-  SET_LIN_R   :  LUT_DATA <= 16'h021A;  //R1 RINVOL = 1Ah (+4.5bB)
+  SET_LIN_L   :  LUT_DATA <= 16'h009A;//16'h001A;  //R0 LINVOL = 1Ah (+4.5bB)
+  SET_LIN_R   :  LUT_DATA <= 16'h029A;//16'h021A;  //R1 RINVOL = 1Ah (+4.5bB)
   SET_HEAD_L  :  LUT_DATA <= 16'h0479;  //R2 LHPVOL = 7Bh (+2dB)
   SET_HEAD_R  :  LUT_DATA <= 16'h0679;  //R3 RHPVOL = 7Bh (+2dB)
-  A_PATH_CTRL :  LUT_DATA <= 16'h08F8;  //R4 DACSEL = 1
+  A_PATH_CTRL :  LUT_DATA <= 16'h08D2;//16'h08F8;  //R4 DACSEL = 1
   D_PATH_CTRL :  LUT_DATA <= 16'h0A06;  //R5 DEEMP = 11 (48 KHz)
   POWER_ON    :  LUT_DATA <= 16'h0C00;  //R6
   SET_FORMAT  :  LUT_DATA <= 16'h0E01;  //R7 FORMAT=01,16 bit
