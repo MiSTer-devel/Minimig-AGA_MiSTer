@@ -214,7 +214,8 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 					CASE memcfg(5 downto 4) IS 
 						WHEN "01" => autoconfig_data <= "0110";		--2MB
 						WHEN "10" => autoconfig_data <= "0111";		--4MB
-						WHEN OTHERS => autoconfig_data <= "0000";	--8MB
+--						WHEN OTHERS => autoconfig_data <= "0000";	--8MB
+						WHEN OTHERS => autoconfig_data <= "0111";	--4MB
 					END CASE;	
 				WHEN "001000" => autoconfig_data <= "1110";		--4626=icomp
 				WHEN "001001" => autoconfig_data <= "1101";		
