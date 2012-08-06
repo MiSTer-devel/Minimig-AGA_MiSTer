@@ -2,7 +2,7 @@
 // swap.h                                                                     //
 // Endianness swap functions                                                  //
 //                                                                            //
-// Copyright 2005-2012                                                        //
+// Copyright 2012-     Christian Vogelgsang, A.M. Robinson, Rok Krajnc        //
 //                                                                            //
 // This file is part of Minimig                                               //
 //                                                                            //
