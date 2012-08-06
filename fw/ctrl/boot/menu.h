@@ -74,6 +74,7 @@ enum MENU
 extern const char *config_filter_msg[];
 extern const char *config_memory_chip_msg[];
 extern const char *config_memory_slow_msg[];
+extern const char *config_memory_fast_msg[];
 extern const char *config_scanline_msg[];
 
 
