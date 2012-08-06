@@ -319,6 +319,9 @@ void ApplyConfiguration(char reloadkickstart)
     BootPrint(s);
     sprintf(s, "Slow RAM size : %s", config_memory_slow_msg[config.memory >> 2 & 0x03]);
     BootPrint(s);
+    sprintf(s, "Fast RAM size : %s", config_memory_fast_msg[config.memory >> 4 & 0x03]);
+    BootPrint(s);
+
 
     sprintf(s, "Floppy drives : %u", config.floppy.drives + 1);
     BootPrint(s);
