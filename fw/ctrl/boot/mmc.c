@@ -53,30 +53,22 @@ unsigned char MMC_Init(void)
     unsigned char n;
     unsigned char ocr[4];
 
-#ifdef ARM_FW
-    AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (120 << 8) | (2 << 24); // init clock 100-400 kHz
-    *AT91C_PIOA_SODR = MMC_SEL;  // set output (MMC chip select disabled)
-#endif
-
-    SPI_slow();
+    SPI_slow();     // set slow clock
+    DisableCard();  // CS = 1
+    SPI(0xff);      // DI = 1
+    WaitTimer(20);  // 20ms delay
+    for (n=0; n<8; n++) SPI(0xff); // 80 dummy clocks, DI = 1
     EnableCard();
-
-    for (n = 10; n > 0; n--)
-        SPI(0xFF); // 80 dummy clocks
-
     WaitTimer(20); // 20ms delay
-
-#ifdef ARM_FW
-    *AT91C_PIOA_CODR = MMC_SEL; // clear output (MMC chip select enabled)
-#endif
 
     CardType = CARDTYPE_NONE;
 
-    if (MMC_Command(CMD0, 0) == 0x01)
+    for(n=0; n<16; n++) if (MMC_Command(CMD0, 0) == 0x01) break; // try to send CMD0 multiple times
+    if (n<16) // got CMD0 IDLE response
     { // idle state
-        timeout = GetTimer(1000); // initialization timeout 1000 ms
+        timeout = GetTimer(2000); // initialization timeout 1000 ms
         printf("timeout:%08X\r",timeout);
-        timeout = GetTimer(1000); // initialization timeout 1000 ms
+        timeout = GetTimer(2000); // initialization timeout 1000 ms
         printf("timeout:%08X\r",timeout);
         if (MMC_Command(CMD8, 0x1AA) == 0x01) // check if the card can operate with 2.7-3.6V power
         {   // SDHC card
