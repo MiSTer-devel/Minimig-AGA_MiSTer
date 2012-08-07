@@ -36,9 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 2010-08-15   - support for joystick emulation
 // 2010-08-18   - clean-up
 
-// FIXME - detect number of partitions on the SD card, and allow that many to be selected as hard files.
 
-
+//// includes ////
 //#include "AT91SAM7S256.h"
 #include "errors.h"
 #include "hardware.h"
@@ -54,14 +53,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 
+//// global variables ////
 const char version[] = {"$VER:AYQ100818_RB2"};
 extern adfTYPE df[4];
 unsigned char Error;
 char s[40];
 
 
+//// FatalError() ////
 void FatalError(unsigned long error)
 {
   DEBUG_FUNC_IN();
@@ -86,6 +88,7 @@ void FatalError(unsigned long error)
 }
 
 
+//// HandleFpga() ////
 void HandleFpga(void)
 {
 //  DEBUG_FUNC_IN();
@@ -110,6 +113,7 @@ void HandleFpga(void)
 }
 
 
+//// main() ////
 #ifdef __GNUC__
 void main(void)
 #else
@@ -118,10 +122,7 @@ __geta4 void main(void)
 {
   DEBUG_FUNC_IN();
 
-  debugmsg[0]=0;
-  debugmsg2[0]=0;
-//    unsigned long time;
-//    unsigned short spiclk;
+  uint32_t spiclk;
 
   // boot message
   printf("\r**** MINIMIG-DE1 ****\r\r");
@@ -135,64 +136,34 @@ __geta4 void main(void)
   printf("For updates, see https://github.com/rkrajnc/minimig-de1\r");
   printf("For support, see http://www.minimig.net/\r\r");
   printf("Minimig by Dennis van Weeren\r");
-  printf("Updates by Jakub Bednarski, Sascha Boing, Tobias Gubener, \r");
-  printf("DE1 port by Rok Krajnc\r\r");
+  printf("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others\r");
+  printf("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)\r\r");
   printf("Version %s\r\r", version+5);
 
 
   //ShowSplash();
 
-    BootPrint("OSD_CA01.SYS is here...\n");
+  BootPrint("OSD_CA01.SYS is here...\n");
 
-    DISKLED_ON;
-
-//    Timer_Init();
-//
-//    USART_Init(115200);
-
-    printf("\rMinimig by Dennis van Weeren");
-    printf("\rARM Controller by Jakub Bednarski\r\r");
-    printf("Version %s\r\r", version+5);
-
-    sprintf(s, "** ARM firmware %s **\n", version + 5);
-    BootPrint(s);
+  sprintf(s, "** ARM firmware %s **\n", version + 5);
+  BootPrint(s);
 
 //  OsdDisable();
 
-//    SPI_Init();
+  if (!MMC_Init()) FatalError(1);
 
-//    if (CheckButton()) // if menu button pressed fall back to slow SPI mode
-//       SetSPIMode(SPIMODE_NORMAL);
+  BootPrint("Init done again - hunting for drive...\n");
 
-    if (!MMC_Init())
-        FatalError(1);
+  spiclk = 100000 / (read32(REG_SPI_DIV_ADR) + 2);
+  printf ("SPI clock: %u.%uMHz\r", spiclk/100, spiclk%100);
 
-    BootPrint("Init done again - hunting for drive...\n");
-
-//    spiclk = 7;//MCLK / ((AT91C_SPI_CSR[0] & AT91C_SPI_SCBR) >> 8) / 1000000;
-//    printf("spiclk: %u MHz\r", spiclk);
-
-    if (!FindDrive())
-        FatalError(2);
+  if (!FindDrive()) FatalError(2);
         
-    BootPrint("found DRIVE...\n");
+  BootPrint("found DRIVE...\n");
 
-    ChangeDirectory(DIRECTORY_ROOT);
+  ChangeDirectory(DIRECTORY_ROOT);
 
-//    time = GetTimer(0);
-//    if (ConfigureFpga())
-//    {
-//        time = GetTimer(0) - time;
-//        printf("FPGA configured in %lu ms\r", time >> 20);
-//    }
-//    else
-//    {
-//        printf("FPGA configuration failed\r");
-//        FatalError(3);
-//    }
-
-//    WaitTimer(100); // let's wait some time till reset is inactive so we can get a valid keycode
-//eject all disk
+  //eject all disk
   df[0].status = 0;
   df[1].status = 0;
   df[2].status = 0;
@@ -200,17 +171,16 @@ __geta4 void main(void)
 
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
-    LoadConfiguration(0);  // Use slot-based config filename
+  LoadConfiguration(0);  // Use slot-based config filename
 
-//    sprintf(s, "SPI clock: %u MHz\n", spiclk);
-//    BootPrint(s);
-   HideSplash();
+  sprintf(s, "SPI clock: %u.%uMHz\n", spiclk/100, spiclk%100);
+  BootPrint(s);
+  HideSplash();
 
-    while (1)
-    {
-        HandleFpga();
-        HandleUI();
-    }
+  while (1) {
+    HandleFpga();
+    HandleUI();
+  }
 
   DEBUG_FUNC_OUT();
 }

@@ -38,8 +38,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // hardfile structure
 hdfTYPE hdf[2];
 
-char debugmsg[40];
-char debugmsg2[40];
+char debugmsg[40]  = { 0 };
+char debugmsg2[40] = { 0 };
 
 #define DEBUG2(x,y) {if(DebugMode) { sprintf(debugmsg2,x,y); DebugMessage(debugmsg2); }}
 
