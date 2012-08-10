@@ -73,6 +73,9 @@
 //// system ////
 #define SYS_CLOCK           50000000  // system clock in Hz
 #define SYS_PERIOD_NS       20        // system period in ns
+#define ROM_START           0x000000
+#define RAM_START           0x400000
+#define REG_START           0x800000
 #define REG_RST_ADR         0x800000  // reset reg  (bit 0 = ctrl reset, bit 1 = minimig reset)
 #define REG_SYS_ADR         0x800004  // system reg (bits [3:0] = cfg input, bits [18:15] = status output)
 #define REG_UART_ADR        0x800008  // uart transmit reg ([7:0] - transmit byte)
@@ -108,7 +111,7 @@
 
 #define TIMER_get()         (read32(REG_TIMER_ADR))
 #define TIMER_set(x)        write32(REG_TIMER_ADR, (x))
-#define TIMER_wait(x)       (TIMER_set(0), while (TIMER_get()<(x)))
+#define TIMER_wait(x)       {TIMER_set(0); while (TIMER_get()<(x));}
 
 //#define SPIN                (SPI_read()) // Waste a few cycles to let the FPGA catch up
 #define SPIN
@@ -144,6 +147,9 @@
                             asm("l.nop\t2"); }
 
 
+//// global variables ////
+extern uint32_t fw_copy_routine[];
+
 //// function declarations ////
 unsigned long CheckButton(void);
 void Timer_Init(void);
@@ -153,6 +159,7 @@ void WaitTimer(unsigned long time);
 
 void *hmalloc(int size);
 void sys_jump(unsigned long addr);
+void sys_load(uint32_t * origin, uint32_t * dest, uint32_t size, uint32_t * routine);
 
 
 #endif // __HARDWARE_H__
