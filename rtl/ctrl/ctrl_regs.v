@@ -379,6 +379,7 @@ always @ (*) begin
   case(adr_r[4:2])
     REG_CTRL      : dat_r = {28'h0000000, ctrl_cfg};
     REG_TIMER     : dat_r = {16'h0000, timer}; 
+    REG_SPI_DIV   : dat_r = {26'h0000000, spi_div_r};
     REG_SPI_DAT   : dat_r = {24'h000000, spi_dat_r};
     default       : dat_r = 32'hxxxxxxxx;
   endcase
