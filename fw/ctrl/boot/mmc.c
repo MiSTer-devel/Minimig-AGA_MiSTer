@@ -56,19 +56,22 @@ unsigned char MMC_Init(void)
     SPI_slow();     // set slow clock
     DisableCard();  // CS = 1
     SPI(0xff);      // DI = 1
-    WaitTimer(20);  // 20ms delay
-    for (n=0; n<8; n++) SPI(0xff); // 80 dummy clocks, DI = 1
+    TIMER_wait(20);  // 20ms delay
+    for (n=0; n<10; n++) SPI(0xff); // 80 dummy clocks, DI = 1
+    TIMER_wait(20);  // 20ms delay
     EnableCard();
-    WaitTimer(20); // 20ms delay
 
     CardType = CARDTYPE_NONE;
 
-    for(n=0; n<16; n++) if (MMC_Command(CMD0, 0) == 0x01) break; // try to send CMD0 multiple times
+    for(n=0; n<16; n++) {
+      TIMER_wait(1);
+      if (MMC_Command(CMD0, 0) == 0x01) break; // try to send CMD0 multiple times
+    }
     if (n<16) // got CMD0 IDLE response
     { // idle state
-        timeout = GetTimer(2000); // initialization timeout 1000 ms
+        timeout = GetTimer(4000); // initialization timeout 4s
         printf("timeout:%08X\r",timeout);
-        timeout = GetTimer(2000); // initialization timeout 1000 ms
+        timeout = GetTimer(4000); // initialization timeout 4s
         printf("timeout:%08X\r",timeout);
         if (MMC_Command(CMD8, 0x1AA) == 0x01) // check if the card can operate with 2.7-3.6V power
         {   // SDHC card
