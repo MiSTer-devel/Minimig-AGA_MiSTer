@@ -59,7 +59,7 @@ rom_copy_start:
   l.addi	r2,r2,4
   l.addi  r4,r4,4
   l.bnf	  rom_copy_start
-   l.nop
+  l.nop
 rom_copy_end:
 
   /* continue executing from RAM - next instruction is now in RAM */
