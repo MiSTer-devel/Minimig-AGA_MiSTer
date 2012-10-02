@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Sun Jan 22 21:19:05 2012
+Quartus II 32-bit Version : 11.1 Build 216 11/23/2011 SP 1 SJ Web Edition
+Revision Name : fampiga_top
+Top-level Entity Name : fampiga_top
+Family : Cyclone III
+Total logic elements : 20,379
+    Total combinational functions : 17,218
+    Dedicated logic registers : 7,684
+Total registers : 7684
+Total pins : 82
+Total virtual pins : 0
+Total memory bits : 212,031
+Embedded Multiplier 9-bit elements : 12
+Total PLLs : 1

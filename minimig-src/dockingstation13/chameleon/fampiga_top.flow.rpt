@@ -1,0 +1,142 @@
+Flow report for fampiga_top
+Sun Jan 22 21:32:58 2012
+Quartus II 32-bit Version 11.1 Build 216 11/23/2011 Service Pack 1 SJ Web Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Flow Summary
+  3. Flow Settings
+  4. Flow Non-Default Global Settings
+  5. Flow Elapsed Time
+  6. Flow OS Summary
+  7. Flow Log
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 1991-2011 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+
+
+
++------------------------------------------------------------------------------------+
+; Flow Summary                                                                       ;
++------------------------------------+-----------------------------------------------+
+; Flow Status                        ; Successful - Sun Jan 22 21:32:58 2012         ;
+; Quartus II 32-bit Version          ; 11.1 Build 216 11/23/2011 SP 1 SJ Web Edition ;
+; Revision Name                      ; fampiga_top                                   ;
+; Top-level Entity Name              ; fampiga_top                                   ;
+; Family                             ; Cyclone III                                   ;
+; Device                             ; EP3C25E144C8                                  ;
+; Timing Models                      ; Final                                         ;
+; Total logic elements               ; 20,479 / 24,624 ( 83 % )                      ;
+;     Total combinational functions  ; 19,049 / 24,624 ( 77 % )                      ;
+;     Dedicated logic registers      ; 7,716 / 24,624 ( 31 % )                       ;
+; Total registers                    ; 7716                                          ;
+; Total pins                         ; 82 / 83 ( 99 % )                              ;
+; Total virtual pins                 ; 0                                             ;
+; Total memory bits                  ; 212,031 / 608,256 ( 35 % )                    ;
+; Embedded Multiplier 9-bit elements ; 12 / 132 ( 9 % )                              ;
+; Total PLLs                         ; 1 / 4 ( 25 % )                                ;
++------------------------------------+-----------------------------------------------+
+
+
++-----------------------------------------+
+; Flow Settings                           ;
++-------------------+---------------------+
+; Option            ; Setting             ;
++-------------------+---------------------+
+; Start date & time ; 01/22/2012 21:14:50 ;
+; Main task         ; Compilation         ;
+; Revision Name     ; fampiga_top         ;
++-------------------+---------------------+
+
+
++-------------------------------------------------------------------------------------------------------------------------------------------------+
+; Flow Non-Default Global Settings                                                                                                                ;
++-----------------------------------------+--------------------------------------------------------+---------------+-------------+----------------+
+; Assignment Name                         ; Value                                                  ; Default Value ; Entity Name ; Section Id     ;
++-----------------------------------------+--------------------------------------------------------+---------------+-------------+----------------+
+; ALLOW_POWER_UP_DONT_CARE                ; Off                                                    ; On            ; --          ; --             ;
+; COMPILER_SIGNATURE_ID                   ; 159484353041.132726329002688                           ; --            ; --          ; --             ;
+; EDA_OUTPUT_DATA_FORMAT                  ; Vhdl                                                   ; --            ; --          ; eda_simulation ;
+; EDA_SIMULATION_TOOL                     ; ModelSim-Altera (VHDL)                                 ; <None>        ; --          ; --             ;
+; ENABLE_CLOCK_LATENCY                    ; On                                                     ; Off           ; --          ; --             ;
+; ENABLE_SIGNALTAP                        ; Off                                                    ; --            ; --          ; --             ;
+; FITTER_EFFORT                           ; Standard Fit                                           ; Auto Fit      ; --          ; --             ;
+; FMAX_REQUIREMENT                        ; 108 MHz                                                ; --            ; --          ; --             ;
+; MAX_CORE_JUNCTION_TEMP                  ; 85                                                     ; --            ; --          ; --             ;
+; MIN_CORE_JUNCTION_TEMP                  ; 0                                                      ; --            ; --          ; --             ;
+; MISC_FILE                               ; D:/_chameleon/dockingstation/chameleon/fampiga_top.dpf ; --            ; --          ; --             ;
+; NOMINAL_CORE_SUPPLY_VOLTAGE             ; 1.2V                                                   ; --            ; --          ; --             ;
+; OPTIMIZE_MULTI_CORNER_TIMING            ; On                                                     ; Off           ; --          ; --             ;
+; PARTITION_COLOR                         ; 16764057                                               ; --            ; --          ; Top            ;
+; PARTITION_FITTER_PRESERVATION_LEVEL     ; PLACEMENT_AND_ROUTING                                  ; --            ; --          ; Top            ;
+; PARTITION_NETLIST_TYPE                  ; SOURCE                                                 ; --            ; --          ; Top            ;
+; PHYSICAL_SYNTHESIS_COMBO_LOGIC          ; On                                                     ; Off           ; --          ; --             ;
+; PHYSICAL_SYNTHESIS_EFFORT               ; Extra                                                  ; Normal        ; --          ; --             ;
+; PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ; On                                                     ; Off           ; --          ; --             ;
+; PHYSICAL_SYNTHESIS_REGISTER_RETIMING    ; On                                                     ; Off           ; --          ; --             ;
+; POWER_BOARD_THERMAL_MODEL               ; None (CONSERVATIVE)                                    ; --            ; --          ; --             ;
+; POWER_PRESET_COOLING_SOLUTION           ; 23 MM HEAT SINK WITH 200 LFPM AIRFLOW                  ; --            ; --          ; --             ;
+; SMART_RECOMPILE                         ; On                                                     ; Off           ; --          ; --             ;
+; SYNTH_TIMING_DRIVEN_SYNTHESIS           ; On                                                     ; Off           ; --          ; --             ;
+; USE_GENERATED_PHYSICAL_CONSTRAINTS      ; Off                                                    ; --            ; --          ; eda_blast_fpga ;
+; USE_SIGNALTAP_FILE                      ; stp1.stp                                               ; --            ; --          ; --             ;
++-----------------------------------------+--------------------------------------------------------+---------------+-------------+----------------+
+
+
++-------------------------------------------------------------------------------------------------------------------------------+
+; Flow Elapsed Time                                                                                                             ;
++---------------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
++---------------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Analysis & Synthesis      ; 00:04:11     ; 1.0                     ; 423 MB              ; 00:04:11                           ;
+; Fitter                    ; 00:12:33     ; 1.0                     ; 674 MB              ; 00:12:32                           ;
+; Assembler                 ; 00:00:04     ; 1.0                     ; 359 MB              ; 00:00:04                           ;
+; TimeQuest Timing Analyzer ; 00:00:32     ; 1.0                     ; 469 MB              ; 00:00:32                           ;
+; EDA Netlist Writer        ; 00:00:36     ; 1.0                     ; 436 MB              ; 00:00:36                           ;
+; Total                     ; 00:17:56     ; --                      ; --                  ; 00:17:55                           ;
++---------------------------+--------------+-------------------------+---------------------+------------------------------------+
+
+
++----------------------------------------------------------------------------------------+
+; Flow OS Summary                                                                        ;
++---------------------------+------------------+-----------+------------+----------------+
+; Module Name               ; Machine Hostname ; OS Name   ; OS Version ; Processor type ;
++---------------------------+------------------+-----------+------------+----------------+
+; Analysis & Synthesis      ; Tobi-PC          ; Windows 7 ; 6.1        ; x86_64         ;
+; Fitter                    ; Tobi-PC          ; Windows 7 ; 6.1        ; x86_64         ;
+; Assembler                 ; Tobi-PC          ; Windows 7 ; 6.1        ; x86_64         ;
+; TimeQuest Timing Analyzer ; Tobi-PC          ; Windows 7 ; 6.1        ; x86_64         ;
+; EDA Netlist Writer        ; Tobi-PC          ; Windows 7 ; 6.1        ; x86_64         ;
++---------------------------+------------------+-----------+------------+----------------+
+
+
+------------
+; Flow Log ;
+------------
+quartus_map --read_settings_files=on --write_settings_files=off fAMpIGA -c fampiga_top
+quartus_fit --read_settings_files=off --write_settings_files=off fAMpIGA -c fampiga_top
+quartus_asm --read_settings_files=off --write_settings_files=off fAMpIGA -c fampiga_top
+quartus_sta fAMpIGA -c fampiga_top
+quartus_eda --read_settings_files=off --write_settings_files=off fAMpIGA -c fampiga_top
+
+
+

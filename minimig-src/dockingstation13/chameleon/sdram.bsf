@@ -1,0 +1,295 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 16 16 216 400)
+	(text "sdram" (rect 5 0 35 12)(font "Arial" ))
+	(text "inst" (rect 8 368 25 380)(font "Arial" ))
+	(port
+		(pt 0 32)
+		(input)
+		(text "sysclk" (rect 0 0 33 12)(font "Arial" ))
+		(text "sysclk" (rect 21 27 54 39)(font "Arial" ))
+		(line (pt 0 32)(pt 16 32)(line_width 1))
+	)
+	(port
+		(pt 0 48)
+		(input)
+		(text "reset_in" (rect 0 0 38 12)(font "Arial" ))
+		(text "reset_in" (rect 21 43 59 55)(font "Arial" ))
+		(line (pt 0 48)(pt 16 48)(line_width 1))
+	)
+	(port
+		(pt 0 64)
+		(input)
+		(text "hostWR[15..0]" (rect 0 0 71 12)(font "Arial" ))
+		(text "hostWR[15..0]" (rect 21 59 92 71)(font "Arial" ))
+		(line (pt 0 64)(pt 16 64)(line_width 3))
+	)
+	(port
+		(pt 0 80)
+		(input)
+		(text "hostAddr[23..0]" (rect 0 0 75 12)(font "Arial" ))
+		(text "hostAddr[23..0]" (rect 21 75 96 87)(font "Arial" ))
+		(line (pt 0 80)(pt 16 80)(line_width 3))
+	)
+	(port
+		(pt 0 96)
+		(input)
+		(text "hostState[2..0]" (rect 0 0 73 12)(font "Arial" ))
+		(text "hostState[2..0]" (rect 21 91 94 103)(font "Arial" ))
+		(line (pt 0 96)(pt 16 96)(line_width 3))
+	)
+	(port
+		(pt 0 112)
+		(input)
+		(text "hostL" (rect 0 0 27 12)(font "Arial" ))
+		(text "hostL" (rect 21 107 48 119)(font "Arial" ))
+		(line (pt 0 112)(pt 16 112)(line_width 1))
+	)
+	(port
+		(pt 0 128)
+		(input)
+		(text "hostU" (rect 0 0 29 12)(font "Arial" ))
+		(text "hostU" (rect 21 123 50 135)(font "Arial" ))
+		(line (pt 0 128)(pt 16 128)(line_width 1))
+	)
+	(port
+		(pt 0 144)
+		(input)
+		(text "cpuWR[15..0]" (rect 0 0 68 12)(font "Arial" ))
+		(text "cpuWR[15..0]" (rect 21 139 89 151)(font "Arial" ))
+		(line (pt 0 144)(pt 16 144)(line_width 3))
+	)
+	(port
+		(pt 0 160)
+		(input)
+		(text "cpuAddr[24..1]" (rect 0 0 71 12)(font "Arial" ))
+		(text "cpuAddr[24..1]" (rect 21 155 92 167)(font "Arial" ))
+		(line (pt 0 160)(pt 16 160)(line_width 3))
+	)
+	(port
+		(pt 0 176)
+		(input)
+		(text "cpuU" (rect 0 0 25 12)(font "Arial" ))
+		(text "cpuU" (rect 21 171 46 183)(font "Arial" ))
+		(line (pt 0 176)(pt 16 176)(line_width 1))
+	)
+	(port
+		(pt 0 192)
+		(input)
+		(text "cpuL" (rect 0 0 23 12)(font "Arial" ))
+		(text "cpuL" (rect 21 187 44 199)(font "Arial" ))
+		(line (pt 0 192)(pt 16 192)(line_width 1))
+	)
+	(port
+		(pt 0 208)
+		(input)
+		(text "cpustate[5..0]" (rect 0 0 68 12)(font "Arial" ))
+		(text "cpustate[5..0]" (rect 21 203 89 215)(font "Arial" ))
+		(line (pt 0 208)(pt 16 208)(line_width 3))
+	)
+	(port
+		(pt 0 224)
+		(input)
+		(text "cpu_dma" (rect 0 0 44 12)(font "Arial" ))
+		(text "cpu_dma" (rect 21 219 65 231)(font "Arial" ))
+		(line (pt 0 224)(pt 16 224)(line_width 1))
+	)
+	(port
+		(pt 0 240)
+		(input)
+		(text "chipWR[15..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "chipWR[15..0]" (rect 21 235 91 247)(font "Arial" ))
+		(line (pt 0 240)(pt 16 240)(line_width 3))
+	)
+	(port
+		(pt 0 256)
+		(input)
+		(text "chipAddr[23..1]" (rect 0 0 74 12)(font "Arial" ))
+		(text "chipAddr[23..1]" (rect 21 251 95 263)(font "Arial" ))
+		(line (pt 0 256)(pt 16 256)(line_width 3))
+	)
+	(port
+		(pt 0 272)
+		(input)
+		(text "chipU" (rect 0 0 28 12)(font "Arial" ))
+		(text "chipU" (rect 21 267 49 279)(font "Arial" ))
+		(line (pt 0 272)(pt 16 272)(line_width 1))
+	)
+	(port
+		(pt 0 288)
+		(input)
+		(text "chipL" (rect 0 0 25 12)(font "Arial" ))
+		(text "chipL" (rect 21 283 46 295)(font "Arial" ))
+		(line (pt 0 288)(pt 16 288)(line_width 1))
+	)
+	(port
+		(pt 0 304)
+		(input)
+		(text "chipRW" (rect 0 0 38 12)(font "Arial" ))
+		(text "chipRW" (rect 21 299 59 311)(font "Arial" ))
+		(line (pt 0 304)(pt 16 304)(line_width 1))
+	)
+	(port
+		(pt 0 320)
+		(input)
+		(text "chip_dma" (rect 0 0 47 12)(font "Arial" ))
+		(text "chip_dma" (rect 21 315 68 327)(font "Arial" ))
+		(line (pt 0 320)(pt 16 320)(line_width 1))
+	)
+	(port
+		(pt 0 336)
+		(input)
+		(text "c_7m" (rect 0 0 27 12)(font "Arial" ))
+		(text "c_7m" (rect 21 331 48 343)(font "Arial" ))
+		(line (pt 0 336)(pt 16 336)(line_width 1))
+	)
+	(port
+		(pt 200 48)
+		(output)
+		(text "sdaddr[12..0]" (rect 0 0 64 12)(font "Arial" ))
+		(text "sdaddr[12..0]" (rect 115 43 179 55)(font "Arial" ))
+		(line (pt 200 48)(pt 184 48)(line_width 3))
+	)
+	(port
+		(pt 200 64)
+		(output)
+		(text "dqm[1..0]" (rect 0 0 47 12)(font "Arial" ))
+		(text "dqm[1..0]" (rect 132 59 179 71)(font "Arial" ))
+		(line (pt 200 64)(pt 184 64)(line_width 3))
+	)
+	(port
+		(pt 200 80)
+		(output)
+		(text "sd_cs[3..0]" (rect 0 0 55 12)(font "Arial" ))
+		(text "sd_cs[3..0]" (rect 124 75 179 87)(font "Arial" ))
+		(line (pt 200 80)(pt 184 80)(line_width 3))
+	)
+	(port
+		(pt 200 96)
+		(output)
+		(text "ba[1..0]" (rect 0 0 37 12)(font "Arial" ))
+		(text "ba[1..0]" (rect 142 91 179 103)(font "Arial" ))
+		(line (pt 200 96)(pt 184 96)(line_width 3))
+	)
+	(port
+		(pt 200 112)
+		(output)
+		(text "sd_we" (rect 0 0 30 12)(font "Arial" ))
+		(text "sd_we" (rect 149 107 179 119)(font "Arial" ))
+		(line (pt 200 112)(pt 184 112)(line_width 1))
+	)
+	(port
+		(pt 200 128)
+		(output)
+		(text "sd_ras" (rect 0 0 33 12)(font "Arial" ))
+		(text "sd_ras" (rect 146 123 179 135)(font "Arial" ))
+		(line (pt 200 128)(pt 184 128)(line_width 1))
+	)
+	(port
+		(pt 200 144)
+		(output)
+		(text "sd_cas" (rect 0 0 35 12)(font "Arial" ))
+		(text "sd_cas" (rect 144 139 179 151)(font "Arial" ))
+		(line (pt 200 144)(pt 184 144)(line_width 1))
+	)
+	(port
+		(pt 200 160)
+		(output)
+		(text "hostRD[15..0]" (rect 0 0 69 12)(font "Arial" ))
+		(text "hostRD[15..0]" (rect 110 155 179 167)(font "Arial" ))
+		(line (pt 200 160)(pt 184 160)(line_width 3))
+	)
+	(port
+		(pt 200 176)
+		(output)
+		(text "hostena" (rect 0 0 38 12)(font "Arial" ))
+		(text "hostena" (rect 141 171 179 183)(font "Arial" ))
+		(line (pt 200 176)(pt 184 176)(line_width 1))
+	)
+	(port
+		(pt 200 192)
+		(output)
+		(text "cpuRD[15..0]" (rect 0 0 66 12)(font "Arial" ))
+		(text "cpuRD[15..0]" (rect 113 187 179 199)(font "Arial" ))
+		(line (pt 200 192)(pt 184 192)(line_width 3))
+	)
+	(port
+		(pt 200 208)
+		(output)
+		(text "cpuena" (rect 0 0 35 12)(font "Arial" ))
+		(text "cpuena" (rect 144 203 179 215)(font "Arial" ))
+		(line (pt 200 208)(pt 184 208)(line_width 1))
+	)
+	(port
+		(pt 200 224)
+		(output)
+		(text "chipRD[15..0]" (rect 0 0 68 12)(font "Arial" ))
+		(text "chipRD[15..0]" (rect 111 219 179 231)(font "Arial" ))
+		(line (pt 200 224)(pt 184 224)(line_width 3))
+	)
+	(port
+		(pt 200 240)
+		(output)
+		(text "reset_out" (rect 0 0 46 12)(font "Arial" ))
+		(text "reset_out" (rect 133 235 179 247)(font "Arial" ))
+		(line (pt 200 240)(pt 184 240)(line_width 1))
+	)
+	(port
+		(pt 200 256)
+		(output)
+		(text "enaRDreg" (rect 0 0 49 12)(font "Arial" ))
+		(text "enaRDreg" (rect 130 251 179 263)(font "Arial" ))
+		(line (pt 200 256)(pt 184 256)(line_width 1))
+	)
+	(port
+		(pt 200 272)
+		(output)
+		(text "enaWRreg" (rect 0 0 51 12)(font "Arial" ))
+		(text "enaWRreg" (rect 128 267 179 279)(font "Arial" ))
+		(line (pt 200 272)(pt 184 272)(line_width 1))
+	)
+	(port
+		(pt 200 288)
+		(output)
+		(text "ena7RDreg" (rect 0 0 55 12)(font "Arial" ))
+		(text "ena7RDreg" (rect 124 283 179 295)(font "Arial" ))
+		(line (pt 200 288)(pt 184 288)(line_width 1))
+	)
+	(port
+		(pt 200 304)
+		(output)
+		(text "ena7WRreg" (rect 0 0 57 12)(font "Arial" ))
+		(text "ena7WRreg" (rect 122 299 179 311)(font "Arial" ))
+		(line (pt 200 304)(pt 184 304)(line_width 1))
+	)
+	(port
+		(pt 200 32)
+		(bidir)
+		(text "sdata[15..0]" (rect 0 0 59 12)(font "Arial" ))
+		(text "sdata[15..0]" (rect 120 27 179 39)(font "Arial" ))
+		(line (pt 200 32)(pt 184 32)(line_width 3))
+	)
+	(drawing
+		(rectangle (rect 16 16 184 368)(line_width 1))
+	)
+)

@@ -1,0 +1,16 @@
+Fitter Status : Successful - Sun Jan 22 21:31:40 2012
+Quartus II 32-bit Version : 11.1 Build 216 11/23/2011 SP 1 SJ Web Edition
+Revision Name : fampiga_top
+Top-level Entity Name : fampiga_top
+Family : Cyclone III
+Device : EP3C25E144C8
+Timing Models : Final
+Total logic elements : 20,479 / 24,624 ( 83 % )
+    Total combinational functions : 19,049 / 24,624 ( 77 % )
+    Dedicated logic registers : 7,716 / 24,624 ( 31 % )
+Total registers : 7716
+Total pins : 82 / 83 ( 99 % )
+Total virtual pins : 0
+Total memory bits : 212,031 / 608,256 ( 35 % )
+Embedded Multiplier 9-bit elements : 12 / 132 ( 9 % )
+Total PLLs : 1 / 4 ( 25 % )

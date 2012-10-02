@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!--Created by Liquid XML 2008 (www.liquid-technologies.com) for Altera-->
+<ProgramExecution xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+	<QuartusExecution>
+		<AddressBits>32</AddressBits>
+		<ApplicationError>
+		<Bits>64</Bits>
+		<CommandLine>quartus</CommandLine>
+		<ErrorMessage>Access Violation at 0X6507A576</ErrorMessage>
+		<Line>0</Line>
+		<Platform>windows</Platform>
+		<SourceFile>unknown</SourceFile>
+		<StackTrace>
+	 0x6507a575: QtGui4 + 0x7a575 (?qt_getRegisteredWndClass@@YA?BVQString@@XZ + 0x215)
+	 0x670dba1c: QtCore4 + 0xdba1c (?notifyInternal@QCoreApplication@@AAE_NPAVQObject@@PAVQEvent@@@Z + 0x8c)
+	 0x670dc495: QtCore4 + 0xdc495 (?sendEvent@QCoreApplication@@SA_NPAVQObject@@PAVQEvent@@@Z + 0x25)
+	 0x6501b03a: QtGui4 + 0x1b03a (??1QApplication@@UAE@XZ + 0x6a)
+	   0x9f2bfc: GCL_AFCQ + 0x2bfc (??1AFCQ_APP@@UAE@XZ + 0x2c)
+	  0x478511f: SYS_QUI + 0x1511f (??1QUI_APP@@UAE@XZ + 0x3f)
+	   0x4010eb: quartus + 0x10eb (?qgq_main@@YAHHPAPBD@Z + 0xeb)
+	   0x4c1c51: CCL_MSG + 0x1c51 (?msg_main_thread@@YAPAXPAX@Z + 0x11)
+	   0x2e1be8: ccl_thr + 0x1be8 (_thr_final_wrapper + 0x8)
+	   0x4c1bc5: CCL_MSG + 0x1bc5 (?msg_thread_wrapper@@YAPAXP6APAXPAX@Z0@Z + 0x85)
+	   0x23428a: ccl_mem + 0x428a (?mem_thread_wrapper@@YAPAXP6APAXPAX@Z0@Z + 0x4a)
+	   0x4eb5d1: CCL_MSG + 0x2b5d1 (?msg_exe_main@@YAHHPAPBDP6AHH0@Z@Z + 0x81)
+	   0x40112c: quartus + 0x112c (_main + 0x1c)
+	   0x401c97: quartus + 0x1c97 (_WinMain@16 + 0xb7)
+	   0x40137e: quartus + 0x137e (_atexit + 0x1a1)
+	 0x75143399: kernel32 + 0x13399 (BaseThreadInitThunk + 0x11)
+	 0x77629ed1: ntdll + 0x39ed1 (RtlInitializeExceptionChain + 0x62)
+	 0x77629ea4: ntdll + 0x39ea4 (RtlInitializeExceptionChain + 0x35)
+		</StackTrace>
+		<Subsystem>unknown</Subsystem>
+	</ApplicationError>
+	<Compilation>
+			<CompileID>0</CompileID>
+			<DeviceFamily/>
+			<IncrementalCompilation/>
+			<TopLevelEntityName/>
+		</Compilation>
+		<DateInvoked>2012/01/22 20:09:34</DateInvoked>
+		<ElapsedTime>6254</ElapsedTime>
+		<IP>127.0.0.1</IP>
+		<IsInternal>false</IsInternal>
+		<IsQt>true</IsQt>
+		<License>
+			<Edition>Web Edition</Edition>
+			<LicenseHostID/>
+		</License>
+		<Machine>
+			<CPUCountLogical>4</CPUCountLogical>
+			<CPUCountPhysical>1</CPUCountPhysical>
+			<CPUSpeed>2677</CPUSpeed>
+			<Hostname>Tobi-PC</Hostname>
+			<NIC>
+				<Address>002522021a11</Address>
+			</NIC>
+			<OS>Windows 7</OS>
+			<OSAddressBits>64</OSAddressBits>
+			<OSVersion>6.1</OSVersion>
+			<Platform>windows</Platform>
+			<ScreenResolution>unknown</ScreenResolution>
+			<TotalPhysicalRAM>4095</TotalPhysicalRAM>
+			<TotalVirtualRAM>0</TotalVirtualRAM>
+		</Machine>
+		<Name>quartus</Name>
+		<PeakMemoryUsed>0</PeakMemoryUsed>
+		<ProjectRevision>
+			<ProjectName/>
+			<Revision/>
+		</ProjectRevision>
+		<QuartusInstallation>
+			<InstallationID>159484353041.132695753502848</InstallationID>
+			<Version>
+				<Build>216</Build>
+				<BuildSite>SJ</BuildSite>
+				<BuildSuffix/>
+				<Edition>Web Edition</Edition>
+				<ServicePack>1</ServicePack>
+				<VersionNumber>11.1</VersionNumber>
+			</Version>
+		</QuartusInstallation>
+		<QuartusUser>
+			<AlteraUserName/>
+			<FAEContactName/>
+			<TalkbackStatus>
+				<DateSet/>
+				<TalkbackOn>true</TalkbackOn>
+			</TalkbackStatus>
+			<UserID>159484353041.13159808280038</UserID>
+			<UserName>Tobi</UserName>
+		</QuartusUser>
+	</QuartusExecution>
+	<SchemaVersion>schema_2011-08-26</SchemaVersion>
+</ProgramExecution>
+

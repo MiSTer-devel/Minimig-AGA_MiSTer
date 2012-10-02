@@ -1,0 +1,281 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2009 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 16 16 232 368)
+	(text "cfide" (rect 5 0 29 12)(font "Arial" ))
+	(text "inst" (rect 8 336 25 348)(font "Arial" ))
+	(port
+		(pt 0 32)
+		(input)
+		(text "mux_q[3..0]" (rect 0 0 59 12)(font "Arial" ))
+		(text "mux_q[3..0]" (rect 21 27 80 39)(font "Arial" ))
+		(line (pt 0 32)(pt 16 32)(line_width 3))
+	)
+	(port
+		(pt 0 48)
+		(input)
+		(text "sysclk" (rect 0 0 33 12)(font "Arial" ))
+		(text "sysclk" (rect 21 43 54 55)(font "Arial" ))
+		(line (pt 0 48)(pt 16 48)(line_width 1))
+	)
+	(port
+		(pt 0 64)
+		(input)
+		(text "n_reset" (rect 0 0 36 12)(font "Arial" ))
+		(text "n_reset" (rect 21 59 57 71)(font "Arial" ))
+		(line (pt 0 64)(pt 16 64)(line_width 1))
+	)
+	(port
+		(pt 0 80)
+		(input)
+		(text "cpuena_in" (rect 0 0 49 12)(font "Arial" ))
+		(text "cpuena_in" (rect 21 75 70 87)(font "Arial" ))
+		(line (pt 0 80)(pt 16 80)(line_width 1))
+	)
+	(port
+		(pt 0 96)
+		(input)
+		(text "memdata_in[15..0]" (rect 0 0 92 12)(font "Arial" ))
+		(text "memdata_in[15..0]" (rect 21 91 113 103)(font "Arial" ))
+		(line (pt 0 96)(pt 16 96)(line_width 3))
+	)
+	(port
+		(pt 0 112)
+		(input)
+		(text "addr[23..0]" (rect 0 0 53 12)(font "Arial" ))
+		(text "addr[23..0]" (rect 21 107 74 119)(font "Arial" ))
+		(line (pt 0 112)(pt 16 112)(line_width 3))
+	)
+	(port
+		(pt 0 128)
+		(input)
+		(text "cpudata_in[15..0]" (rect 0 0 84 12)(font "Arial" ))
+		(text "cpudata_in[15..0]" (rect 21 123 105 135)(font "Arial" ))
+		(line (pt 0 128)(pt 16 128)(line_width 3))
+	)
+	(port
+		(pt 0 144)
+		(input)
+		(text "state[1..0]" (rect 0 0 50 12)(font "Arial" ))
+		(text "state[1..0]" (rect 21 139 71 151)(font "Arial" ))
+		(line (pt 0 144)(pt 16 144)(line_width 3))
+	)
+	(port
+		(pt 0 160)
+		(input)
+		(text "lds" (rect 0 0 14 12)(font "Arial" ))
+		(text "lds" (rect 21 155 35 167)(font "Arial" ))
+		(line (pt 0 160)(pt 16 160)(line_width 1))
+	)
+	(port
+		(pt 0 176)
+		(input)
+		(text "uds" (rect 0 0 17 12)(font "Arial" ))
+		(text "uds" (rect 21 171 38 183)(font "Arial" ))
+		(line (pt 0 176)(pt 16 176)(line_width 1))
+	)
+	(port
+		(pt 0 192)
+		(input)
+		(text "sd_di" (rect 0 0 25 12)(font "Arial" ))
+		(text "sd_di" (rect 21 187 46 199)(font "Arial" ))
+		(line (pt 0 192)(pt 16 192)(line_width 1))
+	)
+	(port
+		(pt 0 208)
+		(input)
+		(text "sd_dimm" (rect 0 0 44 12)(font "Arial" ))
+		(text "sd_dimm" (rect 21 203 65 215)(font "Arial" ))
+		(line (pt 0 208)(pt 16 208)(line_width 1))
+	)
+	(port
+		(pt 0 224)
+		(input)
+		(text "enaWRreg" (rect 0 0 51 12)(font "Arial" ))
+		(text "enaWRreg" (rect 21 219 72 231)(font "Arial" ))
+		(line (pt 0 224)(pt 16 224)(line_width 1))
+	)
+	(port
+		(pt 0 240)
+		(input)
+		(text "kb_clki" (rect 0 0 34 12)(font "Arial" ))
+		(text "kb_clki" (rect 21 235 55 247)(font "Arial" ))
+		(line (pt 0 240)(pt 16 240)(line_width 1))
+	)
+	(port
+		(pt 0 256)
+		(input)
+		(text "kb_datai" (rect 0 0 41 12)(font "Arial" ))
+		(text "kb_datai" (rect 21 251 62 263)(font "Arial" ))
+		(line (pt 0 256)(pt 16 256)(line_width 1))
+	)
+	(port
+		(pt 0 272)
+		(input)
+		(text "ms_clki" (rect 0 0 37 12)(font "Arial" ))
+		(text "ms_clki" (rect 21 267 58 279)(font "Arial" ))
+		(line (pt 0 272)(pt 16 272)(line_width 1))
+	)
+	(port
+		(pt 0 288)
+		(input)
+		(text "ms_datai" (rect 0 0 44 12)(font "Arial" ))
+		(text "ms_datai" (rect 21 283 65 295)(font "Arial" ))
+		(line (pt 0 288)(pt 16 288)(line_width 1))
+	)
+	(port
+		(pt 0 304)
+		(input)
+		(text "irq_d" (rect 0 0 23 12)(font "Arial" ))
+		(text "irq_d" (rect 21 299 44 311)(font "Arial" ))
+		(line (pt 0 304)(pt 16 304)(line_width 1))
+	)
+	(port
+		(pt 0 320)
+		(input)
+		(text "led[1..0]" (rect 0 0 40 12)(font "Arial" ))
+		(text "led[1..0]" (rect 21 315 61 327)(font "Arial" ))
+		(line (pt 0 320)(pt 16 320)(line_width 3))
+	)
+	(port
+		(pt 216 32)
+		(output)
+		(text "mux_clk" (rect 0 0 41 12)(font "Arial" ))
+		(text "mux_clk" (rect 154 27 195 39)(font "Arial" ))
+		(line (pt 216 32)(pt 200 32)(line_width 1))
+	)
+	(port
+		(pt 216 48)
+		(output)
+		(text "mux[3..0]" (rect 0 0 47 12)(font "Arial" ))
+		(text "mux[3..0]" (rect 148 43 195 55)(font "Arial" ))
+		(line (pt 216 48)(pt 200 48)(line_width 3))
+	)
+	(port
+		(pt 216 64)
+		(output)
+		(text "mux_d[3..0]" (rect 0 0 59 12)(font "Arial" ))
+		(text "mux_d[3..0]" (rect 136 59 195 71)(font "Arial" ))
+		(line (pt 216 64)(pt 200 64)(line_width 3))
+	)
+	(port
+		(pt 216 80)
+		(output)
+		(text "memce" (rect 0 0 36 12)(font "Arial" ))
+		(text "memce" (rect 159 75 195 87)(font "Arial" ))
+		(line (pt 216 80)(pt 200 80)(line_width 1))
+	)
+	(port
+		(pt 216 96)
+		(output)
+		(text "cpudata[15..0]" (rect 0 0 70 12)(font "Arial" ))
+		(text "cpudata[15..0]" (rect 125 91 195 103)(font "Arial" ))
+		(line (pt 216 96)(pt 200 96)(line_width 3))
+	)
+	(port
+		(pt 216 112)
+		(output)
+		(text "cpuena" (rect 0 0 35 12)(font "Arial" ))
+		(text "cpuena" (rect 160 107 195 119)(font "Arial" ))
+		(line (pt 216 112)(pt 200 112)(line_width 1))
+	)
+	(port
+		(pt 216 128)
+		(output)
+		(text "TxD" (rect 0 0 20 12)(font "Arial" ))
+		(text "TxD" (rect 175 123 195 135)(font "Arial" ))
+		(line (pt 216 128)(pt 200 128)(line_width 1))
+	)
+	(port
+		(pt 216 144)
+		(output)
+		(text "sd_cs[7..0]" (rect 0 0 55 12)(font "Arial" ))
+		(text "sd_cs[7..0]" (rect 140 139 195 151)(font "Arial" ))
+		(line (pt 216 144)(pt 200 144)(line_width 3))
+	)
+	(port
+		(pt 216 160)
+		(output)
+		(text "sd_clk" (rect 0 0 31 12)(font "Arial" ))
+		(text "sd_clk" (rect 164 155 195 167)(font "Arial" ))
+		(line (pt 216 160)(pt 200 160)(line_width 1))
+	)
+	(port
+		(pt 216 176)
+		(output)
+		(text "sd_do" (rect 0 0 29 12)(font "Arial" ))
+		(text "sd_do" (rect 166 171 195 183)(font "Arial" ))
+		(line (pt 216 176)(pt 200 176)(line_width 1))
+	)
+	(port
+		(pt 216 192)
+		(output)
+		(text "kb_clk" (rect 0 0 31 12)(font "Arial" ))
+		(text "kb_clk" (rect 164 187 195 199)(font "Arial" ))
+		(line (pt 216 192)(pt 200 192)(line_width 1))
+	)
+	(port
+		(pt 216 208)
+		(output)
+		(text "kb_data" (rect 0 0 38 12)(font "Arial" ))
+		(text "kb_data" (rect 157 203 195 215)(font "Arial" ))
+		(line (pt 216 208)(pt 200 208)(line_width 1))
+	)
+	(port
+		(pt 216 224)
+		(output)
+		(text "ms_clk" (rect 0 0 35 12)(font "Arial" ))
+		(text "ms_clk" (rect 160 219 195 231)(font "Arial" ))
+		(line (pt 216 224)(pt 200 224)(line_width 1))
+	)
+	(port
+		(pt 216 240)
+		(output)
+		(text "ms_data" (rect 0 0 42 12)(font "Arial" ))
+		(text "ms_data" (rect 153 235 195 247)(font "Arial" ))
+		(line (pt 216 240)(pt 200 240)(line_width 1))
+	)
+	(port
+		(pt 216 256)
+		(output)
+		(text "nreset" (rect 0 0 30 12)(font "Arial" ))
+		(text "nreset" (rect 165 251 195 263)(font "Arial" ))
+		(line (pt 216 256)(pt 200 256)(line_width 1))
+	)
+	(port
+		(pt 216 272)
+		(output)
+		(text "ir" (rect 0 0 5 12)(font "Arial" ))
+		(text "ir" (rect 190 267 195 279)(font "Arial" ))
+		(line (pt 216 272)(pt 200 272)(line_width 1))
+	)
+	(port
+		(pt 216 288)
+		(output)
+		(text "ena1MHz" (rect 0 0 44 12)(font "Arial" ))
+		(text "ena1MHz" (rect 151 283 195 295)(font "Arial" ))
+		(line (pt 216 288)(pt 200 288)(line_width 1))
+	)
+	(drawing
+		(rectangle (rect 16 16 200 336)(line_width 1))
+	)
+)

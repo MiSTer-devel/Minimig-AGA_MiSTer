@@ -1,0 +1,22 @@
+Info: Start Nativelink Simulation process
+Info: NativeLink has detected a mixed Verilog and VHDL design -- vhdl simulation models will be used
+
+========= EDA Simulation Settings =====================
+
+Sim Mode              :  RTL
+Family                :  cycloneiii
+Quartus root          :  c:/altera/11.1sp1/quartus/bin/
+Quartus sim root      :  c:/altera/11.1sp1/quartus/eda/sim_lib
+Simulation Tool       :  modelsim-altera
+Simulation Language   :  vhdl
+Version               :  93
+Simulation Mode       :  GUI
+Sim Output File       :  
+Sim SDF file          :  
+Sim dir               :  simulation\modelsim
+
+=======================================================
+
+Info: Starting NativeLink simulation with ModelSim-Altera software
+Sourced NativeLink script c:/altera/11.1sp1/quartus/common/tcl/internal/nativelink/modelsim.tcl
+Info: Spawning ModelSim-Altera Simulation software 

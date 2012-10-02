@@ -1,0 +1,5 @@
+echo ""
+dcc start.asm main.c FDD.c FAT.c osd.c hardware.c FPGA.c MMC.c HDD.c menu.c -o menue -rom -l rom.lib -D ROM -//
+echo "dcc ... ok"
+romable menue -o OSD_CA01.sys -DC -C 0x2000
+echo "romable ... ok"

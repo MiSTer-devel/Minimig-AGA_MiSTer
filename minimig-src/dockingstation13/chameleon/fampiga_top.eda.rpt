@@ -1,0 +1,107 @@
+EDA Netlist Writer report for fampiga_top
+Sun Jan 22 21:32:58 2012
+Quartus II 32-bit Version 11.1 Build 216 11/23/2011 Service Pack 1 SJ Web Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. EDA Netlist Writer Summary
+  3. Simulation Settings
+  4. Simulation Generated Files
+  5. EDA Netlist Writer Messages
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 1991-2011 Altera Corporation
+Your use of Altera Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Altera Program License 
+Subscription Agreement, Altera MegaCore Function License 
+Agreement, or other applicable license agreement, including, 
+without limitation, that your use is for the sole purpose of 
+programming logic devices manufactured by Altera and sold by 
+Altera or its authorized distributors.  Please refer to the 
+applicable agreement for further details.
+
+
+
++-------------------------------------------------------------------+
+; EDA Netlist Writer Summary                                        ;
++---------------------------+---------------------------------------+
+; EDA Netlist Writer Status ; Successful - Sun Jan 22 21:32:58 2012 ;
+; Revision Name             ; fampiga_top                           ;
+; Top-level Entity Name     ; fampiga_top                           ;
+; Family                    ; Cyclone III                           ;
+; Simulation Files Creation ; Successful                            ;
++---------------------------+---------------------------------------+
+
+
++----------------------------------------------------------------------------------------------------------------------------+
+; Simulation Settings                                                                                                        ;
++---------------------------------------------------------------------------------------------------+------------------------+
+; Option                                                                                            ; Setting                ;
++---------------------------------------------------------------------------------------------------+------------------------+
+; Tool Name                                                                                         ; ModelSim-Altera (VHDL) ;
+; Generate netlist for functional simulation only                                                   ; Off                    ;
+; Time scale                                                                                        ; 1 ps                   ;
+; Truncate long hierarchy paths                                                                     ; Off                    ;
+; Map illegal HDL characters                                                                        ; Off                    ;
+; Flatten buses into individual nodes                                                               ; Off                    ;
+; Maintain hierarchy                                                                                ; Off                    ;
+; Bring out device-wide set/reset signals as ports                                                  ; Off                    ;
+; Enable glitch filtering                                                                           ; Off                    ;
+; Do not write top level VHDL entity                                                                ; Off                    ;
+; Disable detection of setup and hold time violations in the input registers of bi-directional pins ; Off                    ;
+; Architecture name in VHDL output netlist                                                          ; structure              ;
+; Generate third-party EDA tool command script for RTL functional simulation                        ; Off                    ;
+; Generate third-party EDA tool command script for gate-level simulation                            ; Off                    ;
++---------------------------------------------------------------------------------------------------+------------------------+
+
+
++---------------------------------------------------------------------------------------------------+
+; Simulation Generated Files                                                                        ;
++---------------------------------------------------------------------------------------------------+
+; Generated Files                                                                                   ;
++---------------------------------------------------------------------------------------------------+
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_8_1200mv_85c_slow.vho      ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_8_1200mv_0c_slow.vho       ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_min_1200mv_0c_fast.vho     ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top.vho                        ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_8_1200mv_85c_vhd_slow.sdo  ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_8_1200mv_0c_vhd_slow.sdo   ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_min_1200mv_0c_vhd_fast.sdo ;
+; D:/_chameleon/dockingstation/chameleon/simulation/modelsim/fampiga_top_vhd.sdo                    ;
++---------------------------------------------------------------------------------------------------+
+
+
++-----------------------------+
+; EDA Netlist Writer Messages ;
++-----------------------------+
+Info: *******************************************************************
+Info: Running Quartus II 32-bit EDA Netlist Writer
+    Info: Version 11.1 Build 216 11/23/2011 Service Pack 1 SJ Web Edition
+    Info: Processing started: Sun Jan 22 21:32:22 2012
+Info: Command: quartus_eda --read_settings_files=off --write_settings_files=off fAMpIGA -c fampiga_top
+Info (204019): Generated file fampiga_top_8_1200mv_85c_slow.vho in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_8_1200mv_0c_slow.vho in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_min_1200mv_0c_fast.vho in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top.vho in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_8_1200mv_85c_vhd_slow.sdo in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_8_1200mv_0c_vhd_slow.sdo in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_min_1200mv_0c_vhd_fast.sdo in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info (204019): Generated file fampiga_top_vhd.sdo in folder "D:/_chameleon/dockingstation/chameleon/simulation/modelsim/" for EDA simulation tool
+Info: Quartus II 32-bit EDA Netlist Writer was successful. 0 errors, 0 warnings
+    Info: Peak virtual memory: 436 megabytes
+    Info: Processing ended: Sun Jan 22 21:32:59 2012
+    Info: Elapsed time: 00:00:37
+    Info: Total CPU time (on all processors): 00:00:37
+
+

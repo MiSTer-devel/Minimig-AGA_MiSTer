@@ -1,0 +1,106 @@
+--------------------------------------------------------------------------------------
+Timing Analyzer Summary
+--------------------------------------------------------------------------------------
+
+Type           : Worst-case tsu
+Slack          : N/A
+Required Time  : None
+Actual Time    : 5.854 ns
+From           : sd_data[3]
+To             : sdram:inst5|sdata_reg[3]
+From Clock     : --
+To Clock       : clk8
+Failed Paths   : 0
+
+Type           : Worst-case tco
+Slack          : N/A
+Required Time  : None
+Actual Time    : 7.845 ns
+From           : sdram:inst5|sd_cas
+To             : sd_cas_n
+From Clock     : clk8
+To Clock       : --
+Failed Paths   : 0
+
+Type           : Worst-case th
+Slack          : N/A
+Required Time  : None
+Actual Time    : -1.357 ns
+From           : mux_q[3]
+To             : cfide:inst3|ms_clk
+From Clock     : --
+To Clock       : clk8
+Failed Paths   : 0
+
+Type           : Clock Setup: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[3]'
+Slack          : -23.061 ns
+Required Time  : 7.09 MHz ( period = 141.025 ns )
+Actual Time    : N/A
+From           : TG68K:inst7|TG68KdotC_Kernel:pf68K_Kernel_inst|altsyncram:regfile_low_rtl_2|altsyncram_vrf1:auto_generated|ram_block1a0~portb_address_reg0
+To             : Minimig1:inst1|Paula:PAULA1|audio:ad1|audiochannel:ach2|audper[8]
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[3]
+Failed Paths   : 215430
+
+Type           : Clock Setup: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]'
+Slack          : -21.140 ns
+Required Time  : 113.46 MHz ( period = 8.814 ns )
+Actual Time    : 33.38 MHz ( period = 29.954 ns )
+From           : TG68K:inst7|TG68KdotC_Kernel:pf68K_Kernel_inst|altsyncram:regfile_low_rtl_3|altsyncram_vrf1:auto_generated|ram_block1a0~portb_address_reg0
+To             : TG68K:inst7|TG68KdotC_Kernel:pf68K_Kernel_inst|TG68K_ALU:ALU|Flags[2]
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+Failed Paths   : 273943
+
+Type           : Clock Setup: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[2]'
+Slack          : 3.760 ns
+Required Time  : 28.36 MHz ( period = 35.256 ns )
+Actual Time    : N/A
+From           : TG68K:inst7|TG68KdotC_Kernel:pf68K_Kernel_inst|state[1]
+To             : Minimig1:inst1|m68k_bridge:CPU1|l_uds
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[2]
+Failed Paths   : 0
+
+Type           : Clock Hold: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]'
+Slack          : -12.576 ns
+Required Time  : 113.46 MHz ( period = 8.814 ns )
+Actual Time    : N/A
+From           : TG68K:inst7|TG68KdotC_Kernel:pf68K_Kernel_inst|memaddr_delta[11]
+To             : Minimig1:inst1|ActionReplay:CART1|cpu_address_hit
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[1]
+Failed Paths   : 50
+
+Type           : Clock Hold: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[2]'
+Slack          : 0.646 ns
+Required Time  : 28.36 MHz ( period = 35.256 ns )
+Actual Time    : N/A
+From           : Minimig1:inst1|Amber:AMBER1|scanline_ena
+To             : Minimig1:inst1|Amber:AMBER1|scanline_ena
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[2]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[2]
+Failed Paths   : 0
+
+Type           : Clock Hold: 'palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[3]'
+Slack          : 0.646 ns
+Required Time  : 7.09 MHz ( period = 141.025 ns )
+Actual Time    : N/A
+From           : Minimig1:inst1|userio:USERIO1|osd:osd1|wrcmd
+To             : Minimig1:inst1|userio:USERIO1|osd:osd1|wrcmd
+From Clock     : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[3]
+To Clock       : palclk:inst|altpll:altpll_component|palclk_altpll:auto_generated|wire_pll1_clk[3]
+Failed Paths   : 0
+
+Type           : Total number of failed paths
+Slack          : 
+Required Time  : 
+Actual Time    : 
+From           : 
+To             : 
+From Clock     : 
+To Clock       : 
+Failed Paths   : 489423
+
+--------------------------------------------------------------------------------------
+

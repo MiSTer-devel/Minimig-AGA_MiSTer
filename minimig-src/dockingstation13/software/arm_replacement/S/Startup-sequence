@@ -1,0 +1,99 @@
+;zkick  devs:rom2.0
+
+c:setpatch >NIL:
+;run >nil: c:iffboot c:amigawb.iff
+;c:version >NIL:
+;addbuffers >NIL: df0: 15
+Failat 21
+
+;Resident >NIL: C:Execute PURE ADD
+
+;c:noclick2.0 >NIL:
+makedir ram:T ram:Clipboards ram:env ram:env/sys
+copy >NIL: ENVARC: ram:env all quiet noreq
+
+assign ENV: ram:env
+assign T: ram:t ;set up T: directory for scripts
+assign CLIPS: ram:clipboards
+assign REXX: sys:rexx
+
+assign locale: sys:locale
+;assign dopus: sys:dopus
+;assign fms: ram:
+assign printers: devs:printers
+
+;mount ff0:
+;mount ff1:
+
+;assign lc: dh0:Sprachen/lc/c
+;assign Lib: lc:/lib
+;assign include: lc:/include
+;assign quad: ram:
+;path lc: add
+
+;if exists sys:Monitors
+;    join >NIL: sys:monitors/~(#?.info) as t:mon-start
+;    execute t:mon-start
+;    delete >NIL: t:mon-start
+;endif
+
+devs:Monitors/super72
+devs:Monitors/multiscan
+BindDrivers
+
+;suprapowerdown >nil: dh0: 5
+
+;setenv Workbench $Workbench
+;setenv Kickstart $Kickstart
+
+;IPrefs
+
+;echo "Amiga Release 2.  Kickstart $Kickstart, Workbench $Workbench"
+
+;conclip
+
+;mount speak:
+;mount aux:
+;mount pipe:
+
+path ram: c: sys:utilities sys:rexxc sys:system sys:prefs add
+if exists sys:tools
+    path sys:tools add
+    if exists sys:tools/commodities
+        path sys:tools/commodities add
+    endif
+endif
+
+; If this is the initial boot (i.e. keyboard env variable is not set)
+; then execute PickMap which will query for a keymap and set the
+; keyboard env variable.
+; 
+; if keyboard env variable is set, set the keymap
+;if ${sys/keyboard} NOT EQ "*${sys/keyboard}"
+;    setmap ${sys/keyboard}
+;else
+;    PickMap sys: initial
+;endif
+
+;patchreq >nil: cache
+;rtpatch >nil:
+
+;rexxmast >NIL:
+
+;if exists s:user-startup
+;    execute s:user-startup
+;endif
+
+execute DCC:dice
+system/cli
+;LoadWB
+
+;cd sys:Diskettentools/
+;runback sys:Diskettentools/DOpus
+;runback sys:tools/commodities/kcommodity CX_POPUP=NO
+endcli >NIL:
+
+;ARM:
+;cd arm
+;execute make.txt
+    

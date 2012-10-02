@@ -1,0 +1,8 @@
+<sld_project_info>
+  <file_info>
+    <file checksum="0x00F6518C" device="EP3C25E144C8" path="fampiga_top.sof" usercode="0xFFFFFFFF"/>
+    <file path="fampiga_top.rbf"/>
+  </file_info>
+  <hub_info ir_width="0" node_count="0"/>
+  <node_info/>
+</sld_project_info>
