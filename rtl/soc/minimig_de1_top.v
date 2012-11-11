@@ -92,7 +92,9 @@ module minimig_de1_top (
   output wire           FL_CE_N,      // FLASH Chip Enable
   // MINIMIG specific
   input  wire [  6-1:0] Joya,         // joystick port A
-  input  wire [  6-1:0] Joyb          // joystick port B
+  input  wire [  6-1:0] Joyb,         // joystick port B
+  output wire           AUDIOLEFT,    // sigma-delta DAC output left
+  output wire           AUDIORIGHT    // sigma-delta DAC output right
 );
 
 
@@ -165,6 +167,8 @@ wire           joy_emu_en;    // joystick emulation enable
 wire           sdo;           // SPI data output
 wire [ 15-1:0] ldata;         // left DAC data
 wire [ 15-1:0] rdata;         // right DAC data
+wire           audio_left;
+wire           audio_right;
 wire           floppy_fwr;
 wire           floppy_frd;
 wire           hd_fwr;
@@ -251,6 +255,12 @@ assign DRAM_BA_1        = sdram_ba[1];
 // FLASH
 assign FL_DQ            = FL_OE_N   ? FL_DAT_W   : 8'bzzzzzzzz;
 assign FL_DAT_R         = FL_DQ;
+
+// AUDIO
+//assign AUDIOLEFT        = audio_left;
+//assign AUDIORIGHT       = audio_right;
+assign AUDIOLEFT        = 1'b0;
+assign AUDIORIGHT       = 1'b0;
 
 // ctrl
 assign SPI_DI           = !SPI_CS_N[0] ? SD_DAT : sdo;
@@ -547,8 +557,8 @@ Minimig1 minimig (
   .green        (VGA_G            ),  // green
   .blue         (VGA_B            ),  // blue
   //audio
-  .left         (                 ),  // audio bitstream left
-  .right        (                 ),  // audio bitstream right
+  .left         (audio_left       ),  // audio bitstream left
+  .right        (audio_right      ),  // audio bitstream right
   .ldata        (ldata            ),  // left DAC data
   .rdata        (rdata            ),  // right DAC data
   //user i/o

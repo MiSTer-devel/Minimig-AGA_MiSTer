@@ -68,6 +68,10 @@
 // SB:
 // 2011-01-18 - fixed sound output, no more high pitch noise at game Gods
 
+// RK:
+// 2012-11-11 - two-stage sigma-delta modulator added
+
+
 module audio
 (
 	input 	clk,		    		//bus clock
@@ -109,6 +113,8 @@ wire	[6:0] vol0;			//channel 0 volume
 wire	[6:0] vol1;			//channel 1 volume 
 wire	[6:0] vol2;			//channel 2 volume 
 wire	[6:0] vol3;			//channel 3 volume 
+wire  [15:0] ldatasum;
+wire  [15:0] rdatasum;
 
 //--------------------------------------------------------------------------------------
 
@@ -211,43 +217,53 @@ audiochannel ach3
 	.strhor(strhor)
 );
 
-//instantiate volume control and sigma/delta modulator
-sigmadelta dac0 
-(
-	.clk(clk28m),
-	.sample0(sample0),
-	.sample1(sample1),
-	.sample2(sample2),
-	.sample3(sample3),
-	.vol0(vol0),
-	.vol1(vol1),
-	.vol2(vol2),
-	.vol3(vol3),
-  .strhor(strhor),
-	.left(left),
-	.right(right)
-`ifdef MINIMIG_DE1
-  ,
-	.ldatasum(ldata),
-	.rdatasum(rdata)
-`endif
+
+//--------------------------------------------------------------------------------------
+
+// instantiate mixer
+audiomixer mix (
+  .clk      (clk28m),
+  .sample0  (sample0),
+  .sample1  (sample1),
+  .sample2  (sample2),
+  .sample3  (sample3),
+  .vol0     (vol0),
+  .vol1     (vol1),
+  .vol2     (vol2),
+  .vol3     (vol3),
+  .ldatasum (ldata),
+  .rdatasum (rdata)
 );
+
+
+//--------------------------------------------------------------------------------------
+
+//instantiate sigma/delta modulator
+sigmadelta dac
+(
+  .clk(clk28m),
+  .ldatasum(ldata),
+  .rdatasum(rdata),
+  .left(left),
+  .right(right)
+);
+
 
 //--------------------------------------------------------------------------------------
 
 endmodule
 
 //--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
+
+
+
+
 //--------------------------------------------------------------------------------------
 
-// audio data processing
 // stereo volume control
-// stereo sigma/delta bitstream modulator
 // channel 1&2 --> left
 // channel 0&3 --> right
-module sigmadelta
-(
+module audiomixer (
 	input 	clk,				//bus clock
 	input	[7:0] sample0,		//sample 0 input
 	input	[7:0] sample1,		//sample 1 input
@@ -257,112 +273,149 @@ module sigmadelta
 	input	[6:0] vol1,			//volume 1 input
 	input	[6:0] vol2,			//volume 2 input
 	input	[6:0] vol3,			//volume 3 input
-  input strhor,
-	output	left,				//left bitstream output
-	output	right				//right bitsteam output
-`ifdef MINIMIG_DE1
-  ,
 	output reg	[14:0]ldatasum,		//left DAC data
 	output reg	[14:0]rdatasum		//right DAC data
-`endif
 );
 
-//local signals
-reg		[14:0] acculeft;		//sigma/delta accumulator left		
-reg		[14:0] accuright;		//sigma/delta accumulator right
-wire	[7:0] leftsmux;			//left mux sample
-wire	[7:0] rightsmux;		//right mux sample
-wire	[6:0] leftvmux;			//left mux volum
-wire	[6:0] rightvmux;		//right mux volume
-wire	[13:0] ldata;			//left DAC data
-wire	[13:0] rdata; 			//right DAC data
-reg		[13:0]ldatatmp;			//left DAC data
-reg		[13:0]rdatatmp; 		//right DAC data
-`ifndef MINIMIG_DE1
-reg [14:0]ldatasum;   //left DAC data
-reg [14:0]rdatasum;     //right DAC data
-`endif
-reg		mxc;					//multiplex control
-
-//--------------------------------------------------------------------------------------
-
-
-// multiplexer control
-always @(posedge clk)
-  if (strhor)
-    mxc <= 0;
-  else
-    mxc <= ~mxc;
-
- 
-always @(posedge clk)
-begin
-	if(mxc) begin
-		ldatatmp<=ldata;
-		rdatatmp<=rdata;
-	end else begin
-		ldatasum<={ldata[13],ldata}+{ldatatmp[13],ldatatmp};
-		rdatasum<={rdata[13],rdata}+{rdatatmp[13],rdatatmp};
-	end
-end
-
-//sample multiplexer
-assign leftsmux = mxc ? sample1 : sample2;
-assign rightsmux = mxc ? sample0 : sample3;
-
-//volume multiplexer
-assign leftvmux = mxc ? vol1 : vol2;
-assign rightvmux = mxc ? vol0 : vol3;
-
-//left volume control
-//when volume MSB is set, volume is always maximum
+// volume control
+wire [14-1:0] msample0, msample1, msample2, msample3;
+// when volume MSB is set, volume is always maximum
 svmul sv0
 (
-	.sample(leftsmux),
-	.volume({	(leftvmux[6] | leftvmux[5]),
-				(leftvmux[6] | leftvmux[4]),
-				(leftvmux[6] | leftvmux[3]),
-				(leftvmux[6] | leftvmux[2]),
-				(leftvmux[6] | leftvmux[1]),
-				(leftvmux[6] | leftvmux[0]) }),
-	.out(ldata)
+	.sample(sample0),
+	.volume({	(vol0[6] | vol0[5]),
+				    (vol0[6] | vol0[4]),
+				    (vol0[6] | vol0[3]),
+				    (vol0[6] | vol0[2]),
+				    (vol0[6] | vol0[1]),
+				    (vol0[6] | vol0[0]) }),
+	.out(msample0)
 );
 
-//right volume control
-//when volume MSB is set, volume is always maximum
 svmul sv1
 (
-	.sample(rightsmux),
-	.volume({	(rightvmux[6] | rightvmux[5]),
-				(rightvmux[6] | rightvmux[4]),
-				(rightvmux[6] | rightvmux[3]),
-				(rightvmux[6] | rightvmux[2]),
-				(rightvmux[6] | rightvmux[1]),
-				(rightvmux[6] | rightvmux[0])}),
-	.out(rdata)	
-	);
+	.sample(sample1),
+	.volume({	(vol1[6] | vol1[5]),
+				    (vol1[6] | vol1[4]),
+				    (vol1[6] | vol1[3]),
+				    (vol1[6] | vol1[2]),
+				    (vol1[6] | vol1[1]),
+				    (vol1[6] | vol1[0]) }),
+	.out(msample1)
+);
+
+svmul sv2
+(
+	.sample(sample2),
+	.volume({	(vol2[6] | vol2[5]),
+				    (vol2[6] | vol2[4]),
+				    (vol2[6] | vol2[3]),
+				    (vol2[6] | vol2[2]),
+				    (vol2[6] | vol2[1]),
+				    (vol2[6] | vol2[0]) }),
+	.out(msample2)
+);
+
+svmul sv3
+(
+	.sample(sample3),
+	.volume({	(vol3[6] | vol3[5]),
+				    (vol3[6] | vol3[4]),
+				    (vol3[6] | vol3[3]),
+				    (vol3[6] | vol3[2]),
+				    (vol3[6] | vol3[1]),
+				    (vol3[6] | vol3[0]) }),
+	.out(msample3)
+);
+
+
+// channel muxing
+always @ (posedge clk) begin
+  ldatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
+  rdatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
+end
+
+endmodule
+
 
 //--------------------------------------------------------------------------------------
 
-//left sigma/delta modulator
-always @(posedge clk)
-  if (strhor)
-    acculeft[14:0] <= 0;
-  else
-    acculeft[14:0] <= ({1'b0,acculeft[13:0]} + {1'b0,~ldata[13],ldata[12:0]});
-	
-assign left = acculeft[14];
+// audio data processing
+// stereo sigma/delta bitstream modulator
+module sigmadelta
+(
+	input 	clk,				//bus clock
+	input	[14:0] ldatasum,			// left channel data
+	input	[14:0] rdatasum,			// right channel data
+	output	reg left,				//left bitstream output
+	output	reg right				//right bitsteam output
+);
 
-//right sigma/delta modulator
-always @(posedge clk)
-  if (strhor)
-    accuright[14:0] <= 0;
-  else
-    accuright[14:0] <= ({1'b0,accuright[13:0]} + {1'b0,~rdata[13],rdata[12:0]});
 
-assign right = accuright[14];
+//--------------------------------------------------------------------------------------
+
+
+// lfsr
+// TODO good for dithering, better noise needed for additive
+reg [24-1:0] seed = 24'h654321;
+always @ (posedge clk) begin
+  if ((~|seed) || (&seed)) // TODO
+    seed <= #1 24'h654321;
+  else
+    seed <= #1 {seed[22:0], ~(seed[23] ^ seed[22] ^ seed[21] ^ seed[16])};
+end
+
+localparam DW = 15;
+localparam CW = 2;
+localparam RW  = 2;
+localparam A1W = 2;
+localparam A2W = 4;
+
+wire [DW+0  -1:0] sd_l_er0, sd_r_er0;
+wire [DW+A1W-1:0] sd_l_aca1,  sd_r_aca1;
+wire [DW+A2W-1:0] sd_l_aca2,  sd_r_aca2;
+reg  [DW+A1W-1:0] sd_l_ac1=0, sd_r_ac1=0;
+reg  [DW+A2W-1:0] sd_l_ac2=0, sd_r_ac2=0;
+
+// input gain x3
+wire [DW+2-1:0] ldata_gain, rdata_gain;
+assign ldata_gain = {ldatasum[DW-1], ldatasum, ldatasum[DW-2]} + {{(2){ldatasum[DW-1]}}, ldatasum};
+assign rdata_gain = {rdatasum[DW-1], rdatasum, rdatasum[DW-2]} + {{(2){rdatasum[DW-1]}}, rdatasum};
+
+// random dither to 15 bits
+reg [DW-1:0] ldata, rdata;
+always @ (posedge clk) begin
+  ldata <= #1 ldata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
+  rdata <= #1 rdata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
+end
+
+// accumulator adders
+assign sd_l_aca1 = {{(A1W){ldata[DW-1]}}, ldata} - {{(A1W){sd_l_er0[DW-1]}}, sd_l_er0} + {{(DW+A1W-RW){seed[RW-1]}}, seed[RW+6-1:6]} + sd_l_ac1; // TODO random additive noise could be removed
+assign sd_r_aca1 = {{(A1W){rdata[DW-1]}}, rdata} - {{(A1W){sd_r_er0[DW-1]}}, sd_r_er0} + {{(DW+A1W-RW){seed[RW-1]}}, seed[RW+6-1:6]} + sd_r_ac1;
+
+assign sd_l_aca2 = {{(A2W-A1W){sd_l_aca1[DW+A1W-1]}}, sd_l_aca1} - {{(A2W){sd_l_er0[DW-1]}}, sd_l_er0} /*+ {{(DW+A2W-RW){seed[RW-1]}}, seed[RW-1:0]}*/ + sd_l_ac2;
+assign sd_r_aca2 = {{(A2W-A1W){sd_r_aca1[DW+A1W-1]}}, sd_r_aca1} - {{(A2W){sd_r_er0[DW-1]}}, sd_r_er0} /*+ {{(DW+A2W-RW){seed[RW-1]}}, seed[RW-1:0]}*/ + sd_r_ac2;
+
+// accumulators
+always @ (posedge clk) begin
+  sd_l_ac1 <= #1 sd_l_aca1;
+  sd_r_ac1 <= #1 sd_r_aca1;
+  sd_l_ac2 <= #1 sd_l_aca2;
+  sd_r_ac2 <= #1 sd_r_aca2;
+end
+
+// error feedback
+assign sd_l_er0 = sd_l_ac2[DW+A2W-1] ? {1'b1, {(DW-1){1'b0}}} : {1'b0, {(DW-1){1'b1}}};
+assign sd_r_er0 = sd_r_ac2[DW+A2W-1] ? {1'b1, {(DW-1){1'b0}}} : {1'b0, {(DW-1){1'b1}}};
+
+// output
+always @ (posedge clk) begin
+  left  <= #1 ~sd_l_er0[DW-1];
+  right <= #1 ~sd_r_er0[DW-1];
+end
 
 endmodule
+
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -799,9 +852,6 @@ begin
 		
 	endcase
 end
-
-
-
 
 
 //--------------------------------------------------------------------------------------
