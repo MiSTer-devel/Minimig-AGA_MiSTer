@@ -433,8 +433,6 @@ TG68K tg68k (
 );
 
 
-
-
 //// sdram ////
 sdram sdram (
   .sdata        (DRAM_DQ          ),
@@ -575,7 +573,6 @@ Minimig1 minimig (
   .hd_fwr       (hd_fwr           ),  // hd fifo writing
   .hd_frd       (hd_frd           )   // hd fifo  ading
 );
-
 
 
 endmodule
