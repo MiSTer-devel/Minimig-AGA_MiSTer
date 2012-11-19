@@ -5,7 +5,6 @@ module indicators (
   input  wire           clk,    // clock
   input  wire           rst,    // reset
   // inputs
-  input wire  [  7-1:0] volume,
   input wire  [  7-1:0] track,  // floppy track number
   input wire            f_wr,   // floppy fifo write
   input wire            f_rd,   // floppy fifo read
@@ -45,28 +44,8 @@ sseg_decode #(
   .sseg (hex_1)
 );
 
-//assign hex_2        = 7'h7f;  // off
-//assign hex_2        = ~7'h71; // f
-
-sseg_decode #(
-  .REG  (1),
-  .INV  (1)
-) sseg_HEX2 (
-  .clk  (clk),
-  .rst  (rst),
-  .num  (volume[3:0]),
-  .sseg (hex_2)
-);
-
-sseg_decode #(
-  .REG  (1),
-  .INV  (1)
-) sseg_HEX3 (
-  .clk  (clk),
-  .rst  (rst),
-  .num  ({1'b0, volume[6:4]}),
-  .sseg (hex_3)
-);
+assign hex_2        = 7'h7f;  // off
+assign hex_3        = ~7'h71; // f
 
 
 // LEDs
