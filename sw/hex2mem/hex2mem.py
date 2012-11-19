@@ -32,6 +32,7 @@ def main():
   if (len(args) != 2) : parser.error("Invalid number of arguments.\n")
   fin = args[0]
   fon = args[1]
+  modulename = os.path.splitext(os.path.basename(fon))[0]
 
   # check that files exist
   if (not os.path.isfile(fin)):
@@ -80,21 +81,21 @@ def main():
 
   # write Verilog memory file
   # the Verilog code follows Altera guidelines for inferring ROM functions from HDL code (Altera Recommended HDL Coding Styles)
-  fmt = "    %d'h%%0%dx : dat <= #1 %d'h%%0%dx;\n" % (aw, int(math.ceil((aw+3)/4)), (mw*4), mw)
+  fmt = "    %d'h%%0%dx : q <= #1 %d'h%%0%dx;\n" % (aw, int(math.ceil((aw+3)/4)), (mw*4), mw)
 
   with open(fon, 'w') as fo:
     # header
-    fo.write(     "/* hostboot.v */\n")
+    fo.write(     "/* %s */\n" % os.path.basename(fon))
     fo.write(     "/* AUTO-GENERATED FILE, DO NOT EDIT! */\n")
-    fo.write(     "/* generated from %s assembler file */\n\n\n" % os.path.abspath(fin))
-    fo.write(     "module hostboot (\n")
-    fo.write(     "  input  wire           clk,\n")
-    fo.write(     "  input  wire [ %02d-1:0] adr,\n" % (aw))
-    fo.write(     "  output reg  [ %02d-1:0] dat\n" % (mw*4))
+    fo.write(     "/* generated from %s assembler file */\n\n\n" % fin)
+    fo.write(     "module %s (\n" % modulename)
+    fo.write(     "  input  wire           clock,\n")
+    fo.write(     "  input  wire [ %02d-1:0] address,\n" % (aw))
+    fo.write(     "  output reg  [ %02d-1:0] q\n" % (mw*4))
     fo.write(     ");\n\n\n")
     # data
-    fo.write(     "always @ (posedge clk) begin\n")
-    fo.write(     "  case(adr)\n")
+    fo.write(     "always @ (posedge clock) begin\n")
+    fo.write(     "  case(address)\n")
     for idx, data in enumerate(dat):
       fo.write(   fmt % (idx, int(data, 16)))
     # padding
