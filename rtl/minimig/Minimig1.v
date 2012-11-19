@@ -910,9 +910,9 @@ gayle GAYLE1
 //  .q(boot_data)
 //);
 
-hostboot BOOTROM1 (
+amiga_boot BOOTROM1 (
   .clk    (clk),
-  .adr    (cpu_address[10:1]),
+  .adr    (cpu_address[8:1]),
   .dat    (boot_data)
 );
 
