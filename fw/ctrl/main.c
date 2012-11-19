@@ -58,6 +58,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 //// global variables ////
 const char version[] = {"$VER:AYQ100818_RB2"};
+const char * firmware="1          ";
 extern adfTYPE df[4];
 unsigned char Error;
 char s[40];
@@ -123,6 +124,7 @@ __geta4 void main(void)
   DEBUG_FUNC_IN();
 
   uint32_t spiclk;
+  fileTYPE sd_boot_file;
 
   // boot message
   printf("\r**** MINIMIG-DE1 ****\r\r");
@@ -154,8 +156,9 @@ __geta4 void main(void)
 
   BootPrint("Init done again - hunting for drive...\n");
 
-  spiclk = 100000 / (read32(REG_SPI_DIV_ADR) + 2);
-  printf ("SPI clock: %u.%uMHz\r", spiclk/100, spiclk%100);
+  spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
+  printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
+  printf("SPI clock: %u.%uMHz\r", spiclk/100, spiclk%100);
 
   if (!FindDrive()) FatalError(2);
         
@@ -175,8 +178,40 @@ __geta4 void main(void)
 
   sprintf(s, "SPI clock: %u.%uMHz\n", spiclk/100, spiclk%100);
   BootPrint(s);
-  HideSplash();
+  //HideSplash();
 
+/*
+  // try to open SD card firmware and load it
+  printf("Opening firmware file %s ... ", firmware);
+  if (FileOpen(&sd_boot_file, firmware)) {
+    printf("OK, filesize: %u\r", sd_boot_file.size);
+    hmalloc(64*1024); // allocate some buffer space in case new firmware is bigger
+    uint32_t * fw_ram = (uint32_t *)hmalloc(sd_boot_file.size); // allocate space for firmware
+    if (!fw_ram) {
+      printf("Cannot allocate memory for firmware!\r");
+      FatalError(0);
+    }
+    printf("Loading firmware to RAM ... ");
+    if (!FileReadEx(&sd_boot_file, fw_ram, (sd_boot_file.size + (sd_boot_file.size&0x1ff))>>9)) {
+      printf ("\rFailed loading firmware to RAM!\r");
+      FatalError(0);
+    }
+    printf("OK, initializing copy routine, size %u ...\r", sizeof(fw_copy_routine));
+    uint32_t * fw_copy = (uint32_t *)hmalloc(sizeof(fw_copy_routine));
+    if (!fw_copy) {
+      printf("Cannot allocate memory for firmware copy routine!\r");
+      FatalError(0);
+    }
+    memcpy(fw_copy, fw_copy_routine, sizeof(fw_copy_routine));
+    sys_load(fw_ram, RAM_START, RAM_START + sd_boot_file.size, fw_copy);
+  }
+  printf("FAILED - no firmware on SD card. Continuing with FLASH firmware.\r");
+
+  // TODO must add firmware version & version test - otherwise the SDcard firmware will load itself again in an endless loop!
+  // TODO Or a simple single bit register that gets set once SDcard fw is loaded.
+*/
+
+  // main loop
   while (1) {
     HandleFpga();
     HandleUI();

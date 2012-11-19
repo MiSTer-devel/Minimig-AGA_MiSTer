@@ -59,13 +59,13 @@ OBJDIR=obj
 
 
 # include dirs
-CINCLUDES += -I. -Ilib/ -I../or32/
+CINCLUDES += -I. -Ilib/
 
 # headers
 #CHEADERS=lib/string.h lib/stdio.h hardware.h or32_defs.h spr_defs.h firmware.h config.h errors.h charrom.h fat.h fdd.h fpga.h hdd.h hdd_internal.h logo.h menu.h mmc.h osd.h rafile.h swap.h
 
 # asm sources
-ASM_SOURCES=../or32/start.S
+ASM_SOURCES=start.S
 
 # KLIBC sources
 KLIBC_SOURCES=klibc/memcmp.c klibc/memcpy.c klibc/memset.c klibc/printf.c klibc/sprintf.c klibc/strcat.c klibc/strchr.c klibc/strcpy.c klibc/strlen.c klibc/strncat.c klibc/strncmp.c klibc/strncpy.c klibc/vsnprintf.c
@@ -77,8 +77,8 @@ COMMON_SOURCES=hardware.c config.c fat.c fdd.c fpga.c hdd.c main.c menu.c mmc.c 
 ALL_SOURCES = $(ASM_SOURCES) $(KLIBC_SOURCES) $(COMMON_SOURCES)
 
 # linker script
-ROM_LD=../rom.ld
-RAM_LD=../ram.ld
+ROM_LD=rom.ld
+RAM_LD=ram.ld
 
 # get target from commandline
 ifeq ($(target),ROM)

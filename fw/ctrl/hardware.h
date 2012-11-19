@@ -101,7 +101,7 @@
 #define DisableDMode()      write32(REG_SPI_CS_ADR, 0x80)
 
 #define SPI_slow()          write32(REG_SPI_DIV_ADR, 0x3f)
-#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x00)
+#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x07)
 #define SPI_write(x)        write32(REG_SPI_DAT_ADR, (x))
 #define SPI_read()          (read32(REG_SPI_DAT_ADR))
 #define SPI(x)              (SPI_write(x), SPI_read())
@@ -113,8 +113,8 @@
 #define TIMER_set(x)        write32(REG_TIMER_ADR, (x))
 #define TIMER_wait(x)       {TIMER_set(0); while (TIMER_get()<(x));}
 
-//#define SPIN                (SPI_read()) // Waste a few cycles to let the FPGA catch up
-#define SPIN
+#define SPIN                (SPI_read()) // Waste a few cycles to let the FPGA catch up
+//#define SPIN
 
 #define RST_system()        write32(REG_RST_ADR, 0x1)
 #define RST_minimig()       write32(REG_RST_ADR, 0x2)
