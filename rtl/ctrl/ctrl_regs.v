@@ -121,7 +121,7 @@ always @ (posedge clk, posedge rst) begin
   if (rst)
     ctrl_status <= #1 4'b0;
   else if (ctrl_en)
-    ctrl_status <= #1 dat_w[18:15];
+    ctrl_status <= #1 dat_w[19:16];
 end
 
 
@@ -394,12 +394,12 @@ end
 // ack
 always @ (*) begin
   case(adr[4:2])
-    REG_UART_TX   : ack = cs && tx_ready;
+    REG_UART_TX   : ack = tx_ready;
     REG_SPI_DIV,
     REG_SPI_CS,
     REG_SPI_DAT,
-    REG_SPI_BLOCK : ack = cs && !(spi_act | spi_act_d);
-    default       : ack = cs;
+    REG_SPI_BLOCK : ack = !(spi_act | spi_act_d);
+    default       : ack = 1'b1;
   endcase
 end
 
