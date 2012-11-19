@@ -171,7 +171,7 @@ assign sram_ub_n  = s_ub_n;
 assign sram_lb_n  = s_lb_n;
 assign sram_oe_n  = s_oe_n;
 assign sram_dat_w = s_dat_w;
-assign ack        = cs && s_ack;
+assign ack        = s_ack;
 assign err        = 1'b0;
 
 
