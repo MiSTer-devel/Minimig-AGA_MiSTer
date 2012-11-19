@@ -7,14 +7,14 @@
 REL_DIR=rel
 CTRL_FW_DIR=fw/tmp
 CTRL_BOOT_DIR=fw/ctrl_boot
-HOST_BOOT_DIR=fw/host_boot
+AMIGA_BOOT_DIR=fw/amiga_boot
 FPGA_DIR=fpga/altera
 
 
 ### files ###
 CTRL_FW=$(CTRL_FW_DIR)/bin/something1.boot
 CTRL_BOOT=$(CTRL_BOOT_DIR)/bin/something2.boot
-HOST_BOOT=$(HOST_BOOT_DIR)/bin/hostboot.v
+AMIGA_BOOT=$(AMIGA_BOOT_DIR)/bin/amiga_boot.v
 FPGA=$(FPGA_DIR)/out/minimig_de1.sof $(FPGA_DIR)/out/minimig_de1.pof
 
 
@@ -27,7 +27,7 @@ all:
 	@mkdir -p $(REL_DIR)
 #	@make ctrl_fw
 #	@make ctrl_boot
-	@make host_boot
+	@make amiga_boot
 	@make fpga
 
 
@@ -41,10 +41,10 @@ ctrl_boot: Makefile
 	@$(MAKE) -C $(CTRL_BOOT_DIR) $(BUILD_OPT)
 	@cp $(CTRL_BOOT) $(REL_DIR)/
 
-host_boot: Makefile 
-	@echo Building host boot firmware in $(HOST_BOOT_DIR) ...
-	@$(MAKE) -C $(HOST_BOOT_DIR) $(BUILD_OPT)
-	@cp $(HOST_BOOT) $(REL_DIR)/
+amiga_boot: Makefile 
+	@echo Building amiga boot firmware in $(AMIGA_BOOT_DIR) ...
+	@$(MAKE) -C $(AMIGA_BOOT_DIR) $(BUILD_OPT)
+	@cp $(AMIGA_BOOT) $(REL_DIR)/
 
 fpga: Makefile 
 	@echo Building FPGA in $(FPGA_DIR) ...
@@ -58,6 +58,6 @@ clean:
 	@rm -rf $(REL_DIR)
 	@$(MAKE) -C $(CTRL_FW_DIR) clean
 	@$(MAKE) -C $(CTRL_BOOT_DIR) clean
-	@$(MAKE) -C $(HOST_BOOT_DIR) clean
+	@$(MAKE) -C $(AMIGA_BOOT_DIR) clean
 	@$(MAKE) -C $(FPGA_DIR) clean
 
