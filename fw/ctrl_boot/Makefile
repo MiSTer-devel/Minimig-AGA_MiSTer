@@ -4,8 +4,8 @@
 
 
 ### paths ###
-HEX2MEM_DIR = ../../../sw/hex2mem/
-HEX2MIF_DIR = ../../../sw/hex2mif/
+HEX2MEM_DIR = ../../sw/hex2mem/
+HEX2MIF_DIR = ../../sw/hex2mif/
 
 
 ### tools ###
