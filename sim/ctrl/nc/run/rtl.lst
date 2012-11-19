@@ -64,4 +64,5 @@
 ../../../../rtl/ctrl/qmem_bus.v
 ../../../../rtl/ctrl/qmem_decoder.v
 ../../../../rtl/ctrl/qmem_sram.v
+../../../../fw/ctrl_boot/bin/ctrl_boot.v
 

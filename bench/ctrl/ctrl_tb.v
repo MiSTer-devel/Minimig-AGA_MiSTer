@@ -12,6 +12,7 @@
 module ctrl_tb();
 
 
+
 ////////////////////////////////////////
 // defines                            //
 ////////////////////////////////////////
@@ -51,6 +52,9 @@ wire           FL_CE_N;     // FLASH Chip Enable
 // UART
 wire           UART_TXD;    // UART Transmitter
 wire           UART_RXD;    // UART Receiver
+reg            BOOT_SEL;    // boot location select
+reg  [ 4-1:0]  CTRL_CFG;    // control block config input
+wire [ 4-1:0]  CTRL_STATUS; // control block status output
 
 
 
@@ -72,10 +76,11 @@ initial begin
   // initial states
   RST = 1;
   ERR = 0;
+  BOOT_SEL = 0;
 
   // load RAM
   $display("BENCH : %t : loading memory ...", $time);
-  $readmemh("../../../../fw/ctrl/out/fw.hex", MEM);
+  //$readmemh("../../../../fw/ctrl/boot_old/bin/ctrl_boot.hex", MEM);
   //ram_write;
 
   repeat(2) @ (posedge CLK);
@@ -84,7 +89,7 @@ initial begin
   RST = 0;
 
   // wait
-  repeat(120000) @ (posedge CLK);
+  repeat(15000000) @ (posedge CLK);
 
   // display result
   if (ERR) $display("BENCH : %t : ctrl test FAILED - there were errors!", $time);
@@ -138,10 +143,14 @@ ctrl_top ctrl_top (
   .clk_out      (           ),
   .rst_out      (           ),
   .rst_minimig  (           ),
+  // config
+  .boot_sel     (BOOT_SEL   ),
+  .ctrl_cfg     (CTRL_CFG   ),
   // status
   .rom_status   (           ),
   .ram_status   (           ),
   .reg_status   (           ),
+  .ctrl_status  (CTRL_STATUS),
   // SRAM interface
   .sram_adr     (SRAM_ADDR  ),
   .sram_ce_n    (SRAM_CE_N  ),
@@ -195,7 +204,7 @@ IS61LV6416L #(
 // FLASH model
 s29al032d_00 #(
   .UserPreload (1'b1),
-  .mem_file_name("../../../../fw/ctrl/out/rom.hex")
+  .mem_file_name("../../../../fw/ctrl_boot/bin/ctrl_boot.hex")
 ) rom (
   .A21          (FL_ADDR[21]),
   .A20          (FL_ADDR[20]),
@@ -237,13 +246,14 @@ s29al032d_00 #(
 
 
 // SDCARD model
-sdModel sdcard (
-  .spiClk       (SD_CLK     ),
-  .spiDataIn    (SD_CMD     ),
-  .spiDataOut   (SD_DAT     ),
-  .spiCS_n      (SPI_CS_N   )
+sd_card #(
+  .FNAME  ("../../../../sd32MBNP.img")
+) sdcard (
+  .sck          (SD_CLK     ),
+  .ss           (SPI_CS_N   ),
+  .mosi         (SD_CMD     ),
+  .miso         (SD_DAT     )
 );
-
 
 
 endmodule
