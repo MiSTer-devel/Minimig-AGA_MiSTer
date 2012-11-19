@@ -5,15 +5,15 @@
 
 ### paths ###
 REL_DIR=rel
-CTRL_FW_DIR=fw/tmp
+CTRL_FW_DIR=fw/ctrl
 CTRL_BOOT_DIR=fw/ctrl_boot
 AMIGA_BOOT_DIR=fw/amiga_boot
 FPGA_DIR=fpga/altera
 
 
 ### files ###
-CTRL_FW=$(CTRL_FW_DIR)/bin/something1.boot
-CTRL_BOOT=$(CTRL_BOOT_DIR)/bin/something2.boot
+CTRL_FW=$(CTRL_FW_DIR)/bin/de1_boot.bin
+CTRL_BOOT=$(CTRL_BOOT_DIR)/bin/de1_boot.bin
 AMIGA_BOOT=$(AMIGA_BOOT_DIR)/bin/amiga_boot.v
 FPGA=$(FPGA_DIR)/out/minimig_de1.sof $(FPGA_DIR)/out/minimig_de1.pof
 
