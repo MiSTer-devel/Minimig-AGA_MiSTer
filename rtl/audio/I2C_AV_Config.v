@@ -11,9 +11,6 @@
 //agreement for further details.
 
 module I2C_AV_Config (  //Host Side
-    volume, // temp!
-    volup,
-    voldown,
     iCLK,
     iRST_N,
       //  I2C Side
@@ -21,10 +18,6 @@ module I2C_AV_Config (  //Host Side
     oI2C_SDAT
   );
 
-// config
-output [7-1:0] volume;
-input volup;
-input voldown;
 //  Host Side
 input  iCLK;
 input  iRST_N;
@@ -60,45 +53,6 @@ parameter  SET_FORMAT  =  8;
 parameter  SAMPLE_CTRL  =  9;
 parameter  SET_ACTIVE  =  10;
 
-
-//// volume control ////
-reg volup_d, voldown_d;
-wire volup_pos, voldown_pos;
-wire vol_event;
-reg  vol_event_d;
-
-always @ (posedge iCLK, negedge iRST_N) begin
-  if (!iRST_N) begin
-    volup_d   <= #1 1'b0;
-    voldown_d <= #1 1'b0;
-  end else begin
-    volup_d   <= #1 volup;
-    voldown_d <= #1 voldown;
-  end
-end
-
-assign volup_pos   = !volup_d && volup;
-assign voldown_pos = !voldown_d && voldown;
-assign vol_event = volup_pos || voldown_pos;
-
-always @ (posedge iCLK, negedge iRST_N) begin
-  if (!iRST_N)
-    vol_event_d <= #1 1'b0;
-  else
-    vol_event_d <= #1 vol_event;
-end
-
-//// volume register ////
-reg  [  7-1:0] volume;
-
-always @ (posedge iCLK, negedge iRST_N) begin
-  if (!iRST_N)
-    volume <= #1 7'h79;
-  else if (volup_pos && ~(&volume))
-    volume <= #1 volume + 7'd1;
-  else if (voldown_pos && |volume)
-    volume <= #1 volume - 7'd1;
-end
 
 
 /////////////////////  I2C Control Clock  ////////////////////////
@@ -155,26 +109,6 @@ always@(posedge mI2C_CTRL_CLK or negedge iRST_N) begin
         end
         2:  begin
           LUT_INDEX  <= LUT_INDEX + 4'd1;
-          mSetup_ST  <= 2'd0;
-        end
-      endcase
-    end else if(vol_event_d) begin
-      case(mSetup_ST)
-        0:  begin      //ADR?   REG   RHLBOTH RZCEN VOLUME (1111111 = +6dB, 0110000 = -73dB, 0000000 - 0101111 = MUTE)
-          mI2C_DATA  <= {8'h34, 7'h6, 1'b1, 1'b0, volume};
-          mI2C_GO    <= 1'd1;
-          mSetup_ST  <= 2'd1;
-        end
-        1:  begin
-          if(mI2C_END) begin
-            if(!mI2C_ACK)
-              mSetup_ST  <= 2'd2;
-            else
-              mSetup_ST  <= 2'd0;
-            mI2C_GO    <= 1'd0;
-          end
-        end
-        2:  begin
           mSetup_ST  <= 2'd0;
         end
       endcase

@@ -183,7 +183,6 @@ wire [  2-1:0] sdram_ba;
 // audio
 wire           audio_lr_switch;
 wire           audio_lr_mix;
-wire [  7-1:0] volume;
 
 // ctrl
 wire [ 16-1:0] SRAM_DAT_W;
@@ -380,7 +379,6 @@ assign clk_7 = clk7_cnt[1];
 indicators indicators(
   .clk          (clk_7            ),
   .rst          (~pll_locked      ),
-  .volume       (volume           ),
   .track        (track            ),
   .f_wr         (floppy_fwr       ),
   .f_rd         (floppy_frd       ),
@@ -483,9 +481,6 @@ audio_top audio_top (
   // config
   .exchan       (audio_lr_switch  ),  // switch audio left / right channel
   .mix          (audio_lr_mix     ),  // normal / centered mix (play some left channel on the right channel and vise-versa)
-  .volume       (volume           ),  // current volume value
-  .volup        (key_3            ),  // increase volume
-  .voldown      (key_2            ),  // decrease volume
   // audio shifter
   .rdata        (rdata            ),  // right channel sample data
   .ldata        (ldata            ),  // left channel sample data
