@@ -95,6 +95,8 @@ bootsel = 1 : master sees top 2MB at location offset 0, and lower 2MB at locatio
 
 */
 
+//`define MINIMIG_DE1_FLASH_ROM
+
 
 module ctrl_top (
   // system
@@ -387,6 +389,7 @@ qmem_sram #(
 // ROM                                //
 ////////////////////////////////////////
 
+`ifdef MINIMIG_DE1_FLASH_ROM
 ctrl_flash #(
   .FAW      (22 ),            // flash address width
   .FDW      (8  ),            // flash data width
@@ -419,7 +422,15 @@ ctrl_flash #(
   .fl_dat_w   (fl_dat_w   ),
   .fl_dat_r   (fl_dat_r   )
 );
-
+`else
+ctrl_boot ctrl_rom (
+  .clock      (clk        ),
+  .address    (rom_adr[12:2]),
+  .q          (rom_dat_r  )
+);
+assign rom_ack = 1'b1;
+assign rom_err = 1'b0;
+`endif
 
 
 ////////////////////////////////////////
