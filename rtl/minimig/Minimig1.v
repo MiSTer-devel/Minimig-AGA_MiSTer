@@ -911,9 +911,9 @@ gayle GAYLE1
 //);
 
 amiga_boot BOOTROM1 (
-  .clk    (clk),
-  .adr    (cpu_address[8:1]),
-  .dat    (boot_data)
+  .clock    (clk),
+  .address  (cpu_address[8:1]),
+  .q        (boot_data)
 );
 
 assign boot_data_out[15:0] = (sel_boot) ? boot_data[15:0] : 16'h0000;
