@@ -87,9 +87,10 @@ set_location_assignment PIN_L19 -to Joy[0]
 #GPIO_0[34]
 set_location_assignment PIN_L18 -to Joy[4]
 #GPIO_0[35]
-set_location_assignment PIN_H12 -to IDE_RESET
 #GPIO_1[0]
-set_location_assignment PIN_H13 -to GPIO_1[1]
+set_location_assignment PIN_H12 -to AUDIOLEFT
+#GPIO_1[1]
+set_location_assignment PIN_H13 -to AUDIORIGHT
 set_location_assignment PIN_H14 -to IDE_DB[7]
 #GPIO_1[2]
 set_location_assignment PIN_G15 -to IDE_DB[8]
@@ -602,6 +603,10 @@ set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
 
 
+
+
+
+
 set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
@@ -709,6 +714,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cfgr.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
 set_global_assignment -name VERILOG_FILE ../../fw/host_boot/bin/hostboot.v
-
+set_global_assignment -name QIP_FILE ../../rtl/ctrl/ctrl_boot.qip
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
