@@ -384,12 +384,14 @@ mt48lc16m16a2 #(
 );
 
 
-/* sd card model */
-sdModel sd_card (
-  .spiClk       (SD_CLK),
-  .spiDataIn    (SD_CMD),
-  .spiDataOut   (SD_DAT),
-  .spiCS_n      (SD_DAT3)
+//// SDCARD model ////
+sd_card #(
+  .FNAME  ("../../../../sd32MBNP.img")
+) sdcard (
+  .sck          (SD_CLK     ),
+  .ss           (SD_DAT3    ),
+  .mosi         (SD_CMD     ),
+  .miso         (SD_DAT     )
 );
 
 

@@ -41,6 +41,8 @@
 ../../../../rtl/ctrl/qmem_decoder.v
 ../../../../rtl/ctrl/qmem_sram.v
 
+../../../../fw/ctrl_boot/bin/ctrl_boot.v
+
 ../../../../rtl/or1200/or1200_alu.v
 ../../../../rtl/or1200/or1200_amultp2_32x32.v
 ../../../../rtl/or1200/or1200_cfgr.v
@@ -105,7 +107,7 @@
 ../../../../rtl/sdram/sdram_ctrl.v
 ../../../../rtl/de1/sdram.vhd
 
-../../../../rtl/de1/JBboot.v
+../../../../fw/amiga_boot/bin/amiga_boot.v
 
 ../../../../rtl/io/indicators.v
 ../../../../rtl/io/sseg_decode.v

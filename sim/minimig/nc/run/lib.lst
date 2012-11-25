@@ -6,7 +6,7 @@
 
 ../../../../lib/vga/vga_monitor.v
 
-../../../../lib/models/sdModel.v
+../../../../lib/models/sd_card.v
 ../../../../lib/models/mt48lc16m16a2.v
 ../../../../lib/models/IS61LV6416L.v
 
