@@ -316,6 +316,89 @@ void SendFileEncrypted(RAFile *file,unsigned char *key,int keysize)
 }
 
 
+// draw on screen
+char BootDraw(char *data, unsigned short len, unsigned short offset)
+{
+  DEBUG_FUNC_IN();
+
+    unsigned char c1, c2, c3, c4;
+    unsigned char cmd;
+    const char *p;
+    unsigned short n;
+    unsigned short i;
+
+    n = (len+3)&(~3);
+    i = 0;
+
+    cmd = 1;
+    while (1)
+    {
+        EnableFpga();
+        c1 = SPI(0x10); // track read command
+        c2 = SPI(0x01); // disk present
+        SPI(0);
+        SPI(0);
+        c3 = SPI(0);
+        c4 = SPI(0);
+
+        printf ("cmd:%d C1:0x%02x C3:0x%02x C4:0x%02x\r", cmd, c1, c3, c4);
+
+        if (c1 & CMD_RDTRK)
+        {
+            if (cmd)
+            { // command phase
+                if (c3 == 0x80 && c4 == 0x06) // command packet size must be 12 bytes
+                {
+                    printf("len:%d offset:%d\r", len, offset);
+                    cmd = 0;
+                    SPI(CMD_HDRID >> 8); // command header
+                    SPI(CMD_HDRID & 0xFF);
+                    SPI(0x00); // cmd: 0x0001 = print text
+                    SPI(0x01);
+                    // data packet size in bytes
+                    SPI(0x00);
+                    SPI(0x00);
+                    SPI((n)>>8);
+                    SPI((n)&0xff); // +2 because only even byte count is possible to send and we have to send termination zero byte
+                    // offset
+                    SPI(0x00);
+                    SPI(0x00);
+                    SPI(offset>>8);
+                    SPI(offset&0xff);
+                }
+                else
+                    break;
+            }
+            else
+            { // data phase
+                if (c3 == 0x80 && c4 == ((n) >> 1))
+                {
+                    p = data;
+                    n = c4 << 1;
+                    printf("c4:0x%02x n:%d\r", c4, n);
+                    while (n--)
+                    {
+                        c4 = *p;
+                        SPI((i>=len) ? 0 : c4);
+                        p++;
+                        i++;
+                    }
+                    DisableFpga();
+                    return 1;
+                }
+                else
+                    break;
+            }
+        }
+        DisableFpga();
+    }
+    DisableFpga();
+    return 0;
+
+  DEBUG_FUNC_OUT();
+}
+
+
 // print message on the boot screen
 char BootPrint(const char *text)
 {
@@ -323,6 +406,8 @@ char BootPrint(const char *text)
     unsigned char cmd;
     const char *p;
     unsigned char n;
+
+    return 0;
 
     p = text;
     n = 0;

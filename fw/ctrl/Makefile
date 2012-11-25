@@ -49,6 +49,8 @@ BUILD_N=$$(cat build_num.txt)
 BUILD_NUM=\"$(BUILD_N)\"
 BUILD_R=$$(git rev-parse --verify HEAD)
 BUILD_REV=\"$(BUILD_R)\"
+BUILD_TG=$$(git desribe --tags --abbrev=0)
+BUILD_TAG=\"$(BUILD_TG)\"
 
 BINDIR=bin
 OBJDIR=obj
@@ -71,7 +73,7 @@ ASM_SOURCES=start.S
 KLIBC_SOURCES=klibc/memcmp.c klibc/memcpy.c klibc/memset.c klibc/printf.c klibc/sprintf.c klibc/strcat.c klibc/strchr.c klibc/strcpy.c klibc/strlen.c klibc/strncat.c klibc/strncmp.c klibc/strncpy.c klibc/vsnprintf.c
 
 # common sources
-COMMON_SOURCES=hardware.c config.c fat.c fdd.c fpga.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c
+COMMON_SOURCES=hardware.c config.c fat.c fdd.c fpga.c hdd.c main.c menu.c mmc.c osd.c rafile.c swap.c boot_logo.c
 
 # all sources
 ALL_SOURCES = $(ASM_SOURCES) $(KLIBC_SOURCES) $(COMMON_SOURCES)
