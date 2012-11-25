@@ -51,6 +51,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "menu.h"
 #include "config.h"
 #include "boot_logo.h"
+#include "boot_print.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -127,9 +128,6 @@ __geta4 void main(void)
   uint32_t spiclk;
   fileTYPE sd_boot_file;
 
-  draw_boot_logo();
-  TIMER_wait(4000);
-
   // boot message
   printf("\r**** MINIMIG-DE1 ****\r\r");
   printf("Build no. ");
@@ -146,19 +144,18 @@ __geta4 void main(void)
   printf("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)\r\r");
   printf("Version %s\r\r", version+5);
 
-
-  //ShowSplash();
-
-  BootPrint("OSD_CA01.SYS is here...\n");
+  draw_boot_logo();
+  BootPrintEx("Booting ...");
+  TIMER_wait(1000);
+  BootPrintEx("test1");
 
   sprintf(s, "** ARM firmware %s **\n", version + 5);
   BootPrint(s);
-
-//  OsdDisable();
+  BootPrintEx("test2");
 
   if (!MMC_Init()) FatalError(1);
+  BootPrintEx("test3");
 
-  BootPrint("Init done again - hunting for drive...\n");
 
   spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
   printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
@@ -169,6 +166,7 @@ __geta4 void main(void)
   BootPrint("found DRIVE...\n");
 
   ChangeDirectory(DIRECTORY_ROOT);
+  BootPrintEx("test4");
 
   //eject all disk
   df[0].status = 0;
@@ -178,6 +176,7 @@ __geta4 void main(void)
 
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
+  BootPrintEx("test5");
   LoadConfiguration(0);  // Use slot-based config filename
 
   sprintf(s, "SPI clock: %u.%uMHz\n", spiclk/100, spiclk%100);

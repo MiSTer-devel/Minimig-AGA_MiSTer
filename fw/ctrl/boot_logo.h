@@ -1,9 +1,12 @@
 /* boot_logo.h */
 /* 2012, rok.krajnc@gmail.com */
 
-extern const unsigned int logo_width;
-extern const unsigned int logo_height;
-extern const char boot_logo[80][29];
+#ifndef __BOOT_LOGO_H__
+#define __BOOT_LOGO_H__
+
 
 void draw_boot_logo();
+
+
+#endif // __BOOT_LOGO_H__
 
