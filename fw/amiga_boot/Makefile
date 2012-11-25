@@ -7,12 +7,14 @@
 # clear dir vars if these programs are in path
 VASM_DIR    = ../../sw/vasm/
 HEX2MEM_DIR = ../../sw/hex2mem/
+HEX2MIF_DIR = ../../sw/hex2mif/
 
 
 ### programs ###
 VASM    = $(VASM_DIR)vasmm68k_mot
 XXD     = xxd
 HEX2MEM = $(HEX2MEM_DIR)hex2mem.py
+HEX2MIF = $(HEX2MIF_DIR)hex2mif.py
 
 
 ### flags ###
@@ -47,6 +49,7 @@ all:
 	@echo Making amiga_boot firmware ...
 	@make bin
 	@make bin/amiga_boot.v
+	@make bin/amiga_boot.mif
 
 bin:
 	@echo $@
@@ -63,6 +66,10 @@ bin/amiga_boot.hex : Makefile bin bin/amiga_boot.bin
 bin/amiga_boot.v : Makefile bin bin/amiga_boot.hex
 	@echo $@
 	@$(HEX2MEM) $(HEXFLAGS) $(@:.v=.hex) $@
+
+bin/amiga_boot.mif : bin/amiga_boot.hex
+	@echo $@
+	@$(HEX2MIF) -w 16 $(@:.mif=.hex) $@
 
 # clean
 clean:
