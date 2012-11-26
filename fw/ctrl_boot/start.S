@@ -32,8 +32,6 @@ _stack:
 /* reset vector */
 _reset:
 real_reset:
-  l.nop
-  l.nop
 
   /* clear r0 */
   l.movhi r0, 0x0
@@ -88,16 +86,17 @@ rom_copy_start:
   l.bnf	  rom_copy_start
   l.nop
 rom_copy_end:
-*/
-  /* continue executing from RAM - next instruction is now in RAM */
+
+  // continue executing from RAM - next instruction is now in RAM
   l.movhi r3,hi(__text_start)
   l.ori   r3,r3,lo(__text_start)
   l.jr    r3
   l.nop
+*/
 
 .section .text, "ax"
   
-  /* bss initialization */
+  // bss initialization
   l.movhi r2, hi(__bss_start)
   l.ori   r2,r2,lo(__bss_start)
   l.movhi r3, hi(__bss_end)
@@ -105,20 +104,20 @@ rom_copy_end:
 bss_init_start:
   l.sfgeu r2,r3
   l.bf    bss_init_end
-  l.nop
+  //l.nop
   l.sw	0(r2),r0
   l.addi	r2,r2,4
   l.bnf	bss_init_start
-  l.nop
+  //l.nop
 bss_init_end:
 
-  /* jump to main */
+  // jump to main
   l.movhi	r3,hi(main)
   l.ori	r3,r3,lo(main)
   l.jr	r3
-  l.nop
+  //l.nop
 
 
-/* or1200 soft mul & soft div */
+// or1200 soft mul & soft div
 #include "or32.S"
 

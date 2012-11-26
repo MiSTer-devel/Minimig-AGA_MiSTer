@@ -32,34 +32,6 @@
 
 #include "hardware.h"
 
-//// firmware copy routine ////
-uint32_t fw_copy_routine[] = {
-  // fw_copy:
-  0x18400040, // l.movhi r2,  // destination start
-  0xa8420000, // l.ori r2,r2, // destination start
-  0x18600041, // l.movhi r3,  // fw end
-  0xa8633900, // l.ori r3,r3, // fw end
-  0x18800000, // l.movhi r4,  // fw start
-  0xa8840000, // l.ori r4,r4, // fw start
-  // fw_copy_start:
-  0xe4621800, // l.sfgeu r2,r3
-  0x10000008, // l.bf 400050 <fw_copy_end>
-  0x15000000, // l.nop 0x0
-  0x84a40000, // l.lwz r5,0x0(r4)
-  0xd4022800, // l.sw 0x0(r2),r5
-  0x9c420004, // l.addi r2,r2,0x4
-  0x9c840004, // l.addi r4,r4,0x4
-  0x0ffffff9, // l.bnf 40002c <fw_copy_start>
-  0x15000000, // l.nop 0x0
-  // fw_copy_end:
-  0x18200047, // l.movhi r1,0x47
-  0xa821fffc, // l.ori r1,r1,0xfffc
-  0x18600040, // l.movhi r3,0x40
-  0xa86300c8, // l.ori r3,r3,0xc8
-  0x44001800, // l.jr r3
-  0x15000000  // l.nop 0x0
-};
-
 
 //// button ////
 unsigned long CheckButton(void)

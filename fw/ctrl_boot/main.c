@@ -30,10 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mmc.h"
 #include "fat.h"
 
-#include "fw_stdio.h"
-
-
-#define LEDS(x) write16(REG_SYS_ADR, (x))
 
 fileTYPE file;
 static const char * firmware="DE1_BOOTBIN";
@@ -61,8 +57,6 @@ void main(void)
   LEDS(led=0x8);
   if (!FindDrive()) FatalError();
 
-  //ChangeDirectory(DIRECTORY_ROOT);
-
   // open file
   LEDS(led=0x3);
   if (!FileOpen(&ft, firmware)) FatalError();
@@ -76,6 +70,7 @@ void main(void)
 
   // jump to RAM firmware
   LEDS(led=0x0);
+  DisableCard();
   sys_jump(0x400004);
 
   // loop forever
@@ -89,6 +84,8 @@ void main(void)
 void FatalError(void)
 {
   DEBUG_FUNC_IN();
+
+  DisableCard();
 
   // loop forever
   while(1) {
