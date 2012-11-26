@@ -49,7 +49,7 @@ BUILD_N=$$(cat build_num.txt)
 BUILD_NUM=\"$(BUILD_N)\"
 BUILD_R=$$(git rev-parse --verify HEAD)
 BUILD_REV=\"$(BUILD_R)\"
-BUILD_TG=$$(git desribe --tags --abbrev=0)
+BUILD_TG=$$(git describe --tags --abbrev=0)
 BUILD_TAG=\"$(BUILD_TG)\"
 
 BINDIR=bin
