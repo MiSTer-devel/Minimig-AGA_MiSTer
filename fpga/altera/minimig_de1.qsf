@@ -594,18 +594,11 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING OF
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 
-
-
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY out
 set_global_assignment -name SEARCH_PATH ../../rtl/or1200
 set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
-
-
-
-
-
 
 set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
@@ -713,7 +706,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cpu.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cfgr.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
-set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
 set_global_assignment -name QIP_FILE ../../rtl/ctrl/ctrl_boot.qip
-
+set_global_assignment -name QIP_FILE amiga_boot.qip
+set_global_assignment -name VERILOG_FILE amiga_boot.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
