@@ -388,10 +388,19 @@ module ps2keyboardmap
   input joy_emu_en
 );
 //local parameters
-localparam JOY2KEY_UP    = 7'h3E;
-localparam JOY2KEY_DOWN  = 7'h2E;
-localparam JOY2KEY_LEFT  = 7'h2D;
-localparam JOY2KEY_RIGHT = 7'h2F;
+//localparam JOY2KEY_UP    = 7'h3E;
+//localparam JOY2KEY_DOWN  = 7'h2E;
+//localparam JOY2KEY_LEFT  = 7'h2D;
+//localparam JOY2KEY_RIGHT = 7'h2F;
+//localparam JOY2KEY_FIRE0 = 7'h0F;
+//localparam JOY2KEY_FIRE1 = 7'h43;
+//localparam JOY1KEY_FIRE0 = 7'h5C;
+//localparam JOY1KEY_FIRE1 = 7'h5D;
+
+localparam JOY2KEY_UP    = 7'h4c;
+localparam JOY2KEY_DOWN  = 7'h4d;
+localparam JOY2KEY_LEFT  = 7'h4f;
+localparam JOY2KEY_RIGHT = 7'h4e;
 localparam JOY2KEY_FIRE0 = 7'h0F;
 localparam JOY2KEY_FIRE1 = 7'h43;
 localparam JOY1KEY_FIRE0 = 7'h5C;
@@ -498,7 +507,7 @@ always @(posedge clk)
 begin
 	if (reset || !numlock)
 		_joy2[4] <= 1'b1;
-	else if (enable2 && keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE0)
+	else if (enable2 && ctrl/*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE0*/)
 		_joy2[4] <= upstroke;
 end
 
@@ -506,7 +515,7 @@ always @(posedge clk)
 begin
 	if (reset || !numlock)
 		_joy2[5] <= 1'b1;
-	else if (enable2 && keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE1)
+	else if (enable2 && aleft /*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE1*/)
 		_joy2[5] <= upstroke;
 end
 
