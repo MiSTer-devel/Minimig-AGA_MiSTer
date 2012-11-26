@@ -254,7 +254,9 @@ copy256KB_loop:
 no_256KB:
 
   bra  end_cmd
+
 no_cmd_2:
+
 
 ;-------------------------------
 cmd_3:
