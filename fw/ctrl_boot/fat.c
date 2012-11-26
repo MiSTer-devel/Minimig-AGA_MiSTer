@@ -89,6 +89,128 @@ unsigned char t_sort_table[MAXDIRENTRIES];
 extern unsigned long GetTimer(unsigned long);
 
 
+//unsigned char FindDrive(void)
+//{
+//    buffered_fat_index = -1;
+//
+//    if (!MMC_Read(0, sector_buffer)) // read MBR
+//        return(0);
+//
+//    //printf("partition type: 0x%02X (", sector_buffer[450]);
+//    //switch (sector_buffer[450])
+//    //{
+//    //case 0x00:
+//    //    //printf("NONE");
+//    //    break;
+//    //case 0x01:
+//    //    //printf("FAT12");
+//    //    break;
+//    //case 0x04:
+//    //case 0x06:
+//    //    //printf("FAT16");
+//    //    break;
+//    //case 0x0B:
+//    //case 0x0C:
+//    //    //printf("FAT32");
+//    //    break;
+//    //default:
+//    //    //printf("UNKNOWN");
+//    //    break;
+//    //}
+//    //printf(")\r");
+//
+//    if (sector_buffer[450] != 0x04 && sector_buffer[450] != 0x06 && sector_buffer[450] != 0x0B && sector_buffer[450] != 0x0C) // first partition filesystem type: FAT16
+//    {
+//        //printf("Unsupported partition type!\r");
+//        return(0);
+//    }
+//
+//    if (sector_buffer[450] == 0x0B || sector_buffer[450] == 0x0C)
+//       fat32 = 1;
+//
+//    if (sector_buffer[510] != 0x55 || sector_buffer[511] != 0xaa)  // check signature
+//        return(0);
+//
+//    // get start of first partition
+//    boot_sector = sector_buffer[467];
+//    boot_sector <<= 8;
+//    boot_sector |= sector_buffer[466];
+//    boot_sector <<= 8;
+//    boot_sector |= sector_buffer[455];
+//    boot_sector <<= 8;
+//    boot_sector |= sector_buffer[454];
+//
+//    if (!MMC_Read(boot_sector, sector_buffer)) // read boot sector
+//        return(0);
+//
+//    // check for near-jump or short-jump opcode
+//    if (sector_buffer[0] != 0xe9 && sector_buffer[0] != 0xeb)
+//        return(0);
+//
+//    // check if blocksize is really 512 bytes
+//    if (sector_buffer[11] != 0x00 || sector_buffer[12] != 0x02)
+//        return(0);
+//
+//    // check medium descriptor byte, must be 0xf8 for hard drive
+//    if (sector_buffer[21] != 0xf8)
+//        return(0);
+//
+//    if (fat32)
+//    {
+//        if (strncmp((const char*)&sector_buffer[0x52], "FAT32   ", 8) != 0) // check file system type
+//            return(0);
+//
+//        cluster_size = sector_buffer[0x0D]; // get cluster_size in sectors
+//        cluster_mask = ~(cluster_size - 1); // calculate cluster mask
+//        dir_entries = cluster_size << 4; // total number of dir entries (16 entries per sector)
+//        root_directory_size = cluster_size; // root directory size in sectors
+//        fat_start = boot_sector + sector_buffer[0x0E] + (sector_buffer[0x0F] << 8); // reserved sector count before FAT table (usually 32 for FAT32)
+//        fat_number = sector_buffer[0x10];
+//        fat_size = sector_buffer[0x24] + (sector_buffer[0x25] << 8) + (sector_buffer[0x26] << 16) + (sector_buffer[0x27] << 24);
+//        data_start = fat_start + (fat_number * fat_size);
+//        root_directory_cluster = sector_buffer[0x2C] + (sector_buffer[0x2D] << 8) + (sector_buffer[0x2E] << 16) + ((sector_buffer[0x2F] & 0x0F) << 24);
+//        root_directory_start = (root_directory_cluster - 2) * cluster_size + data_start;
+//    }
+//    else
+//    {
+//        // calculate drive's parameters from bootsector, first up is size of directory
+//        dir_entries = sector_buffer[17] + (sector_buffer[18] << 8);
+//        root_directory_size = ((dir_entries << 5) + 511) >> 9;
+//
+//        // calculate start of FAT,size of FAT and number of FAT's
+//        fat_start = boot_sector + sector_buffer[14] + (sector_buffer[15] << 8);
+//        fat_size = sector_buffer[22] + (sector_buffer[23] << 8);
+//        fat_number = sector_buffer[16];
+//
+//        // calculate start of directory
+//        root_directory_start = fat_start + (fat_number * fat_size);
+//        root_directory_cluster = 0; // unused
+//
+//        // get cluster_size
+//        cluster_size = sector_buffer[13];
+//
+//        // calculate cluster mask
+//        cluster_mask = ~(cluster_size - 1);
+//
+//        // calculate start of data
+//        data_start = root_directory_start + root_directory_size;
+//    }
+//
+//
+//    // some debug output
+//    //printf("fat_size: %lu\r", fat_size);
+//    //printf("fat_number: %u\r", fat_number);
+//    //printf("fat_start: %lu\r", fat_start);
+//    //printf("root_directory_start: %lu\r", root_directory_start);
+//    //printf("dir_entries: %u\r", dir_entries);
+//    //printf("data_start: %lu\r", data_start);
+//    //printf("cluster_size: %u\r", cluster_size);
+//    //printf("cluster_mask: %08lX\r", cluster_mask);
+//
+//    return(1);
+//}
+
+
 void SwapPartitionBytes(int i)
 {
 	// We don't bother to byteswap the CHS geometry fields since we don't use them.
@@ -254,18 +376,9 @@ unsigned char FileOpen(fileTYPE *file, const char *name)
     unsigned long  iEntry;               // entry index in directory cluster or FAT16 root directory
     unsigned long  nEntries;             // number of entries per cluster or FAT16 root directory size
 
-    if (iDirectory) // subdirectory
-    {
-        iDirectoryCluster = iDirectory;
-        iDirectorySector = data_start + cluster_size * (iDirectoryCluster - 2);
-        nEntries = cluster_size << 4; // 16 entries per sector
-    }
-    else // root directory
-    {
-        iDirectoryCluster = root_directory_cluster;
-        iDirectorySector = root_directory_start;
-        nEntries = fat32 ?  cluster_size << 4 : root_directory_size << 4; // 16 entries per sector
-    }
+    iDirectoryCluster = root_directory_cluster;
+    iDirectorySector = root_directory_start;
+    nEntries = fat32 ?  cluster_size << 4 : root_directory_size << 4; // 16 entries per sector
 
     while (1)
     {
@@ -303,7 +416,7 @@ unsigned char FileOpen(fileTYPE *file, const char *name)
             }
         }
 
-        if (iDirectory || fat32) // subdirectory is a linked cluster chain
+        if (fat32) // subdirectory is a linked cluster chain
         {
             iDirectoryCluster = GetFATLink(iDirectoryCluster); // get next cluster in chain
 
