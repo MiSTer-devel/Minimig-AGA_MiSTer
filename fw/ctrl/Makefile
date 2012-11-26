@@ -109,7 +109,7 @@ all:
 bin/de1_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
 	@echo $(MSG)
 	@echo $@
-	@$(CC) -Wl,-Map,$(@:.or32=.map) -D__BUILD_USER=$(BUILD_USER) -D__BUILD_TIME=$(BUILD_TIME) -D__BUILD_NUM=$(BUILD_NUM) -D__BUILD_REV=$(BUILD_REV) $(CFLAGS) $(CINCLUDES) $(ALL_SOURCES) -T$(LD_SCRIPT) -o $@
+	@$(CC) -Wl,-Map,$(@:.or32=.map) -D__BUILD_USER=$(BUILD_USER) -D__BUILD_TIME=$(BUILD_TIME) -D__BUILD_NUM=$(BUILD_NUM) -D__BUILD_REV=$(BUILD_REV) -D__BUILD_TAG=$(BUILD_TAG) $(CFLAGS) $(CINCLUDES) $(ALL_SOURCES) -T$(LD_SCRIPT) -o $@
 	@echo -n $$(($$(cat build_num.txt) + 1)) > build_num.txt
 	@$(OBJDUMP) -DSx $@ > $(@:.or32=.dis.S)
 

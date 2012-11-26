@@ -45,7 +45,7 @@
 
 
 //// debug output ////
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DBGPRINT(...)       printf(__VA_ARGS__)
@@ -90,6 +90,8 @@
 
 #define DISKLED_ON  // *AT91C_PIOA_SODR = DISKLED;
 #define DISKLED_OFF // *AT91C_PIOA_CODR = DISKLED;
+
+#define LEDS(x)             write16(REG_SYS_ADR, (x))
 
 #define EnableCard()        write32(REG_SPI_CS_ADR, 0x11)
 #define DisableCard()       write32(REG_SPI_CS_ADR, 0x10)

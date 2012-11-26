@@ -59,10 +59,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 //// global variables ////
-const char version[] = {"$VER:AYQ100818_RB2"};
 const char * firmware="1          ";
-extern adfTYPE df[4];
 unsigned char Error;
+extern adfTYPE df[4];
 char s[40];
 
 
@@ -71,20 +70,16 @@ void FatalError(unsigned long error)
 {
   DEBUG_FUNC_IN();
 
-  unsigned long i;
+  sprintf(s,"Fatal error: %lu", error);
+  BootPrintEx(s);
+  printf(s);
 
-  sprintf(s,"Fatal error: %lu\n", error);
-  BootPrint("FatalError...\n");
-  BootPrint(s);
-
-  while (1) {
-    for (i = 0; i < error; i++) {
-      DISKLED_ON;
-      WaitTimer(250);
-      DISKLED_OFF;
-      WaitTimer(250);
-    }
-    WaitTimer(1000);
+  // loop forever
+  while(1) {
+    TIMER_wait(200);
+    LEDS(0x0);
+    TIMER_wait(200);
+    LEDS(error);
   }
 
   DEBUG_FUNC_OUT();
@@ -128,60 +123,71 @@ __geta4 void main(void)
   uint32_t spiclk;
   fileTYPE sd_boot_file;
 
+  HideSplash();
+  SPI_fast();
+
   // boot message
-  printf("\r**** MINIMIG-DE1 ****\r\r");
+  draw_boot_logo();
+  BootPrintEx("**** MINIMIG-DE1 ****");
+  BootPrintEx("Minimig by Dennis van Weeren");
+  BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
+  BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
+  BootPrintEx(" ");
+  sprintf(s, "Build git commit: %s", __BUILD_REV);
+  BootPrintEx(s);
+  sprintf(s, "Build git tag: %s", __BUILD_TAG);
+  BootPrintEx(s);
+  BootPrintEx(" ");
+  BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
+  BootPrintEx("For support, see http://www.minimig.net");
+  BootPrint(" ");
+
+  printf("\r\r**** MINIMIG-DE1 ****\r\r");
+  printf("Minimig by Dennis van Weeren\r");
+  printf("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others\r");
+  printf("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)\r\r");
   printf("Build no. ");
   printf(__BUILD_NUM);
   //printf(" by ");
   //printf(__BUILD_USER);
   printf("\rgit commit ");
   printf(__BUILD_REV);
+  printf("\rgit tag");
+  printf(__BUILD_TAG);
   printf("\r\r");
-  printf("For updates, see https://github.com/rkrajnc/minimig-de1\r");
+  printf("For updates & code see https://github.com/rkrajnc/minimig-de1\r");
   printf("For support, see http://www.minimig.net/\r\r");
-  printf("Minimig by Dennis van Weeren\r");
-  printf("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others\r");
-  printf("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)\r\r");
-  printf("Version %s\r\r", version+5);
-
-  draw_boot_logo();
-  BootPrintEx("Booting ...");
-  TIMER_wait(1000);
-  BootPrintEx("test1");
-
-  sprintf(s, "** ARM firmware %s **\n", version + 5);
-  BootPrint(s);
-  BootPrintEx("test2");
-
-  if (!MMC_Init()) FatalError(1);
-  BootPrintEx("test3");
-
+  printf("Booting ...");
 
   spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
   printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
-  printf("SPI clock: %u.%uMHz\r", spiclk/100, spiclk%100);
+  sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
+  BootPrintEx(s);
+  printf("%s\r", s);
+
+  if (!MMC_Init()) FatalError(1);
+  BootPrintEx("SD card found ...");
+  printf("SD card found ...\r");
 
   if (!FindDrive()) FatalError(2);
-        
-  BootPrint("found DRIVE...\n");
+  BootPrint("Drive found ...");
+  printf("Drive found ...\r");
 
   ChangeDirectory(DIRECTORY_ROOT);
-  BootPrintEx("test4");
 
   //eject all disk
   df[0].status = 0;
   df[1].status = 0;
   df[2].status = 0;
   df[3].status = 0;
+ 
+  BootPrint(" ");
+  BootPrintEx("Booting ...");
 
+  TIMER_wait(5000);
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
-  BootPrintEx("test5");
   LoadConfiguration(0);  // Use slot-based config filename
-
-  sprintf(s, "SPI clock: %u.%uMHz\n", spiclk/100, spiclk%100);
-  BootPrint(s);
-  //HideSplash();
 
   // main loop
   while (1) {
