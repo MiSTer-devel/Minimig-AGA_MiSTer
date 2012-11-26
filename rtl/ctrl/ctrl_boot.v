@@ -82,7 +82,7 @@ module ctrl_boot (
 	defparam
 		altsyncram_component.clock_enable_input_a = "BYPASS",
 		altsyncram_component.clock_enable_output_a = "BYPASS",
-		altsyncram_component.init_file = "../../fw/ctrl_boot/bin/ctrl_boot.mif",
+		altsyncram_component.init_file = "../../fw/ctrl/boot_old/bin/ctrl_boot.mif",
 		altsyncram_component.intended_device_family = "Cyclone II",
 		altsyncram_component.lpm_hint = "ENABLE_RUNTIME_MOD=NO",
 		altsyncram_component.lpm_type = "altsyncram",
@@ -117,7 +117,7 @@ endmodule
 // Retrieval info: PRIVATE: INIT_TO_SIM_X NUMERIC "0"
 // Retrieval info: PRIVATE: INTENDED_DEVICE_FAMILY STRING "Cyclone II"
 // Retrieval info: PRIVATE: JTAG_ENABLED NUMERIC "0"
-// Retrieval info: PRIVATE: JTAG_ID STRING "boot"
+// Retrieval info: PRIVATE: JTAG_ID STRING "ctrl"
 // Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "512"
 // Retrieval info: PRIVATE: MIFfilename STRING "../../fw/ctrl/boot_old/bin/ctrl_boot.mif"
 // Retrieval info: PRIVATE: NUMWORDS_A NUMERIC "1280"
