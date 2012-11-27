@@ -140,7 +140,7 @@ __geta4 void main(void)
   BootPrintEx(" ");
   BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
   BootPrintEx("For support, see http://www.minimig.net");
-  BootPrint(" ");
+  BootPrintEx(" ");
 
   printf("\r\r**** MINIMIG-DE1 ****\r\r");
   printf("Minimig by Dennis van Weeren\r");
@@ -169,7 +169,7 @@ __geta4 void main(void)
   printf("SD card found ...\r");
 
   if (!FindDrive()) FatalError(2);
-  BootPrint("Drive found ...");
+  BootPrintEx("Drive found ...");
   printf("Drive found ...\r");
 
   ChangeDirectory(DIRECTORY_ROOT);
@@ -180,7 +180,6 @@ __geta4 void main(void)
   df[2].status = 0;
   df[3].status = 0;
  
-  BootPrint(" ");
   BootPrintEx("Booting ...");
   printf("Booting ...\r");
 
