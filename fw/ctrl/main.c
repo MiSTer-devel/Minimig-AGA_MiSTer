@@ -157,7 +157,6 @@ __geta4 void main(void)
   printf("\r\r");
   printf("For updates & code see https://github.com/rkrajnc/minimig-de1\r");
   printf("For support, see http://www.minimig.net/\r\r");
-  printf("Booting ...");
 
   spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
   printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
@@ -183,8 +182,9 @@ __geta4 void main(void)
  
   BootPrint(" ");
   BootPrintEx("Booting ...");
+  printf("Booting ...\r");
 
-  TIMER_wait(5000);
+  TIMER_wait(6000);
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
   LoadConfiguration(0);  // Use slot-based config filename

@@ -341,15 +341,12 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
         c3 = SPI(0);
         c4 = SPI(0);
 
-        printf ("cmd:%d C1:0x%02x C3:0x%02x C4:0x%02x\r", cmd, c1, c3, c4);
-
         if (c1 & CMD_RDTRK)
         {
             if (cmd)
             { // command phase
                 if (c3 == 0x80 && c4 == 0x06) // command packet size must be 12 bytes
                 {
-                    printf("len:%d offset:%d\r", len, offset);
                     cmd = 0;
                     SPI(CMD_HDRID >> 8); // command header
                     SPI(CMD_HDRID & 0xFF);
@@ -375,7 +372,6 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
                 {
                     p = data;
                     n = c4 << 1;
-                    printf("c4:0x%02x n:%d\r", c4, n);
                     while (n--)
                     {
                         c4 = *p;
