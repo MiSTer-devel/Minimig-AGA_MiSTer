@@ -11,7 +11,7 @@ This is a port of minimig to the [Altera DE1 board](http://www.altera.com/educat
 ## Usage
 
 ### Software
-Under Downloads, there's a [zip]https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-rel5.zip) file with the latest build. It contains a .sof and a .pof file that can be used to program the FPGA, and a de1_boot.bin file, which should be placed on the root of a FAT - formatted SD / SDHC / MMC card.
+Under Downloads, there's a [zip](https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-rel5.zip) file with the latest build. It contains a .sof and a .pof file that can be used to program the FPGA, and a de1_boot.bin file, which should be placed on the root of a FAT - formatted SD / SDHC / MMC card.
 
 Also needed are a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
 
