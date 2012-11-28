@@ -8,19 +8,10 @@ This is a port of minimig to the [Altera DE1 board](http://www.altera.com/educat
 [Amiga](http://en.wikipedia.org/wiki/Amiga_500) was (in my opinion) an amazing personal computer, announced around 1987, which - at the time - far surpassed any other personal computer on the market, with advanced graphic & sound capabilities.
 
 
-## Sources
-
-This port is based on work done by tobiflexx, who did the original hard work of porting minimig to the Altera boards. His sources are published on [minimigtg68](http://gamesource.groups.yahoo.com/group/minimigtg68) Yahoo Group. He is also the author of the tg68 Motorola 68000 softcore CPU, published on [opencores](http://opencores.org/project,tg68).
-
-Original minimig sources with updates from yaqube (and possibly others) are published on [Google Code](http://code.google.com/p/minimig/).
-
-Some updates are from user boing4000 from the Minimig forum.
-
-
 ## Usage
 
 ### Software
-Under Downloads, there's a [zip](https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-config-latest.zip) file with the latest build. It contains a .sof file that is used to program the FPGA, and a menue.sys file, which should be placed on the root of a FAT16 - formatted SD card no larger than 2GB.
+Under Downloads, there's a [zip](https://github.com/downloads/rkrajnc/minimig-de1/minimig-de1-rel5.zip) file with the latest build. It contains a .sof and a .pof file that can be used to program the FPGA, and a de1_boot.bin file, which should be placed on the root of a FAT - formatted SD / SDHC / MMC card.
 
 Also needed are a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
 
@@ -34,22 +25,33 @@ You need at least an SD card for the software and a PS/2 keyboard connected to t
 ### Controling minimig
 DE1 board switches / keys:
 
-* SW[9] - enables/disables keyboard joystick emulation
-* SW[8] - enables/disables the scandoubler
-* SW[7] - switches left/right audio
-* SW[1] - reset (internal)
-* SW[0] - reset (PLL reset)
-* KEY[3] - left mouse button
-* KEY[2] - right mouse button
+* SW9  - scandoubler enable
+* SW7  - audio L/R switch
+* SW6  - audio mix (mix some left audio to right channel and vice-versa)
+* KEY3 - left mouse button
+* KEY2 - right mouse button
+* KEY0 - reset
 
 Keyboard emulation:
 
+* F12 - OSD menu
+* NumLock - enable keyboard mouse/joystick emulation
+* NumSlash - left mouse button
+* NumStar - right mouse button
+* cursor keys - joystick
+* LCTRL - joystick fire 1
+* LALT - joystick fire 2
 * Cursor movement keys for joystick up,down,left,right
-* LCTRL - fire1
-* LALT - fire2
-* LWIN + LALT - left mouse button
-* RWIN + RALT - right mouse button
-* F12 - menu
+
+
+## Sources
+
+Original minimig sources from Dennis van Weeren with updates by Jakub Bednarski are published on [Google Code](http://code.google.com/p/minimig/).
+Some minimig updates are published on the [Minimig Discussion Forum](http://www.minimig.net/), done by Sascha Boing.
+'ARM' firmware updates by Christian Vogelsang (https://github.com/cnvogelg/minimig_tc64) and A.M. Robinson (https://github.com/robinsonb5/minimig_tc64)
+TG68K.C core by Tobias Gubener.
+
 
 ## Links & info
+
 Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/)
