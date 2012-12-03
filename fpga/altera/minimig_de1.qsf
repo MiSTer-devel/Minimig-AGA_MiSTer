@@ -605,7 +605,6 @@ set_instance_assignment -name IO_STANDARD LVTTL -to Joya[6]
 set_instance_assignment -name IO_STANDARD LVTTL -to Joya[5]
 
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de1_top.v
-set_global_assignment -name VERILOG_FILE ../../lib/altera/srl16e.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_sram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_decoder.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_bus.v
@@ -616,7 +615,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_regs.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
-set_global_assignment -name VERILOG_FILE ../../lib/altera/i_sync.v
+set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/indicators.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/sseg_decode.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_top.v
