@@ -633,7 +633,8 @@ reg 	[8:2] ddfstop; 				// display data fetch stop
 reg		[15:1] bpl1mod;				// modulo for odd bitplanes
 reg		[15:1] bpl2mod;				// modulo for even bitplanes
 reg		[5:0] bplcon0;				// bitplane control (SHRES, HIRES and BPU bits)
-wire	[5:0] bplcon0_delayed;		// delayed bplcon0 (compatibility)
+reg		[5:0] bplcon0_delayed;		// delayed bplcon0 (compatibility)
+reg		[5:0] bplcon0_delay [1:0];
 
 wire 	hires;						// bplcon0 - high resolution display mode
 wire	shres;						// bplcon0 - super high resolution display mode
@@ -779,19 +780,29 @@ always @(posedge clk)
 	else if (reg_address_in[8:1]==BPLCON0[8:1])
 		bplcon0 <= {data_in[6],data_in[15],data_in[4],data_in[14:12]}; //SHRES,HIRES,BPU3,BPU2,BPU1,BPU0
 
+////delay by 8 clocks (in real Amiga DMA sequencer is pipelined and features a delay of 3 CCKs)
 // delayed BPLCON0 by 3 CCKs
-   SRL16E #(
-      .INIT(16'h0000)
-   ) BPLCON0_DELAY [5:0] (
-      .Q(bplcon0_delayed),
-      .A0(GND),
-      .A1(VCC),
-      .A2(GND),
-      .A3(GND),
-      .CE(hpos[0]),
-      .CLK(clk),
-      .D(bplcon0)
-   );
+always @(posedge clk) begin
+  if (hpos[0]) begin
+    bplcon0_delay[0] <= bplcon0;
+    bplcon0_delay[1] <= bplcon0_delay[0];
+    bplcon0_delayed  <= bplcon0_delay[1];
+  end
+end
+
+//// delayed BPLCON0 by 3 CCKs
+//   SRL16E #(
+//      .INIT(16'h0000)
+//   ) BPLCON0_DELAY [5:0] (
+//      .Q(bplcon0_delayed),
+//      .A0(GND),
+//      .A1(VCC),
+//      .A2(GND),
+//      .A3(GND),
+//      .CE(hpos[0]),
+//      .CLK(clk),
+//      .D(bplcon0)
+//   );
 
 assign shres = ecs & bplcon0_delayed[5];
 assign hires = bplcon0_delayed[4];
