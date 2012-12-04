@@ -415,12 +415,20 @@ PROCESS (byte, long_start, reg_QB, data_write_tmp, exec, data_read, data_write_m
 			data_write_muxin <= data_write_tmp;
 		END IF;
 --		IF memmaskmux(4)='0' THEN
-		IF oddout=addr(0) THEN
-			data_write_mux <= "XXXXXXXX"&bf_ext_out&data_write_muxin;
-		ELSE
-			data_write_mux <= bf_ext_out&data_write_muxin&"XXXXXXXX";
-		END IF;
-		
+    IF BitField=0 THEN
+      IF oddout=addr(0) THEN
+        data_write_mux <= "XXXXXXXX"&"XXXXXXXX"&data_write_muxin;
+      ELSE
+        data_write_mux <= "XXXXXXXX"&data_write_muxin&"XXXXXXXX";
+      END IF;
+    ELSE
+      IF oddout=addr(0) THEN
+        data_write_mux <= "XXXXXXXX"&bf_ext_out&data_write_muxin;
+      ELSE
+        data_write_mux <= bf_ext_out&data_write_muxin&"XXXXXXXX";
+      END IF;
+    END IF;
+
 		IF memmaskmux(1)='0' THEN
 			data_write <= data_write_mux(47 downto 32);
 		ELSIF memmaskmux(3)='0' THEN	
@@ -476,13 +484,16 @@ PROCESS (clk, regfile_high, regfile_low, RDindex_A, RDindex_B, ALUout, exec, mem
 				WR_AReg <= rf_dest_addr(3);
 				RDindex_A <= conv_integer(rf_dest_addr(3 downto 0));
 				RDindex_B <= conv_integer(rf_source_addr(3 downto 0));
-				IF Bwrena='1' THEN
-					regfile_low(RDindex_A)(7 downto 0) <= OP1in(7 downto 0);
-				END IF;
-				IF Wwrena='1' THEN
---					regfile_low(RDindex_A)(15 downto 8) <= OP1in(15 downto 8);
-			regfile_low(RDindex_A) <= regin(15 downto 0);
-				END IF;
+--				IF Bwrena='1' THEN
+--					regfile_low(RDindex_A)(7 downto 0) <= OP1in(7 downto 0);
+--				END IF;
+--				IF Wwrena='1' THEN
+----					regfile_low(RDindex_A)(15 downto 8) <= OP1in(15 downto 8);
+--			regfile_low(RDindex_A) <= regin(15 downto 0);
+--				END IF;
+        IF Wwrena='1' THEN
+          regfile_low(RDindex_A) <= regin(15 downto 0);
+        END IF;
 				IF Lwrena='1' THEN
 					regfile_high(RDindex_A) <= OP1in(31 downto 16);
 				END IF;
@@ -514,6 +525,7 @@ PROCESS (OP1in, reg_QA, Regwrena_now, exe_datatype, WR_AReg, movem_actiond, exec
 			CASE exe_datatype IS
 				WHEN "00" =>		--BYTE
 					Bwrena <= '1';
+      Wwrena <= '1';
 			regin(15 downto 8) <= reg_QA(15 downto 8);
 				WHEN "01" =>		--WORD
 					Bwrena <= '1';
