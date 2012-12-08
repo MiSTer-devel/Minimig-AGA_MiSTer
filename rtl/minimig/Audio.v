@@ -87,12 +87,9 @@ module audio
 	output	reg [3:0] dmal,			//dma request 
 	output	reg [3:0] dmas,			//dma special 
 	output	left,					//audio bitstream out left
-	output	right					//audio bitstream out right
-`ifdef MINIMIG_DE1
-  ,
+	output	right,					//audio bitstream out right
 	output	[14:0]ldata,		//left DAC data
 	output	[14:0]rdata 		//right DAC data
-`endif
 );
 
 //register names and addresses
