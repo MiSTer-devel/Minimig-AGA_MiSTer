@@ -650,7 +650,8 @@ wire	mod;						// end of data fetch, add modulo
 
 reg		hardena;					// hardware display data fetch enable ($18-$D8)
 reg 	softena;					// software display data fetch enable
-wire	ddfena;						// combined display data fetch
+reg 	ddfena;						// combined display data fetch
+reg   ddfena_0;
 
 reg 	[2:0] ddfseq;				// bitplane DMA fetch cycle sequencer
 reg 	ddfrun;						// set when display dma fetches data
@@ -880,19 +881,26 @@ always @(posedge clk)
 //assign ddfena = hardena & softena;
 
 // delayed DDFENA by 2 CCKs
-   SRL16E #(
-      .INIT(16'h0000)
-   ) DDFENA_DELAY (
-      .Q(ddfena),
-      .A0(VCC),
-      .A1(GND),
-      .A2(GND),
-      .A3(GND),
-      .CE(hpos[0]),
-      .CLK(clk),
-      .D(hardena & softena)
-   );
+always @(posedge clk) begin
+  if (hpos[0])
+  begin
+    ddfena_0 <= hardena & softena;
+    ddfena <= ddfena_0;
+  end
+end
 
+//SRL16E #(
+//      .INIT(16'h0000)
+//   ) DDFENA_DELAY (
+//      .Q(ddfena),
+//      .A0(VCC),
+//      .A1(GND),
+//      .A2(GND),
+//      .A3(GND),
+//      .CE(hpos[0]),
+//      .CLK(clk),
+//      .D(hardena & softena)
+//   );
 
 // this signal enables bitplane DMA sequencer
 always @(posedge clk)
