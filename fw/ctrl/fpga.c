@@ -317,7 +317,7 @@ void SendFileEncrypted(RAFile *file,unsigned char *key,int keysize)
 
 
 // draw on screen
-char BootDraw(char *data, unsigned short len, unsigned short offset)
+char BootDraw(char *data, unsigned short len, unsigned short offset, unsigned char stretch)
 {
   DEBUG_FUNC_IN();
 
@@ -326,6 +326,8 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
     const char *p;
     unsigned short n;
     unsigned short i;
+
+    if (stretch) len=len*2;
 
     n = (len+3)&(~3);
     i = 0;
@@ -374,10 +376,17 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
                     n = c4 << 1;
                     while (n--)
                     {
-                        c4 = *p;
-                        SPI((i>=len) ? 0 : c4);
-                        p++;
+                      c4 = *p;
+                      if (stretch) {
+                        SPI((i>=len) ? 0 : ((c4&0x10 ? 3 : 0) | (c4&0x20 ? 12 : 0) | (c4&0x40 ? 48 : 0) | (c4&0x80 ? 192 : 0)));
                         i++;
+                        n--;
+                        SPI((i>=len) ? 0 : ((c4&0x01 ? 3 : 0) | (c4&0x02 ? 12 : 0) | (c4&0x04 ? 48 : 0) | (c4&0x08 ? 192 : 0)));
+                      } else {
+                        SPI((i>=len) ? 0 : c4);
+                      }
+                      p++;
+                      i++;
                     }
                     DisableFpga();
                     return 1;

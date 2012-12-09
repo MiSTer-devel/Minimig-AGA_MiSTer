@@ -101,7 +101,7 @@ void draw_boot_logo()
   offset = 0;
   for (line=0; line<logo_height; line++) {
     p = boot_logo[line];
-    BootDraw(p, logo_width, offset);
+    BootDraw(p, logo_width, offset, 1);
     offset += 640/8;
     bcury+=640/8;
   }

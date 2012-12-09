@@ -121,7 +121,7 @@ void BootPrintEx(char * str)
     for(i=0; i<len; i++) {
       buf[i] = boot_font[str[i]-32][j];
     }
-    BootDraw(buf, len, bcury+=640/8);
+    BootDraw(buf, len, bcury+=640/8, 0);
   }
 }
 
