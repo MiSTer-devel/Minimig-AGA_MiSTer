@@ -287,7 +287,15 @@ assign audio_lr_mix     = sw_6;
 assign _15khz           = sw_9;
 assign joy_emu_en       = sw_8;
 
+// DE2 specific VGA wiring
+assign VGA_R[5:0] = {VGA_R[9:6], VGA_R[9:8]};
+assign VGA_G[5:0] = {VGA_G[9:6], VGA_G[9:8]};
+assign VGA_B[5:0] = {VGA_B[9:6], VGA_B[9:8]};
+assign VGA_BLANK = VGA_HS && VGA_VS;
+assign VGA_SYNC = 0;
+assign VGA_CLK = clk_28; //DRAM_CLK;
 
+ 
 
 ////////////////////////////////////////
 // modules                            //
@@ -376,15 +384,6 @@ always @ (posedge clk_28, negedge pll_locked) begin
     clk7_cnt <= #1 clk7_cnt + 2'b01;
 end
 
-// DE2 specific VGA wiring
-assign VGA_R[5:0] = 0;
-assign VGA_G[5:0] = 0;
-assign VGA_B[5:0] = 0;
-assign VGA_BLANK = VGA_HS && VGA_VS;
-assign VGA_SYNC = 0;
-assign VGA_CLK = clk_28; //DRAM_CLK;
-   
-   
 assign clk_7 = clk7_cnt[1];
 
 
