@@ -614,7 +614,8 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_rst.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_regs.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
-set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/amiga_clk.v
+set_global_assignment -name VERILOG_FILE ../../rtl/de1/amiga_clk_altera.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/indicators.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/sseg_decode.v
