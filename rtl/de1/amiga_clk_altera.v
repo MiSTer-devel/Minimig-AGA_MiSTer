@@ -4,7 +4,7 @@
 // MODULE: altpll 
 
 // ============================================================
-// File Name: amigaclk.v
+// File Name: amiga_clk_altera.v
 // Megafunction Name(s):
 // 			altpll
 //
@@ -36,7 +36,7 @@
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module amigaclk (
+module amiga_clk_altera (
 	areset,
 	inclk0,
 	c0,
@@ -127,7 +127,7 @@ module amigaclk (
 		altpll_component.inclk0_input_frequency = 37037,
 		altpll_component.intended_device_family = "Cyclone II",
 		altpll_component.invalid_lock_multiplier = 5,
-		altpll_component.lpm_hint = "CBX_MODULE_PREFIX=amigaclk",
+		altpll_component.lpm_hint = "CBX_MODULE_PREFIX=amiga_clk_altera",
 		altpll_component.lpm_type = "altpll",
 		altpll_component.operation_mode = "NORMAL",
 		altpll_component.port_activeclock = "PORT_UNUSED",
@@ -264,7 +264,7 @@ endmodule
 // Retrieval info: PRIVATE: PLL_PFDENA_CHECK STRING "0"
 // Retrieval info: PRIVATE: PLL_TARGET_HARCOPY_CHECK NUMERIC "0"
 // Retrieval info: PRIVATE: PRIMARY_CLK_COMBO STRING "inclk0"
-// Retrieval info: PRIVATE: RECONFIG_FILE STRING "amigaclk.mif"
+// Retrieval info: PRIVATE: RECONFIG_FILE STRING "amiga_clk_altera.mif"
 // Retrieval info: PRIVATE: SACN_INPUTS_CHECK STRING "0"
 // Retrieval info: PRIVATE: SCAN_FEATURE_ENABLED STRING "0"
 // Retrieval info: PRIVATE: SELF_RESET_LOCK_LOSS STRING "0"
@@ -366,12 +366,12 @@ endmodule
 // Retrieval info: CONNECT: c1 0 0 0 0 @clk 0 0 1 1
 // Retrieval info: CONNECT: c2 0 0 0 0 @clk 0 0 1 2
 // Retrieval info: CONNECT: locked 0 0 0 0 @locked 0 0 0 0
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk.v TRUE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk.ppf TRUE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk.inc FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk.cmp FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk.bsf FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk_inst.v FALSE
-// Retrieval info: GEN_FILE: TYPE_NORMAL amigaclk_bb.v FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera.v TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera.ppf TRUE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera.inc FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera.cmp FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera.bsf FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera_inst.v FALSE
+// Retrieval info: GEN_FILE: TYPE_NORMAL amiga_clk_altera_bb.v FALSE
 // Retrieval info: LIB_FILE: altera_mf
 // Retrieval info: CBX_MODULE_PREFIX: ON
