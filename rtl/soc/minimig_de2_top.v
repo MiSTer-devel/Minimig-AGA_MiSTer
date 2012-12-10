@@ -9,6 +9,8 @@
 `define MINIMIG_DE2
 //`define SOC_SIM
 
+`include "minimig_defines.vh"
+
 
 module minimig_de2_top (
   // clock inputs
