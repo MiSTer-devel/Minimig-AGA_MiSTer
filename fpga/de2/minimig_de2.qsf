@@ -458,7 +458,7 @@ set_global_assignment -name DEVICE EP2C35F672C6
 set_global_assignment -name TOP_LEVEL_ENTITY minimig_de2_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 7.2
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:49:17  NOVEMBER 07, 2007"
-set_global_assignment -name LAST_QUARTUS_VERSION "12.0 SP2"
+set_global_assignment -name LAST_QUARTUS_VERSION "10.1 SP1"
 set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id eda_palace
 set_global_assignment -name STRATIX_CONFIGURATION_DEVICE EPCS16
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
@@ -551,7 +551,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_regs.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
 set_global_assignment -name VERILOG_FILE ../../rtl/de1/amigaclk.v
-set_global_assignment -name VERILOG_FILE ../../lib/altera/i_sync.v
+set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/indicators.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/sseg_decode.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_top.v
@@ -559,10 +559,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
-set_global_assignment -name VERILOG_FILE ../../rtl/tg68/tg68.v
-set_global_assignment -name VHDL_FILE ../../rtl/tg68/TG68_fast.vhd
-set_global_assignment -name VERILOG_FILE ../../lib/altera/srl16e.v
-set_global_assignment -name VERILOG_FILE ../../lib/altera/MULT18X18.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/PS2Keyboard.v
@@ -648,5 +644,6 @@ set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
 
 #set_parameter -name ENABLE_RUNTIME_MOD YES -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
 #set_parameter -name INSTANCE_NAME mig -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
+
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
