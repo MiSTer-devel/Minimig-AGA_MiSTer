@@ -9,7 +9,7 @@ module amiga_clk (
   output wire c1,
   output wire c2,
   output wire locked
-)
+);
 
 
 `ifdef MINIMIG_ALTERA
@@ -23,6 +23,7 @@ amiga_clk_altera amiga_clk_i (
 );
 `endif
 
+
 `ifdef MINIMIG_XILINX
 amiga_clk_xilinx amiga_clk_i (
   .areset   (areset ),
@@ -32,6 +33,8 @@ amiga_clk_xilinx amiga_clk_i (
   .c2       (c2     ),
   .locked   (locked )
 );
+`endif
+
 
 endmodule
 

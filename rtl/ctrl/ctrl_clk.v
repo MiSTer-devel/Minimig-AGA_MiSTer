@@ -19,6 +19,7 @@ ctrl_clk_altera ctrl_clk_i (
   .c2       (c2     ),
   .locked   (locked )
 );
+`endif
 
 
 `ifdef MINIMIG_XILINX
@@ -29,6 +30,7 @@ ctrl_clk_xilinx ctrl_clk_i (
   .c2       (c2     ),
   .locked   (locked )
 );
+`endif
 
 
 endmodule

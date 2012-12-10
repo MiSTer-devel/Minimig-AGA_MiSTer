@@ -357,7 +357,7 @@ initial begin
 end
 `else
 // use pll
-amigaclk amigaclk (
+amiga_clk amiga_clk (
   .areset       (pll_rst          ), // async reset input
   .inclk0       (pll_in_clk       ), // input clock (27MHz)
   .c0           (clk_114          ), // output clock c0 (114.750000MHz)
