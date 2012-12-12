@@ -1,0 +1,15 @@
+# Spartan-3 Evaluation Kit
+
+# Release Notes - 2/26/2004
+
+If using the Spartan-3 Evaluation board in a PCI slot, remove the fuse labeled "F1"
+before applying power to the PC.  The purpose of the fuse is to act as a high-current
+shunt to disconnect the on-board voltage regulator from the 3.3V rail when the PCI
+slot is powering the 3.3V rail.
+
+Spartan-3 1500 boards -
+No additional I/O are connected on the XC3S1500 device so references to the 400 device
+apply.  The UCF file is the same for both the 400 and 1500 devices.  The only difference
+between a 400 and a 1500 board has to do with the configuration PROMs.  The 1500 board
+requires two serial platform flash devices, a XCF04S and a XCF01S (the 400 only requires
+one XCF02S device).  
