@@ -119,7 +119,7 @@ end
 
 
 /////////////////////  Config Data LUT    //////////////////////////
-always
+always @ (*)
 begin
   case(LUT_INDEX)
   //  Audio Config Data

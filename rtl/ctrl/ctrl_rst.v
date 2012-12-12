@@ -30,8 +30,8 @@ module ctrl_rst (
 // reset counter
 reg  [16-1:0] rst_cnt;
 // input signal registers
-reg           pll_lock_n_t, rst_ext_t, rst_reg_t;
-reg           pll_lock_n_r, rst_ext_r, rst_reg_r;
+reg           pll_lock_n_t=0, rst_ext_t=0, rst_reg_t=0;
+reg           pll_lock_n_r=0, rst_ext_r=0, rst_reg_r=0;
 // reset wire
 wire          rst_wire;
 

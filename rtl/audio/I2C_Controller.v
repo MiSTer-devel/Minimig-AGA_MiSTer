@@ -17,7 +17,6 @@ module I2C_Controller (
 	I2C_DATA,	//DATA:[SLAVE_ADDR,SUB_ADDR,DATA]
 	GO,      	//GO transfor
 	END,     	//END transfor 
-	W_R,     	//W_R
 	ACK,      	//ACK
 	RESET,
 	//TEST
@@ -29,7 +28,6 @@ module I2C_Controller (
 	input  [23:0]I2C_DATA;	
 	input  GO;
 	input  RESET;	
-	input  W_R;
  	inout  I2C_SDAT;	
 	output I2C_SCLK;
 	output END;	

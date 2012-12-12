@@ -25,8 +25,8 @@ module ctrl_regs #(
   output reg            ack,
   output wire           err,
   // registers
-  output reg            sys_rst,
-  output reg            minimig_rst,
+  output reg            sys_rst=0,
+  output reg            minimig_rst=0,
   input  wire [  4-1:0] ctrl_cfg,
   output reg  [  4-1:0] ctrl_status, 
   output wire           uart_txd,
@@ -337,7 +337,7 @@ always @ (*) begin
       spi_cs_n_en     = 1'b0;
       spi_dat_en      = 1'b0;
       spi_block_en    = 1'b0;
-    case(adr[5:2])
+    case(adr[4:2])
       REG_RST       : sys_rst_en      = 1'b1;
       REG_CTRL      : ctrl_en         = 1'b1;
       REG_UART_TX   : tx_en           = 1'b1;
