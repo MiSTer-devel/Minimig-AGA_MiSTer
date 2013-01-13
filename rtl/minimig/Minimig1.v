@@ -170,9 +170,12 @@ module Minimig1
 	output	_ram_we,			//sram write enable
 	output	_ram_oe,			//sram output enable
 	//system	pins
-//  input mclk,       // master system clock (4.433619MHz)
-	input	clk,				//system clock (7.09379 MHz)
 	input	clk28m,				//28.37516 MHz clock
+	input	clk,				//system clock (7.09379 MHz)
+	input c1,			// clock enable signal
+	input c3,			// clock enable signal
+	input cck,			// colour clock enable
+	input [9:0] eclk,			// ECLK enable (1/10th of CLK)
 	//rs232 pins
 	input	rxd,				//rs232 receive
 	output	txd,				//rs232 send
@@ -262,7 +265,6 @@ wire		ram_lwr;				//ram low byte write enable
 wire		cpu_rd; 				//cpu read enable
 wire		cpu_hwr;				//cpu high byte write enable
 wire		cpu_lwr;				//cpu low byte write enable
-wire		cck;					//colour clock (chipset dma slots indication)
 
 //register address bus
 wire		[8:1] reg_address; 		//main register address bus
@@ -271,10 +273,6 @@ wire		[8:1] reg_address; 		//main register address bus
 wire		kbdrst;					//keyboard reset
 wire		reset;					//global reset
 wire    aflock;
-//wire		clk;					//bus clock
-//wire		clk28m;					//28MHz clock for Amber (and ECS Denise in future)
-wire		c1,c3;					//clock enable signals
-wire		[9:0] eclk;				//E clock enable
 wire		dbr;					//data bus request, Agnus tells CPU that she is using the bus
 wire		dbwe;					//data bus write enable, Agnus tells the RAM it's writing data
 wire		dbs;					//data bus slow down, used for slowing down CPU access to chip, slow and custor register address space
@@ -928,20 +926,6 @@ syscontrol CONTROL1
 	.reset(reset),
 	.boot(boot),
 	.boot_rst(bootrst)
-);
-
-//instantiate clock generator
-clock_generator CLOCK1
-(	
-//	.mclk(mclk),
-	.clk28m(clk28m),	// 28.37516 MHz clock output
-	.c1(c1),			// clock enable signal
-	.c3(c3),			// clock enable signal
-	.cck(cck),			// colour clock enable
-	.clk(clk),			// 7.09379  MHz clock output
-//	.cpu_clk(cpu_clk),
-//	.turbo(turbo),
-	.eclk(eclk)			// ECLK enable (1/10th of CLK)
 );
 
 

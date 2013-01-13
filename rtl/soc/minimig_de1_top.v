@@ -107,18 +107,15 @@ module minimig_de1_top (
 
 // clock
 wire           pll_in_clk;
-`ifdef SOC_SIM
-reg            clk_114;
-reg            clk_28;
-reg            clk_sdram;
-reg            pll_locked;
-`else
 wire           clk_114;
 wire           clk_28;
 wire           clk_sdram;
 wire           pll_locked;
-`endif
 wire           clk_7;
+wire           c1;
+wire           c3;
+wire           cck;
+wire [ 10-1:0] eclk;
 wire           clk_50;
 
 // reset
@@ -332,51 +329,6 @@ ctrl_top ctrl_top (
 );
 
 
-//// clock ////
-`ifdef SOC_SIM
-// generated clocks
-initial begin
-  pll_locked  = 1'b0;
-  #50;
-  pll_locked  = 1'b1;
-end
-initial begin
-  clk_114     = 1'b1;
-  forever #4.357  clk_114   = ~clk_114;
-end
-initial begin
-  clk_28      = 1'b1;
-  forever #17.428 clk_28    = ~clk_28;
-end
-initial begin
-  clk_sdram   = 1'b1;
-  forever #4.357  clk_sdram = ~clk_sdram;
-end
-`else
-// use pll
-amiga_clk amiga_clk (
-  .areset       (pll_rst          ), // async reset input
-  .inclk0       (pll_in_clk       ), // input clock (27MHz)
-  .c0           (clk_114          ), // output clock c0 (114.750000MHz)
-  .c1           (clk_28           ), // output clock c1 (28.687500MHz)
-  .c2           (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
-  .locked       (pll_locked       )  // pll locked output
-);
-`endif
-
-
-//// 7MHz clock ////
-reg [2-1:0] clk7_cnt;
-always @ (posedge clk_28, negedge pll_locked) begin
-  if (!pll_locked)
-    clk7_cnt <= #1 2'b10;
-  else
-    clk7_cnt <= #1 clk7_cnt + 2'b01;
-end
-
-assign clk_7 = clk7_cnt[1];
-
-
 //// indicators ////
 indicators indicators(
   .clk          (clk_7            ),
@@ -394,6 +346,42 @@ indicators indicators(
   .hex_3        (HEX3             ),
   .led_g        (LEDG             ),
   .led_r        (LEDR             )
+);
+
+
+//// amiga clocks ////
+amiga_clk amiga_clk (
+  .rst          (pll_rst          ), // async reset input
+  .clk_in       (pll_in_clk       ), // input clock     ( 27.000000MHz)
+  .clk_114      (clk_114          ), // output clock c0 (114.750000MHz)
+  .clk_sdram    (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
+  .clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
+  .clk_7        (clk_7            ), // output clock 7  (  7.171875MHz)
+  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+  .cck          (cck              ), // colour clock output (3.54 MHz)
+  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
+  .locked       (pll_locked       )  // pll locked output
+);
+
+
+//// audio ////
+audio_top audio_top (
+  .clk          (clk_28           ),  // 28MHz input clock
+  .rst_n        (reset_out        ),  // active low reset (from sdram controller)
+  // config
+  .exchan       (audio_lr_switch  ),  // switch audio left / right channel
+  .mix          (audio_lr_mix     ),  // normal / centered mix (play some left channel on the right channel and vise-versa)
+  // audio shifter
+  .rdata        (rdata            ),  // right channel sample data
+  .ldata        (ldata            ),  // left channel sample data
+  .aud_bclk     (AUD_BCLK         ),  // CODEC data clock
+  .aud_daclrck  (AUD_DACLRCK      ),  // CODEC data clock
+  .aud_dacdat   (AUD_DACDAT       ),  // CODEC data
+  .aud_xck      (AUD_XCK          ),  // CODEC data clock
+  // I2C audio config
+  .i2c_sclk     (I2C_SCLK         ),  // CODEC config clock
+  .i2c_sdat     (I2C_SDAT         )   // CODEC config data
 );
 
 
@@ -476,99 +464,83 @@ sdram sdram (
 );
 
 
-//// audio ////
-audio_top audio_top (
-  .clk          (clk_28           ),  // 28MHz input clock
-  .rst_n        (reset_out        ),  // active low reset (from sdram controller)
-  // config
-  .exchan       (audio_lr_switch  ),  // switch audio left / right channel
-  .mix          (audio_lr_mix     ),  // normal / centered mix (play some left channel on the right channel and vise-versa)
-  // audio shifter
-  .rdata        (rdata            ),  // right channel sample data
-  .ldata        (ldata            ),  // left channel sample data
-  .aud_bclk     (AUD_BCLK         ),  // CODEC data clock
-  .aud_daclrck  (AUD_DACLRCK      ),  // CODEC data clock
-  .aud_dacdat   (AUD_DACDAT       ),  // CODEC data
-  .aud_xck      (AUD_XCK          ),  // CODEC data clock
-  // I2C audio config
-  .i2c_sclk     (I2C_SCLK         ),  // CODEC config clock
-  .i2c_sdat     (I2C_SDAT         )   // CODEC config data
-);
-
-
 //// minimig top ////
 Minimig1 minimig (
   //m68k pins
-  .cpu_address  (tg68_adr[23:1]   ),  // M68K address bus
-  .cpu_data     (tg68_dat_in      ),  // M68K data bus
-  .cpudata_in   (tg68_dat_out     ),  // M68K data in
-  ._cpu_ipl     (tg68_IPL         ),  // M68K interrupt request
-  ._cpu_as      (tg68_as          ),  // M68K address strobe
-  ._cpu_uds     (tg68_uds         ),  // M68K upper data strobe
-  ._cpu_lds     (tg68_lds         ),  // M68K lower data strobe
-  .cpu_r_w      (tg68_rw          ),  // M68K read / write
-  ._cpu_dtack   (tg68_dtack       ),  // M68K data acknowledge
-  ._cpu_reset   (tg68_rst         ),  // M68K reset
-  .cpu_clk      (clk_7            ),  // M68K clock
+  .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
+  .cpu_data     (tg68_dat_in      ), // M68K data bus
+  .cpudata_in   (tg68_dat_out     ), // M68K data in
+  ._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
+  ._cpu_as      (tg68_as          ), // M68K address strobe
+  ._cpu_uds     (tg68_uds         ), // M68K upper data strobe
+  ._cpu_lds     (tg68_lds         ), // M68K lower data strobe
+  .cpu_r_w      (tg68_rw          ), // M68K read / write
+  ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
+  ._cpu_reset   (tg68_rst         ), // M68K reset
+  .cpu_clk      (clk_7            ), // M68K clock
   //sram pins
-  .ram_data     (ram_data         ),  // SRAM data bus
-  .ramdata_in   (ramdata_in       ),  // SRAM data bus in
-  .ram_address  (ram_address[21:1]),  // SRAM address bus
-  ._ram_ce      (                 ),  // SRAM chip enable
-  ._ram_bhe     (_ram_bhe         ),  // SRAM upper byte select
-  ._ram_ble     (_ram_ble         ),  // SRAM lower byte select
-  ._ram_we      (_ram_we          ),  // SRAM write enable
-  ._ram_oe      (_ram_oe          ),  // SRAM output enable
+  .ram_data     (ram_data         ), // SRAM data bus
+  .ramdata_in   (ramdata_in       ), // SRAM data bus in
+  .ram_address  (ram_address[21:1]), // SRAM address bus
+  ._ram_ce      (                 ), // SRAM chip enable
+  ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
+  ._ram_ble     (_ram_ble         ), // SRAM lower byte select
+  ._ram_we      (_ram_we          ), // SRAM write enable
+  ._ram_oe      (_ram_oe          ), // SRAM output enable
   //system  pins
-  .clk          (clk_7            ),  // system clock (7.09379 MHz)
-  .clk28m       (clk_28           ),  // 28.37516 MHz clock
+  .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
+  .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
+  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+  .cck          (cck              ), // colour clock output (3.54 MHz)
+  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
   //rs232 pins
-  .rxd          (1'b0             ),  // RS232 receive
-  .txd          (                 ),  // RS232 send
-  .cts          (1'b0             ),  // RS232 clear to send
-  .rts          (                 ),  // RS232 request to send
+  .rxd          (1'b0             ), // RS232 receive
+  .txd          (                 ), // RS232 send
+  .cts          (1'b0             ), // RS232 clear to send
+  .rts          (                 ), // RS232 request to send
   //I/O
-  ._joy1        (Joya             ),  // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (Joyb             ),  // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-  .mouse_btn1   (key_3            ),  // mouse button 1
-  .mouse_btn2   (key_2            ),  // mouse button 2
-  .joy_emu_en   (joy_emu_en       ),  // enable keyboard joystick emulation
-  ._15khz       (_15khz           ),  // scandoubler disable
-  .pwrled       (                 ),  // power led
-  .msdat        (PS2_MDAT         ),  // PS2 mouse data
-  .msclk        (PS2_MCLK         ),  // PS2 mouse clk
-  .kbddat       (PS2_DAT          ),  // PS2 keyboard data
-  .kbdclk       (PS2_CLK          ),  // PS2 keyboard clk
+  ._joy1        (Joya             ), // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+  ._joy2        (Joyb             ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  .mouse_btn1   (key_3            ), // mouse button 1
+  .mouse_btn2   (key_2            ), // mouse button 2
+  .joy_emu_en   (joy_emu_en       ), // enable keyboard joystick emulation
+  ._15khz       (_15khz           ), // scandoubler disable
+  .pwrled       (                 ), // power led
+  .msdat        (PS2_MDAT         ), // PS2 mouse data
+  .msclk        (PS2_MCLK         ), // PS2 mouse clk
+  .kbddat       (PS2_DAT          ), // PS2 keyboard data
+  .kbdclk       (PS2_CLK          ), // PS2 keyboard clk
   //host controller interface (SPI)
-  ._scs         (SPI_CS_N[3:1]    ),  // SPI chip select
-  .direct_sdi   (SD_DAT           ),  // SD Card direct in
-  .sdi          (SD_CMD           ),  // SPI data input
-  .sdo          (sdo              ),  // SPI data output
-  .sck          (SD_CLK           ),  // SPI clock
+  ._scs         (SPI_CS_N[3:1]    ), // SPI chip select
+  .direct_sdi   (SD_DAT           ), // SD Card direct in
+  .sdi          (SD_CMD           ), // SPI data input
+  .sdo          (sdo              ), // SPI data output
+  .sck          (SD_CLK           ), // SPI clock
   //video
-  ._hsync       (VGA_HS           ),  // horizontal sync
-  ._vsync       (VGA_VS           ),  // vertical sync
-  .red          (VGA_R            ),  // red
-  .green        (VGA_G            ),  // green
-  .blue         (VGA_B            ),  // blue
+  ._hsync       (VGA_HS           ), // horizontal sync
+  ._vsync       (VGA_VS           ), // vertical sync
+  .red          (VGA_R            ), // red
+  .green        (VGA_G            ), // green
+  .blue         (VGA_B            ), // blue
   //audio
-  .left         (audio_left       ),  // audio bitstream left
-  .right        (audio_right      ),  // audio bitstream right
-  .ldata        (ldata            ),  // left DAC data
-  .rdata        (rdata            ),  // right DAC data
+  .left         (audio_left       ), // audio bitstream left
+  .right        (audio_right      ), // audio bitstream right
+  .ldata        (ldata            ), // left DAC data
+  .rdata        (rdata            ), // right DAC data
   //user i/o
-  .gpio         (                 ),  // spare GPIO
-  .cpu_config   (cpu_config       ),  // CPU config
-  .memcfg       (memcfg           ),  // memory config
-  .drv_snd      (                 ),  // drive sound
-  .init_b       (                 ),  // vertical sync for MCU (sync OSD update)
+  .gpio         (                 ), // spare GPIO
+  .cpu_config   (cpu_config       ), // CPU config
+  .memcfg       (memcfg           ), // memory config
+  .drv_snd      (                 ), // drive sound
+  .init_b       (                 ), // vertical sync for MCU (sync OSD update)
   // fifo / track display
-  .trackdisp    (track            ),  // floppy track number
-  .secdisp      (                 ),  // sector
-  .floppy_fwr   (floppy_fwr       ),  // floppy fifo writing
-  .floppy_frd   (floppy_frd       ),  // floppy fifo reading
-  .hd_fwr       (hd_fwr           ),  // hd fifo writing
-  .hd_frd       (hd_frd           )   // hd fifo  ading
+  .trackdisp    (track            ), // floppy track number
+  .secdisp      (                 ), // sector
+  .floppy_fwr   (floppy_fwr       ), // floppy fifo writing
+  .floppy_frd   (floppy_frd       ), // floppy fifo reading
+  .hd_fwr       (hd_fwr           ), // hd fifo writing
+  .hd_frd       (hd_frd           )  // hd fifo  ading
 );
 
 

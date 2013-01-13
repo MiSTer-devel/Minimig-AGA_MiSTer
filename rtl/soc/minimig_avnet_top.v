@@ -87,18 +87,15 @@ module minimig_avnet_top (
 
 // clock
 wire           pll_in_clk;
-`ifdef SOC_SIM
-reg            clk_114;
-reg            clk_28;
-reg            clk_sdram;
-reg            pll_locked;
-`else
 wire           clk_114;
 wire           clk_28;
 wire           clk_sdram;
 wire           pll_locked;
-`endif
 wire           clk_7;
+wire           c1;
+wire           c3;
+wire           cck;
+wire [ 10-1:0] eclk;
 wire           clk_50;
 
 // reset
@@ -288,51 +285,6 @@ ctrl_top ctrl_top (
 );
 
 
-//// clock ////
-`ifdef SOC_SIM
-// generated clocks
-initial begin
-  pll_locked  = 1'b0;
-  #50;
-  pll_locked  = 1'b1;
-end
-initial begin
-  clk_114     = 1'b1;
-  forever #4.357  clk_114   = ~clk_114;
-end
-initial begin
-  clk_28      = 1'b1;
-  forever #17.428 clk_28    = ~clk_28;
-end
-initial begin
-  clk_sdram   = 1'b1;
-  forever #4.357  clk_sdram = ~clk_sdram;
-end
-`else
-// use pll
-amiga_clk amiga_clk (
-  .areset       (pll_rst          ), // async reset input
-  .inclk0       (pll_in_clk       ), // input clock (27MHz)
-  .c0           (clk_114          ), // output clock c0 (114.750000MHz)
-  .c1           (clk_28           ), // output clock c1 (28.687500MHz)
-  .c2           (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
-  .locked       (pll_locked       )  // pll locked output
-);
-`endif
-
-
-//// 7MHz clock ////
-reg [2-1:0] clk7_cnt;
-always @ (posedge clk_28, negedge pll_locked) begin
-  if (!pll_locked)
-    clk7_cnt <= #1 2'b10;
-  else
-    clk7_cnt <= #1 clk7_cnt + 2'b01;
-end
-
-assign clk_7 = clk7_cnt[1];
-
-
 //// indicators ////
 indicators indicators(
   .clk          (clk_7            ),
@@ -350,6 +302,42 @@ indicators indicators(
   .hex_3        (                 ),
   .led_g        (                 ),
   .led_r        (LEDR             )
+);
+
+
+//// amiga clocks ////
+amiga_clk amiga_clk (
+  .rst          (pll_rst          ), // async reset input
+  .clk_in       (pll_in_clk       ), // input clock     ( 27.000000MHz)
+  .clk_114      (clk_114          ), // output clock c0 (114.750000MHz)
+  .clk_sdram    (clk_sdram        ), // output clock c2 (114.750000MHz, -146.25 deg)
+  .clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
+  .clk_7        (clk_7            ), // output clock 7  (  7.171875MHz)
+  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+  .cck          (cck              ), // colour clock output (3.54 MHz)
+  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
+  .locked       (pll_locked       )  // pll locked output
+);
+
+
+//// audio ////
+audio_top audio_top (
+  .clk          (clk_28           ),  // 28MHz input clock
+  .rst_n        (reset_out        ),  // active low reset (from sdram controller)
+  // config
+  .exchan       (audio_lr_switch  ),  // switch audio left / right channel
+  .mix          (audio_lr_mix     ),  // normal / centered mix (play some left channel on the right channel and vise-versa)
+  // audio shifter
+  .rdata        (rdata            ),  // right channel sample data
+  .ldata        (ldata            ),  // left channel sample data
+  .aud_bclk     (AUD_BCLK         ),  // CODEC data clock
+  .aud_daclrck  (AUD_DACLRCK      ),  // CODEC data clock
+  .aud_dacdat   (AUD_DACDAT       ),  // CODEC data
+  .aud_xck      (AUD_XCK          ),  // CODEC data clock
+  // I2C audio config
+  .i2c_sclk     (I2C_SCLK         ),  // CODEC config clock
+  .i2c_sdat     (I2C_SDAT         )   // CODEC config data
 );
 
 
@@ -432,26 +420,6 @@ sdram sdram (
 );
 
 
-//// audio ////
-audio_top audio_top (
-  .clk          (clk_28           ),  // 28MHz input clock
-  .rst_n        (reset_out        ),  // active low reset (from sdram controller)
-  // config
-  .exchan       (audio_lr_switch  ),  // switch audio left / right channel
-  .mix          (audio_lr_mix     ),  // normal / centered mix (play some left channel on the right channel and vise-versa)
-  // audio shifter
-  .rdata        (rdata            ),  // right channel sample data
-  .ldata        (ldata            ),  // left channel sample data
-  .aud_bclk     (AUD_BCLK         ),  // CODEC data clock
-  .aud_daclrck  (AUD_DACLRCK      ),  // CODEC data clock
-  .aud_dacdat   (AUD_DACDAT       ),  // CODEC data
-  .aud_xck      (AUD_XCK          ),  // CODEC data clock
-  // I2C audio config
-  .i2c_sclk     (I2C_SCLK         ),  // CODEC config clock
-  .i2c_sdat     (I2C_SDAT         )   // CODEC config data
-);
-
-
 //// minimig top ////
 Minimig1 minimig (
   //m68k pins
@@ -476,8 +444,12 @@ Minimig1 minimig (
   ._ram_we      (_ram_we          ),  // SRAM write enable
   ._ram_oe      (_ram_oe          ),  // SRAM output enable
   //system  pins
-  .clk          (clk_7            ),  // system clock (7.09379 MHz)
-  .clk28m       (clk_28           ),  // 28.37516 MHz clock
+  .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
+  .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
+  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+  .cck          (cck              ), // colour clock output (3.54 MHz)
+  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
   //rs232 pins
   .rxd          (1'b0             ),  // RS232 receive
   .txd          (                 ),  // RS232 send
