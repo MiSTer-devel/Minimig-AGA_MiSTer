@@ -106,6 +106,7 @@ module userio
 reg		[5:0] _sjoy1;				//synchronized joystick 1 signals
 reg		[5:0] _xjoy2;				//synchronized joystick 2 signals
 wire	[5:0] _sjoy2;				//synchronized joystick 2 signals
+reg   [15:0] potreg;
 wire	[15:0] mouse0dat;			//mouse counters
 wire	_mleft;						//left mouse button
 wire	_mthird;					//middle mouse button
@@ -125,6 +126,7 @@ reg   sel_autofire;     // select autofire and permanent fire
 //register names and adresses		
 parameter JOY0DAT = 9'h00a;
 parameter JOY1DAT = 9'h00c;
+parameter POTGO   = 9'h034;
 parameter POTINP  = 9'h016;
 parameter JOYTEST = 9'h036;
 
@@ -219,6 +221,13 @@ always @(posedge clk)
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
+// POTGO register
+always @ (posedge clk)
+  if (reset)
+    potreg <= #1 16'hffff;
+  else if (reg_address_in[8:1] == POTGO[8:1])
+    potreg <= #1 data_in;
+
 //data output multiplexer
 always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mright or _mthird or _rmb)
 	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
@@ -228,7 +237,7 @@ always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mrigh
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
 		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
-		data_out[15:0] = {1'b0,_sjoy2[5],3'b010,_mright&_sjoy1[5]&_rmb,1'b0,_mthird,8'b00000000};
+		data_out[15:0] = {1'b0,_sjoy2[5]&potreg[14],1'b0,potreg[12]&1'b1,1'b0,potreg[10]&_mright&_sjoy1[5]&_rmb,1'b0,potreg[8]&_mthird,8'b00000000};
 	else
 		data_out[15:0] = 16'h0000;
 

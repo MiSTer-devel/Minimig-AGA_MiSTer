@@ -274,12 +274,7 @@ assign dma_blt = req_blt & blten;
 //chip address, register address and control signal multiplexer
 //AND dma priority handler
 //first item in this if else if list has highest priority
-always @(dma_dsk or dma_ref or address_dsk or reg_address_dsk or wr_dsk or
-		dma_aud or address_aud or reg_address_aud or
-		dma_bpl or address_bpl or reg_address_bpl or dma_cop or
-		copen or address_cop or reg_address_cop or reg_address_blt or reg_address_cpu
-		or spren or dma_spr or address_spr or reg_address_spr
-		or blten or dma_blt or address_blt or we_blt or bls_cnt)
+always @(*)
 begin
 	if (dma_dsk)//busses allocated to disk dma engine
 	begin

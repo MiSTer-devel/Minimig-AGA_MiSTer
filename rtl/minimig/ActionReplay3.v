@@ -94,7 +94,7 @@ reg		active;		// cartridge is active (rom is visible)
 
 wire	sel_cart;	// select cartridge cpu space ($400000-$47ffff)
 wire	sel_rom;	// select rom space ($400004-$43ffff)
-wire	sel_ram;	// select rom space ($440000-$47ffff) - ($44F000-$44F1FF)
+wire	sel_ram;	// select ram space ($440000-$47ffff) - ($44F000-$44F1FF)
 wire 	sel_custom;	// select custom register shadow ($44F000-$44F1FF)
 wire	sel_status;	// status register $400000-$400003 (repeated twice)
 wire	sel_mode;	// mode register $400000/1

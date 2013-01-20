@@ -1048,7 +1048,7 @@ module bank_mapper
 );
 
 
-always @(aron or memory_config or chip0 or chip1 or chip2 or chip3 or slow0 or slow1 or slow2 or kick or cart or ecs)
+always @(*)
 begin
   case ({aron,memory_config})
     5'b0_0000 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  1'b0,  1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP
