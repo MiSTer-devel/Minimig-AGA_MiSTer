@@ -71,6 +71,7 @@ parameter	VHPOSW   = 9'h02C;
 parameter	BEAMCON0 = 9'h1DC;
 parameter	BPLCON0  = 9'h100;
 
+/*
 parameter	HTOTAL  = 9'h1C0;
 parameter	HSSTOP  = 9'h1C2;
 parameter	HBSTRT  = 9'h1C4;
@@ -83,6 +84,7 @@ parameter	BEAMCON = 9'h1DC;
 parameter	HSSTRT  = 9'h1DE;
 parameter	VSSTRT  = 9'h1E0;
 parameter	HCENTER = 9'h1E2;
+*/
 
 parameter	hbstrt  = 17+4+4;	// horizontal blanking start
 parameter	hsstrt  = 29+4+4;	// front porch = 1.6us (29)
