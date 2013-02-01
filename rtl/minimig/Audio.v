@@ -348,20 +348,9 @@ module sigmadelta
 	output	reg right				//right bitsteam output
 );
 
-
 //--------------------------------------------------------------------------------------
 
-
-// lfsr
-// TODO good for dithering, better noise needed for additive
-reg [24-1:0] seed = 24'h654321;
-always @ (posedge clk) begin
-  if ((~|seed) || (&seed)) // TODO
-    seed <= #1 24'h654321;
-  else
-    seed <= #1 {seed[22:0], ~(seed[23] ^ seed[22] ^ seed[21] ^ seed[16])};
-end
-
+// local signals
 localparam DW = 15;
 localparam CW = 2;
 localparam RW  = 2;
@@ -374,21 +363,64 @@ wire [DW+A2W-1:0] sd_l_aca2,  sd_r_aca2;
 reg  [DW+A1W-1:0] sd_l_ac1=0, sd_r_ac1=0;
 reg  [DW+A2W-1:0] sd_l_ac2=0, sd_r_ac2=0;
 
+
+// LPF noise LFSR
+reg [24-1:0] seed = 24'h654321;
+reg [24-1:0] seed_prev, seed_out;
+always @ (posedge clk) begin
+  if ((~|seed) || (&seed)) // TODO
+    seed <= #1 24'h654321;
+  else
+    seed <= #1 {seed[22:0], ~(seed[23] ^ seed[22] ^ seed[21] ^ seed[16])};
+end
+always @ (posedge clk) seed_prev <= #1 seed;
+always @ (posedge clk) seed_out <= #1 seed + seed_prev;
+
+
+// linear interpolate
+localparam ID=4; // counter size, also 2^ID = interpolation rate
+reg  [ID+0-1:0] int_cnt = 0;
+always @ (posedge clk) int_cnt <= #1 int_cnt + 'd1;
+
+reg  [DW+0-1:0] ldata_cur, ldata_prev;
+reg  [DW+0-1:0] rdata_cur, rdata_prev;
+wire [DW+1-1:0] ldata_step, rdata_step;
+reg  [DW+ID-1:0] ldata_int, rdata_int;
+wire [DW+0-1:0] ldata_int_out, rdata_int_out;
+assign ldata_step = ldata_cur - ldata_prev;
+assign rdata_step = rdata_cur - rdata_prev;
+always @ (posedge clk) begin
+  if (~|int_cnt) begin
+    ldata_prev <= #1 ldata_cur;
+    ldata_cur  <= #1 {~ldatasum[DW-1], ldatasum[DW-2:0]}; // convert to offset binary, samples no longer signed!
+    rdata_prev <= #1 rdata_cur;
+    rdata_cur  <= #1 {~rdatasum[DW-1], rdatasum[DW-2:0]}; // convert to offset binary, samples no longer signed!
+    ldata_int  <= #1 {ldata_cur[DW-1], ldata_cur, {ID{1'b0}}};
+    rdata_int  <= #1 {rdata_cur[DW-1], rdata_cur, {ID{1'b0}}};
+  end else begin
+    ldata_int  <= #1 ldata_int + {{ID{ldata_step[DW+1-1]}}, ldata_step};
+    rdata_int  <= #1 rdata_int + {{ID{rdata_step[DW+1-1]}}, rdata_step};
+  end
+end
+assign ldata_int_out = ldata_int[DW+ID-1:ID];
+assign rdata_int_out = rdata_int[DW+ID-1:ID];
+
+
 // input gain x3
 wire [DW+2-1:0] ldata_gain, rdata_gain;
-assign ldata_gain = {ldatasum[DW-1], ldatasum, ldatasum[DW-2]} + {{(2){ldatasum[DW-1]}}, ldatasum};
-assign rdata_gain = {rdatasum[DW-1], rdatasum, rdatasum[DW-2]} + {{(2){rdatasum[DW-1]}}, rdatasum};
+assign ldata_gain = {ldata_int_out[DW-1], ldata_int_out, 1'b0} + {{(2){ldata_int_out[DW-1]}}, ldata_int_out};
+assign rdata_gain = {rdata_int_out[DW-1], rdata_int_out, 1'b0} + {{(2){rdata_int_out[DW-1]}}, rdata_int_out};
 
 // random dither to 15 bits
 reg [DW-1:0] ldata, rdata;
 always @ (posedge clk) begin
-  ldata <= #1 ldata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
-  rdata <= #1 rdata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
+  ldata <= #1 ldata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed_out[1:0])) ? 1 : 0 );
+  rdata <= #1 rdata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed_out[1:0])) ? 1 : 0 );
 end
 
 // accumulator adders
-assign sd_l_aca1 = {{(A1W){ldata[DW-1]}}, ldata} - {{(A1W){sd_l_er0[DW-1]}}, sd_l_er0} + {{(DW+A1W-RW){seed[RW-1]}}, seed[RW+6-1:6]} + sd_l_ac1; // TODO random additive noise could be removed
-assign sd_r_aca1 = {{(A1W){rdata[DW-1]}}, rdata} - {{(A1W){sd_r_er0[DW-1]}}, sd_r_er0} + {{(DW+A1W-RW){seed[RW-1]}}, seed[RW+6-1:6]} + sd_r_ac1;
+assign sd_l_aca1 = {{(A1W){ldata[DW-1]}}, ldata} - {{(A1W){sd_l_er0[DW-1]}}, sd_l_er0} + {{(DW+A1W-RW){seed_out[RW-1]}}, seed_out[RW+6-1:6]} + sd_l_ac1; // TODO random additive noise could be removed
+assign sd_r_aca1 = {{(A1W){rdata[DW-1]}}, rdata} - {{(A1W){sd_r_er0[DW-1]}}, sd_r_er0} + {{(DW+A1W-RW){seed_out[RW-1]}}, seed_out[RW+6-1:6]} + sd_r_ac1;
 
 assign sd_l_aca2 = {{(A2W-A1W){sd_l_aca1[DW+A1W-1]}}, sd_l_aca1} - {{(A2W){sd_l_er0[DW-1]}}, sd_l_er0} /*+ {{(DW+A2W-RW){seed[RW-1]}}, seed[RW-1:0]}*/ + sd_l_ac2;
 assign sd_r_aca2 = {{(A2W-A1W){sd_r_aca1[DW+A1W-1]}}, sd_r_aca1} - {{(A2W){sd_r_er0[DW-1]}}, sd_r_er0} /*+ {{(DW+A2W-RW){seed[RW-1]}}, seed[RW-1:0]}*/ + sd_r_ac2;
