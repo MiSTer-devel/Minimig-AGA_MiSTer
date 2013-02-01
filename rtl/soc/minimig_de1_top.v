@@ -255,10 +255,14 @@ assign FL_DQ            = FL_OE_N   ? FL_DAT_W   : 8'bzzzzzzzz;
 assign FL_DAT_R         = FL_DQ;
 
 // AUDIO
-//assign AUDIOLEFT        = audio_left;
-//assign AUDIORIGHT       = audio_right;
+`define MINIMIG_SERIAL_AUDIO
+`ifdef MINIMIG_SERIAL_AUDIO
+assign AUDIOLEFT        = audio_left;
+assign AUDIORIGHT       = audio_right;
+`else
 assign AUDIOLEFT        = 1'b0;
 assign AUDIORIGHT       = 1'b0;
+`endif
 
 // ctrl
 assign SPI_DI           = !SPI_CS_N[0] ? SD_DAT : sdo;
