@@ -340,7 +340,7 @@ PROCESS (OP1out, OP2out, niba_hc, niba_h, niba_l, niba_lc, nibs_hc, nibs_h, nibs
 -----------------------------------------------------------------------------
 -- Bits
 -----------------------------------------------------------------------------
-PROCESS (clk, exe_opcode, OP1out, OP2out, one_bit_in, bchg, bset, bit_Number, sndOPC, reg_QB)
+PROCESS (clk, exe_opcode, OP1out, OP2out, one_bit_in, bchg, bset, bit_Number, sndOPC)
 	BEGIN
 		IF rising_edge(clk) THEN		
 	        IF  clkena_lw = '1' THEN

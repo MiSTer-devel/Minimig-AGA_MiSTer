@@ -423,6 +423,12 @@ ctrl_flash #(
   .fl_dat_r   (fl_dat_r   )
 );
 `else
+assign fl_adr   = 22'b0;
+assign fl_ce_n  = 1'b1;
+assign fl_we_n  = 1'b1;
+assign fl_oe_n  = 1'b1;
+assign fl_rst_n = 1'b1;
+assign fl_dat_w = 8'b0;
 ctrl_boot ctrl_rom (
   .clock      (clk        ),
   .address    (rom_adr[12:2]),
