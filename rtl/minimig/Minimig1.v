@@ -407,7 +407,7 @@ assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-sta
 // power led pwm 
 always @(posedge clk)
   if (_hsync)
-    led_cnt <= led_cnt + 1;
+    led_cnt <= led_cnt + 4'd1;
 
 always @(posedge clk)
   if (!_hsync)
@@ -431,7 +431,7 @@ assign sol_pulse = sol & ~sol_del; // rising edge detection
 reg [3:0] drv_cnt;
 always @(posedge clk)
   if (drv_cnt != 0 && sol_pulse || drv_cnt == 0 && step_pulse && !boot && _change) // count only sol pulses when counter is not zero or step pulses and bootloader is not active
-    drv_cnt <= drv_cnt + 1;
+    drv_cnt <= drv_cnt + 4'd1;
 
 reg drvsnd;
 always @(posedge clk)

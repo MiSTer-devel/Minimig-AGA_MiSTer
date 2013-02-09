@@ -382,8 +382,8 @@ assign rdata_gain = {rdatasum[DW-1], rdatasum, rdatasum[DW-2]} + {{(2){rdatasum[
 // random dither to 15 bits
 reg [DW-1:0] ldata, rdata;
 always @ (posedge clk) begin
-  ldata <= #1 ldata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
-  rdata <= #1 rdata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 1 : 0 );
+  ldata <= #1 ldata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 15'd1 : 15'd0 );
+  rdata <= #1 rdata_gain[DW+2-1:2] + ( (~(&ldata_gain[DW+2-1-1:2]) && (ldata_gain[1:0] > seed[1:0])) ? 15'd1 : 15'd0 );
 end
 
 // accumulator adders

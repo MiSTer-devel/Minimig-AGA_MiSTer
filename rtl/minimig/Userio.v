@@ -229,7 +229,7 @@ always @ (posedge clk)
     potreg <= #1 data_in;
 
 //data output multiplexer
-always @(reg_address_in or joy1enable or _sjoy1 or mouse0dat or _sjoy2 or _mright or _mthird or _rmb)
+always @(*)
 	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
 		data_out[15:0] = {6'b000000,~_sjoy1[1],_sjoy1[3]^_sjoy1[1],6'b000000,~_sjoy1[0],_sjoy1[2]^_sjoy1[0]};
 	else if (reg_address_in[8:1]==JOY0DAT[8:1])//read port 1 mouse
