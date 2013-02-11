@@ -19,6 +19,11 @@
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
+//
+// RK:
+// 2013-02-11 - converted to Verilog
+//            - cleanup
+//            - 
 
 
 module sdram_ctrl(
@@ -35,7 +40,7 @@ module sdram_ctrl(
   output reg            sd_ras,
   output reg            sd_cas,
   output reg  [  2-1:0] dqm,
-  inout  wire [ 16-1:0] sdata, // TODO reg!
+  inout  wire [ 16-1:0] sdata,
   // host
   input  wire [ 24-1:0] hostAddr,
   input  wire [  3-1:0] hostState,
@@ -45,7 +50,7 @@ module sdram_ctrl(
   output reg  [ 16-1:0] hostRD,
   output wire           hostena,
   // chip
-  input  wire    [23:1] chipAddr, // TODO
+  input  wire    [23:1] chipAddr,
   input  wire           chipL,
   input  wire           chipU,
   input  wire           chipRW,
@@ -53,14 +58,13 @@ module sdram_ctrl(
   input  wire [ 16-1:0] chipWR,
   output reg  [ 16-1:0] chipRD,
   // cpu
-  input  wire    [24:1] cpuAddr, // TODO
+  input  wire    [24:1] cpuAddr,
   input  wire [  6-1:0] cpustate,
   input  wire           cpuL,
   input  wire           cpuU,
   input  wire           cpu_dma,
   input  wire [ 16-1:0] cpuWR,
   output reg  [ 16-1:0] cpuRD,
-  output reg            enaRDreg,
   output reg            enaWRreg,
   output reg            ena7RDreg,
   output reg            ena7WRreg,
@@ -68,50 +72,8 @@ module sdram_ctrl(
 );
 
 
-
-reg [3:0] initstate;
-reg [3:0] cas_sd_cs;
-reg cas_sd_ras;
-reg cas_sd_cas;
-reg cas_sd_we;
-reg [1:0] cas_dqm;
-reg init_done;
-reg [15:0] datain;
-reg [15:0] datawr;
-reg [24:0] casaddr;
-reg sdwrite;
-reg [15:0] sdata_reg;
-reg hostCycle;
-wire [24:0] zmAddr;
-reg zena;
-reg [63:0] zcache;
-reg [23:0] zcache_addr;
-reg zcache_fill;
-reg zcachehit;
-reg [3:0] zvalid;
-reg zequal;
-reg [1:0] hostStated;
-reg [15:0] hostRDd;
-reg cena;
-reg [63:0] ccache;
-reg [24:0] ccache_addr;
-reg ccache_fill;
-reg ccachehit;
-reg [3:0] cvalid;
-reg cequal;
-reg [1:0] cpustated;
-reg [15:0] cpuRDd;
-reg [7:0] hostSlot_cnt;
-reg [7:0] reset_cnt;
-reg reset;
-reg reset_sdstate;
-reg c_7md;
-reg c_7mdd;
-reg c_7mdr;
-reg cpuCycle;
-reg chipCycle;
-reg [7:0] slow;
-parameter [3:0]
+//// internal parameters ////
+localparam [3:0]
   ph0 = 0,
   ph1 = 1,
   ph2 = 2,
@@ -129,18 +91,68 @@ parameter [3:0]
   ph14 = 14,
   ph15 = 15;
 
-reg [3:0] sdram_state;
 parameter [1:0]
   nop = 0,
   ras = 1,
   cas = 2;
 
-wire [1:0] pass;
-wire [3:0] tst_adr1;
-wire [3:0] tst_adr2;
+
+//// internal signals ////
+reg  [  4-1:0] initstate;
+reg  [  4-1:0] cas_sd_cs;
+reg            cas_sd_ras;
+reg            cas_sd_cas;
+reg            cas_sd_we;
+reg  [  2-1:0] cas_dqm;
+reg            init_done;
+reg  [ 16-1:0] datawr;
+reg  [ 25-1:0] casaddr;
+reg            sdwrite;
+reg  [ 16-1:0] sdata_reg;
+reg            hostCycle;
+wire [ 25-1:0] zmAddr;
+reg            zena;
+reg  [ 64-1:0] zcache;
+reg  [ 24-1:0] zcache_addr;
+reg            zcache_fill;
+reg            zcachehit;
+reg  [  4-1:0] zvalid;
+wire           zequal;
+reg  [  2-1:0] hostStated;
+reg  [ 16-1:0] hostRDd;
+reg            cena;
+reg  [ 64-1:0] ccache;
+reg  [ 25-1:0] ccache_addr;
+reg            ccache_fill;
+reg            ccachehit;
+reg  [  4-1:0] cvalid;
+wire           cequal;
+reg  [  2-1:0] cpustated;
+reg  [ 16-1:0] cpuRDd;
+reg  [  8-1:0] reset_cnt;
+reg            reset;
+reg            reset_sdstate;
+reg            c_7md;
+reg            c_7mdd;
+reg            c_7mdr;
+reg            cpuCycle;
+reg            chipCycle;
+reg  [  4-1:0] sdram_state;
+wire [  2-1:0] pass;
+wire [  4-1:0] tst_adr1;
+wire [  4-1:0] tst_adr2;
 
 
+// CPU states
+//             [5]    [4:3]              [2]   [1:0]
+// cpustate <= clkena&slower(1 downto 0)&ramcs&state
+// [1:0] = state = 00-> fetch code 10->read data 11->write data 01->no memaccess
+
+
+////////////////////////////////////////
 // reset
+////////////////////////////////////////
+
 always @(posedge sysclk or negedge reset_in) begin
   if(~reset_in) begin
     reset_cnt <= 8'b00000000;
@@ -161,47 +173,49 @@ always @(posedge sysclk or negedge reset_in) begin
   end
 end
 
+assign reset_out = init_done;
 
-//-----------------------------------------------------------------------
-// SPIHOST cache
-//-----------------------------------------------------------------------
+
+////////////////////////////////////////
+// host cache
+////////////////////////////////////////
 
 assign hostena = (zena == 1'b1) || (hostState[1:0] == 2'b01) || (zcachehit == 1'b1) ? 1'b1 : 1'b0;
 assign zmAddr = {1'b0, ~hostAddr[23],hostAddr[22], ~hostAddr[21],hostAddr[20:0]};
 assign tst_adr1 = {hostAddr[2:1],zcache_addr[2:1]};
+assign zequal = (zmAddr[23:3] == zcache_addr[23:3]);
 
+// cache read
 always @(*) begin
-  if(zmAddr[23:3] == zcache_addr[23:3]) zequal <= 1'b1;
-  else                                  zequal <= 1'b0;
-  zcachehit <= 1'b0;
+  zcachehit <= 1'b0; // TODO move to else block
   if((zequal == 1'b1) && (zvalid[0] == 1'b1) && (hostStated[1] == 1'b0)) begin
     case(tst_adr1)
     4'b0000,4'b0101,4'b1010,4'b1111 : begin
-      zcachehit <= zvalid[0];
-      hostRD <= zcache[63:48];
+      zcachehit = zvalid[0];
+      hostRD = zcache[63:48];
     end
     4'b0100,4'b1001,4'b1110,4'b0011 : begin
-      zcachehit <= zvalid[1];
-      hostRD <= zcache[47:32];
+      zcachehit = zvalid[1];
+      hostRD = zcache[47:32];
     end
     4'b1000,4'b1101,4'b0010,4'b0111 : begin
-      zcachehit <= zvalid[2];
-      hostRD <= zcache[31:16];
+      zcachehit = zvalid[2];
+      hostRD = zcache[31:16];
     end
     4'b1100,4'b0001,4'b0110,4'b1011 : begin
-      zcachehit <= zvalid[3];
-      hostRD <= zcache[15:0];
+      zcachehit = zvalid[3];
+      hostRD = zcache[15:0];
     end
     default : begin
     end
     endcase
   end
   else begin
-    hostRD <= hostRDd;
+    hostRD = hostRDd;
   end
 end
 
-// data transfer
+// cache fill
 always @(posedge sysclk or negedge reset) begin
   if(~reset) begin
     zcache_fill <= 1'b0;
@@ -224,82 +238,82 @@ always @(posedge sysclk or negedge reset) begin
       zvalid <= 4'b0000;
     end
     case(sdram_state)
-    ph7 : begin
-      if(hostStated[1] == 1'b0 && hostCycle == 1'b1) begin
-        //only instruction cache
-        zcache_addr <= casaddr[23:0];
-        zcache_fill <= 1'b1;
-        zvalid <= 4'b0000;
+      ph7 : begin
+        if(hostStated[1] == 1'b0 && hostCycle == 1'b1) begin
+          // only instruction cache
+          zcache_addr <= casaddr[23:0];
+          zcache_fill <= 1'b1;
+          zvalid <= 4'b0000;
+        end
       end
-    end
-    ph9 : begin
-      if(zcache_fill == 1'b1) begin
-        zcache[63:48] <= sdata_reg;
+      ph9 : begin
+        if(zcache_fill == 1'b1) begin
+          zcache[63:48] <= sdata_reg;
+        end
       end
-    end
-    ph10 : begin
-      if(zcache_fill == 1'b1) begin
-        zcache[47:32] <= sdata_reg;
+      ph10 : begin
+        if(zcache_fill == 1'b1) begin
+          zcache[47:32] <= sdata_reg;
+        end
       end
-    end
-    ph11 : begin
-      if(zcache_fill == 1'b1) begin
-        zcache[31:16] <= sdata_reg;
+      ph11 : begin
+        if(zcache_fill == 1'b1) begin
+          zcache[31:16] <= sdata_reg;
+        end
       end
-    end
-    ph12 : begin
-      if(zcache_fill == 1'b1) begin
-        zcache[15:0] <= sdata_reg;
-        zvalid <= 4'b1111;
+      ph12 : begin
+        if(zcache_fill == 1'b1) begin
+          zcache[15:0] <= sdata_reg;
+          zvalid <= 4'b1111;
+        end
+        zcache_fill <= 1'b0;
       end
-      zcache_fill <= 1'b0;
-    end
-    default : begin
-    end
+      default : begin
+      end
     endcase
   end
 end
 
 
-//-----------------------------------------------------------------------
+////////////////////////////////////////
 // cpu cache
-//-----------------------------------------------------------------------
+////////////////////////////////////////
 
 assign cpuena = (cena == 1'b1) || (ccachehit == 1'b1) ? 1'b1 : 1'b0;
 assign tst_adr2 = {cpuAddr[2:1],ccache_addr[2:1]};
+assign cequal = (cpuAddr[24:3] == ccache_addr[24:3]);
 
+// cache read
 always @(*) begin
-  if(cpuAddr[24:3] == ccache_addr[24:3]) cequal <= 1'b1;
-  else                                   cequal <= 1'b0;
-  ccachehit <= 1'b0;
+  ccachehit = 1'b0; // TODO move to else block
   if(cequal == 1'b1 && cvalid[0] == 1'b1 && cpustated[1] == 1'b0) begin
     case(tst_adr2)
-    4'b0000,4'b0101,4'b1010,4'b1111 : begin
-      ccachehit <= cvalid[0];
-      cpuRD <= ccache[63:48];
-    end
-    4'b0100,4'b1001,4'b1110,4'b0011 : begin
-      ccachehit <= cvalid[1];
-      cpuRD <= ccache[47:32];
-    end
-    4'b1000,4'b1101,4'b0010,4'b0111 : begin
-      ccachehit <= cvalid[2];
-      cpuRD <= ccache[31:16];
-    end
-    4'b1100,4'b0001,4'b0110,4'b1011 : begin
-      ccachehit <= cvalid[3];
-      cpuRD <= ccache[15:0];
-    end
-    default : begin
-    end
+      4'b0000,4'b0101,4'b1010,4'b1111 : begin
+        ccachehit = cvalid[0];
+        cpuRD = ccache[63:48];
+      end
+      4'b0100,4'b1001,4'b1110,4'b0011 : begin
+        ccachehit = cvalid[1];
+        cpuRD = ccache[47:32];
+      end
+      4'b1000,4'b1101,4'b0010,4'b0111 : begin
+        ccachehit = cvalid[2];
+        cpuRD = ccache[31:16];
+      end
+      4'b1100,4'b0001,4'b0110,4'b1011 : begin
+        ccachehit = cvalid[3];
+        cpuRD = ccache[15:0];
+      end
+      default : begin
+      end
     endcase
   end
   else begin
-    cpuRD <= cpuRDd;
+    cpuRD = cpuRDd;
   end
 end
 
-// data transfer
+// cache fill
 always @(posedge sysclk or negedge reset) begin
   if(~reset) begin
     ccache_fill <= 1'b0;
@@ -324,7 +338,7 @@ always @(posedge sysclk or negedge reset) begin
     case(sdram_state)
     ph7 : begin
       if(cpustated[1] == 1'b0 && cpuCycle == 1'b1) begin
-        //only instruction cache
+        // only instruction cache
         ccache_addr <= casaddr;
         ccache_fill <= 1'b1;
         cvalid <= 4'b0000;
@@ -359,9 +373,10 @@ always @(posedge sysclk or negedge reset) begin
 end
 
 
-//-----------------------------------------------------------------------
+////////////////////////////////////////
 // chip cache
-//-----------------------------------------------------------------------
+////////////////////////////////////////
+
 always @(posedge sysclk) begin
   if(sdram_state == ph9 && chipCycle == 1'b1) begin
     chipRD <= sdata_reg;
@@ -369,19 +384,28 @@ always @(posedge sysclk) begin
 end
 
 
-//-----------------------------------------------------------------------
-// SDRAM Basic
-//-----------------------------------------------------------------------
+////////////////////////////////////////
+// SDRAM control
+////////////////////////////////////////
 
-assign reset_out = init_done;
-
-assign sdata = (sdwrite) ? datawr : 16'bzzzzzzzzzzzzzzzz;
-
+// clock mangling - TODO
 always @(negedge sysclk) begin
-//always @(posedge sysclk) begin
   c_7md <= c_7m;
 end
+always @ (posedge sysclk) begin
+  c_7mdd <= c_7md;
+  c_7mdr <= c_7md &  ~c_7mdd;
+end
 
+// SDRAM data I/O
+assign sdata = (sdwrite) ? datawr : 16'bzzzzzzzzzzzzzzzz;
+
+// read data reg
+always @ (posedge clk) begin
+  sdata_reg <= sdata;
+end
+
+// write data reg
 always @(posedge sysclk) begin
   if(sdram_state == ph2) begin
     if(chipCycle == 1'b1) begin
@@ -392,21 +416,17 @@ always @(posedge sysclk) begin
       datawr <= hostWR;
     end
   end
-  sdata_reg <= sdata;
-  c_7mdd <= c_7md;
-  c_7mdr <= c_7md &  ~c_7mdd;
 end
 
+// write / read control
 always @(posedge sysclk or negedge reset_sdstate) begin
   if(~reset_sdstate) begin
     sdwrite <= 1'b0;
-    enaRDreg <= 1'b0;
     enaWRreg <= 1'b0;
     ena7RDreg <= 1'b0;
     ena7WRreg <= 1'b0;
   end else begin
     sdwrite <= 1'b0;
-    enaRDreg <= 1'b0;
     enaWRreg <= 1'b0;
     ena7RDreg <= 1'b0;
     ena7WRreg <= 1'b0;
@@ -441,6 +461,7 @@ always @(posedge sysclk or negedge reset_sdstate) begin
   end
 end
 
+// init counter
 always @(posedge sysclk or negedge reset) begin
   if(~reset) begin
     initstate <= {4{1'b0}};
@@ -460,6 +481,7 @@ always @(posedge sysclk or negedge reset) begin
   end
 end
 
+// sdram state
 always @(posedge sysclk) begin
   if(c_7mdr == 1'b1) begin
     sdram_state <= ph2;
@@ -517,6 +539,7 @@ always @(posedge sysclk) begin
   end
 end
 
+// sdram control
 always @(posedge sysclk) begin
   sd_cs <= 4'b1111;
   sd_ras <= 1'b1;
@@ -555,7 +578,7 @@ always @(posedge sysclk) begin
         //sdaddr <= 12'b001000110000; // noBURST LATENCY=3
       end
       default : begin
-        //NOP
+        // NOP
       end
       endcase
     end
@@ -569,9 +592,6 @@ always @(posedge sysclk) begin
       cas_sd_ras <= 1'b1;
       cas_sd_cas <= 1'b1;
       cas_sd_we <= 1'b1;
-      if(slow[2:0] == 5) slow <= slow + 3;
-      else               slow <= slow + 1;
-      if(hostSlot_cnt != 8'b00000000) hostSlot_cnt <= hostSlot_cnt - 1;
       if(chip_dma == 1'b0 || chipRW == 1'b0) begin
         chipCycle <= 1'b1;
         sdaddr <= chipAddr[20:9];
@@ -580,7 +600,6 @@ always @(posedge sysclk) begin
         sd_cs <= 4'b1110; // active
         sd_ras <= 1'b0;
         casaddr <= {1'b0,chipAddr,1'b0};
-        datain <= chipWR;
         cas_sd_cas <= 1'b0;
         cas_sd_we <= chipRW;
       end else if(cpustate[2] == 1'b0 && cpustate[5] == 1'b0) begin
@@ -591,11 +610,9 @@ always @(posedge sysclk) begin
         sd_cs <= 4'b1110; // active
         sd_ras <= 1'b0;
         casaddr <= {cpuAddr[24:1],1'b0};
-        datain <= cpuWR;
         cas_sd_cas <= 1'b0;
         cas_sd_we <=  ~cpustate[1] |  ~cpustate[0];
       end else begin
-        hostSlot_cnt <= 8'b00001111;
         if(hostState[2] == 1'b1 || hostena == 1'b1) begin // refresh cycle
           sd_cs <= 4'b0000; // autorefresh
           sd_ras <= 1'b0;
@@ -608,7 +625,6 @@ always @(posedge sysclk) begin
           sd_cs <= 4'b1110; // active
           sd_ras <= 1'b0;
           casaddr <= zmAddr;
-          datain <= hostWR;
           cas_sd_cas <= 1'b0;
           if(hostState == 3'b011) cas_sd_we <= 1'b0;
         end
