@@ -255,7 +255,7 @@ assign FL_DQ            = FL_OE_N   ? FL_DAT_W   : 8'bzzzzzzzz;
 assign FL_DAT_R         = FL_DQ;
 
 // AUDIO
-`define MINIMIG_SERIAL_AUDIO
+//`define MINIMIG_SERIAL_AUDIO
 `ifdef MINIMIG_SERIAL_AUDIO
 assign AUDIOLEFT        = audio_left;
 assign AUDIORIGHT       = audio_right;
@@ -426,7 +426,7 @@ TG68K tg68k (
 
 
 //// sdram ////
-sdram sdram (
+sdram_ctrl sdram (
   .sdata        (DRAM_DQ          ),
   .sdaddr       (DRAM_ADDR        ),
   .dqm          (sdram_dqm        ),
