@@ -167,7 +167,7 @@ always @(posedge sysclk or negedge reset_in) begin
         reset <= 1'b1;
       end
     end else begin
-      reset_cnt <= reset_cnt + 1;
+      reset_cnt <= reset_cnt + 8'd1;
       reset <= 1'b0;
     end
   end
@@ -187,7 +187,7 @@ assign zequal = (zmAddr[23:3] == zcache_addr[23:3]);
 
 // cache read
 always @(*) begin
-  zcachehit <= 1'b0; // TODO move to else block
+  zcachehit = 1'b0; // TODO move to else block
   if((zequal == 1'b1) && (zvalid[0] == 1'b1) && (hostStated[1] == 1'b0)) begin
     case(tst_adr1)
     4'b0000,4'b0101,4'b1010,4'b1111 : begin
@@ -401,7 +401,7 @@ end
 assign sdata = (sdwrite) ? datawr : 16'bzzzzzzzzzzzzzzzz;
 
 // read data reg
-always @ (posedge clk) begin
+always @ (posedge sysclk) begin
   sdata_reg <= sdata;
 end
 
@@ -470,7 +470,7 @@ always @(posedge sysclk or negedge reset) begin
     case(sdram_state) // LATENCY=3
       ph15 : begin
         if(initstate != 4'b1111) begin
-          initstate <= initstate + 1;
+          initstate <= initstate + 4'd1;
         end else begin
           init_done <= 1'b1;
         end
