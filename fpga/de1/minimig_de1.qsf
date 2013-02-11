@@ -705,11 +705,11 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
 set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_boot.v
-set_global_assignment -name VHDL_FILE ../../rtl/de1/sdram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
+
 
 
 
