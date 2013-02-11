@@ -433,7 +433,7 @@ TG68K tg68k (
 
 
 //// sdram ////
-sdram sdram (
+sdram_ctrl sdram (
   .sdata        (DRAM_DQ          ),
   .sdaddr       (DRAM_ADDR        ),
   .dqm          (sdram_dqm        ),
@@ -468,7 +468,6 @@ sdram sdram (
   .cpuena       (tg68_cpuena      ),
   .chipRD       (ramdata_in       ),
   .reset_out    (reset_out        ),
-  .enaRDreg     (                 ),
   .enaWRreg     (tg68_enaWR       ),
   .ena7RDreg    (tg68_ena7RD      ),
   .ena7WRreg    (tg68_ena7WR      )
