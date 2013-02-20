@@ -25,29 +25,29 @@ reg            clk_sdram_r;
 reg            pll_locked_r;
 initial begin
   pll_locked_r  = 1'b0;
-  wait !rst;
+  wait (!rst);
   #50;
   pll_locked_r  = 1'b1;
 end
 initial begin
   clk_114_r     = 1'b1;
-  wait !rst;
+  wait (!rst);
   forever #4.357  clk_114_r   = ~clk_114_r;
 end
 initial begin
   clk_28_r      = 1'b1;
-  wait !rst;
+  wait (!rst);
   forever #17.428 clk_28_r    = ~clk_28_r;
 end
 initial begin
   clk_sdram_r   = 1'b1;
-  wait !rst;
+  wait (!rst);
   forever #4.357  clk_sdram_r = ~clk_sdram_r;
 end
 assign clk_114    = clk_114_r;
 assign clk_28     = clk_28_r;
 assign clk_sdram  = clk_sdram_r;
-assign pll_locked = pll_locked_r;
+assign locked = pll_locked_r;
 
 `else
 
