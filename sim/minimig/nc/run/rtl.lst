@@ -1,10 +1,7 @@
 ../../../../rtl/soc/minimig_de1_top.v
 
-../../../../lib/altera/i_sync.v
-../../../../lib/altera/MULT18x18.v
-../../../../lib/altera/srl16e.v
+../../../../rtl/io/i_sync.v
 
-../../../../rtl/minimig/
 ../../../../rtl/minimig/ActionReplay3.v
 ../../../../rtl/minimig/Agnus.v
 ../../../../rtl/minimig/Amber.v
@@ -102,18 +99,15 @@
 ../../../../rtl/or1200/or1200_wbmux.v
 ../../../../rtl/or1200/or1200_xcv_ram32x8d.v
 
-../../../../rtl/de1/amigaclk.v
+../../../../rtl/clock/amiga_clk.v
 
 ../../../../rtl/sdram/sdram_ctrl.v
-../../../../rtl/de1/sdram.vhd
+../../../../rtl/sdram/sdram.vhd
 
 ../../../../fw/amiga_boot/bin/amiga_boot.v
 
 ../../../../rtl/io/indicators.v
 ../../../../rtl/io/sseg_decode.v
-
-../../../../rtl/tg68/TG68_fast.vhd
-../../../../rtl/tg68/TG68.vhd
 
 ../../../../rtl/tg68k/TG68K_Pack.vhd
 ../../../../rtl/tg68k/TG68K_ALU.vhd
