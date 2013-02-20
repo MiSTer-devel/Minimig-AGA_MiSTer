@@ -24,7 +24,7 @@
 // 2013-02-12 - converted to Verilog
 //            - cleanup
 //            - code simplification
-//
+//            - added two-lines cache
 
 
 module sdram_ctrl(
@@ -33,6 +33,9 @@ module sdram_ctrl(
   input  wire           c_7m,
   input  wire           reset_in,
   output wire           reset_out,
+  // temp - cache control
+  input wire  [  3-1:0] cctrl,
+  // temp
   // sdram
   output reg  [ 12-1:0] sdaddr,
   output reg  [  4-1:0] sd_cs,
@@ -111,14 +114,7 @@ reg  [ 25-1:0] casaddr;
 reg            sdwrite;
 reg  [ 16-1:0] sdata_reg;
 reg            hostCycle;
-wire [ 25-1:0] zmAddr;
 reg            zena;
-reg  [ 64-1:0] zcache;
-reg  [ 24-1:0] zcache_addr;
-reg            zcache_fill;
-reg            zcachehit;
-reg  [  4-1:0] zvalid;
-wire           zequal;
 reg  [  2-1:0] hostStated;
 reg  [ 16-1:0] hostRDd;
 reg            cena;
@@ -178,374 +174,134 @@ assign reset_out = init_done;
 
 
 ////////////////////////////////////////
-// host cache
+// host access
 ////////////////////////////////////////
 
-assign hostena = zena || zcachehit || (hostState[1:0] == 2'b01);
-assign zmAddr = {1'b0, ~hostAddr[23],hostAddr[22], ~hostAddr[21],hostAddr[20:0]};
-assign tst_adr1 = {hostAddr[2:1],zcache_addr[2:1]};
-assign zequal = (zmAddr[23:3] == zcache_addr[23:3]);
+assign hostena = zena || (hostState[1:0] == 2'b01);
 
-// cache fill
 always @ (posedge sysclk or negedge reset) begin
   if (~reset) begin
-    zcache_fill <= 1'b0;
     zena <= 1'b0;
-    zvalid <= 4'b0000;
   end else begin
     if (enaWRreg) begin
       zena <= 1'b0;
-    end
-    if ((sdram_state == ph9) && hostCycle) begin
-      hostRDd <= sdata_reg;
-    end
-    if ((sdram_state == ph11) && hostCycle) begin
-      if ((zmAddr == casaddr) && !cas_sd_cas) begin
+    end else if ((sdram_state == ph11) && hostCycle) begin
+      if ((hostAddr == casaddr[23:0]) && !cas_sd_cas) begin
         zena <= 1'b1;
       end
     end
-    hostStated <= hostState[1:0];
-    if (zequal && (hostState[1:0] == 2'b11)) begin
-      zvalid <= 4'b0000;
-    end
-    case (sdram_state)
-      ph7 : begin
-        if (!hostStated[1] && hostCycle) begin
-          // only instruction cache
-          zcache_addr <= casaddr[23:0];
-          zcache_fill <= 1'b1;
-          zvalid <= 4'b0000;
-        end
-      end
-      ph9 : begin
-        if (zcache_fill) begin
-          zcache[63:48] <= sdata_reg;
-        end
-      end
-      ph10 : begin
-        if (zcache_fill) begin
-          zcache[47:32] <= sdata_reg;
-        end
-      end
-      ph11 : begin
-        if (zcache_fill) begin
-          zcache[31:16] <= sdata_reg;
-        end
-      end
-      ph12 : begin
-        if (zcache_fill) begin
-          zcache[15:0] <= sdata_reg;
-          zvalid <= 4'b1111;
-        end
-        zcache_fill <= 1'b0;
-      end
-    endcase
   end
 end
 
-// cache read
-always @ (*) begin
-  if (zequal && zvalid[0] && !hostStated[1]) begin
-    case (tst_adr1)
-      4'b0000,4'b0101,4'b1010,4'b1111 : begin
-        zcachehit = zvalid[0];
-        hostRD = zcache[63:48];
-      end
-      4'b0100,4'b1001,4'b1110,4'b0011 : begin
-        zcachehit = zvalid[1];
-        hostRD = zcache[47:32];
-      end
-      4'b1000,4'b1101,4'b0010,4'b0111 : begin
-        zcachehit = zvalid[2];
-        hostRD = zcache[31:16];
-      end
-      4'b1100,4'b0001,4'b0110,4'b1011 : begin
-        zcachehit = zvalid[3];
-        hostRD = zcache[15:0];
-      end
-      default : begin
-        zcachehit = 1'b0;
-        hostRD = hostRDd;
-      end
-    endcase
-  end else begin
-    zcachehit = 1'b0;
-    hostRD = hostRDd;
+always @ (posedge sysclk) begin
+  if ((sdram_state == ph9) && hostCycle) begin
+    hostRD <= sdata_reg;
   end
 end
-
-
-/*
-////////////////////////////////////////
-// cpu cache
-////////////////////////////////////////
-
-assign cpuena = cena || ccachehit;
-assign tst_adr2 = {cpuAddr[2:1],ccache_addr[2:1]};
-assign cequal = (cpuAddr[24:3] == ccache_addr[24:3]);
-
-// cache fill
-always @ (posedge sysclk or negedge reset) begin
-  if (~reset) begin
-    ccache_fill <= 1'b0;
-    cena <= 1'b0;
-    cvalid <= 4'b0000;
-  end else begin
-    if (cpustate[5]) begin
-      cena <= 1'b0;
-    end
-    if (sdram_state == ph9 && cpuCycle) begin
-      cpuRDd <= sdata_reg;
-    end
-    if (sdram_state == ph11 && cpuCycle) begin
-      if (cpuAddr == casaddr[24:1] && !cas_sd_cas) begin
-        cena <= 1'b1;
-      end
-    end
-    cpustated <= cpustate[1:0];
-    if (cequal && (cpustate[1:0] == 2'b11)) begin
-      cvalid <= 4'b0000;
-    end
-    case (sdram_state)
-      ph7 : begin
-        if (!cpustated[1] && cpuCycle) begin
-          // only instruction cache
-          ccache_addr <= casaddr;
-          ccache_fill <= 1'b1;
-          cvalid <= 4'b0000;
-        end
-      end
-      ph9 : begin
-        if (ccache_fill) begin
-          ccache[63:48] <= sdata_reg;
-          cvalid[0] <= 1'b1;
-        end
-      end
-      ph10 : begin
-        if (ccache_fill) begin
-          ccache[47:32] <= sdata_reg;
-          cvalid[1] <= 1'b1;
-        end
-      end
-      ph11 : begin
-        if (ccache_fill) begin
-          ccache[31:16] <= sdata_reg;
-          cvalid[2] <= 1'b1;
-        end
-      end
-      ph12 : begin
-        if (ccache_fill) begin
-          ccache[15:0] <= sdata_reg;
-          cvalid[3] <= 1'b1;
-        end
-        ccache_fill <= 1'b0;
-      end
-    endcase
-  end
-end
-
-// cache read
-always @ (*) begin
-  if (cequal && cvalid[3] && !cpustated[1]) begin
-    case (tst_adr2)
-      4'b0000,4'b0101,4'b1010,4'b1111 : begin
-        ccachehit = cvalid[0];
-        cpuRD = ccache[63:48];
-      end
-      4'b0100,4'b1001,4'b1110,4'b0011 : begin
-        ccachehit = cvalid[1];
-        cpuRD = ccache[47:32];
-      end
-      4'b1000,4'b1101,4'b0010,4'b0111 : begin
-        ccachehit = cvalid[2];
-        cpuRD = ccache[31:16];
-      end
-      4'b1100,4'b0001,4'b0110,4'b1011 : begin
-        ccachehit = cvalid[3];
-        cpuRD = ccache[15:0];
-      end
-      default : begin
-        ccachehit = 1'b0;
-        cpuRD = cpuRDd;
-      end
-    endcase
-  end else begin
-    ccachehit = 1'b0;
-    cpuRD = cpuRDd;
-  end
-end
-*/
 
 
 ////////////////////////////////////////
 // cpu cache
 ////////////////////////////////////////
+
+reg  [ 16-1:0] cpu_cache_dat0[0:4-1];
+reg  [ 16-1:0] cpu_cache_dat1[0:4-1];
+wire [  2-1:0] cpu_cache_index0, cpu_cache_index1;
 
 reg  [ 64-1:0] ccache0, ccache1;
 reg  [ 25-1:0] ccache_addr0, ccache_addr1;
 reg            ccache_fill0, ccache_fill1;
-//reg            ccachehit;
 reg  [  4-1:0] cvalid0, cvalid1;
 wire           cequal0, cequal1;
-wire [  4-1:0] tst_adr20, tst_adr21;
 
-assign cpuena = cena || ccachehit;
-assign tst_adr20 = {cpuAddr[2:1],ccache_addr0[2:1]};
-assign tst_adr21 = {cpuAddr[2:1],ccache_addr1[2:1]};
+assign cpuena = cena || ccachehit || (cpustate[1:0] == 2'b01);
 assign cequal0 = (cpuAddr[24:3] == ccache_addr0[24:3]);
 assign cequal1 = (cpuAddr[24:3] == ccache_addr1[24:3]);
+assign cpu_cache_index0 = (cpuAddr[2:1] - ccache_addr0[2:1]);
+assign cpu_cache_index1 = (cpuAddr[2:1] - ccache_addr1[2:1]);
 
-// cache fill
 always @ (posedge sysclk or negedge reset) begin
   if (~reset) begin
-    ccache_fill0 <= 1'b0;
-    ccache_fill1 <= 1'b0;
     cena <= 1'b0;
-    cvalid0 <= 4'b0000;
-    cvalid1 <= 4'b0000;
   end else begin
     if (cpustate[5]) begin
       cena <= 1'b0;
-    end
-    if (sdram_state == ph9 && cpuCycle) begin
-      cpuRDd <= sdata_reg;
     end
     if (sdram_state == ph11 && cpuCycle) begin
       if (cpuAddr == casaddr[24:1] && !cas_sd_cas) begin
         cena <= 1'b1;
       end
     end
-    cpustated <= cpustate[1:0];
-    if (cequal0 && (cpustate[1:0] == 2'b11)) begin
-      cvalid0 <= 4'b0000;
+  end
+end
+
+always @ (posedge sysclk) cpustated <= cpustate[1:0];
+
+// cpu cache fill
+always @ (posedge sysclk or negedge reset) begin
+  if (~reset) begin
+    ccache_fill0 <= 1'b0;
+    ccache_fill1 <= 1'b0;
+    cvalid0 <= 4'b0000;
+    cvalid1 <= 4'b0000;
+  end else begin
+    if ((cpustate[1:0] == 2'b11)) begin
+      if (cequal0) cvalid0 <= 4'b0000;
+      if (cequal1) cvalid1 <= 4'b0000;
     end
-    if (cequal1 && (cpustate[1:0] == 2'b11)) begin
-      cvalid1 <= 4'b0000;
+    // only instruction cache
+    if ((sdram_state == ph7) && /*!cpustated[1]*/ (cpustate[1:0] == 2'b10) && cpuCycle) begin
+      if (!casaddr[3] && !cequal0) begin
+        ccache_addr0 <= casaddr;
+        ccache_fill0 <= 1'b1;
+        cvalid0 <= 4'b0000;
+      end
+      if (casaddr[3] && !cequal1) begin
+        ccache_addr1 <= casaddr;
+        ccache_fill1 <= 1'b1;
+        cvalid1 <= 4'b0000;
+      end
     end
-    if (casaddr[3]) begin
+    if (ccache_fill0) begin
       case (sdram_state)
-        ph7 : begin
-          if (!cpustated[1] && cpuCycle && !cequal1) begin
-            // only instruction cache
-            ccache_addr1 <= casaddr;
-            ccache_fill1 <= 1'b1;
-            cvalid1 <= 4'b0000;
-          end
-        end
-        ph9 : begin
-          if (ccache_fill1) begin
-            ccache1[63:48] <= sdata_reg;
-            cvalid1[0] <= 1'b1;
-          end
-        end
-        ph10 : begin
-          if (ccache_fill1) begin
-            ccache1[47:32] <= sdata_reg;
-            cvalid1[1] <= 1'b1;
-          end
-        end
-        ph11 : begin
-          if (ccache_fill1) begin
-            ccache1[31:16] <= sdata_reg;
-            cvalid1[2] <= 1'b1;
-          end
-        end
-        ph12 : begin
-          if (ccache_fill1) begin
-            ccache1[15:0] <= sdata_reg;
-            cvalid1[3] <= 1'b1;
-          end
-          ccache_fill1 <= 1'b0;
-        end
+        ph9  : begin cpu_cache_dat0[0] <= sdata_reg; cvalid0[0] <= 1'b1; end
+        ph10 : begin cpu_cache_dat0[1] <= sdata_reg; cvalid0[1] <= 1'b1; end
+        ph11 : begin cpu_cache_dat0[2] <= sdata_reg; cvalid0[2] <= 1'b1; end
+        ph12 : begin cpu_cache_dat0[3] <= sdata_reg; cvalid0[3] <= 1'b1; ccache_fill0 <= 1'b0; end
       endcase
-    end else begin
+    end else if ((cpustate[1:0] == 2'b11) && cequal0) begin
+      //cvalid0 <= 4'b0000;
+      //cvalid0[cpu_cache_index0] <= 1'b0;
+      //cpu_cache_dat0[cpu_cache_index0] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat0[cpu_cache_index0]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
+    end
+    if (ccache_fill1) begin
       case (sdram_state)
-        ph7 : begin
-          if (!cpustated[1] && cpuCycle && !cequal0) begin
-            // only instruction cache
-            ccache_addr0 <= casaddr;
-            ccache_fill0 <= 1'b1;
-            cvalid0 <= 4'b0000;
-          end
-        end
-        ph9 : begin
-          if (ccache_fill0) begin
-            ccache0[63:48] <= sdata_reg;
-            cvalid0[0] <= 1'b1;
-          end
-        end
-        ph10 : begin
-          if (ccache_fill0) begin
-            ccache0[47:32] <= sdata_reg;
-            cvalid0[1] <= 1'b1;
-          end
-        end
-        ph11 : begin
-          if (ccache_fill0) begin
-            ccache0[31:16] <= sdata_reg;
-            cvalid0[2] <= 1'b1;
-          end
-        end
-        ph12 : begin
-          if (ccache_fill0) begin
-            ccache0[15:0] <= sdata_reg;
-            cvalid0[3] <= 1'b1;
-          end
-          ccache_fill0 <= 1'b0;
-        end
+        ph9  : begin cpu_cache_dat1[0] <= sdata_reg; cvalid1[0] <= 1'b1; end
+        ph10 : begin cpu_cache_dat1[1] <= sdata_reg; cvalid1[1] <= 1'b1; end
+        ph11 : begin cpu_cache_dat1[2] <= sdata_reg; cvalid1[2] <= 1'b1; end
+        ph12 : begin cpu_cache_dat1[3] <= sdata_reg; cvalid1[3] <= 1'b1; ccache_fill1 <= 1'b0; end
       endcase
+    end else if ((cpustate[1:0] == 2'b11) && cequal1) begin
+      //cvalid1 <= 4'b0000;
+      //cvalid1[cpu_cache_index1] <= 1'b0;
+      //cpu_cache_dat1[cpu_cache_index1] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat1[cpu_cache_index1]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
     end
   end
 end
 
-// cache read
+always @ (posedge sysclk) begin
+  if ((sdram_state == ph9) && cpuCycle)
+    cpuRDd <= sdata_reg;
+end
+
+// cpu cache read
 always @ (*) begin
-  if (cequal0 && cvalid0[3] && !cpustated[1]) begin
-    case (tst_adr20)
-      4'b0000,4'b0101,4'b1010,4'b1111 : begin
-        ccachehit = cvalid0[0];
-        cpuRD = ccache0[63:48];
-      end
-      4'b0100,4'b1001,4'b1110,4'b0011 : begin
-        ccachehit = cvalid0[1];
-        cpuRD = ccache0[47:32];
-      end
-      4'b1000,4'b1101,4'b0010,4'b0111 : begin
-        ccachehit = cvalid0[2];
-        cpuRD = ccache0[31:16];
-      end
-      4'b1100,4'b0001,4'b0110,4'b1011 : begin
-        ccachehit = cvalid0[3];
-        cpuRD = ccache0[15:0];
-      end
-      default : begin
-        ccachehit = 1'b0;
-        cpuRD = cpuRDd;
-      end
-    endcase
-  end else if (cequal1 && cvalid1[3] && !cpustated[1]) begin
-    case (tst_adr21)
-      4'b0000,4'b0101,4'b1010,4'b1111 : begin
-        ccachehit = cvalid1[0];
-        cpuRD = ccache1[63:48];
-      end
-      4'b0100,4'b1001,4'b1110,4'b0011 : begin
-        ccachehit = cvalid1[1];
-        cpuRD = ccache1[47:32];
-      end
-      4'b1000,4'b1101,4'b0010,4'b0111 : begin
-        ccachehit = cvalid1[2];
-        cpuRD = ccache1[31:16];
-      end
-      4'b1100,4'b0001,4'b0110,4'b1011 : begin
-        ccachehit = cvalid1[3];
-        cpuRD = ccache1[15:0];
-      end
-      default : begin
-        ccachehit = 1'b0;
-        cpuRD = cpuRDd;
-      end
-    endcase
+  if (cctrl[2] && cequal0 && &cvalid0 && /*!cpustated[1]*/ (cpustate[1:0] == 2'b10)) begin
+    ccachehit = cvalid0[cpu_cache_index0];
+    cpuRD = cpu_cache_dat0[cpu_cache_index0];
+  end else if (cctrl[2] && cequal1 && &cvalid1 && !cpustated[1]) begin
+    ccachehit = cvalid1[cpu_cache_index1];
+    cpuRD = cpu_cache_dat1[cpu_cache_index1];
   end else begin
     ccachehit = 1'b0;
     cpuRD = cpuRDd;
@@ -557,10 +313,55 @@ end
 // chip cache
 ////////////////////////////////////////
 
-always @ (posedge sysclk) begin
-  if (sdram_state == ph9 && chipCycle) begin
-    chipRD <= sdata_reg;
+reg  [ 16-1:0] chipRDd;
+reg  [ 16-1:0] chip_cache_dat [0:4-1];
+reg  [ 24-1:0] chip_cache_adr;
+reg            chip_cache_fill;
+reg  [  4-1:0] chip_cache_valid;
+wire           chip_cache_equal;
+wire [  2-1:0] chip_cache_index;
+wire           chip_cache_range;
+
+assign chip_cache_equal = (chipAddr[23:3] == chip_cache_adr[23:3]);
+assign chip_cache_index = (chipAddr[2:1] - chip_cache_adr[2:1]);
+// only cache kickstart area
+assign chip_cache_range = (chipAddr[21:19] == 3'b011);
+
+// chip cache fill
+always @ (posedge sysclk or negedge reset) begin
+  if (~reset) begin
+    chip_cache_fill <= 1'b0;
+    chip_cache_valid <= 4'b0000;
+  end else begin
+    if ((sdram_state == ph7) && !chip_dma && chipCycle && !chip_cache_equal && chip_cache_range) begin
+      chip_cache_adr <= #1 casaddr[23:0];
+      chip_cache_fill <= #1 1'b1;
+      chip_cache_valid <= #1 4'b0000;
+    end
+    if (chip_cache_fill) begin
+      case (sdram_state)
+        ph9  : begin chip_cache_dat[0] <= sdata_reg; chip_cache_valid[0] <= 1'b1; end
+        ph10 : begin chip_cache_dat[1] <= sdata_reg; chip_cache_valid[1] <= 1'b1; end
+        ph11 : begin chip_cache_dat[2] <= sdata_reg; chip_cache_valid[2] <= 1'b1; end
+        ph12 : begin chip_cache_dat[3] <= sdata_reg; chip_cache_valid[3] <= 1'b1; chip_cache_fill <= 1'b0; end
+      endcase
+    end else if ((sdram_state == ph9) && chip_cache_equal && !chipRW && &chip_cache_valid) begin
+      chip_cache_valid <= 4'b0000;
+    end
   end
+end
+
+always @ (posedge sysclk) begin
+  if ((sdram_state == ph9) && chipCycle)
+    chipRDd <= sdata_reg;
+end
+
+// chip cache read
+always @ (*) begin
+  if (cctrl[0] && chip_cache_equal && &chip_cache_valid)
+    chipRD = chip_cache_dat[chip_cache_index];
+  else
+    chipRD = chipRDd;
 end
 
 
@@ -790,7 +591,7 @@ always @ (posedge sysclk) begin
       cas_sd_ras <= 1'b1;
       cas_sd_cas <= 1'b1;
       cas_sd_we  <= 1'b1;
-      if (!chip_dma || !chipRW) begin
+      if ((!(cctrl[0] && chip_cache_equal && &chip_cache_valid) && (!chip_dma)) || !chipRW) begin
         // chip cycle
         chipCycle  <= 1'b1;
         sdaddr     <= chipAddr[20:9];
@@ -812,17 +613,17 @@ always @ (posedge sysclk) begin
         casaddr    <= {cpuAddr[24:1],1'b0};
         cas_sd_cas <= 1'b0;
         cas_sd_we  <= ~cpustate[1] | ~cpustate[0];
-      end else if (!hostState[2] && !hostena) begin // TODO check inverted if statement & changed order with refresh cycle, also there was another nested if-else here with host & refresh!
+      end else if (!hostState[2] && !hostena) begin
         // host cycle
         hostCycle  <= 1'b1;
-        sdaddr     <= zmAddr[20:9];
-        ba         <= zmAddr[22:21];
+        sdaddr     <= hostAddr[20:9];
+        ba         <= hostAddr[22:21];
         cas_dqm    <= {hostU,hostL};
         sd_cs      <= 4'b1110; // active
         sd_ras     <= 1'b0;
-        casaddr    <= zmAddr;
+        casaddr    <= {1'b0, hostAddr};
         cas_sd_cas <= 1'b0;
-        cas_sd_we  <= !(hostState == 3'b011); // TODO if statement replaced with unconditional assignment, might be wrong!
+        cas_sd_we  <= !(hostState == 3'b011);
       end else begin
         // refresh cycle
         sd_cs      <= 4'b0000; // autorefresh
@@ -834,7 +635,7 @@ always @ (posedge sysclk) begin
       sdaddr  <= {1'b0,1'b1,1'b0,casaddr[23],casaddr[8:1]}; // auto precharge
       ba      <= casaddr[22:21];
       sd_cs   <= cas_sd_cs;
-      dqm     <= (!cas_sd_we) ? cas_dqm : 2'b00; // TODO check this change carefully, is the second case really 0, or is it dqm (default val is at top??)
+      dqm     <= (!cas_sd_we) ? cas_dqm : 2'b00;
       sd_ras  <= cas_sd_ras;
       sd_cas  <= cas_sd_cas;
       sd_we   <= cas_sd_we;
