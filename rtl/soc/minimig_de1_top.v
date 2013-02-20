@@ -225,6 +225,14 @@ i_sync #(.DW(5)) i_sync_sw_50 (
   .o    ({sw_5, sw_4, sw_3, sw_2, sw_1})
 );
 
+// temp
+wire [3-1:0] cctrl;
+i_sync #(.DW(3)) i_sync_key_28_tmp (
+  .clk  (clk_28),
+  .i    ({SW[3], SW[2], SW[1]}),
+  .o    (cctrl)
+);
+// temp
 
 
 ////////////////////////////////////////
@@ -427,6 +435,7 @@ TG68K tg68k (
 
 //// sdram ////
 sdram_ctrl sdram (
+  .cctrl        (cctrl            ),
   .sdata        (DRAM_DQ          ),
   .sdaddr       (DRAM_ADDR        ),
   .dqm          (sdram_dqm        ),
