@@ -643,7 +643,7 @@ Denise DENISE1
 //instantiate Amber
 Amber AMBER1
 (		
-	.clk28m(clk28m),
+	.clk(clk28m),
 	.dblscan(_15khz),
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
