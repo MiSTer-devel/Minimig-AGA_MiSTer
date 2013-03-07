@@ -96,6 +96,9 @@ module ciaa
 	inout	kbddat,				// ps2 keyboard data
 	inout	kbdclk,				// ps2 keyboard clock
 	input	keyboard_disabled,	// disable keystrokes
+  input kbd_mouse_strobe,
+  input [1:0] kbd_mouse_type,
+  input [7:0] kbd_mouse_data,
 	output	[7:0] osd_ctrl,		// osd control
 	output	_lmb,
 	output	_rmb,
@@ -168,6 +171,9 @@ wire	keyack;
 wire	[7:0] keydat;
 reg		[7:0] sdr_latch;
 
+
+`ifdef MINIMIG_PS2_KEYBOARD
+
 ps2keyboard	kbd1
 (
 	.clk(clk),
@@ -201,6 +207,54 @@ always @(posedge clk)
 		sdr_latch[7:0] <= ~{keydat[6:0],keydat[7]};
 	else if (wr & sdr)
 		sdr_latch[7:0] <= data_in[7:0];
+
+`else
+
+assign kbdrst = 1'b0;
+assign _lmb = 1'b1;
+assign _rmb = 1'b1;
+assign _joy2 = 6'b11_1111;
+assign joy_emu = 6'b11_1111;
+assign mou_emu = 6'b11_1111;
+assign freeze = 1'b0;
+assign aflock = 1'b0;
+ 
+reg [7:0] osd_ctrl_reg;
+
+reg keystrobe_reg;
+assign keystrobe = keystrobe_reg;
+
+assign osd_ctrl = osd_ctrl_reg;
+
+// generate a keystrobe which is valid exactly one clk cycle
+reg kbd_mouse_strobeD, kbd_mouse_strobeD2;
+always @(posedge clk)
+  kbd_mouse_strobeD <= kbd_mouse_strobe;
+  
+always @(negedge clk) begin
+  kbd_mouse_strobeD2 <= kbd_mouse_strobeD;
+  keystrobe_reg <= kbd_mouse_strobeD && !kbd_mouse_strobeD2;
+end
+  
+// sdr register
+// !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
+always @(posedge clk) begin
+  if (reset) begin
+    sdr_latch[7:0] <= 8'h00;
+    osd_ctrl_reg[7:0] <= 8'd0;
+   end else begin
+    if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled)
+      sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
+    else if (wr & sdr)
+      sdr_latch[7:0] <= data_in[7:0];
+
+    if(keystrobe && ((kbd_mouse_type == 2) || (kbd_mouse_type == 3)))
+      osd_ctrl_reg[7:0] <= kbd_mouse_data;
+  end
+end
+
+`endif
+
 
 // sdr register	read
 assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;

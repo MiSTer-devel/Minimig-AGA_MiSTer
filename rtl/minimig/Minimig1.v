@@ -187,6 +187,10 @@ module Minimig1
 	input	[5:0]_joy2,			//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
   input mouse_btn1, // mouse button 1
   input mouse_btn2, // mouse button 2
+  input [2:0] mouse_btn, // mouse buttons
+  input kbd_mouse_strobe,
+  input [1:0] kbd_mouse_type,
+  input [7:0] kbd_mouse_data,
   input joy_emu_en, // enable keyboard joystick emulation
 	input	_15khz,				//scandoubler disable
 	output	pwrled,				//power led
@@ -588,12 +592,16 @@ userio USERIO1
 	._fire1(_fire1),
   .aflock(aflock),
 	._joy1(_joy1),
-//	._joy2(_joy2 & joy_emu),
 	._joy2(_joy2 & kb_joy2),
-//  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
-//  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
+  .mouse_btn(mouse_btn),
   ._lmb(kb_lmb & mouse_btn1),
   ._rmb(kb_rmb & mouse_btn2),
+//	._joy2(_joy2 & joy_emu),
+//  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
+//  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
+  .kbd_mouse_type(kbd_mouse_type),
+  .kbd_mouse_strobe(kbd_mouse_strobe),
+  .kbd_mouse_data(kbd_mouse_data), 
 	.osd_ctrl(osd_ctrl),
 	.keyboard_disabled(keyboard_disabled),
 	._scs(_scs[1]),
@@ -684,6 +692,9 @@ ciaa CIAA1
 	.kbdrst(kbdrst),
 	.kbddat(kbddat),
 	.kbdclk(kbdclk),
+  .kbd_mouse_type(kbd_mouse_type),
+  .kbd_mouse_strobe(kbd_mouse_strobe),
+  .kbd_mouse_data(kbd_mouse_data), 
   .keyboard_disabled(keyboard_disabled),
 	.osd_ctrl(osd_ctrl),
   ._lmb(kb_lmb),

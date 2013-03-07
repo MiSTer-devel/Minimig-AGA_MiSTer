@@ -59,6 +59,9 @@
 // SB:
 //  06-03-2011  - added autofire without key press & permanent fire at KP0
 // 11-04-2011 - autofire function toggle able via capslock / led status
+// 17-01-2013  - added POTGO write register handling (required by Asterix game)
+//                         
+
 
 module userio
 (
@@ -79,8 +82,12 @@ module userio
 	input	[5:0] _joy1,			//joystick 1 in (default mouse port)
 	input	[5:0] _joy2,			//joystick 2 in (default joystick port)
   input aflock,         // auto fire lock
+  input [2:0] mouse_btn,
   input _lmb,
   input _rmb,
+  input kbd_mouse_strobe,
+  input [1:0] kbd_mouse_type,
+  input [7:0] kbd_mouse_data,
 	input	[7:0] osd_ctrl,			//OSD control (minimig->host, [menu,select,down,up])
   output  reg keyboard_disabled,  // disables Amiga keyboard while OSD is active
 	input	_scs,					//SPI enable
@@ -106,7 +113,7 @@ module userio
 reg		[5:0] _sjoy1;				//synchronized joystick 1 signals
 reg		[5:0] _xjoy2;				//synchronized joystick 2 signals
 wire	[5:0] _sjoy2;				//synchronized joystick 2 signals
-reg   [15:0] potreg;
+reg   [15:0] potreg;      // POTGO write
 wire	[15:0] mouse0dat;			//mouse counters
 wire	_mleft;						//left mouse button
 wire	_mthird;					//middle mouse button
@@ -126,8 +133,8 @@ reg   sel_autofire;     // select autofire and permanent fire
 //register names and adresses		
 parameter JOY0DAT = 9'h00a;
 parameter JOY1DAT = 9'h00c;
-parameter POTGO   = 9'h034;
 parameter POTINP  = 9'h016;
+parameter POTGO   = 9'h034;
 parameter JOYTEST = 9'h036;
 
 parameter KEY_MENU  = 8'h69;
@@ -142,6 +149,13 @@ parameter KEY_PGDOWN = 8'h6d;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
+
+// POTGO register
+always @(posedge clk)
+  if (reset)
+    potreg <= 0;
+  else if (reg_address_in[8:1]==POTGO[8:1])
+    potreg[15:0] <= data_in[15:0];
 
 //autofire pulses generation
 always @(posedge clk)
@@ -221,13 +235,6 @@ always @(posedge clk)
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-// POTGO register
-always @ (posedge clk)
-  if (reset)
-    potreg <= #1 16'hffff;
-  else if (reg_address_in[8:1] == POTGO[8:1])
-    potreg <= #1 data_in;
-
 //data output multiplexer
 always @(*)
 	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
@@ -252,21 +259,50 @@ assign test_data = data_in[15:0];
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
+`ifdef MINIMIG_PS2_MOUSE
+
 //instantiate mouse controller
 ps2mouse pm1
 (
-	.clk(clk),
-	.reset(reset),
-	.ps2mdat(ps2mdat),
-	.ps2mclk(ps2mclk),
-	.ycount(mouse0dat[15:8]),
-	.xcount(mouse0dat[7:0]),
-	._mleft(_mleft),
-	._mthird(_mthird),
-	._mright(_mright),
-	.test_load(test_load),
-	.test_data(test_data)
+  .clk(clk),
+  .reset(reset),
+  .ps2mdat(ps2mdat),
+  .ps2mclk(ps2mclk),
+  .ycount(mouse0dat[15:8]),
+  .xcount(mouse0dat[7:0]),
+  ._mleft(_mleft),
+  ._mthird(_mthird),
+  ._mright(_mright),
+  .test_load(test_load),
+  .test_data(test_data)
 );
+
+`else
+
+reg [7:0] xcount;
+reg [7:0] ycount;
+
+assign mouse0dat[7:0] = xcount;
+assign mouse0dat[15:8] = ycount;
+
+assign _mleft = ~mouse_btn[0];
+assign _mright = ~mouse_btn[1];
+assign _mthird = ~mouse_btn[2];
+
+always @(posedge kbd_mouse_strobe) begin
+  if(reset) begin
+      xcount <= 8'b00000000;
+      ycount <= 8'b00000000;
+  end else begin
+    if(kbd_mouse_type == 0)
+      xcount[7:0] <= xcount[7:0] + kbd_mouse_data[7:0];
+    else if(kbd_mouse_type == 1)
+      ycount[7:0] <= ycount[7:0] + kbd_mouse_data[7:0];
+  end   
+end
+
+`endif
+
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
