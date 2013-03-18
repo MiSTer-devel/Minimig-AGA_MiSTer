@@ -129,6 +129,7 @@ wire           rst_minimig;
 wire           rom_status;
 wire           ram_status;
 wire           reg_status;
+wire           ctrl_txd;
 
 // tg68
 wire           tg68_rst;
@@ -173,6 +174,8 @@ wire           floppy_fwr;
 wire           floppy_frd;
 wire           hd_fwr;
 wire           hd_frd;
+wire           minimig_txd;
+wire           minimig_rxd;
 
 // sdram
 wire           reset_out;
@@ -192,12 +195,14 @@ wire [  8-1:0] FL_DAT_R;
 wire [  4-1:0] SPI_CS_N;
 wire           SPI_DI;
 wire           rst_ext;
-wire           boot_sel;
 wire [  4-1:0] ctrl_cfg;
 wire [  4-1:0] ctrl_status;
 
 // indicators
 wire [  8-1:0] track;
+
+// uart
+wire           uart_sel;
 
 
 
@@ -243,6 +248,12 @@ i_sync #(.DW(3)) i_sync_key_28_tmp (
 // assign unused outputs
 assign TDO              = 1'b1;
 
+// UART
+assign uart_sel         = sw_5;
+assign UART_TXD         = uart_sel ? ctrl_txd : minimig_txd;
+assign ctrl_rxd         = uart_sel ? UART_RXD : 1'b1;
+assign minimig_rxd      = uart_sel ? 1'b1     : UART_RXD;
+
 // SD card
 assign SD_DAT3          = SPI_CS_N[0];
 
@@ -276,7 +287,7 @@ assign AUDIORIGHT       = 1'b0;
 // ctrl
 assign SPI_DI           = !SPI_CS_N[0] ? SD_DAT : sdo;
 assign rst_ext          = !KEY[0];
-assign boot_sel         = sw_5;
+//assign boot_sel         = sw_5;
 assign ctrl_cfg         = {sw_4, sw_3, sw_2, sw_1};
 
 // clock
@@ -309,7 +320,7 @@ ctrl_top ctrl_top (
   .rst_out      (rst_50           ),  // reset output from internal reset generator
   .rst_minimig  (rst_minimig      ),  // minimig reset output from internal reset generator
   // config
-  .boot_sel     (boot_sel         ),  // select FLASH boot location
+  .boot_sel     (1'b0             ),  // select FLASH boot location
   .ctrl_cfg     (ctrl_cfg         ),  // config for ctrl module
   // status
   .rom_status   (rom_status       ),  // ROM slave activity
@@ -334,7 +345,7 @@ ctrl_top ctrl_top (
   .fl_dat_w     (FL_DAT_W         ),  // FLASH write data
   .fl_dat_r     (FL_DAT_R         ),  // FLASH read data
   // UART
-  .uart_txd     (UART_TXD         ),  // UART transmit output
+  .uart_txd     (ctrl_txd         ),  // UART transmit output
   .spi_cs_n     (SPI_CS_N         ),  // SPI chip select output
   .spi_clk      (SD_CLK           ),  // SPI clock
   .spi_do       (SD_CMD           ),  // SPI data input
@@ -510,8 +521,8 @@ Minimig1 minimig (
   .cck          (cck              ), // colour clock output (3.54 MHz)
   .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
   //rs232 pins
-  .rxd          (1'b0             ), // RS232 receive
-  .txd          (                 ), // RS232 send
+  .rxd          (minimig_rxd      ), // RS232 receive
+  .txd          (minimig_txd      ), // RS232 send
   .cts          (1'b0             ), // RS232 clear to send
   .rts          (                 ), // RS232 request to send
   //I/O
