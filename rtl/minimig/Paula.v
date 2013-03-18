@@ -201,9 +201,10 @@ uart pu1
 (
 	.clk(clk),
 	.reset(reset),
-	.reg_address_in(reg_address_in),
-	.data_in(data_in[14:0]),
-	.data_out(uartdata_out),
+	.rga_i(reg_address_in),
+	.data_i(data_in),
+	.data_o(uartdata_out),
+	.uartbrk(adkcon[11]),
 	.rbfmirror(rbfmirror),
 	.rxint(rxint),
 	.txint(txint),
@@ -484,213 +485,251 @@ endmodule
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-//Simplified uart
-//NOTES:
-//not supported are 9 databits mode and overrun detection for the receiver
-//also the behaviour of tsre is not completely according to the amiga hardware
-//reference manual, it should work though
-module uart
-(
-	input 	clk,		    	//bus clock
-	input 	reset,			   	//reset 
-	input 	[8:1] reg_address_in,	//register address inputs
-	input	[14:0] data_in,		//bus data in
-	output	reg [15:0] data_out,	//bus data out
-	input	rbfmirror,			//rbf mirror from interrupt controller
-	output 	reg txint,			//transmitter intterrupt
-	output 	reg rxint,			//receiver intterupt
-	output 	txd,				//serial port transmitted data
-	input 	rxd					//serial port received data
+module uart (
+  input  wire           clk,
+  input  wire           reset,
+  input  wire [  8-1:0] rga_i,
+  input  wire [ 16-1:0] data_i,
+  output wire [ 16-1:0] data_o,
+  input  wire           uartbrk,
+  input  wire           rbfmirror,
+  output wire           txint,
+  output wire           rxint,
+  output wire           txd,
+  input  wire           rxd
 );
 
-//register names and addresses
-parameter SERDAT  = 9'h030;		
-parameter SERDATR = 9'h018;
-parameter SERPER  = 9'h032;
 
-//local signal for tx
-reg		[14:0] serper;			//period (baud rate) register
-reg		[15:0] txdiv;			//transmitter baud rate divider
-reg		[10:0] serdat;			//serdat register
-reg		[11:0] txshift;			//transmit shifter
-reg		[1:0] txstate;			//transmitter state
-reg		[1:0] txnextstate;		//next transmitter state
-wire	txbaud;					//transmitter baud clock
-reg 	txload;					//load transmit shifter
-reg		tsre;					//transmit shift register empty
-reg		tbe;					//transmit buffer empty
+//// registers ////
+localparam REG_SERDAT  = 9'h030;
+localparam REG_SERDATR = 9'h018;
+localparam REG_SERPER  = 9'h032;
 
-//local signals for rx
-reg		[15:0] rxdiv;			//receiver baud rate divider
-reg		[9:0] rxshift;			//receiver shift register
-reg		[7:0] rxdat;			//received data buffer
-reg		[1:0] rxstate;			//receiver state
-reg		[1:0] rxnextstate;		//next receiver state
-wire	rxbaud;					//receiver baud clock
-reg		rxpreset;				//preset receiver baud clock	
-reg		lrxd1;					//latched rxd signal
-reg		lrxd2;					//latched rxd signal
 
-//serper register
-always @(posedge clk)
-	if (reg_address_in[8:1]== SERPER[8:1])
-		serper[14:0] <= data_in[14:0];		
+//// bits ////
+localparam LONG_BIT  = 15;
+localparam OVRUN_BIT = 15-11;
+localparam RBF_BIT   = 14-11;
+localparam TBE_BIT   = 13-11;
+localparam TSRE_BIT  = 12-11;
+localparam RXD_BIT   = 11-11;
 
-//tx baudrate generator
-always @(posedge clk)
-	if (txbaud)
-		txdiv[15:0] <= {serper[14:0],1'b1};//serper shifted right because of 7.09MHz clock
-	else
-		txdiv <= txdiv - 1'b1;
-		
-assign txbaud = (txdiv==0) ? 1'b1 : 1'b0;
 
-//txd shifter
-always @(posedge clk)
-	if (reset)
-		txshift[11:0] <= 12'b0000_0000_0001;	
-	else if (txload && txbaud)
-		txshift[11:0] <= {serdat[10:0],1'b0};
-	else if (!tsre && txbaud)
-		txshift[11:0] <= {1'b0,txshift[11:1]};
-		
-assign txd = txshift[0];
+//// RX input sync ////
+reg  [  2-1:0] rxd_sync = 2'b11;
+wire           rxds;
+always @ (posedge clk) begin
+  rxd_sync <= #1 {rxd_sync[0],rxd};
+end
+assign rxds = rxd_sync[1];
 
-//generate tsre signal
-always @(txshift[11:0])
-	if (txshift[11:0]==12'b0000_0000_0001)
-		tsre = 1'b1;
-	else
-		tsre = 1'b0;
 
-//serdat register
-always @(posedge clk)
-	if (reg_address_in[8:1]==SERDAT[8:1])
-		serdat[10:0] <= data_in[10:0];
+//// write registers ////
 
-//transmitter state machine
-always @(posedge clk)
-	if (reset)
-		txstate <= 2'b00;
-	else
-		txstate <= txnextstate;
-		
-always @(txstate or tsre or reg_address_in)
-begin
-	case (txstate)
-		2'b00://wait for new data and go to next state if serdat is loaded
-			begin
-				txint = 0;
-				txload = 0;
-				tbe = 1; 
-				if (reg_address_in[8:1]==SERDAT[8:1])
-					txnextstate = 2'b01;
-				else
-					txnextstate = 2'b00;
-			end
-		2'b01://wait for shift register to become empty (tsre goes high)
-			begin
-				txint = 0;
-				txload = 0;
-				tbe = 0;
-				if (tsre)
-					txnextstate = 2'b10;
-				else
-					txnextstate = 2'b01;
-			end
-		2'b10://wait for shift register to read serdat (tsre goes low)
-			begin
-				txint = 0;
-				txload = 1;
-				tbe = 0;
-				if (!tsre)
-					txnextstate = 2'b11;
-				else
-					txnextstate = 2'b10;
-			end
-		2'b11://serdat is now empty again, generate interupt
-			begin
-				txint = 1;
-				txload = 0;
-				tbe = 0;
-				txnextstate = 2'b00;
-			end
-	endcase			
+// SERPER
+reg  [ 16-1:0] serper = 16'h0000;
+always @ (posedge clk) begin
+  if (rga_i == REG_SERPER[8:1])
+    serper <= #1 data_i;
 end
 
-//rx baud rate generator
-always @(posedge clk)
-	if (rxpreset)
-		rxdiv[15:0] <= {1'b0,serper[14:0]};
-	else if (rxbaud)
-		rxdiv[15:0] <= {serper[14:0],1'b1};//serper shifted left because of 7.09 MHz clock
-	else
-		rxdiv <= rxdiv - 1'b1;
-		
-assign rxbaud = rxdiv==0 ? 1'b1 : 1'b0;
-
-//rxd input synchronizer latch
-always @(posedge clk)
-begin
-	lrxd1 <= rxd;
-	lrxd2 <= lrxd1;
+// SERDAT
+reg  [ 16-1:0] serdat = 16'h0000;
+always @ (posedge clk) begin
+  if (rga_i == REG_SERDAT[8:1])
+    serdat <= #1 data_i;
 end
 
-//receiver shift register
-always @(posedge clk)
-	if (rxpreset)
-		rxshift[9:0] <= 10'b11_1111_1111;
-	else if (rxbaud)
-		rxshift[9:0] <= {lrxd2,rxshift[9:1]};		
 
-//receiver buffer
-always @(posedge clk)
-	if (rxint)
-		rxdat[7:0] <= rxshift[8:1];
+//// TX ////
+localparam [  2-1:0] TX_IDLE=2'd0, TX_SHIFT=2'd2;
+reg  [  2-1:0] tx_state;
+reg  [ 16-1:0] tx_cnt;
+reg  [ 16-1:0] tx_shift;
+reg            tx_txd;
+reg            tx_irq;
+reg            tx_tbe;
+reg            tx_tsre;
 
-//receiver state machine
-always @(posedge clk)
-	if (reset)
-		rxstate <= 2'b00;
-	else
-		rxstate <= rxnextstate;
-		
-always @(rxstate or lrxd2 or rxshift[0])
-begin
-	case (rxstate)
-		2'b00://wait for startbit
-			begin
-			rxint = 1'b0;
-			rxpreset = 1'b1;
-			if (!lrxd2)
-				rxnextstate = 2'b01;
-			else
-				rxnextstate = 2'b00;
-			end
-		2'b01://shift in 10 bits (start, 8 data, stop)
-			begin
-			rxint = 1'b0;
-			rxpreset = 1'b0;
-			if (!rxshift[0])
-				rxnextstate = 2'b10;
-			else
-				rxnextstate = 2'b01;
-			end
-		2'b10,2'b11://new byte has been received, latch byte and request interrupt
-			begin
-			rxint = 1'b1;
-			rxpreset = 1'b0;
-			rxnextstate = 2'b00;
-			end
-	endcase
-end	
+always @ (posedge clk) begin
+  if (reset) begin
+    tx_state  <= #1 TX_IDLE;
+    tx_txd    <= #1 1'b1;
+    tx_irq    <= #1 1'b0;
+    tx_tbe    <= #1 1'b1;
+    tx_tsre   <= #1 1'b1;
+  end else begin
+    case (tx_state)
+      TX_IDLE : begin
+        // txd pin inactive in idle state
+        tx_txd <= #1 1'b1;
+        // check if new data loaded to serdat register
+        if (!tx_tbe) begin
+          // set interrupt request
+          tx_irq <= #1 1'b1;
+          // data buffer empty again
+          //tx_tbe <= #1 1'b1;
+          // generate start bit
+          tx_txd <= #1 1'b0;
+          // pass data to a shift register
+          tx_tsre <= #1 1'b0;
+          tx_shift <= #1 serdat;
+          // reload period register
+          tx_cnt <= #1 {serper[14:0], 1'b1};
+          // start bitstream generation
+          tx_state <= #1 TX_SHIFT;
+        end
+      end
+      TX_SHIFT: begin
+        // clear interrupt request, active by 1 cycle of clk
+        tx_irq <= #1 1'b0;
+        // count bit period
+        if (tx_cnt == 16'd0) begin
+          // check if any bit left to send out
+          if (tx_shift == 16'd0) begin
+            // set TSRE flag when serdat register is empty
+            if (tx_tbe) tx_tsre <= #1 1'b1;
+            // data sent, go to idle state
+            tx_state <= #1 TX_IDLE;
+          end else begin
+            // reload period counter
+            tx_cnt <= #1 {serper[14:0], 1'b1};
+            // update shift register and txd pin
+            tx_shift <= #1 {1'b0, tx_shift[15:1]};
+            tx_txd <= #1 tx_shift[0];
+          end
+        end else begin
+          // decrement period counter
+          tx_cnt <= #1 tx_cnt - 16'd1;
+        end
+      end
+      default: begin
+        // force idle state
+        tx_state <= #1 TX_IDLE;
+      end
+    endcase
+    // force break char when requested
+    if (uartbrk) tx_txd <= #1 1'b0;
+    // handle tbe bit
+    //if (rga_i == REG_SERDAT[8:1]) tx_tbe <= #1 1'b0;
+    tx_tbe <= #1 (rga_i == REG_SERDAT[8:1]) ? 1'b0 : ((tx_state == TX_IDLE) ? 1'b1 : tx_tbe);
+  end
+end
 
-//serdatr register
-always @(reg_address_in or rbfmirror or tbe or tsre or lrxd2 or rxdat)
-	if (reg_address_in[8:1]==SERDATR[8:1])
-		data_out[15:0] = {1'b0,rbfmirror,tbe,tsre,lrxd2,3'b001,rxdat[7:0]};
-	else
-		data_out[15:0] = 16'h0000;
+
+//// RX ////
+localparam [  2-1:0] RX_IDLE=2'd0, RX_START=2'd1, RX_SHIFT=2'd2;
+reg  [  2-1:0] rx_state;
+reg  [ 16-1:0] rx_cnt;
+reg  [ 10-1:0] rx_shift;
+reg  [ 10-1:0] rx_data;
+reg            rx_rbf;
+reg            rx_rxd;
+reg            rx_irq;
+reg            rx_ovrun;
+
+always @ (posedge clk) begin
+  if (reset) begin
+    rx_state <= #1 RX_IDLE;
+    rx_rbf   <= #1 1'b0;
+    rx_rxd   <= #1 1'b1;
+    rx_irq   <= #1 1'b0;
+    rx_ovrun <= #1 1'b0;
+  end else begin
+    case (rx_state)
+      RX_IDLE : begin
+        // clear interrupt request
+        rx_irq <= #1 1'b0;
+        // wait for start condition
+        if (rx_rxd && !rxds) begin
+          // setup received data format
+          rx_shift <= #1 {serper[LONG_BIT], {9{1'b1}}};
+          rx_cnt <= #1 {1'b0, serper[14:0]};
+          // wait for a sampling point of a start bit
+          rx_state <= #1 RX_START;
+        end
+      end
+      RX_START : begin
+        // wait for a sampling point
+        if (rx_cnt == 16'h0) begin
+          // sample rxd signal
+          if (!rxds) begin
+            // start bit valid, start data shifting
+            rx_shift <= #1 {rxds, rx_shift[9:1]};
+            // restart period counter
+            rx_cnt <= #1 {serper[14:0], 1'b1};
+            // start data bits sampling
+            rx_state <= #1 RX_SHIFT;
+          end else begin
+            // start bit invalid, return into idle state
+            rx_state <= #1 RX_IDLE;
+          end
+        end else begin
+          rx_cnt <= #1 rx_cnt - 16'd1;
+        end
+        // check false start condition
+        if (!rx_rxd && rxds) begin
+          rx_state <= #1 RX_IDLE;
+        end
+      end
+      RX_SHIFT : begin
+        // wait for bit period
+        if (rx_cnt == 16'h0) begin
+          // store received bit
+          rx_shift <= #1 {rxds, rx_shift[9:1]};
+          // restart period counter
+          rx_cnt <= #1 {serper[14:0], 1'b1};
+          // check for all bits received
+          if (rx_shift[0] == 1'b0) begin
+            // set interrupt request flag
+            rx_irq <= #1 1'b1;
+            // handle OVRUN bit
+            //rx_ovrun <= #1 rbfmirror;
+            // update receive buffer
+            rx_data[9] <= #1 rxds;
+            if (serper[LONG_BIT]) begin
+              rx_data[8:0] <= #1 rx_shift[9:1];
+            end else begin
+              rx_data[8:0] <= #1 {rxds, rx_shift[9:2]};
+            end
+            // go to idle state
+            rx_state <= #1 RX_IDLE;
+          end
+        end else begin
+          rx_cnt <= #1 rx_cnt - 16'd1;
+        end
+      end
+      default : begin
+        // force idle state
+        rx_state <= #1 RX_IDLE;
+      end
+    endcase
+    // register rxds
+    rx_rxd <= #1 rxds;
+    // handle ovrun bit
+    rx_rbf <= #1 rbfmirror;
+    //if (!rbfmirror &&  rx_rbf) rx_ovrun <= #1 1'b0;
+    rx_ovrun <= #1 (!rbfmirror &&  rx_rbf) ? 1'b0 : (((rx_state == RX_SHIFT) && ~|rx_cnt && !rx_shift[0]) ? rbfmirror : rx_ovrun);
+  end
+end
+
+
+//// outputs ////
+
+// SERDATR
+wire [  5-1:0] serdatr;
+assign serdatr  = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd};
+
+// interrupts
+assign txint = tx_irq;
+assign rxint = rx_irq;
+
+// uart output
+assign txd   = tx_txd;
+
+// reg bus output
+assign data_o = (rga_i == REG_SERDATR[8:1]) ? {serdatr, 1'b0, rx_data} : 16'h0000;
+
 
 endmodule
 
