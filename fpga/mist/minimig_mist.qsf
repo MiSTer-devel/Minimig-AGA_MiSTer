@@ -33,7 +33,7 @@ set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id e
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 144
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "NO HEAT SINK WITH STILL AIR"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name OPTIMIZE_HOLD_TIMING "IO PATHS AND MINIMUM TPD PATHS"
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
 set_global_assignment -name FITTER_EFFORT "AUTO FIT"
 set_global_assignment -name STRATIX_CONFIGURATION_DEVICE EPCS4
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
@@ -159,11 +159,8 @@ set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
 
-
 #set_parameter -name ENABLE_RUNTIME_MOD YES -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
 #set_parameter -name INSTANCE_NAME mig -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
-
-
 
 set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
 set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
@@ -174,7 +171,6 @@ set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
-set_global_assignment -name VHDL_FILE ../../rtl/sdram/sdram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
@@ -206,13 +202,17 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
 set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
+
 set_global_assignment -name SIGNALTAP_FILE stp1.stp
+
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk0"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk1"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk2"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to SPI_SCK
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to clk7_cnt[1]
+
 set_global_assignment -name SDC_FILE minimig_mist.sdc
+
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_DQ[0]
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_DQ[1]
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_DQ[2]
@@ -346,6 +346,5 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[2]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[1]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[0]
 
-
-
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
