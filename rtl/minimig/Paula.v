@@ -52,6 +52,9 @@
 // 2009-05-24	- clean-up & renaming
 // 2009-07-10	- implementation of intreq[14] (Unreal needs it)
 // 2009-11-14 - added 28 MHz clock input for sigma-delta modulator
+// RK:
+// 2013-03-21 - translated & added a new more compatible uart core written by madeho@minimig.net
+
 
 module Paula
 (

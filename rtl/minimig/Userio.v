@@ -154,8 +154,26 @@ parameter KEY_PGDOWN = 8'h6d;
 always @(posedge clk)
   if (reset)
     potreg <= 0;
+//    potreg <= 16'hffff;
   else if (reg_address_in[8:1]==POTGO[8:1])
     potreg[15:0] <= data_in[15:0];
+
+// potcap reg
+reg  [4-1:0] potcap;
+always @ (posedge clk) begin
+  if (reset)
+    potcap <= 4'h0;
+  else begin
+    if (!_sjoy2[5]) potcap[3] <= 1'b0;
+    else if (potreg[15] & potreg[14]) potcap[3] <= 1'b1;
+    if (!1'b1) potcap[2] <= 1'b0;
+    else if (potreg[13] & potreg[12]) potcap[2] <= 1'b1;
+    if (!(_mright&_sjoy1[5]&_rmb)) potcap[1] <= 1'b0;
+    else if (potreg[11] & potreg[10]) potcap[1] <= 1'b1;
+    if (!_mthird) potcap[0] <= #1 1'b0;
+    else if (potreg[ 9] & potreg[ 8]) potcap[0] <= 1'b1;
+  end
+end
 
 //autofire pulses generation
 always @(posedge clk)
@@ -244,7 +262,17 @@ always @(*)
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
 		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
-		data_out[15:0] = {1'b0,_sjoy2[5]&potreg[14],1'b0,potreg[12]&1'b1,1'b0,potreg[10]&_mright&_sjoy1[5]&_rmb,1'b0,potreg[8]&_mthird,8'b00000000};
+//		data_out[15:0] = {1'b0, (1'b1 ? potreg[14]&_sjoy2[5]              : _sjoy2[5]),
+//                      1'b0, (1'b1 ? potreg[12]&1'b1                   : 1'b1),
+//                      1'b0, (1'b1 ? potreg[10]&_mright&_sjoy1[5]&_rmb : _mright&_sjoy1[5]&_rmb),
+//                      1'b0, (1'b1 ? potreg[ 8]&_mthird                : _mthird),
+//                      8'h00};
+		data_out[15:0] = {1'b0, potcap[3],
+                      1'b0, potcap[2],
+                      1'b0, potcap[1],
+                      1'b0, potcap[0],
+                      8'h00};
+
 	else
 		data_out[15:0] = 16'h0000;
 
