@@ -61,6 +61,8 @@
 // 11-04-2011 - autofire function toggle able via capslock / led status
 // 17-01-2013  - added POTGO write register handling (required by Asterix game)
 //                         
+// RK:
+// 2013-03-21 - more compatible right mouse & second joystick button handling; TODO tests
 
 
 module userio
