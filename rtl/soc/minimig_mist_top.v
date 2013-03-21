@@ -226,7 +226,8 @@ TG68K tg68k (
 
 
 //// sdram ////
-sdram sdram (
+sdram_ctrl sdram (
+  .cctrl        (3'b111           ),
   .sdata        (SDRAM_DQ         ),
   .sdaddr       (SDRAM_A[11:0]    ),
   .dqm          (sdram_dqm        ),
