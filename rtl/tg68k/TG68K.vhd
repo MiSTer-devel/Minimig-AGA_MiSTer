@@ -162,7 +162,7 @@ BEGIN
 --	sel_fast <= '1' when cpuaddr(23 downto 19)="11111" ELSE '0'; --$F800000;
 --	sel_fast <= '0'; --$200000 - $9FFFFF
 --	sel_fast <= '1' when cpuaddr(24)='1' AND state/="01" ELSE '0'; --$1000000 - $1FFFFFF
-	ramcs <= NOT sel_fast;-- OR (state(0) AND NOT state(1));
+	ramcs <= (NOT sel_fast) or slower(0);-- OR (state(0) AND NOT state(1));
 --	cpuDMA <= NOT ramcs;
 	cpuDMA <= sel_fast;
 	cpustate <= clkena&slower(1 downto 0)&ramcs&state;
@@ -301,9 +301,9 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 		END IF;	
 		IF rising_edge(clk) THEN
         	IF clkena='1' THEN
-				slower <= "1000";
+				slower <= "0111";
 			ELSE 
-				slower(3 downto 0) <= enaWRreg&slower(3 downto 1);
+				slower(3 downto 0) <= '0'&slower(3 downto 1); -- enaWRreg&slower(3 downto 1);
 --				slower(0) <= NOT slower(3) AND NOT slower(2);
 			END IF;	
 		END IF;	
