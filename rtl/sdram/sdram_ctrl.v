@@ -250,7 +250,7 @@ always @ (posedge sysclk or negedge reset) begin
       if (cequal1) cvalid1 <= 4'b0000;
     end
     // only instruction cache
-    if ((sdram_state == ph7) && /*!cpustated[1]*/ (cpustate[1:0] == 2'b10) && cpuCycle) begin
+    if ((sdram_state == ph7) && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0) && cpuCycle) begin
       if (!casaddr[3] && !cequal0) begin
         ccache_addr0 <= casaddr;
         ccache_fill0 <= 1'b1;
@@ -271,7 +271,7 @@ always @ (posedge sysclk or negedge reset) begin
       endcase
     end else if ((cpustate[1:0] == 2'b11) && cequal0) begin
       //cvalid0 <= 4'b0000;
-      //cvalid0[cpu_cache_index0] <= 1'b0;
+      cvalid0[cpu_cache_index0] <= 1'b0;
       //cpu_cache_dat0[cpu_cache_index0] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat0[cpu_cache_index0]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
     end
     if (ccache_fill1) begin
@@ -283,7 +283,7 @@ always @ (posedge sysclk or negedge reset) begin
       endcase
     end else if ((cpustate[1:0] == 2'b11) && cequal1) begin
       //cvalid1 <= 4'b0000;
-      //cvalid1[cpu_cache_index1] <= 1'b0;
+      cvalid1[cpu_cache_index1] <= 1'b0;
       //cpu_cache_dat1[cpu_cache_index1] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat1[cpu_cache_index1]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
     end
   end
@@ -296,10 +296,10 @@ end
 
 // cpu cache read
 always @ (*) begin
-  if (cctrl[2] && cequal0 && &cvalid0 && /*!cpustated[1]*/ (cpustate[1:0] == 2'b10)) begin
+  if (cctrl[2] && cequal0 && &cvalid0 && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid0[cpu_cache_index0];
     cpuRD = cpu_cache_dat0[cpu_cache_index0];
-  end else if (cctrl[2] && cequal1 && &cvalid1 && !cpustated[1]) begin
+  end else if (cctrl[2] && cequal1 && &cvalid1 && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid1[cpu_cache_index1];
     cpuRD = cpu_cache_dat1[cpu_cache_index1];
   end else begin
