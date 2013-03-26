@@ -374,7 +374,7 @@ wire [DW+A2W+3-1:0] sd_l_quant, sd_r_quant;
 
 // LPF noise LFSR
 reg [24-1:0] seed1 = 24'h654321;
-reg [19-1:0] seed2 = 19'h123456;
+reg [19-1:0] seed2 = 19'h12345;
 reg [24-1:0] seed_sum, seed_prev, seed_out;
 always @ (posedge clk) begin
   if (&seed1)
@@ -384,7 +384,7 @@ always @ (posedge clk) begin
 end
 always @ (posedge clk) begin
   if (&seed2)
-    seed2 <= #1 19'h123456;
+    seed2 <= #1 19'h12345;
   else
     seed2 <= #1 {seed2[18:1], ~(seed2[18] ^ seed2[17] ^ seed2[16] ^ seed2[13] ^ seed2[0])};
 end

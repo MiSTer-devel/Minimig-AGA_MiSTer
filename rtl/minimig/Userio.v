@@ -168,8 +168,8 @@ always @ (posedge clk) begin
   else begin
     if (!_sjoy2[5]) potcap[3] <= 1'b0;
     else if (potreg[15] & potreg[14]) potcap[3] <= 1'b1;
-    if (!1'b1) potcap[2] <= 1'b0;
-    else if (potreg[13] & potreg[12]) potcap[2] <= 1'b1;
+    /*if (!1'b1) potcap[2] <= 1'b0;
+    else*/ if (potreg[13]) potcap[2] <= potreg[12];
     if (!(_mright&_sjoy1[5]&_rmb)) potcap[1] <= 1'b0;
     else if (potreg[11] & potreg[10]) potcap[1] <= 1'b1;
     if (!_mthird) potcap[0] <= #1 1'b0;

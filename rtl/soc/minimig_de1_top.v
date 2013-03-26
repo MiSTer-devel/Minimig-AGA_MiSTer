@@ -130,6 +130,7 @@ wire           rom_status;
 wire           ram_status;
 wire           reg_status;
 wire           ctrl_txd;
+//wire           ctrl_rxd;
 
 // tg68
 wire           tg68_rst;
@@ -251,7 +252,7 @@ assign TDO              = 1'b1;
 // UART
 assign uart_sel         = sw_5;
 assign UART_TXD         = uart_sel ? ctrl_txd : minimig_txd;
-assign ctrl_rxd         = uart_sel ? UART_RXD : 1'b1;
+//assign ctrl_rxd         = uart_sel ? UART_RXD : 1'b1;
 assign minimig_rxd      = uart_sel ? 1'b1     : UART_RXD;
 
 // SD card
