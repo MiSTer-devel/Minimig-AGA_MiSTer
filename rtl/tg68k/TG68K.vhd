@@ -204,7 +204,7 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 		skipFetch => skipFetch 		-- : out std_logic
         );
  
-	PROCESS (clk)
+	PROCESS (clk, memcfg, cpuaddr)
 	BEGIN
 		autoconfig_data <= "1111";
 		IF memcfg(5 downto 4)/="00" THEN
@@ -288,7 +288,7 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 	END PROCESS;
 				
 	
-	PROCESS (clk)
+	PROCESS (clk, clkena_in, enaWRreg, state, ena7RDreg, clkena_e, ramready, state)
 	BEGIN
 		state_ena <= '0';
 		IF clkena_in='1' AND enaWRreg='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1') THEN
@@ -309,7 +309,7 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 		END IF;	
 	END PROCESS;
 				
-PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e)
+PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, sel_fast)
 	BEGIN
 		IF state="01" THEN 
 			as <= '1';
