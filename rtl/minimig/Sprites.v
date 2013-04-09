@@ -37,7 +37,6 @@ module sprites
 (
 	input 	clk,					// bus clock	
 	input 	reset,		    		// reset
-	input	ecs,					// ECS chipset features
 	input	[8:1] reg_address_in,	// register address input
 	input	[8:0] hpos,				// horizontal beam counter
 	input 	[15:0] data_in, 		// bus data in
@@ -217,11 +216,11 @@ always @(attach0 or attach1 or attach2 or attach3 or
 		 attach4 or attach5 or attach6 or attach7 or
 		 sprdat0 or sprdat1 or sprdat2 or sprdat3 or
 		 sprdat4 or sprdat5 or sprdat6 or sprdat7 or
-		 nsprite or ecs)
+		 nsprite)
 begin
 	if (nsprite[1:0]!=2'b00) // sprites 0,1 non transparant ?
 	begin
-		if (/*ecs && attach0 ||*/ attach1) // sprites are attached -> 15 colors + transparant
+		if (attach1) // sprites are attached -> 15 colors + transparant
 			sprdata[3:0] = {sprdat1[1:0],sprdat0[1:0]};
 	   	else if (nsprite[0]) // output lowered number sprite
 			sprdata[3:0] = {2'b00,sprdat0[1:0]};
@@ -230,7 +229,7 @@ begin
 	end
 	else if (nsprite[3:2]!=2'b00) // sprites 2,3 non transparant ?
 	begin
-		if (/*ecs && attach2 ||*/ attach3) // sprites are attached -> 15 colors + transparant
+		if (attach3) // sprites are attached -> 15 colors + transparant
 			sprdata[3:0] = {sprdat3[1:0],sprdat2[1:0]};
 	   	else if (nsprite[2]) // output lowered number sprite
 			sprdata[3:0] = {2'b01,sprdat2[1:0]};
@@ -239,7 +238,7 @@ begin
 	end
 	else if (nsprite[5:4]!=2'b00) // sprites 4,5 non transparant ?
 	begin
-		if (/*ecs && attach4 ||*/ attach5) // sprites are attached -> 15 colors + transparant
+		if (attach5) // sprites are attached -> 15 colors + transparant
 			sprdata[3:0] = {sprdat5[1:0],sprdat4[1:0]};
 	   	else if (nsprite[4]) // output lowered number sprite
 			sprdata[3:0] = {2'b10,sprdat4[1:0]};
@@ -248,7 +247,7 @@ begin
 	end
 	else if (nsprite[7:6]!=2'b00) // sprites 6,7 non transparant ?
 	begin
-		if (/*ecs && attach6 ||*/ attach7) // sprites are attached -> 15 colors + transparant
+		if (attach7) // sprites are attached -> 15 colors + transparant
 			sprdata[3:0] = {sprdat7[1:0],sprdat6[1:0]};
 	   	else if (nsprite[6]) // output lowered number sprite
 			sprdata[3:0] = {2'b11,sprdat6[1:0]};

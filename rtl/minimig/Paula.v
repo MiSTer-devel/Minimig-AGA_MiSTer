@@ -229,7 +229,6 @@ intcontroller pi1
 	.int2(int2),
 	.int3(int3),
 	.int6(int6),
-  .strhor(strhor),
 	.blckint(blckint),
 	.syncint(syncint),
 	.audint(audint),
@@ -283,7 +282,7 @@ floppy pf1
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
 	.hdd_data_rd(hdd_data_rd),
-  // fifo / track diaply
+  // fifo / track display
 	.trackdisp(trackdisp),
 	.secdisp(secdisp),
   .floppy_fwr (floppy_fwr),
@@ -322,7 +321,6 @@ endmodule
 // interrupt controller //
 module intcontroller
 (
-	output	inten,
 	input 	clk,		    	//bus clock
 	input 	reset,			   	//reset 
 	input 	[8:1] reg_address_in,	//register address inputs
@@ -337,7 +335,6 @@ module intcontroller
 	input	blckint,			//disk block finished interrupt
 	input	syncint,			//disk syncword match interrupt
 	input	[3:0] audint,		//audio channels 0,1,2,3 interrupts
-  input strhor,         // start of video line
 	output	[3:0] audpen,		//mirror of audio interrupts for audio controller
 	output	rbfmirror,			//mirror of serial receive interrupt for uart SERDATR register
 	output	reg [2:0] _ipl		//m68k interrupt request
@@ -354,8 +351,6 @@ reg		[14:0] intena;			//int enable write register
 reg 	[15:0] intenar;			//int enable read register
 reg		[14:0] intreq;			//int request register
 reg		[15:0] intreqr;			//int request readback
-
-assign inten = intena[14];
 
 //rbf mirror out
 assign rbfmirror = intreq[11];

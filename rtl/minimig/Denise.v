@@ -268,7 +268,6 @@ sprites sprm0
 (
 	.clk(clk),
 	.reset(reset),
-	.ecs(1'b0),
 	.reg_address_in(reg_address_in),
 	.hpos(hpos),
 	.data_in(data_in),
