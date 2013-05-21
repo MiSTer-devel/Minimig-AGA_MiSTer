@@ -115,8 +115,8 @@
 #define TIMER_set(x)        write32(REG_TIMER_ADR, (x))
 #define TIMER_wait(x)       {TIMER_set(0); while (TIMER_get()<(x));}
 
-#define SPIN                (SPI_read()) // Waste a few cycles to let the FPGA catch up
-//#define SPIN
+// waste a few cycles to let the FPGA catch up
+#define SPIN()              {read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR);}
 
 #define RST_system()        write32(REG_RST_ADR, 0x1)
 #define RST_minimig()       write32(REG_RST_ADR, 0x2)

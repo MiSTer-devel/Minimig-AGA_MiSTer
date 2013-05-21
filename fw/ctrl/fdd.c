@@ -371,42 +371,42 @@ unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
                 break;
             }
 
-			SPIN;
+			SPIN();
 
             c = SPI(0);
             checksum[0] = c;
             c1 = (c & 0x55) << 1;
-			SPIN;
+			SPIN();
             c = SPI(0);
             checksum[1] = c;
             c2 = (c & 0x55) << 1;
 
-			SPIN;
+			SPIN();
 
             c = SPI(0);
             checksum[2] = c;
             c3 = (c & 0x55) << 1;
-			SPIN;
+			SPIN();
             c = SPI(0);
             checksum[3] = c;
             c4 = (c & 0x55) << 1;
 
-			SPIN;
+			SPIN();
 
             c = SPI(0);
             checksum[0] ^= c;
             c1 |= c & 0x55;
-			SPIN;
+			SPIN();
             c = SPI(0);
             checksum[1] ^= c;
             c2 |= c & 0x55;
 
-			SPIN;
+			SPIN();
 
             c = SPI(0);
             checksum[2] ^= c;
             c3 |= c & 0x55;
-			SPIN;
+			SPIN();
             c = SPI(0);
             checksum[3] ^= c;
             c4 |= c & 0x55;
@@ -434,10 +434,10 @@ unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
 
             for (i = 0; i < 8; i++)
             {
-				SPIN;
+				SPIN();
                 checksum[0] ^= SPI(0);
                 checksum[1] ^= SPI(0);
-				SPIN;
+				SPIN();
                 checksum[2] ^= SPI(0);
                 checksum[3] ^= SPI(0);
             }
@@ -447,19 +447,19 @@ unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
             checksum[2] &= 0x55;
             checksum[3] &= 0x55;
 
-			SPIN;
+			SPIN();
 
             c1 = ((SPI(0)) & 0x55) << 1;
             c2 = ((SPI(0)) & 0x55) << 1;
-			SPIN;
+			SPIN();
             c3 = ((SPI(0)) & 0x55) << 1;
             c4 = ((SPI(0)) & 0x55) << 1;
 
-			SPIN;
+			SPIN();
 
             c1 |= (SPI(0)) & 0x55;
             c2 |= (SPI(0)) & 0x55;
-			SPIN;
+			SPIN();
             c3 |= (SPI(0)) & 0x55;
             c4 |= (SPI(0)) & 0x55;
 
@@ -510,19 +510,19 @@ unsigned char GetData(void)
 
         if (n >= 0x204)
         {
-			SPIN;
+			SPIN();
 
             c1 = ((SPI(0)) & 0x55) << 1;
             c2 = ((SPI(0)) & 0x55) << 1;
-			SPIN;
+			SPIN();
             c3 = ((SPI(0)) & 0x55) << 1;
             c4 = ((SPI(0)) & 0x55) << 1;
 
-			SPIN;
+			SPIN();
 
             c1 |= (SPI(0)) & 0x55;
             c2 |= (SPI(0)) & 0x55;
-			SPIN;
+			SPIN();
             c3 |= (SPI(0)) & 0x55;
             c4 |= (SPI(0)) & 0x55;
 
@@ -536,14 +536,14 @@ unsigned char GetData(void)
             p = sector_buffer;
             do
             {
-				SPIN;
+				SPIN();
                 c = SPI(0);
                 checksum[0] ^= c;
                 *p++ = (c & 0x55) << 1;
                 c = SPI(0);
                 checksum[1] ^= c;
                 *p++ = (c & 0x55) << 1;
-				SPIN;
+				SPIN();
                 c = SPI(0);
                 checksum[2] ^= c;
                 *p++ = (c & 0x55) << 1;
@@ -558,14 +558,14 @@ unsigned char GetData(void)
             p = sector_buffer;
             do
             {
-				SPIN;
+				SPIN();
                 c = SPI(0);
                 checksum[0] ^= c;
                 *p++ |= c & 0x55;
                 c = SPI(0);
                 checksum[1] ^= c;
                 *p++ |= c & 0x55;
-				SPIN;
+				SPIN();
                 c = SPI(0);
                 checksum[2] ^= c;
                 *p++ |= c & 0x55;

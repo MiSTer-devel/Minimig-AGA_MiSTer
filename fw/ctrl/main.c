@@ -183,7 +183,7 @@ __geta4 void main(void)
   BootPrintEx("Booting ...");
   printf("Booting ...\r");
 
-  TIMER_wait(8000);
+  TIMER_wait(6000);
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
   LoadConfiguration(0);  // Use slot-based config filename
