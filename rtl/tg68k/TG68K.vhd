@@ -156,8 +156,10 @@ BEGIN
 	datatg68 <= fromram WHEN sel_fast='1' ELSE r_data WHEN sel_autoconfig='0' ELSE autoconfig_data&r_data(11 downto 0); 
 --	toram <= data_write;
 	
-    sel_autoconfig <= '1' when cpuaddr(23 downto 19)="11101" AND autoconfig_out='1' ELSE '0'; --$E80000 - $EFFFFF
-	sel_fast <= '1' when state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
+    sel_autoconfig <= '1' when memcfg(5 downto 4)/="00" AND cpuaddr(23 downto 19)="11101" AND autoconfig_out='1' ELSE '0'; --$E80000 - $EFFFFF
+	sel_fast <= '1' when memcfg(5 downto 4)/="00" AND state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
+--  sel_autoconfig <= '0';
+--  sel_fast <= '0';
 --	sel_fast <= '1' when cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" ELSE '0'; --$200000 - $5FFFFF
 --	sel_fast <= '1' when cpuaddr(23 downto 19)="11111" ELSE '0'; --$F800000;
 --	sel_fast <= '0'; --$200000 - $9FFFFF
@@ -288,7 +290,7 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 	END PROCESS;
 				
 	
-	PROCESS (clk, clkena_in, enaWRreg, state, ena7RDreg, clkena_e, ramready, state)
+	PROCESS (clk, clkena_in, enaWRreg, state, ena7RDreg, clkena_e, ramready)
 	BEGIN
 		state_ena <= '0';
 		IF clkena_in='1' AND enaWRreg='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1') THEN
