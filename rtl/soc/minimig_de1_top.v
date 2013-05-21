@@ -469,7 +469,7 @@ TG68 tg68 (
 
 //// sdram ////
 sdram_ctrl sdram (
-  .cctrl        (3'b000/*cctrl*/            ),
+  .cctrl        (cctrl            ),
   .sdata        (DRAM_DQ          ),
   .sdaddr       (DRAM_ADDR        ),
   .dqm          (sdram_dqm        ),
@@ -541,7 +541,7 @@ Minimig1 minimig (
   .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   .cck          (cck              ), // colour clock output (3.54 MHz)
   .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
-  .cpu_speed    (cctrl[2]         ), // turbo enable
+  .cpu_speed    (1'b0             ), // turbo enable
   //rs232 pins
   .rxd          (minimig_rxd      ), // RS232 receive
   .txd          (minimig_txd      ), // RS232 send
