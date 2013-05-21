@@ -127,10 +127,10 @@ always @(posedge clk)
 	freeze_del <= freeze;
 
 // freeze button has been pressed
-assign freeze_req = freeze & ~freeze_del & (~active | ~aron);
+assign freeze_req = freeze & ~freeze_del & (~active/* | ~aron*/);
 
 // int7 request
-assign int7_req = ~boot & aron & (freeze_req | reset_req | break_req);
+assign int7_req = ~boot & /*aron &*/ (freeze_req | reset_req | break_req);
 
 // level7 interrupt ack cycle, on Amiga interrupt vector number is read from kickstart rom
 // A[23:4] all high, A[3:1] vector number
@@ -178,7 +178,7 @@ always @(posedge cpu_clk)
 always @(posedge clk)
 	if (reset)
 		ram_ovl <= 1'b0;
-	else if (l_int7 && l_int7_ack && cpu_rd) // once again we don't know the state of CPU's FCx signals
+	else if (aron && l_int7 && l_int7_ack && cpu_rd) // once again we don't know the state of CPU's FCx signals
 		ram_ovl <= 1'b1;
 	else if (sel_rom && (cpu_address_in[2:1]==2'b11) && (cpu_hwr|cpu_lwr))
 		ram_ovl <= 1'b0;
@@ -190,7 +190,7 @@ always @(posedge clk)
 always @(posedge clk)
 	if (reset)
 		active <= 1'b0;
-	else if (l_int7 && l_int7_ack && cpu_rd)// once again we don't know the state of CPU's FC signals
+	else if (aron && l_int7 && l_int7_ack && cpu_rd)// once again we don't know the state of CPU's FC signals
 		active <= 1'b1;
 	else if (sel_mode && (cpu_address_in[2:1]==2'b00) && (cpu_hwr|cpu_lwr))
 		active <= 1'b0;
