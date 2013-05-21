@@ -1,0 +1,162 @@
+<html>
+
+<head>
+<title>Amiga System Memory Map</title>
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<link rel="StyleSheet" href="../../style.css" type="text/css">
+</head>
+
+<body stylesrc="../main.htm" background="../../images/back.gif" bgcolor="#FFFFFF" text="#000000" link="#000000" vlink="#000000" alink="#000000">
+
+<table border="0" width="600" cellpadding="10" cellspacing="0">
+  <tr>
+    <td>
+      <p class="header">Amiga System Memory Map</p>
+      <div align="center">
+        <center>
+        <table border="2" cellspacing="0" bgcolor="#FFFFFF">
+          <tr>
+            <td><font face="Courier New"><b>000000</b></font>
+              <blockquote>
+                <p>256K bytes of chip RAM</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>03FFFF</b></font></p>
+            </td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>040000</b></font>
+              <blockquote>
+                <p>256K bytes of chip RAM<br>
+                (Amiga 1000 option card)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>07FFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>080000</b></font>
+              <blockquote>
+                <p>512K bytes of extended chip RAM (to 1 MB)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>0FFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>100000</b></font>
+              <blockquote>
+                <p>1024K bytes of extended chip RAM (to 2 MB)<br>
+                (on models with ECS or AGA chipsets)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>1FFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>200000</b></font>
+              <blockquote>
+                <p>Primary 8 MB Auto-config space (Fast RAM)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>9FFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>A00000</b></font>
+              <blockquote>
+                <p>Reserved</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>BEFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>BFD000</b></font>
+              <blockquote>
+                <p>8520-B (access at even-byte addresses only)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>BFDF00</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>BFE001</b></font>
+              <blockquote>
+                <p>8520-A (access at odd-byte addresses only)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>BFEF01</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>C00000</b></font>
+              <blockquote>
+                <p>Internal expansion memory (pseudo-fast,<br>
+                Slow RAM on Amiga 500)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>D7FFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>D80000</b></font>
+              <blockquote>
+                <p>Reserved</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>DBFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>DC0000</b></font>
+              <blockquote>
+                <p>Real time clock</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>DCFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>DD0000</b></font>
+              <blockquote>
+                <p>Reserved</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>DFEFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>DFF000</b></font>
+              <blockquote>
+                <p>Custom chip registers</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>DFFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>E00000</b></font>
+              <blockquote>
+                <p>Reserved</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>E7FFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>E80000</b></font>
+              <blockquote>
+                <p>Auto-config space. Boards appear here before<br>
+                the system relocates them to their final address.</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>E8FFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>E90000</b></font>
+              <blockquote>
+                <p>Secondary auto-config space<br>
+                (usually 64K I/O boards)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>EFFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>F00000</b></font>
+              <blockquote>
+                <p>256K System ROM (Kickstart 2.0)</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>FBFFFF</b></font></td>
+          </tr>
+          <tr>
+            <td><font face="Courier New"><b>FC0000</b></font>
+              <blockquote>
+                <p>256K System ROM</p>
+              </blockquote>
+              <p align="right"><font face="Courier New"><b>FFFFFF</b></font></td>
+          </tr>
+        </table>
+        </center>
+      </div>
+      <p>Source: <b>Amiga Hardware Reference Manual</b></p>
+      <p align="right">[<a href="../../index.htm" target="_top">Back</a>]</p>
+    </td>
+  </tr>
+</table>
+
+</body>
+
+</html>
