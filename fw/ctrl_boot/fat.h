@@ -3,22 +3,12 @@
 
 #define MAXDIRENTRIES 8
 
-typedef struct
-{
-    unsigned long sector;
-    unsigned long index;
-} entryTYPE;
 
 typedef struct
 {
-    char name[11];                 /* name of file */
-    unsigned char attributes;      /* file attributes */
-    entryTYPE     entry;           /* file entry location */
     unsigned long sector;          /* sector index in file */
     unsigned long size;            /* file size */
     unsigned long cluster;         /* current cluster */
-    unsigned long start_cluster;   /* first cluster of file */
-    char          long_name[261];
 } fileTYPE;
 
 struct PartitionEntry
@@ -35,8 +25,8 @@ struct MasterBootRecord
 	unsigned short Signature;		// This lets us detect an MBR (and the need for byteswapping).
 } __attribute__ ((packed));
 
-extern struct PartitionEntry partitions[4];	// FirstBlock and LastBlock will be byteswapped as necessary
-extern int partitioncount;
+//extern struct PartitionEntry partitions[4];	// FirstBlock and LastBlock will be byteswapped as necessary
+//extern int partitioncount;
 
 typedef struct
 {
@@ -78,10 +68,11 @@ typedef union {
 
 // global sector buffer, data for read/write actions is stored here.
 // BEWARE, this buffer is also used and thus trashed by all other functions
-extern unsigned char sector_buffer[1024]; // sector buffer - room for 2 sectors, to ease reading data not sector-aligned...
-extern unsigned char cluster_size;
+extern unsigned char sector_buffer[512];
+//extern unsigned char *sector_buffer;
+extern unsigned int cluster_size;
 extern unsigned long cluster_mask;
-extern unsigned char fat32;
+extern unsigned int fat32;
 
 // constants
 #define DIRECTORY_ROOT 0
@@ -108,19 +99,13 @@ extern unsigned char fat32;
 
 // functions
 unsigned char FindDrive(void);
-unsigned long GetFATLink(unsigned long cluster);
+unsigned int GetFATLink(unsigned int cluster);
 unsigned char FileNextSector(fileTYPE *file);
 unsigned char FileOpen(fileTYPE *file, const char *name);
-unsigned char FileSeek(fileTYPE *file, unsigned long offset, unsigned long origin);
 unsigned char FileRead(fileTYPE *file, unsigned char *pBuffer);
-unsigned char FileWrite(fileTYPE *file, unsigned char *pBuffer);
-unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long nSize);
+//unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long nSize);
 
-unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file);
-unsigned char UpdateEntry(fileTYPE *file);
-
-char ScanDirectory(unsigned long mode, char *extension, unsigned char options);
-void ChangeDirectory(unsigned long iStartCluster);
+int LoadFile(const char *fn, unsigned char *buf);
 
 #endif
 

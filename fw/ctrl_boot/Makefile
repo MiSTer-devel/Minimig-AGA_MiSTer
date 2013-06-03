@@ -49,7 +49,7 @@ CFLAGS +=   -W -Wall -Wpacked -Wpadded -Winline -std=gnu99 -g \
 LDFLAGS +=
 
 XXDFLAGS=-ps -c 4
-HEXFLAGS=-w 8 -s 1280 -n
+HEXFLAGS=-w 8 -s 1024 -n
 
 
 ### variables ###

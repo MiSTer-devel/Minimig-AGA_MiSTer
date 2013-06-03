@@ -59,6 +59,8 @@ void main(void)
 
   // open file
   LEDS(led=0x3);
+  LoadFile(firmware,ram);
+#if 0
   if (!FileOpen(&ft, firmware)) FatalError();
 
   // load firmware to RAM
@@ -67,7 +69,7 @@ void main(void)
     FileRead(&ft, ram+(i*512));
     FileNextSector(&ft);
   }
-
+#endif
   // jump to RAM firmware
   LEDS(led=0x0);
   DisableCard();
