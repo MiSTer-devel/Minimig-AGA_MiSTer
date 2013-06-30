@@ -431,7 +431,7 @@ assign fl_rst_n = 1'b1;
 assign fl_dat_w = 8'b0;
 ctrl_boot ctrl_rom (
   .clock      (clk        ),
-  .address    (rom_adr[12:2]),
+  .address    (rom_adr[11:2]),
   .q          (rom_dat_r  )
 );
 assign rom_ack = 1'b1;
