@@ -58,6 +58,7 @@
 //
 // SB:
 // 2012-03-23 - fixed sprite enable signal (coppermaster demo)
+// 2013-10-19 - fixed self-made sprite collision bug. Now YQ100818 code is working again!
 
 module Denise
 (
@@ -140,6 +141,13 @@ always @(posedge clk)
 
 //--------------------------------------------------------------------------------------
 
+// sprite display enable signal - sprites are visible after the first write to the BPL1DAT register in a scanline
+always @(posedge clk)
+  if (reset || hpos[8:0]==8)
+    display_ena <= 0;
+  else if (reg_address_in[8:1]==BPL1DAT[8:1])
+    display_ena <= 1;
+
 // bpu is updated when bpl1dat register is written
 always @(posedge clk)
 	if (reg_address_in[8:1]==BPL1DAT[8:1])
@@ -179,13 +187,6 @@ always @(posedge clk)
 		bplcon3 <= 16'h00_00;
 	else if (reg_address_in[8:1]==BPLCON3[8:1])
 		bplcon3[15:0] <= data_in[15:0];
-
-// sprite display enable signal - sprites are visible after the first write to the BPL1DAT register in a scanline
-always @(posedge clk)
-  if (reset || (hpos[8:0]==8))
-    display_ena <= 0;
-  else if (reg_address_in[8:1]==BPL1DAT[8:1])
-    display_ena <= 1;
 
 assign brdrblnk = bplcon3[5];
 		
@@ -484,7 +485,8 @@ wire	[11:0] selcolor;			// selected colour output from colour table
 //--------------------------------------------------------------------------------------
 
 //writing of HAM colour table from bus (implemented using dual port distributed ram)
-always @(posedge clk28m)
+/*always @(posedge clk28m)*/
+always @(posedge clk)
 	if (reg_address_in[8:5]==COLORBASE[8:5])
 		colortable[reg_address_in[4:1]] <= data_in[11:0];
 
@@ -555,10 +557,14 @@ assign oddmatch = bm[4] & bm[2] & bm[0];
 assign evenmatch = bm[5] & bm[3] & bm[1];
 
 //generate sprite group match signal
-assign sprmatch[0] = (nsprite[0] | (nsprite[1]) & clxcon[12]);
-assign sprmatch[1] = (nsprite[2] | (nsprite[3]) & clxcon[13]);
-assign sprmatch[2] = (nsprite[4] | (nsprite[5]) & clxcon[14]);
-assign sprmatch[3] = (nsprite[6] | (nsprite[7]) & clxcon[15]);
+/*assign sprmatch[0] = (nsprite[0] | (nsprite[1]) & clxcon[12]);*/
+/*assign sprmatch[1] = (nsprite[2] | (nsprite[3]) & clxcon[13]);*/
+/*assign sprmatch[2] = (nsprite[4] | (nsprite[5]) & clxcon[14]);*/
+/*assign sprmatch[3] = (nsprite[6] | (nsprite[7]) & clxcon[15]);*/
+assign sprmatch[0] = nsprite[0] | (nsprite[1] & clxcon[12]);
+assign sprmatch[1] = nsprite[2] | (nsprite[3] & clxcon[13]);
+assign sprmatch[2] = nsprite[4] | (nsprite[5] & clxcon[14]);
+assign sprmatch[3] = nsprite[6] | (nsprite[7] & clxcon[15]);
 
 //--------------------------------------------------------------------------------------
 
