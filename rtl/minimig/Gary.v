@@ -151,7 +151,6 @@ assign sel_xram = ((t_sel_slow[0] & (memory_config[2] | memory_config[3]))
         | (t_sel_slow[1] & memory_config[3])
         | (t_sel_slow[2] & memory_config[2] & memory_config[3]));
 
-assign sel_rtc = (cpu_address_in[23:16]==8'b1101_1100) ? 1'b1 : 1'b0;   //RTC registers at $DC0000 - $DCFFFF
 
 assign sel_ide = hdc_ena && cpu_address_in[23:16]==8'b1101_1010 ? 1'b1 : 1'b0;		//IDE registers at $DA0000 - $DAFFFF	
 
