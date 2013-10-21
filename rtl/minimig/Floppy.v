@@ -370,6 +370,7 @@ always @(dsksync)
   if (reset)
     spi_tx_data_1 = 16'd0;
 //	if (trackrd)
+  else
 		spi_tx_data_1 = dsksync[15:0]; 
 //	else
 //		spi_tx_data_1 = 0;

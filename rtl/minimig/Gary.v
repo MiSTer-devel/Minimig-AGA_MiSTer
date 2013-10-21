@@ -157,6 +157,8 @@ assign sel_ide = hdc_ena && cpu_address_in[23:16]==8'b1101_1010 ? 1'b1 : 1'b0;		
 
 assign sel_gayle = hdc_ena && cpu_address_in[23:12]==12'b1101_1110_0001 ? 1'b1 : 1'b0;		//GAYLE registers at $DE1000 - $DE1FFF
 
+assign sel_rtc = (cpu_address_in[23:16]==8'b1101_1100) ? 1'b1 : 1'b0;   //RTC registers at $DC0000 - $DCFFFF
+
 assign sel_reg = cpu_address_in[23:21]==3'b110 ? ~(sel_xram | sel_rtc | sel_ide | sel_gayle) : 1'b0;		//chip registers at $DF0000 - $DFFFFF
 
 assign sel_cia = cpu_address_in[23:21]==3'b101 ? 1'b1 : 1'b0;
