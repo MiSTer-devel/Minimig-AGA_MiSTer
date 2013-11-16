@@ -89,7 +89,7 @@ void FatalError(unsigned long error)
 //// HandleFpga() ////
 void HandleFpga(void)
 {
-//  DEBUG_FUNC_IN();
+  //DEBUG_FUNC_IN();
 
   unsigned char  c1, c2;
 
@@ -107,7 +107,7 @@ void HandleFpga(void)
 
   UpdateDriveStatus();
 
-//  DEBUG_FUNC_OUT();
+  //DEBUG_FUNC_OUT();
 }
 
 
@@ -123,25 +123,22 @@ __geta4 void main(void)
   uint32_t spiclk;
   fileTYPE sd_boot_file;
 
-  HideSplash();
+  // wait for SDRAM controller
+  printf("Waiting for SDRAM ... ");
+  while (!(read32(REG_SYS_STAT_ADR) & 0x1));
+  printf("OK (%01x)\r", read32(REG_SYS_STAT_ADR));
+
+  printf("Unresetting from ctrl block ...\r");
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(4);
+  DisableOsd();
+  write32(REG_RST_ADR, 0);
+
+  //HideSplash();
   SPI_fast();
 
   // boot message
-  draw_boot_logo();
-  BootPrintEx("**** MINIMIG-DE1 ****");
-  BootPrintEx("Minimig by Dennis van Weeren");
-  BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
-  BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
-  BootPrintEx(" ");
-  sprintf(s, "Build git commit: %s", __BUILD_REV);
-  BootPrintEx(s);
-  sprintf(s, "Build git tag: %s", __BUILD_TAG);
-  BootPrintEx(s);
-  BootPrintEx(" ");
-  BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
-  BootPrintEx("For support, see http://www.minimig.net");
-  BootPrintEx(" ");
-
   printf("\r\r**** MINIMIG-DE1 ****\r\r");
   printf("Minimig by Dennis van Weeren\r");
   printf("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others\r");
@@ -164,6 +161,22 @@ __geta4 void main(void)
   BootPrintEx(s);
   printf("%s\r", s);
 
+
+  draw_boot_logo();
+  BootPrintEx("**** MINIMIG-DE1 ****");
+  BootPrintEx("Minimig by Dennis van Weeren");
+  BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
+  BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
+  BootPrintEx(" ");
+  sprintf(s, "Build git commit: %s", __BUILD_REV);
+  BootPrintEx(s);
+  sprintf(s, "Build git tag: %s", __BUILD_TAG);
+  BootPrintEx(s);
+  BootPrintEx(" ");
+  BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
+  BootPrintEx("For support, see http://www.minimig.net");
+  BootPrintEx(" ");
+
   if (!MMC_Init()) FatalError(1);
   BootPrintEx("SD card found ...");
   printf("SD card found ...\r");
@@ -183,10 +196,31 @@ __geta4 void main(void)
   BootPrintEx("Booting ...");
   printf("Booting ...\r");
 
-  TIMER_wait(6000);
+  //TIMER_wait(5000);
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
+
+/**/
+  //write32(REG_RST_ADR, 0);
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(4);
+  DisableOsd();
+  printf("Waiting for minimig ... ");
+  while ((read32(REG_SYS_STAT_ADR) & 0x2));
+  printf("OK (%1x)\r", read32(REG_SYS_STAT_ADR));
+/**/ 
   LoadConfiguration(0);  // Use slot-based config filename
+/**/
+  int i;
+  for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
+  
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(0);
+  DisableOsd();
+/**/ 
+
 
   // main loop
   while (1) {

@@ -36,6 +36,7 @@ module soc_tb();
 //// system ////
 reg            RST;
 reg            ERR;
+reg  [ 32-1:0] datr;
 
 
 //// soc ////
@@ -55,7 +56,7 @@ tri  [36-1:0]  GPIO_1;      // GPIO Connection 1
 // push button inputs
 wire [ 4-1:0]  BTN;         // Pushbutton[3:0]
 // switch inputs
-wire [10-1:0]  SW;          // Toggle Switch[9:0]  
+wire [10-1:0]  SW;          // Toggle Switch[9:0]
 // 7-seg display outputs
 wire [ 7-1:0]  HEX_0;       // Seven Segment Digit 0
 wire [ 7-1:0]  HEX_1;       // Seven Segment Digit 1
@@ -94,15 +95,15 @@ wire           SD_CLK;      // SD Card Clock
 // SRAM
 tri  [16-1:0]  SRAM_DQ;     // SRAM Data bus 16 Bits
 wire [18-1:0]  SRAM_ADDR;   // SRAM Address bus 18 Bits
-wire           SRAM_UB_N;   // SRAM High-byte Data Mask 
-wire           SRAM_LB_N;   // SRAM Low-byte Data Mask 
+wire           SRAM_UB_N;   // SRAM High-byte Data Mask
+wire           SRAM_LB_N;   // SRAM Low-byte Data Mask
 wire           SRAM_WE_N;   // SRAM Write Enable
 wire           SRAM_CE_N;   // SRAM Chip Enable
 wire           SRAM_OE_N;   // SRAM Output Enable
 // SDRAM
 tri  [16-1:0]  DRAM_DQ;     // SDRAM Data bus 16 Bits
 wire [12-1:0]  DRAM_ADDR;   // SDRAM Address bus 12 Bits
-wire           DRAM_LDQM;   // SDRAM Low-byte Data Mask 
+wire           DRAM_LDQM;   // SDRAM Low-byte Data Mask
 wire           DRAM_UDQM;   // SDRAM High-byte Data Mask
 wire           DRAM_WE_N;   // SDRAM Write Enable
 wire           DRAM_CAS_N;  // SDRAM Column Address Strobe
@@ -182,6 +183,102 @@ initial begin
   repeat (10) @ (posedge CLOCK_50);
   #1;
 
+  // disable ctrl CPU
+  force soc_top.ctrl_top.ctrl_cpu.dcpu_cs  = 1'b0;
+  force soc_top.ctrl_top.ctrl_cpu.icpu_cs  = 1'b0;
+  force soc_top.ctrl_top.ctrl_cpu.dcpu_ack = 1'b0;
+  force soc_top.ctrl_top.ctrl_cpu.icpu_ack = 1'b0;
+  // force reset TG68
+  force soc_top.tg68_rst = 1'b0;
+
+  // wait for reset
+  //while (!soc_top.ctrl_top.rst) @ (posedge soc_top.ctrl_top.clk); #1;
+  wait (!soc_top.ctrl_top.ctrl_regs.rst);
+
+  // force unreset minimig
+  force soc_top.minimig.reset = 1'b0;
+
+  force soc_top.tg68_rst = 1'b1;
+  repeat(10) @ (posedge soc_top.clk_7);
+  force soc_top.tg68_rst = 1'b0;
+  repeat(10) @ (posedge soc_top.clk_7);
+
+  // try qmem bridge
+  ctrl_bridge_cycle(32'h00180000, 1'b1, 4'hf, 32'h01234567);
+  ctrl_bridge_cycle(32'h00180000, 1'b1, 4'hf, 32'hdeadbeef);
+  repeat(10) @ (posedge soc_top.clk_7);
+
+  // write to OSD SPI slave
+  // enable OSD (SPI chip select)
+  ctrl_regs_cycle(32'h00800020, 1'b1, 4'hf, 32'h00000044);
+  // send write command
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h0000001c);
+  // send address
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000000);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000000);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000000);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000000);
+  // send data
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000aa);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000bb);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000cc);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000dd);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ee);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ff);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000001);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000023);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000045);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000067);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000089);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ab);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000cd);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ef);
+  repeat (100) @ (posedge soc_top.clk_7);
+
+  // disable OSD (SPI chip select)
+  ctrl_regs_cycle(32'h00800020, 1'b1, 4'hf, 32'h00000040);
+  repeat (100) @ (posedge soc_top.clk_7);
+
+  // readback
+  ctrl_bridge_cycle(32'h00180000, 1'b0, 4'hf, 32'h00000000, datr);
+  repeat (100) @ (posedge soc_top.clk_7);
+
+
+/*
+  // try a TG68 cycle
+  force soc_top.tg68_adr = 24'h123456;
+  force soc_top.tg68_dat_out = 16'hbeef;
+  force soc_top.tg68_as = 1'b0;
+  force soc_top.tg68_uds = 1'b0;
+  force soc_top.tg68_lds = 1'b0;
+  force soc_top.tg68_rw = 1'b0;
+  @ (posedge soc_top.clk_7);
+  while (soc_top.tg68_dtack) @ (posedge soc_top.clk_7); #1;
+  @ (posedge soc_top.clk_7);
+  force soc_top.tg68_as = 1'b1;
+  @ (posedge soc_top.clk_7);
+  @ (posedge soc_top.clk_7);
+  force soc_top.tg68_adr = 24'h123456;
+  force soc_top.tg68_dat_out = 16'hdead;
+  force soc_top.tg68_as = 1'b0;
+  force soc_top.tg68_uds = 1'b1;
+  force soc_top.tg68_lds = 1'b1;
+  force soc_top.tg68_rw = 1'b1;
+  @ (posedge soc_top.clk_7);
+  while (soc_top.tg68_dtack) @ (posedge soc_top.clk_7); #1;
+  @ (posedge soc_top.clk_7);
+  force soc_top.tg68_as = 1'b1;
+  @ (posedge soc_top.clk_7);
+  @ (posedge soc_top.clk_7);
+  release soc_top.tg68_adr;
+  release soc_top.tg68_dat_out;
+  release soc_top.tg68_as;
+  release soc_top.tg68_uds;
+  release soc_top.tg68_lds;
+  release soc_top.tg68_rw;
+  repeat (10) @ (posedge soc_top.clk_7);
+*/
+
   // start monitor
   $display("BENCH : %t : starting vga monitor ...", $time);
   //vga_monitor.start;
@@ -195,8 +292,8 @@ initial begin
   //switches.toggle({1'b1, 1'b1, 1'b1, 5'b00000, 1'b0, 1'b0});
 
   // wait for three frames
-  $display("BENCH : %t : waiting for frames ...", $time);
-  wait (`VGA_MON_F_CNT == 7'd3);
+  //$display("BENCH : %t : waiting for frames ...", $time);
+  //wait (`VGA_MON_F_CNT == 7'd3);
   #100;
 
   // display result
@@ -206,6 +303,64 @@ initial begin
   $display("BENCH : done.");
   $finish;
 end
+
+
+
+////////////////////////////////////////
+// tasks                              //
+////////////////////////////////////////
+
+// force ctrl regs bus
+task ctrl_regs_cycle;
+input  [32-1:0] adr;
+input           we;
+input  [ 4-1:0] sel;
+input  [32-1:0] dat_w;
+output [32-1:0] dat_r;
+begin
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  force soc_top.ctrl_top.ctrl_regs.adr   = adr;
+  force soc_top.ctrl_top.ctrl_regs.cs    = 1'b1;
+  force soc_top.ctrl_top.ctrl_regs.we    = we;
+  force soc_top.ctrl_top.ctrl_regs.sel   = sel;
+  force soc_top.ctrl_top.ctrl_regs.dat_w = dat_w;
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  while (!soc_top.ctrl_top.ctrl_regs.ack) @ (posedge soc_top.ctrl_top.clk); #1;
+  release soc_top.ctrl_top.ctrl_regs.adr;
+  release soc_top.ctrl_top.ctrl_regs.cs;
+  release soc_top.ctrl_top.ctrl_regs.we;
+  release soc_top.ctrl_top.ctrl_regs.sel;
+  release soc_top.ctrl_top.ctrl_regs.dat_w;
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  dat_r = soc_top.ctrl_top.ctrl_regs.dat_r;
+end
+endtask
+
+// force ctrl bridge cycle
+task ctrl_bridge_cycle;
+input  [32-1:0] adr;
+input           we;
+input  [ 4-1:0] sel;
+input  [32-1:0] dat_w;
+output [32-1:0] dat_r;
+begin
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  force soc_top.ctrl_top.dram_adr   = adr;
+  force soc_top.ctrl_top.dram_cs    = 1'b1;
+  force soc_top.ctrl_top.dram_we    = we;
+  force soc_top.ctrl_top.dram_sel   = sel;
+  force soc_top.ctrl_top.dram_dat_w = dat_w;
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  while (!soc_top.ctrl_top.dram_ack) @ (posedge soc_top.ctrl_top.clk); #1;
+  release soc_top.ctrl_top.dram_adr;
+  release soc_top.ctrl_top.dram_cs;
+  release soc_top.ctrl_top.dram_we;
+  release soc_top.ctrl_top.dram_sel;
+  release soc_top.ctrl_top.dram_dat_w;
+  @ (posedge soc_top.ctrl_top.clk); #1;
+  dat_r = soc_top.ctrl_top.dram_dat_r;
+end
+endtask
 
 
 
@@ -224,7 +379,7 @@ minimig_de1_top soc_top (
   //.GPIO_0       (GPIO_0     ),  // GPIO Connection 0
   //.GPIO_1       (GPIO_1     ),  // GPIO Connection 1
   .KEY          (BTN        ),  // Pushbutton[3:0]
-  .SW           (SW         ),  // Toggle Switch[9:0]  
+  .SW           (SW         ),  // Toggle Switch[9:0]
   .HEX0         (HEX_0      ),  // Seven Segment Digit 0
   .HEX1         (HEX_1      ),  // Seven Segment Digit 1
   .HEX2         (HEX_2      ),  // Seven Segment Digit 2
@@ -254,14 +409,14 @@ minimig_de1_top soc_top (
   .SD_CLK       (SD_CLK     ),  // SD Card Clock           - spi CLK
   .SRAM_DQ      (SRAM_DQ    ),  // SRAM Data bus 16 Bits
   .SRAM_ADDR    (SRAM_ADDR  ),  // SRAM Address bus 18 Bits
-  .SRAM_UB_N    (SRAM_UB_N  ),  // SRAM High-byte Data Mask 
-  .SRAM_LB_N    (SRAM_LB_N  ),  // SRAM Low-byte Data Mask 
+  .SRAM_UB_N    (SRAM_UB_N  ),  // SRAM High-byte Data Mask
+  .SRAM_LB_N    (SRAM_LB_N  ),  // SRAM Low-byte Data Mask
   .SRAM_WE_N    (SRAM_WE_N  ),  // SRAM Write Enable
   .SRAM_CE_N    (SRAM_CE_N  ),  // SRAM Chip Enable
   .SRAM_OE_N    (SRAM_OE_N  ),  // SRAM Output Enable
   .DRAM_DQ      (DRAM_DQ    ),  // SDRAM Data bus 16 Bits
   .DRAM_ADDR    (DRAM_ADDR  ),  // SDRAM Address bus 12 Bits
-  .DRAM_LDQM    (DRAM_LDQM  ),  // SDRAM Low-byte Data Mask 
+  .DRAM_LDQM    (DRAM_LDQM  ),  // SDRAM Low-byte Data Mask
   .DRAM_UDQM    (DRAM_UDQM  ),  // SDRAM High-byte Data Mask
   .DRAM_WE_N    (DRAM_WE_N  ),  // SDRAM Write Enable
   .DRAM_CAS_N   (DRAM_CAS_N ),  // SDRAM Column Address Strobe

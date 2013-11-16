@@ -84,8 +84,8 @@ amiga_clk_xilinx amiga_clk_i (
 //// generated clocks ////
 
 // 7MHz
-reg [2-1:0] clk7_cnt;
-reg         clk7_en_reg;
+reg [2-1:0] clk7_cnt = 2'b10;
+reg         clk7_en_reg = 1'b0;
 always @ (posedge clk_28, negedge locked) begin
   if (!locked) begin
     clk7_cnt <= 2'b10;
@@ -111,21 +111,21 @@ assign clk7_en = clk7_en_reg;
 //
 
 // clk_28 clock domain signal synchronous with clk signal delayed by 90 degrees
-reg c3_r;
+reg c3_r = 1'b0;
 always @(posedge clk_28) begin
   c3_r <= clk_7;
 end
 assign c3 = c3_r;
 
 // clk28m clock domain signal synchronous with clk signal
-reg c1_r;
+reg c1_r = 1'b0;
 always @(posedge clk_28) begin
   c1_r <= ~c3_r;
 end
 assign c1 = c1_r;
 
 // counter used to generate e clock enable
-reg [3:0] e_cnt;
+reg [3:0] e_cnt = 4'b0000;
 always @(posedge clk_7) begin
   if (e_cnt[3] && e_cnt[0])
     e_cnt[3:0] <= 4'd0;

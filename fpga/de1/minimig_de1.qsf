@@ -39,8 +39,6 @@ set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS R
 set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
 set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
 set_global_assignment -name USE_CONFIGURATION_DEVICE ON
-set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
-set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name MISC_FILE minimig_de1.dpf
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
@@ -51,24 +49,31 @@ set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 
-set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
-
 set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id eda_palace
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE BALANCED
 set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
 set_global_assignment -name FITTER_EFFORT "AUTO FIT"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+
+#set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+#set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+#set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
+#set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA ON
+#set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA ON
+#set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+#set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
+#set_global_assignment -name AUTO_RAM_TO_LCELL_CONVERSION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
-set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
-set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
 set_global_assignment -name AUTO_RAM_TO_LCELL_CONVERSION OFF
+
 set_global_assignment -name AUTO_RAM_RECOGNITION ON
 set_global_assignment -name AUTO_ROM_RECOGNITION ON
 set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
@@ -82,9 +87,6 @@ set_global_assignment -name TCO_REQUIREMENT "2 ns"
 set_global_assignment -name TOP_LEVEL_ENTITY minimig_de1_top
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY out
 set_global_assignment -name SEARCH_PATH ../../rtl/or1200
-
-#set_parameter -name ENABLE_RUNTIME_MOD YES -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
-#set_parameter -name INSTANCE_NAME mig -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
 
 set_location_assignment PIN_L22 -to SW[0]
 set_location_assignment PIN_L21 -to SW[1]
@@ -604,6 +606,9 @@ set_instance_assignment -name IO_STANDARD LVTTL -to Joyb[0]
 set_instance_assignment -name IO_STANDARD LVTTL -to Joya[6]
 set_instance_assignment -name IO_STANDARD LVTTL -to Joya[5]
 
+
+
+
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de1_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_sram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_decoder.v
@@ -611,6 +616,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_bus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_arbiter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_rst.v
+set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_bridge.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_regs.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
@@ -625,6 +631,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
+set_global_assignment -name VERILOG_FILE ../../rtl/fifo/sync_fifo.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/PS2Keyboard.v
@@ -635,9 +642,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gary.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Floppy.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Denise.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Copper.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Clock.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/CIA8520.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/BootRom.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Blitter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Bitplanes.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Beamcounter.v
@@ -703,15 +708,11 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cpu.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cfgr.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
-set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
 set_global_assignment -name VERILOG_FILE ../../fw/ctrl_boot/bin/ctrl_boot.v
-#set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_boot.v
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
-
-
 
 
 

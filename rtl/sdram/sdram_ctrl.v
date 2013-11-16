@@ -35,7 +35,6 @@ module sdram_ctrl(
   output wire           reset_out,
   // temp - cache control
   input wire  [  3-1:0] cctrl,
-  // temp
   // sdram
   output reg  [ 12-1:0] sdaddr,
   output reg  [  4-1:0] sd_cs,
@@ -46,13 +45,13 @@ module sdram_ctrl(
   output reg  [  2-1:0] dqm,
   inout  wire [ 16-1:0] sdata,
   // host
-  input  wire [ 24-1:0] hostAddr,
-  input  wire [  3-1:0] hostState,
-  input  wire           hostL,
-  input  wire           hostU,
-  input  wire [ 16-1:0] hostWR,
-  output reg  [ 16-1:0] hostRD,
-  output wire           hostena,
+  input  wire           host_cs,
+  input  wire [ 24-1:0] host_adr,
+  input  wire           host_we,
+  input  wire [  2-1:0] host_bs,
+  input  wire [ 16-1:0] host_wdat,
+  output reg  [ 16-1:0] host_rdat,
+  output wire           host_ack,
   // chip
   input  wire    [23:1] chipAddr,
   input  wire           chipL,
@@ -115,8 +114,6 @@ reg            sdwrite;
 reg  [ 16-1:0] sdata_reg;
 reg            hostCycle;
 reg            zena;
-reg  [  2-1:0] hostStated;
-reg  [ 16-1:0] hostRDd;
 reg            cena;
 reg  [ 64-1:0] ccache;
 reg  [ 25-1:0] ccache_addr;
@@ -177,17 +174,18 @@ assign reset_out = init_done;
 // host access
 ////////////////////////////////////////
 
-assign hostena = zena || (hostState[1:0] == 2'b01);
+assign host_ack = zena;
 
 always @ (posedge sysclk or negedge reset) begin
   if (~reset) begin
     zena <= 1'b0;
   end else begin
-    if (enaWRreg) begin
-      zena <= 1'b0;
-    end else if ((sdram_state == ph11) && hostCycle) begin
-      if ((hostAddr == casaddr[23:0]) && !cas_sd_cas) begin
-        zena <= 1'b1;
+    if (enaWRreg && zena) begin
+      zena <= #1 1'b0;
+    end 
+    if ((sdram_state == ph11) && hostCycle) begin
+      if ((host_adr == casaddr[23:0]) && !cas_sd_cas) begin
+        zena <= #1 1'b1;
       end
     end
   end
@@ -195,7 +193,7 @@ end
 
 always @ (posedge sysclk) begin
   if ((sdram_state == ph9) && hostCycle) begin
-    hostRD <= sdata_reg;
+    host_rdat <= sdata_reg;
   end
 end
 
@@ -394,7 +392,7 @@ always @ (posedge sysclk) begin
     end else if (cpuCycle) begin
       datawr <= cpuWR;
     end else begin
-      datawr <= hostWR;
+      datawr <= host_wdat;
     end
   end
 end
@@ -613,17 +611,17 @@ always @ (posedge sysclk) begin
         casaddr    <= {cpuAddr[24:1],1'b0};
         cas_sd_cas <= 1'b0;
         cas_sd_we  <= ~cpustate[1] | ~cpustate[0];
-      end else if (!hostState[2] && !hostena) begin
+      end else if (host_cs && !host_ack) begin
         // host cycle
         hostCycle  <= 1'b1;
-        sdaddr     <= hostAddr[20:9];
-        ba         <= hostAddr[22:21];
-        cas_dqm    <= {hostU,hostL};
+        sdaddr     <= host_adr[20:9];
+        ba         <= host_adr[22:21];
+        cas_dqm    <= ~host_bs;
         sd_cs      <= 4'b1110; // active
         sd_ras     <= 1'b0;
-        casaddr    <= {1'b0, hostAddr};
+        casaddr    <= {1'b0, host_adr};
         cas_sd_cas <= 1'b0;
-        cas_sd_we  <= !(hostState == 3'b011);
+        cas_sd_we  <= !host_we;
       end else begin
         // refresh cycle
         sd_cs      <= 4'b0000; // autorefresh

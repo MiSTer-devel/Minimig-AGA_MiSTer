@@ -2,6 +2,8 @@
 
 ../../../../rtl/io/i_sync.v
 
+../../../../rtl/fifo/sync_fifo.v
+
 ../../../../rtl/minimig/ActionReplay3.v
 ../../../../rtl/minimig/Agnus.v
 ../../../../rtl/minimig/Amber.v
@@ -9,9 +11,7 @@
 ../../../../rtl/minimig/Beamcounter.v
 ../../../../rtl/minimig/Bitplanes.v
 ../../../../rtl/minimig/Blitter.v
-../../../../rtl/minimig/BootRom.v
 ../../../../rtl/minimig/CIA8520.v
-../../../../rtl/minimig/Clock.v
 ../../../../rtl/minimig/Copper.v
 ../../../../rtl/minimig/Denise.v
 ../../../../rtl/minimig/Floppy.v
@@ -37,6 +37,7 @@
 ../../../../rtl/ctrl/qmem_bus.v
 ../../../../rtl/ctrl/qmem_decoder.v
 ../../../../rtl/ctrl/qmem_sram.v
+../../../../rtl/ctrl/qmem_bridge.v
 
 ../../../../fw/ctrl_boot/bin/ctrl_boot.v
 

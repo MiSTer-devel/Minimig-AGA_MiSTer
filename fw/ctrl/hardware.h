@@ -76,14 +76,17 @@
 #define ROM_START           0x000000
 #define RAM_START           0x400000
 #define REG_START           0x800000
-#define REG_RST_ADR         0x800000  // reset reg  (bit 0 = ctrl reset, bit 1 = minimig reset)
+#define REG_RST_ADR         0x800000  // reset reg  (bit 0 = ctrl reset, bit 1 = minimig reset, bit2 = cpu reset)
 #define REG_SYS_ADR         0x800004  // system reg (bits [3:0] = cfg input, bits [18:15] = status output)
-#define REG_UART_ADR        0x800008  // uart transmit reg ([7:0] - transmit byte)
-#define REG_TIMER_ADR       0x80000c  // timer reg ([15:0] - timer counter)
-#define REG_SPI_DIV_ADR     0x800010  // SPI divider reg
-#define REG_SPI_CS_ADR      0x800014  // SPI chip-select reg
-#define REG_SPI_DAT_ADR     0x800018  // SPI data reg
-#define REG_SPI_BLOCK_ADR   0x80001c  // SPI block transfer counter reg
+#define REG_SYS_STAT_ADR    0x800008  // system status (sdram init done, minimig reset status, cpu reset status, vsync)
+#define REG_UART_TX_ADR     0x80000c  // uart transmit reg ([7:0] - transmit byte)
+#define REG_UART_RX_ADR     0x800010  // uart receive reg ([7:0] - received byte)
+#define REG_UART_STAT_ADR   0x800014  // uart status (bit 0 = rx_valid, 1 = rx_miss, 2 = rx_ready, 3 = tx_ready)
+#define REG_TIMER_ADR       0x800018  // timer reg ([15:0] - timer counter)
+#define REG_SPI_DIV_ADR     0x80001c  // SPI divider reg
+#define REG_SPI_CS_ADR      0x800020  // SPI chip-select reg
+#define REG_SPI_DAT_ADR     0x800024  // SPI data reg
+#define REG_SPI_BLOCK_ADR   0x800028  // SPI block transfer counter reg
 
 
 //// minimig stuff ////
@@ -109,7 +112,7 @@
 #define SPI(x)              (SPI_write(x), SPI_read())
 #define SPI_block(x)        write32(REG_SPI_BLOCK_ADR, (x))
 
-#define RS232(x)            write32(REG_UART_ADR, (x))
+#define RS232(x)            write32(REG_UART_TX_ADR, (x))
 
 #define TIMER_get()         (read32(REG_TIMER_ADR))
 #define TIMER_set(x)        write32(REG_TIMER_ADR, (x))

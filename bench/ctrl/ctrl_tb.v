@@ -88,8 +88,23 @@ initial begin
 
   RST = 0;
 
+  // disable ctrl CPU
+  force ctrl_top.ctrl_cpu.dcpu_cs  = 1'b0;
+  force ctrl_top.ctrl_cpu.icpu_cs  = 1'b0;
+  force ctrl_top.ctrl_cpu.dcpu_ack = 1'b0;
+  force ctrl_top.ctrl_cpu.icpu_ack = 1'b0;
+
+  // wait for reset
+  wait (!ctrl_top.ctrl_regs.rst);
+  @ (posedge ctrl_top.clk);
+
+  // write a char to UART TX
+  ctrl_regs_cycle(32'h00800008, 1'b1, 4'hf, 32'h000000ab);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800008, 1'b1, 4'hf, 32'h000000ba);
+
   // wait
-  repeat(15000000) @ (posedge CLK);
+  repeat(10000) @ (posedge CLK);
 
   // display result
   if (ERR) $display("BENCH : %t : ctrl test FAILED - there were errors!", $time);
@@ -105,6 +120,7 @@ end
 // tasks                              //
 ////////////////////////////////////////
 
+// ram_write
 task ram_write;
   integer i;
   reg [32-1:0] dat;
@@ -120,6 +136,34 @@ begin
   end
 end
 endtask
+
+// force ctrl regs bus
+task ctrl_regs_cycle;
+input  [32-1:0] adr;
+input           we;
+input  [ 4-1:0] sel;
+input  [32-1:0] dat_w;
+output [32-1:0] dat_r;
+begin
+  @ (posedge ctrl_top.clk); #1;
+  force ctrl_top.ctrl_regs.adr   = adr;
+  force ctrl_top.ctrl_regs.cs    = 1'b1;
+  force ctrl_top.ctrl_regs.we    = we;
+  force ctrl_top.ctrl_regs.sel   = sel;
+  force ctrl_top.ctrl_regs.dat_w = dat_w;
+  @ (posedge ctrl_top.clk); #1;
+  while (!ctrl_top.ctrl_regs.ack) @ (posedge ctrl_top.clk); #1;
+  release ctrl_top.ctrl_regs.adr;
+  release ctrl_top.ctrl_regs.cs;
+  release ctrl_top.ctrl_regs.we;
+  release ctrl_top.ctrl_regs.sel;
+  release ctrl_top.ctrl_regs.dat_w;
+  @ (posedge ctrl_top.clk); #1;
+  dat_r = ctrl_top.ctrl_regs.dat_r;
+end
+endtask
+
+
 
 
 ////////////////////////////////////////
@@ -170,6 +214,7 @@ ctrl_top ctrl_top (
   .fl_dat_r     (FL_DAT_R   ),
   // UART
   .uart_txd     (UART_TXD   ),
+  .uart_rxd     (UART_TXD   ), // LOOPBACK!
   .spi_cs_n     (SPI_CS_N   ),
   .spi_clk      (SD_CLK     ),
   .spi_do       (SD_CMD     ),

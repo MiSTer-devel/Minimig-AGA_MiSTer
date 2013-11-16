@@ -1,0 +1,5 @@
+PLL_Name	amigaclk:amigaclk|altpll:altpll_component|amigaclk_altpll:auto_generated|pll1
+PLLJITTER	11
+PLLSPEmax	84
+PLLSPEmin	-53
+

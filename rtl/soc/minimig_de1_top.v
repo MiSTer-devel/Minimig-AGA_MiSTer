@@ -124,13 +124,33 @@ wire           pll_rst;
 wire           sdctl_rst;
 wire           rst_50;
 wire           rst_minimig;
+wire           rst_cpu;
 
 // ctrl
 wire           rom_status;
 wire           ram_status;
 wire           reg_status;
+wire           dram_status;
 wire           ctrl_txd;
-//wire           ctrl_rxd;
+wire           ctrl_rxd;
+wire [ 22-1:0] dram_adr;
+wire           dram_cs;
+wire           dram_we;
+wire [  4-1:0] dram_sel;
+wire [ 32-1:0] dram_dat_w;
+wire [ 32-1:0] dram_dat_r;
+wire           dram_ack;
+wire           dram_err;
+
+// bridge
+wire [ 22-1:0] bridge_adr;
+wire           bridge_cs;
+wire           bridge_we;
+wire [  2-1:0] bridge_sel;
+wire [ 16-1:0] bridge_dat_w;
+wire [ 16-1:0] bridge_dat_r;
+wire           bridge_ack;
+wire           bridge_err;
 
 // tg68
 wire           tg68_rst;
@@ -150,6 +170,7 @@ wire [ 16-1:0] tg68_cout;
 wire           tg68_cpuena;
 wire [  2-1:0] cpu_config;
 wire [  6-1:0] memcfg;
+wire           vsync;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
 wire           tg68_cdma;
@@ -157,6 +178,7 @@ wire           tg68_clds;
 wire           tg68_cuds;
 
 // minimig
+wire           minimig_rst_out;
 wire [ 16-1:0] ram_data;      // sram data bus
 wire [ 16-1:0] ramdata_in;    // sram data bus in
 wire [ 22-1:1] ram_address;   // sram address bus
@@ -178,6 +200,15 @@ wire           hd_frd;
 wire           minimig_txd;
 wire           minimig_rxd;
 
+// host bus
+wire           host_cs;
+wire [ 24-1:0] host_adr;
+wire           host_we;
+wire [  2-1:0] host_bs;
+wire [ 16-1:0] host_wdat;
+wire [ 16-1:0] host_rdat;
+wire           host_ack;
+
 // sdram
 wire           reset_out;
 wire [  4-1:0] sdram_cs;
@@ -198,6 +229,7 @@ wire           SPI_DI;
 wire           rst_ext;
 wire [  4-1:0] ctrl_cfg;
 wire [  4-1:0] ctrl_status;
+wire [  4-1:0] sys_status;
 
 // indicators
 wire [  8-1:0] track;
@@ -232,6 +264,12 @@ i_sync #(.DW(5)) i_sync_sw_50 (
   .o    ({sw_5, sw_4, sw_3, sw_2, sw_1})
 );
 
+i_sync #(.DW(4)) i_sync_ctrl_50 (
+  .clk  (clk_50),
+  .i    ({vsync, ~tg68_rst, minimig_rst_out, reset_out}),
+  .o    (sys_status)
+);
+
 // temp
 wire [3-1:0] cctrl;
 i_sync #(.DW(3)) i_sync_key_28_tmp (
@@ -252,7 +290,7 @@ assign TDO              = 1'b1;
 // UART
 assign uart_sel         = sw_5;
 assign UART_TXD         = uart_sel ? ctrl_txd : minimig_txd;
-//assign ctrl_rxd         = uart_sel ? UART_RXD : 1'b1;
+assign ctrl_rxd         = uart_sel ? UART_RXD : 1'b1;
 assign minimig_rxd      = uart_sel ? 1'b1     : UART_RXD;
 
 // SD card
@@ -319,7 +357,8 @@ ctrl_top ctrl_top (
   .rst_ext      (rst_ext          ),  // external reset input
   .clk_out      (clk_50           ),  // output 50MHz clock from internal PLL
   .rst_out      (rst_50           ),  // reset output from internal reset generator
-  .rst_minimig  (rst_minimig      ),  // minimig reset output from internal reset generator
+  .rst_minimig  (rst_minimig      ),  // minimig reset output
+  .rst_cpu      (rst_cpu          ),  // TG68K reset output
   // config
   .boot_sel     (1'b0             ),  // select FLASH boot location
   .ctrl_cfg     (ctrl_cfg         ),  // config for ctrl module
@@ -327,7 +366,9 @@ ctrl_top ctrl_top (
   .rom_status   (rom_status       ),  // ROM slave activity
   .ram_status   (ram_status       ),  // RAM slave activity
   .reg_status   (reg_status       ),  // REG slave activity
+  .dram_status  (dram_status      ),  // DRAM slave activity
   .ctrl_status  (ctrl_status      ),  // CTRL LEDs
+  .sys_status   (sys_status       ),  // SYS status input
   // SRAM interface
   .sram_adr     (SRAM_ADDR        ),  // SRAM address output
   .sram_ce_n    (SRAM_CE_N        ),  // SRAM chip enable output
@@ -345,12 +386,55 @@ ctrl_top ctrl_top (
   .fl_rst_n     (FL_RST_N         ),  // FLASH reset
   .fl_dat_w     (FL_DAT_W         ),  // FLASH write data
   .fl_dat_r     (FL_DAT_R         ),  // FLASH read data
+  // slave 3 (dram)
+  .dram_adr     (dram_adr         ), 
+  .dram_cs      (dram_cs          ),
+  .dram_we      (dram_we          ),
+  .dram_sel     (dram_sel         ),
+  .dram_dat_w   (dram_dat_w       ),
+  .dram_dat_r   (dram_dat_r       ),
+  .dram_ack     (dram_ack         ),
+  .dram_err     (dram_err         ),
   // UART
   .uart_txd     (ctrl_txd         ),  // UART transmit output
+  .uart_rxd     (ctrl_rxd         ),  // UART receive input
+  // SPI
   .spi_cs_n     (SPI_CS_N         ),  // SPI chip select output
   .spi_clk      (SD_CLK           ),  // SPI clock
   .spi_do       (SD_CMD           ),  // SPI data input
   .spi_di       (SPI_DI           )   // SPI data output
+);
+
+
+//// qmem async 32-to-16 bridge ////
+qmem_bridge #(
+  .MAW (22),
+  .MSW (4 ),
+  .MDW (32),
+  .SAW (22),
+  .SSW (2 ),
+  .SDW (16)
+) qmem_bridge (
+  // master
+  .m_clk        (clk_50           ),
+  .m_adr        (dram_adr         ),
+  .m_cs         (dram_cs          ),
+  .m_we         (dram_we          ),
+  .m_sel        (dram_sel         ),
+  .m_dat_w      (dram_dat_w       ),
+  .m_dat_r      (dram_dat_r       ),
+  .m_ack        (dram_ack         ),
+  .m_err        (dram_err         ),
+  // slave
+  .s_clk        (clk_7            ),
+  .s_adr        (bridge_adr       ),
+  .s_cs         (bridge_cs        ),
+  .s_we         (bridge_we        ),
+  .s_sel        (bridge_sel       ),
+  .s_dat_w      (bridge_dat_w     ),
+  .s_dat_r      (bridge_dat_r     ),
+  .s_ack        (bridge_ack       ),
+  .s_err        (bridge_err       )
 );
 
 
@@ -363,8 +447,9 @@ indicators indicators(
   .f_rd         (floppy_frd       ),
   .h_wr         (hd_fwr           ),
   .h_rd         (hd_frd           ),
-  .status       ({rom_status, ram_status, reg_status}),
+  .status       ({rom_status, ram_status, reg_status, dram_status}),
   .ctrl_status  (ctrl_status      ),
+  .sys_status   (sys_status       ),
   .hex_0        (HEX0             ),
   .hex_1        (HEX1             ),
   .hex_2        (HEX2             ),
@@ -467,46 +552,52 @@ TG68 tg68 (
 );
 */
 
+
 //// sdram ////
 sdram_ctrl sdram (
+  // sys
+  .sysclk       (clk_114          ),
+  .c_7m         (clk_7            ),
+  .reset_in     (sdctl_rst        ),
+  .reset_out    (reset_out        ),
   .cctrl        (cctrl            ),
-  .sdata        (DRAM_DQ          ),
+  // sdram
   .sdaddr       (DRAM_ADDR        ),
-  .dqm          (sdram_dqm        ),
   .sd_cs        (sdram_cs         ),
   .ba           (sdram_ba         ),
   .sd_we        (DRAM_WE_N        ),
   .sd_ras       (DRAM_RAS_N       ),
   .sd_cas       (DRAM_CAS_N       ),
-  .sysclk       (clk_114          ),
-  .reset_in     (sdctl_rst        ),
-  .hostWR       (16'h0            ),
-  .hostAddr     (24'h0            ),
-  .hostState    ({1'b0, 2'b01}    ),
-  .hostL        (1'b1             ),
-  .hostU        (1'b1             ),
-  .cpuWR        (tg68_dat_out     ),
-  .cpuAddr      (tg68_cad[24:1]   ),
-  .cpuU         (tg68_cuds        ),
-  .cpuL         (tg68_clds        ),
-  .cpustate     (tg68_cpustate    ),
-  .cpu_dma      (tg68_cdma        ),
-  .chipWR       (ram_data         ),
+  .dqm          (sdram_dqm        ),
+  .sdata        (DRAM_DQ          ),
+  // host
+  .host_cs      (bridge_cs        ),
+  .host_adr     ({2'b00, bridge_adr}),
+  .host_we      (bridge_we        ),
+  .host_bs      (bridge_sel       ),
+  .host_wdat    (bridge_dat_w     ),
+  .host_rdat    (bridge_dat_r     ),
+  .host_ack     (bridge_ack       ),
+  // chip
   .chipAddr     ({2'b00, ram_address[21:1]}),
-  .chipU        (_ram_bhe         ),
   .chipL        (_ram_ble         ),
+  .chipU        (_ram_bhe         ),
   .chipRW       (_ram_we          ),
   .chip_dma     (_ram_oe          ),
-  .c_7m         (clk_7            ),
-  .hostRD       (                 ),
-  .hostena      (                 ),
-  .cpuRD        (tg68_cout        ),
-  .cpuena       (tg68_cpuena      ),
+  .chipWR       (ram_data         ),
   .chipRD       (ramdata_in       ),
-  .reset_out    (reset_out        ),
+  // cpu
+  .cpuAddr      (tg68_cad[24:1]   ),
+  .cpustate     (tg68_cpustate    ),
+  .cpuL         (tg68_clds        ),
+  .cpuU         (tg68_cuds        ),
+  .cpu_dma      (tg68_cdma        ),
+  .cpuWR        (tg68_dat_out     ),
+  .cpuRD        (tg68_cout        ),
   .enaWRreg     (tg68_enaWR       ),
   .ena7RDreg    (tg68_ena7RD      ),
-  .ena7WRreg    (tg68_ena7WR      )
+  .ena7WRreg    (tg68_ena7WR      ),
+  .cpuena       (tg68_cpuena      )
 );
 
 
@@ -534,6 +625,8 @@ Minimig1 minimig (
   ._ram_we      (_ram_we          ), // SRAM write enable
   ._ram_oe      (_ram_oe          ), // SRAM output enable
   //system  pins
+  .rst_ext      (rst_minimig      ), // reset from ctrl block
+  .rst_out      (minimig_rst_out  ), // minimig reset status
   .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
   .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
   .clk7_en      (clk7_en          ), // 7MHz clock enable
@@ -565,6 +658,14 @@ Minimig1 minimig (
   .sdi          (SD_CMD           ), // SPI data input
   .sdo          (sdo              ), // SPI data output
   .sck          (SD_CLK           ), // SPI clock
+//  // host mem bus
+//  .host_cs      (host_cs          ),
+//  .host_adr     (host_adr         ),
+//  .host_we      (host_we          ),
+//  .host_bs      (host_bs          ),
+//  .host_wdat    (host_wdat        ),
+//  .host_rdat    (host_rdat        ),
+//  .host_ack     (host_ack         ),
   //video
   ._hsync       (VGA_HS           ), // horizontal sync
   ._vsync       (VGA_VS           ), // vertical sync
@@ -581,7 +682,7 @@ Minimig1 minimig (
   .cpu_config   (cpu_config       ), // CPU config
   .memcfg       (memcfg           ), // memory config
   .drv_snd      (                 ), // drive sound
-  .init_b       (                 ), // vertical sync for MCU (sync OSD update)
+  .init_b       (vsync            ), // vertical sync for MCU (sync OSD update)
   // fifo / track display
   .trackdisp    (track            ), // floppy track number
   .secdisp      (                 ), // sector

@@ -1733,14 +1733,16 @@ void HandleUI(void)
                 config.filter.lores++;
                 config.filter.lores &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigFilter(config.filter.lores, config.filter.hires);
+                //ConfigFilter(config.filter.lores, config.filter.hires);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 1)
             {
                 config.filter.hires++;
                 config.filter.hires &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigFilter(config.filter.lores, config.filter.hires);
+                //ConfigFilter(config.filter.lores, config.filter.hires);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 2)
             {
@@ -1748,7 +1750,8 @@ void HandleUI(void)
                 if (config.scanlines > 2)
                     config.scanlines = 0;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigScanlines(config.scanlines);
+                //ConfigScanlines(config.scanlines);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
 
             else if (menusub == 3)

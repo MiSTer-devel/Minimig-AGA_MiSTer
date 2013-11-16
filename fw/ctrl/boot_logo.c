@@ -94,6 +94,7 @@ static const char boot_logo[80][29] = {
 
 void draw_boot_logo()
 {
+  return;
   unsigned int line;
   unsigned short int offset;
   char * p;

@@ -62,7 +62,6 @@ module gary
 	input	cpu_lwr,				//cpu low write
 	
 	input	ovl,					//overlay kickstart rom over chipram
-	input	boot,					//overlay bootrom over chipram
 	input	dbr,					//Agns takes the bus
 	input	dbwe,					//Agnus does a write cycle
 	output	dbs,					//data bus slow down
@@ -80,7 +79,6 @@ module gary
 	output 	reg [3:0] sel_chip, 	//select chip memory
 	output	reg [2:0] sel_slow,		//select slowfast memory ($C0000)
 	output 	reg sel_kick,		    //select kickstart rom
-	output	sel_boot,				//select boot room
 	output	sel_cia,				//select CIA space
 	output 	sel_cia_a,				//select cia A
 	output 	sel_cia_b, 				//select cia B
@@ -114,7 +112,7 @@ assign ram_address_out = dbr ? dma_address_in[18:1] : cpu_address_in[18:1];
 //--------------------------------------------------------------------------------------
 
 //chipram, kickstart and bootrom address decode
-always @(dbr or dma_address_in or cpu_address_in or cpu_rd or boot or ovl or t_sel_slow or ecs or memory_config)
+always @(*)
 begin
 	if (dbr)//agnus only accesses chipram
 	begin
@@ -129,14 +127,15 @@ begin
 	end
 	else
 	begin
-		sel_chip[0] = cpu_address_in[23:19]==5'b0000_0 && ((boot && cpu_address_in[18:14]!=5'b000_00) || (!boot && !ovl)) ? 1'b1 : 1'b0;
+		sel_chip[0] = cpu_address_in[23:19]==5'b0000_0 && !ovl ? 1'b1 : 1'b0;
 		sel_chip[1] = cpu_address_in[23:19]==5'b0000_1 ? 1'b1 : 1'b0;
 		sel_chip[2] = cpu_address_in[23:19]==5'b0001_0 ? 1'b1 : 1'b0;
 		sel_chip[3] = cpu_address_in[23:19]==5'b0001_1 ? 1'b1 : 1'b0;
 		sel_slow[0] = t_sel_slow[0];
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
-		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || boot)) || (!boot && cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
+/* TODO better solution required for loading kickstart - don-t rely on !boot && ovl, address should be 0xf80000, add another signal from osd! (cpu_rd || boot || osd_write) */
+		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && cpu_rd) || (/*cpu_rd &&*/ ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
 	end
 end
 
@@ -168,7 +167,6 @@ assign sel_cia_a = sel_cia & ~cpu_address_in[12];
 //cia b address decode
 assign sel_cia_b = sel_cia & ~cpu_address_in[13];
 
-assign sel_boot = cpu_address_in[23:12]==0 && boot ? 1'b1 : 1'b0;
 
 assign sel_bank_1 = cpu_address_in[23:21]==3'b001 ? 1'b1 : 1'b0;
 

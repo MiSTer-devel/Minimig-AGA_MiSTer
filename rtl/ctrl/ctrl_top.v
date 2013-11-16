@@ -26,15 +26,15 @@ BUS
    |           |   | | |
    |   --------|---- | |
    |   |       |     | |
-   |   |       |  ---- -------
-   |   |       |  |          |
-  -------     -------        |
-  | ARB |     | ARB |        |
-  -------     -------        |
-     |           |           |
-  -------     -------     -------
-  | ROM |     | RAM |     | REG |
-  -------     -------     -------
+   |   |       |  ---- -----------------
+   |   |       |  |          |         |
+  -------     -------        |         |
+  | ARB |     | ARB |        |         |
+  -------     -------        |         |
+     |           |           |         |
+  -------     -------     -------   --------
+  | ROM |     | RAM |     | REG |   | DRAM |
+  -------     -------     -------   --------
 
 ICPU - CPU instruction bus
 DCPU - CPU data bus
@@ -43,6 +43,7 @@ ARB  - master arbiter
 ROM  - FLASH
 RAM  - SRAM
 REG  - registers
+DRAM - SDRAM
 
 Bus is multilayered - accesses from different masters to different slaves can be started independently.
 Masters: There are two masters, CPU inctruction bus and CPU data bus.
@@ -67,9 +68,9 @@ MEMORY ORGANIZATION
 0 - (0x000000 - 0x3fffff) adr[23:22] == 2'b00 - ROM
 1 - (0x400000 - 0x7fffff) adr[23:22] == 2'b01 - RAM
 2 - (0x800000 - 0xbfffff) adr[23:22] == 2'b10 - REGS
-3 - (0xc00000 - 0xffffff) adr[23:22] == 2'b11 - N.A.
+3 - (0xc00000 - 0xffffff) adr[23:22] == 2'b11 - DRAM
 
-Only 24 bits of address space is used. This space is divided into four 4Mbyte blocks. The last 4MB block is currently unused.
+Only 24 bits of address space is used. This space is divided into four 4Mbyte blocks.
 
 Both masters see the same address space, but only data bus can access the REGS slave.
 Address space is minimally decoded - that means that the all slaves are seen aliased at many different addresses.
@@ -105,6 +106,7 @@ module ctrl_top (
   output wire           clk_out,
   output wire           rst_out,
   output wire           rst_minimig,
+  output wire           rst_cpu,
   // config
   input  wire           boot_sel,
   input  wire [  4-1:0] ctrl_cfg,
@@ -112,7 +114,9 @@ module ctrl_top (
   output wire           rom_status,
   output wire           ram_status,
   output wire           reg_status,
+  output wire           dram_status,
   output wire [  4-1:0] ctrl_status,
+  input  wire [  4-1:0] sys_status,
   // SRAM interface
   output wire [ 18-1:0] sram_adr,
   output wire           sram_ce_n,
@@ -130,8 +134,18 @@ module ctrl_top (
   output wire           fl_rst_n,
   output wire [  8-1:0] fl_dat_w,
   input  wire [  8-1:0] fl_dat_r,
+  // SDRAM interface
+  output wire [ 22-1:0] dram_adr,
+  output wire           dram_cs,
+  output wire           dram_we,
+  output wire [  4-1:0] dram_sel,
+  output wire [ 32-1:0] dram_dat_w,
+  input  wire [ 32-1:0] dram_dat_r,
+  input  wire           dram_ack,
+  input  wire           dram_err,
   // UART
   output wire           uart_txd,
+  input  wire           uart_rxd,
   // SPI
   output wire [  4-1:0] spi_cs_n,
   output wire           spi_clk,
@@ -256,6 +270,7 @@ wire [QDW-1:0] regs_dat_r;
 wire           regs_ack;
 wire           regs_err;
 
+
 // ctrl_bus
 qmem_bus #(
   .MAW        (MAW),          // master address width
@@ -270,6 +285,7 @@ qmem_bus #(
   .rom_s      (rom_status ),
   .ram_s      (ram_status ),
   .reg_s      (reg_status ),
+  .dram_s     (dram_status),
   // master 0 (dcpu)
   .m0_adr     (dcpu_adr   ),
   .m0_cs      (dcpu_cs    ),
@@ -314,7 +330,16 @@ qmem_bus #(
   .s2_dat_w   (regs_dat_w ),
   .s2_dat_r   (regs_dat_r ),
   .s2_ack     (regs_ack   ),
-  .s2_err     (regs_err   )
+  .s2_err     (regs_err   ),
+  // slave 3 (dram)
+  .s3_adr     (dram_adr   ),
+  .s3_cs      (dram_cs    ),
+  .s3_we      (dram_we    ),
+  .s3_sel     (dram_sel   ),
+  .s3_dat_w   (dram_dat_w ),
+  .s3_dat_r   (dram_dat_r ),
+  .s3_ack     (dram_ack   ),
+  .s3_err     (dram_err   )
 );
 
 
@@ -463,9 +488,12 @@ ctrl_regs #(
   // registers
   .sys_rst    (rst_reg    ),
   .minimig_rst(rst_minimig),
+  .cpu_rst    (rst_cpu    ),
   .ctrl_cfg   (ctrl_cfg   ),
   .ctrl_status (ctrl_status),
+  .sys_status (sys_status ),
   .uart_txd   (uart_txd   ),
+  .uart_rxd   (uart_rxd   ),
   .spi_cs_n   (spi_cs_n   ),
   .spi_clk    (spi_clk    ),
   .spi_do     (spi_do     ),

@@ -52,7 +52,71 @@ char UploadKickstart(char *name)
 	BootPrint("Loading file: ");
 	BootPrint(filename);
 
-    if (RAOpen(&romfile, filename))
+  // reset minimig & CPU
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(6);
+  DisableOsd();
+  //while ((read32(REG_SYS_STAT_ADR) & 0x2));
+  SPIN(); SPIN();
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(4);
+  DisableOsd();
+  SPIN(); SPIN();
+  while ((read32(REG_SYS_STAT_ADR) & 0x2));
+
+  if (RAOpen(&romfile, filename))
+  {
+    int i,j;
+    unsigned int adr, size, base=0x180000, offset=0xc00000, data;
+    BootPrint("Uploading 512KB Kickstart ...");
+    size = ((romfile.file.size)+511)>>9;
+    printf("File size: %d\r", size);
+
+    printf("[");
+    for (i=0; i<size; i++) {
+      if (!(i&15)) printf("*");
+      RARead(&romfile,sector_buffer,512);
+      //adr = offset + base + i*512;
+      //data = ((unsigned int*)sector_buffer)[0];
+      //write32(adr, data);
+      //for (j=0; j<512; j=j+4) {
+      //  data = ((unsigned int*)sector_buffer)[j>>2];
+      //  write32(adr+j, data);
+      //  if (data != read32(adr+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", adr+j, data, read32(adr+j));
+      //}
+      EnableOsd();
+      adr = 0x00000 + i*512;
+      SPI(OSD_CMD_WR);
+      SPI(adr&0xff); adr = adr>>8;
+      SPI(adr&0xff); adr = adr>>8;
+      SPI(adr&0xff); adr = adr>>8;
+      SPI(adr&0xff); adr = adr>>8;
+      for (j=0; j<512; j=j+4) {
+        SPI(sector_buffer[j+0]);
+        SPIN(); SPIN();
+        SPI(sector_buffer[j+1]);
+        SPIN(); SPIN();
+        SPI(sector_buffer[j+2]);
+        SPIN(); SPIN();
+        SPI(sector_buffer[j+3]);
+        SPIN(); SPIN();
+        //data = ((unsigned int*)sector_buffer)[j>>2];
+        //if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
+      }
+      DisableOsd();
+    }
+    printf("]\r");
+    return(1);
+    // unreset CPU
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(0);
+    DisableOsd();
+  }
+
+/*
     {
         if (romfile.size == 0x80000)
         { // 512KB Kickstart ROM
@@ -87,6 +151,7 @@ char UploadKickstart(char *name)
             BootPrint("Unsupported ROM file size!");
         }
     }
+*/
     else
     {
         sprintf(s, "No \"%s\" file!", filename);
@@ -227,13 +292,16 @@ unsigned char LoadConfiguration(char *filename)
 
 void ApplyConfiguration(char reloadkickstart)
 {
+  DEBUG_FUNC_IN();
+
+
     ConfigCPU(config.cpu);
 
 	if(reloadkickstart)
 	{
 		ConfigChipset(config.chipset | CONFIG_TURBO); // set CPU in turbo mode
 		ConfigFloppy(1, CONFIG_FLOPPY2X); // set floppy speed
-		OsdReset(RESET_BOOTLOADER);
+		//OsdReset(RESET_BOOTLOADER);
 
 		if (!UploadKickstart(config.kickstart.name))
 		{
@@ -353,19 +421,44 @@ void ApplyConfiguration(char reloadkickstart)
 
     ConfigMemory(config.memory);
     ConfigCPU(config.cpu);
-    ConfigFilter(config.filter.lores, config.filter.hires);
-    ConfigScanlines(config.scanlines);
+    //ConfigFilter(config.filter.lores, config.filter.hires);
+    //ConfigScanlines(config.scanlines);
+    ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
 
 	if(reloadkickstart)
 	{
-	    WaitTimer(5000);
-	    BootExit();
+    printf("Reloading kickstart ...\r");
+	  TIMER_wait(1000);
+	    //BootExit();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(6);
+    DisableOsd();
+    SPIN(); SPIN();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(0);
+    DisableOsd();
+    //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 	}
-	else
-		OsdReset(RESET_NORMAL);
+	else {
+    printf("Resetting ...\r");
+		//OsdReset(RESET_NORMAL);
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(6);
+    DisableOsd();
+    SPIN(); SPIN();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(0);
+    DisableOsd();
+    //while ((read32(REG_SYS_STAT_ADR) & 0x2));
+}
 
-    ConfigChipset(config.chipset);
-    ConfigFloppy(config.floppy.drives, config.floppy.speed);
+  ConfigChipset(config.chipset);
+  ConfigFloppy(config.floppy.drives, config.floppy.speed);
+  DEBUG_FUNC_OUT();
 }
 
 

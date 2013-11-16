@@ -2,23 +2,24 @@
 
 module indicators (
   // system
-  input  wire           clk,    // clock
-  input  wire           rst,    // reset
+  input  wire           clk,          // clock
+  input  wire           rst,          // reset
   // inputs
-  input wire  [  7-1:0] track,  // floppy track number
-  input wire            f_wr,   // floppy fifo write
-  input wire            f_rd,   // floppy fifo read
-  input wire            h_wr,   // harddisk fifo write
-  input wire            h_rd,   // harddisk fifo read
-  input wire  [  3-1:0] status, // control block slave status
-  input wire  [  4-1:0] ctrl_status,
+  input wire  [  8-1:0] track,        // floppy track number
+  input wire            f_wr,         // floppy fifo write
+  input wire            f_rd,         // floppy fifo read
+  input wire            h_wr,         // harddisk fifo write
+  input wire            h_rd,         // harddisk fifo read
+  input wire  [  4-1:0] status,       // control block slave status
+  input wire  [  4-1:0] ctrl_status,  // control block reg-driven status
+  input wire  [  4-1:0] sys_status,   // status from system
   // outputs
-  output wire [  7-1:0] hex_0,  // seven segment display 0
-  output wire [  7-1:0] hex_1,  // seven segment display 1
-  output wire [  7-1:0] hex_2,  // seven segment display 2
-  output wire [  7-1:0] hex_3,  // seven segment display 3
-  output wire [  8-1:0] led_g,  // green leds
-  output wire [ 10-1:0] led_r   // red leds
+  output wire [  7-1:0] hex_0,        // seven segment display 0
+  output wire [  7-1:0] hex_1,        // seven segment display 1
+  output wire [  7-1:0] hex_2,        // seven segment display 2
+  output wire [  7-1:0] hex_3,        // seven segment display 3
+  output wire [  8-1:0] led_g,        // green leds
+  output wire [ 10-1:0] led_r         // red leds
 );
 
 
@@ -40,7 +41,7 @@ sseg_decode #(
 ) sseg_HEX1 (
   .clk  (clk),
   .rst  (rst),
-  .num  ({1'b0, track[6:4]}),
+  .num  (track[7:4]),
   .sseg (hex_1)
 );
 
@@ -81,8 +82,8 @@ always @ (posedge clk, posedge rst) begin
     ctrl_leds <= #1 ctrl_status;
 end
 
-assign led_g = {ctrl_leds, 2'b00,    g1_out, g0_out};
-assign led_r = {status,    5'b00000, r1_out, r0_out};
+assign led_g = {ctrl_leds, 2'b00,      g1_out, g0_out};
+assign led_r = {status,    sys_status, r1_out, r0_out};
 
 
 endmodule

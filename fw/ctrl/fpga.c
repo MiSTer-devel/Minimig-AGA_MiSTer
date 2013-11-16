@@ -412,6 +412,9 @@ char BootPrint(const char *text)
     const char *p;
     unsigned char n;
 
+    printf(text);
+    printf("\r");
+
     return 0;
 
     p = text;

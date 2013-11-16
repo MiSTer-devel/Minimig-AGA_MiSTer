@@ -170,6 +170,8 @@ module Minimig1
 	output	_ram_we,			//sram write enable
 	output	_ram_oe,			//sram output enable
 	//system	pins
+  input rst_ext,      // reset from ctrl block
+  output rst_out,     // minimig reset status
 	input	clk28m,				//28.37516 MHz clock
 	input	clk,				//system clock (7.09379 MHz)
   input clk7_en,      // 7MHz clock enable
@@ -205,6 +207,14 @@ module Minimig1
 	input	sdi,				//SPI data input
 	inout	sdo,				//SPI data output
 	input	sck,				//SPI clock
+ // // host
+ // output wire           host_cs,
+ // output wire [ 24-1:0] host_adr,
+ // output wire           host_we,
+ // output wire [  2-1:0] host_bs,
+ // output wire [ 16-1:0] host_wdat,
+ // input  wire [ 16-1:0] host_rdat,
+ // input  wire           host_ack,
 	//video
 	output	_hsync,				//horizontal sync
 	output	_vsync,				//vertical sync
@@ -250,10 +260,8 @@ wire		[15:0] denise_data_out;	//denise data bus out
 wire		[15:0] user_data_out;	//user IO data out
 wire		[15:0] gary_data_out;	//data out from memory bus multiplexer
 wire		[15:0] gayle_data_out;	//Gayle data out
-wire		[15:0] boot_data_out;	//boot rom data bus out
 wire		[15:0] cia_data_out;	//cia A+B data bus out
 wire		[15:0] ar3_data_out;	//Action Replay data out
-wire    [15:0] boot_data;     // boot rom data out
 
 //local signals for spi bus
 wire		paula_sdo; 				//paula spi data out
@@ -285,7 +293,6 @@ wire		dbs;					//data bus slow down, used for slowing down CPU access to chip, s
 wire		xbs;					//cross bridge access (memory and custom registers)
 wire		ovl;					//kickstart overlay enable
 wire		_led;					//power led
-wire		boot;    				//bootrom overlay enable
 wire		[3:0] sel_chip;			//chip ram select
 wire		[2:0] sel_slow;			//slow ram select
 wire		sel_kick;				//rom select
@@ -293,7 +300,6 @@ wire		sel_cia;				//CIA address space
 wire		sel_reg;				//chip register select
 wire		sel_cia_a;				//cia A select
 wire		sel_cia_b;				//cia B select
-wire		sel_boot;				//boot rom select
 wire		int2;					//intterrupt 2
 wire		int3;					//intterrupt 3 
 wire		int6;					//intterrupt 6
@@ -346,13 +352,14 @@ wire		_wprot;					//disk is write-protected
 
 wire	bls;					//blitter slowdown - required for sharing bus cycles between Blitter and CPU
 
+wire cpurst;
+
 wire	int7;					//int7 interrupt request from Action Replay
 wire	[2:0] _iplx;			//interrupt request lines from Paula
 wire	selcart;				//Action Replay RAM select
 wire	ovr;					//overide chip memmory decoding
 
 wire	usrrst;					//user reset from osd interface
-wire	bootrst;				//user reset to bootloader
 wire	[1:0] lr_filter;		//lowres interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
 wire	[1:0] hr_filter;		//hires interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
 wire	[1:0] scanline;			//scanline effect configuration
@@ -393,6 +400,14 @@ wire  [5:0] joy_emu;
 
 wire  dtr;
 
+// host interface
+wire           host_cs;
+wire [ 24-1:0] host_adr;
+wire           host_we;
+wire [  2-1:0] host_bs;
+wire [ 16-1:0] host_wdat;
+wire [ 16-1:0] host_rdat;
+wire           host_ack;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -436,7 +451,7 @@ assign sol_pulse = sol & ~sol_del; // rising edge detection
 
 reg [3:0] drv_cnt;
 always @(posedge clk)
-  if (drv_cnt != 0 && sol_pulse || drv_cnt == 0 && step_pulse && !boot && _change) // count only sol pulses when counter is not zero or step pulses and bootloader is not active
+  if (drv_cnt != 0 && sol_pulse || drv_cnt == 0 && step_pulse && _change) // count only sol pulses when counter is not zero or step pulses and bootloader is not active
     drv_cnt <= drv_cnt + 4'd1;
 
 reg drvsnd;
@@ -621,7 +636,14 @@ userio USERIO1
 	.ide_config(ide_config),
   .cpu_config(cpu_config),
 	.usrrst(usrrst),
-	.bootrst(bootrst)
+  .cpurst(cpurst),
+  .host_cs      (host_cs          ),
+  .host_adr     (host_adr         ),
+  .host_we      (host_we          ),
+  .host_bs      (host_bs          ),
+  .host_wdat    (host_wdat        ),
+  .host_rdat    (host_rdat        ),
+  .host_ack     (host_ack         )
 );
 
 //assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
@@ -748,7 +770,7 @@ m68k_bridge CPU1
 	.xbs(xbs),
   .nrdy(gayle_nrdy),
 	.bls(bls),
-	.cpu_speed(cpu_speed & ~int7 & ~ovr & ~usrrst & ~bootrst),
+	.cpu_speed(cpu_speed & ~int7 & ~ovr & ~usrrst),
   .memory_config(memory_config[3:0]),
 	.turbo(turbo),
 	._as(_cpu_as),
@@ -764,7 +786,15 @@ m68k_bridge CPU1
 	.cpudatain(cpudata_in),
 	.data(cpu_data),
 	.data_out(cpu_data_out),
-	.data_in(cpu_data_in)
+	.data_in(cpu_data_in),
+  ._cpu_reset (_cpu_reset),
+  .host_cs (host_cs),
+  .host_adr (host_adr[23:1]),
+  .host_we (host_we),
+  .host_bs (host_bs),
+  .host_wdat (host_wdat),
+  .host_rdat (host_rdat),
+  .host_ack (host_ack)
 );
 
 //instantiate RAM banks mapper
@@ -778,8 +808,8 @@ bank_mapper BMAP1
 	.slow1(sel_slow[1]),
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
-	.cart(selcart),
-	.aron(aron),
+	.cart(1'b0),
+	.aron(1'b0),
   .ecs(chipset_config[3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
@@ -824,7 +854,6 @@ ActionReplay CART1
 	.cpu_hwr(cpu_hwr),
 	.cpu_lwr(cpu_lwr),
 	.dbr(dbr),
-	.boot(boot),
 	.freeze(freeze),
 	.int7(int7),
 	.ovr(ovr),
@@ -851,7 +880,6 @@ gary GARY1
 	.cpu_hwr(cpu_hwr),
 	.cpu_lwr(cpu_lwr),
 	.ovl(ovl),
-	.boot(boot),
 	.dbr(dbr),
 	.dbwe(dbwe),
 	.dbs(dbs),
@@ -866,7 +894,6 @@ gary GARY1
 	.sel_chip(sel_chip),
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
-	.sel_boot(sel_boot),
 	.sel_cia(sel_cia),
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),
@@ -904,41 +931,14 @@ gayle GAYLE1
   .hd_frd(hd_frd)
 );
 	
-//instantiate boot rom
-//bootrom BOOTROM1 
-//(	
-//	.clk(clk),
-//	.aen(sel_boot),
-//	.rd(cpu_rd),
-//	.address_in(cpu_address_out[10:1]),
-//	.data_out(boot_data_out)
-//);
-
-//JBboot BOOTROM1 
-//( 
-//  .clock(clk),
-//  .address(cpu_address[10:1]),
-//  .q(boot_data)
-//);
-
-amiga_boot BOOTROM1 (
-  .clock    (clk),
-  .address  (cpu_address[8:1]),
-  .q        (boot_data)
-);
-
-assign boot_data_out[15:0] = (sel_boot) ? boot_data[15:0] : 16'h0000;
 
 //instantiate system control
 syscontrol CONTROL1 
 (	
 	.clk(clk),
 	.cnt(sof),
-	.mrst(kbdrst | usrrst),
-	.boot_done(sel_cia_a & sel_cia_b),
-	.reset(reset),
-	.boot(boot),
-	.boot_rst(bootrst)
+	.mrst(kbdrst | usrrst | rst_ext),
+	.reset(reset)
 );
 
 
@@ -946,9 +946,7 @@ syscontrol CONTROL1
 
 //data multiplexer
 assign cpu_data_in[15:0] = gary_data_out[15:0]
-						 | boot_data_out[15:0]
 						 | cia_data_out[15:0]
-						 | ar3_data_out[15:0]
 						 | gayle_data_out[15:0];
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
@@ -966,9 +964,12 @@ assign sdo = paula_sdo | user_sdo;
 //--------------------------------------------------------------------------------------
 
 //cpu reset and clock
-assign _cpu_reset = ~reset;
+assign _cpu_reset = ~(reset || cpurst);
 
 //--------------------------------------------------------------------------------------
+
+// minimig reset status
+assign rst_out = reset;
 
 endmodule
 
@@ -996,15 +997,11 @@ module syscontrol
 	input	clk,			//bus clock
 	input	cnt,			//pulses for counting
 	input	mrst,			//master/user reset input
-	input	boot_done,		//bootrom program finished input
-	output	reset,			//global synchronous system reset
-	output	boot,			//bootrom overlay enable output
-	input	boot_rst		//reset to bootloader
+	output	reset			//global synchronous system reset
 );
 
 //local signals
 reg		smrst0, smrst1;					//registered input
-reg		_boot = 0;
 reg		[2:0] rst_cnt = 0;		//reset timer SHOULD BE CLEARED BY CONFIG
 wire	_rst;					//local reset signal
 
@@ -1016,22 +1013,12 @@ end
 
 //reset timer and mrst control
 always @(posedge clk)
-	if (smrst1 || (boot && boot_done && _rst))
+	if (smrst1)
 		rst_cnt <= 3'd0;
 	else if (!_rst && cnt)
 		rst_cnt <= rst_cnt + 3'd1;
 
 assign _rst = rst_cnt[2];
-
-//boot control
-always @(posedge clk)
-	if (boot_rst)
-		_boot <= 1'd0;
-	else if (boot_done)
-		_boot <= 1'd1;
-
-//global boot output
-assign boot = ~_boot;
 
 //global reset output
 assign reset = ~_rst;
@@ -1317,7 +1304,16 @@ module m68k_bridge
   input [15:0] cpudatain,
 //  output  reg [15:0] data_out,  // internal data bus output
   output  [15:0] data_out,  // internal data bus output
-  input [15:0] data_in      // internal data bus input
+  input [15:0] data_in,      // internal data bus input
+  // UserIO interface
+  input _cpu_reset,
+  input host_cs,
+  input [23:1] host_adr,
+  input host_we,
+  input [1:0] host_bs,
+  input [15:0] host_wdat,
+  output [15:0] host_rdat,
+  output host_ack
 );
 
 
@@ -1389,44 +1385,61 @@ always @(posedge clk)
 		vma <= 1;
 
 //latched CPU bus control signals
-always @(posedge clk)
-//	{lr_w,l_as,l_uds,l_lds,l_dtack} <= {r_w,_as,_uds,_lds,_dtack};
-  {lr_w,l_as,l_dtack} <= ({r_w,_as,_dtack});
+//always @(posedge clk)
+////	{lr_w,l_as,l_uds,l_lds,l_dtack} <= {r_w,_as,_uds,_lds,_dtack};
+//  {lr_w,l_as,l_dtack} <= ({r_w,_as,_dtack});
+always @ (posedge clk) begin
+  lr_w <= _cpu_reset ? r_w : !host_we;
+  l_as <= _cpu_reset ? _as : !host_cs;
+  l_dtack <= _dtack;
+end
 
-always @(posedge clk28m)
-  {l_uds,l_lds} <= ({_uds,_lds});
+always @(posedge clk28m) begin
+  l_uds <= _cpu_reset ? _uds : !(host_bs[1]);
+  l_lds <= _cpu_reset ? _lds : !(host_bs[0]);
+end
 
 reg _as28m;
 always @(posedge clk28m)
-  _as28m <= _as;
+  _as28m <= _cpu_reset ? _as : !host_cs;
 
 reg l_as28m;
 always @(posedge clk)
   l_as28m <= _as28m;
 
+wire _as_and_cs;
+assign _as_and_cs = _cpu_reset ? _as : !host_cs;
+
 // data transfer acknowledge in normal mode
 reg _ta_n;
 //always @(posedge clk28m or posedge _as)
-always @(negedge clk or posedge _as)
-  if (_as)
+always @(negedge clk or posedge _as_and_cs)
+  if (_as_and_cs)
     _ta_n <= VCC;
   else if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy)
+//  else if (!_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy)
     _ta_n <= GND; 
 
+assign host_ack = !_ta_n;
     
 // actual _dtack generation (from 7MHz synchronous bus access and cache hit access)
 //assign _dtack = (_ta_n & _ta_t & ~cache_hit);
 assign _dtack = (_ta_n );
 
 // synchronous control signals
-assign enable = ((~l_as & ~l_dtack & ~cck & ~turbo_cpu) | (~l_as28m & l_dtack & ~(dbr & xbs) & ~nrdy & turbo_cpu));
+assign enable = ((~l_as & ~l_dtack & ~cck & ~turbo) | (~l_as28m & l_dtack & ~(dbr & xbs) & ~nrdy & turbo));
+//assign enable = ((~_as & ~_dtack & ~cck & ~turbo) | (~_as28m & _dtack & ~(dbr & xbs) & ~nrdy & turbo));
 assign rd = (enable & lr_w);
+//assign rd = _cpu_reset ? (enable & r_w) : !host_we;
 // in turbo mode l_uds and l_lds may be delayed by 35 ns
 assign hwr = (enable & ~lr_w & ~l_uds);
 assign lwr = (enable & ~lr_w & ~l_lds);
+//assign hwr = _cpu_reset ? (enable & ~r_w & ~_uds) : host_we && host_bs[1];
+//assign lwr = _cpu_reset ? (enable & ~r_w & ~_lds) : host_we && host_bs[0];
 
 //blitter slow down signalling, asserted whenever CPU is missing bus access to chip ram, slow ram and custom registers 
 assign bls = dbs & ~l_as & l_dtack;
+//assign bls = dbs & ~_as & _dtack;
 
 // generate data buffer output enable
 assign doe = r_w & ~_as;
@@ -1436,7 +1449,7 @@ assign doe = r_w & ~_as;
 // data_out multiplexer and latch   
 //always @(data)
 //  data_out <= wrdata;
-assign data_out = cpudatain;
+assign data_out = _cpu_reset ? cpudatain : host_wdat;
 
 //always @(clk or data_in)
 //  if (!clk)
@@ -1451,10 +1464,11 @@ always @(posedge clk28m)
 // CPU data bus tristate buffers and output data multiplexer
 //assign data[15:0] = doe ? cache_hit ? cache_out : ldata_in[15:0] : 16'bz;
 assign data[15:0] = ldata_in;
+assign host_rdat = ldata_in;
 
 //always @(posedge clk)
 //	address_out[23:1] <= address[23:1];
-assign 	address_out[23:1] = address[23:1];
+assign 	address_out[23:1] = _cpu_reset ? address[23:1] : host_adr[23:1];
 
 endmodule
 
