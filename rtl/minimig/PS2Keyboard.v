@@ -536,62 +536,48 @@ begin
 		_rmb <= upstroke;
 end
 
+// mouseemu
+reg mouse_emu_up, mouse_emu_down, mouse_emu_left, mouse_emu_right;
+assign mou_emu[5:0] = {2'b11, mouse_emu_up, mouse_emu_down, mouse_emu_left, mouse_emu_right};
 
-reg guileft;
-reg guiright;
-reg altleft;
-reg altright;
+localparam MOUSE_EMU_KEY_9 = 8'h3f;//KP 9
+localparam MOUSE_EMU_KEY_8 = 8'h3e;//KP 8
+localparam MOUSE_EMU_KEY_7 = 8'h3d;//KP 7
+localparam MOUSE_EMU_KEY_6 = 8'h2f;//KP 6
+localparam MOUSE_EMU_KEY_4 = 8'h2d;//KP 4
+localparam MOUSE_EMU_KEY_3 = 8'h1f;//KP 3
+localparam MOUSE_EMU_KEY_2 = 8'h1e;//KP 2
+localparam MOUSE_EMU_KEY_1 = 8'h1d;//KP 1
 
-always @(posedge clk)
-begin
-  if (reset)
-  begin
-    guileft <= 0;
-    guiright <= 0;
-    altleft <= 0;
-    altright <= 0;
-  end
-  else
-  if (enable2)
-  begin
-    if (keyrom[7:0] == 8'h66)
-      guileft <= ~upstroke;
-    else if (keyrom[7:0] == 8'h67)
-      guiright <= ~upstroke;
-    else if (aleft)
-      altleft <= ~upstroke;
-    else if (aright)
-      altright <= ~upstroke;
-  end
-end
-
-// active low
-assign mou_emu[5] = ~(guiright & altright);
-assign mou_emu[4] = ~(guileft & altleft);
-assign mou_emu[3:0] = 4'b1111;
-
-always @(posedge clk)
-begin
-  if (reset)
-    joy_emu <= 6'b11_1111;
-  else if (~joy_emu_en)
-    joy_emu <= #1 6'b11_1111;
-  else if (enable2) begin
-    if (keyrom[7:0] == 8'h4c)
-      joy_emu[3] <= upstroke;  // UP
-    else if (keyrom[7:0] == 8'h4d)
-      joy_emu[2] <= upstroke;  // DOWN
-    else if (keyrom[7:0] == 8'h4f)
-      joy_emu[1] <= upstroke;  // LEFT
-    else if (keyrom[7:0] == 8'h4e)
-      joy_emu[0] <= upstroke;  // RIGHT
-    else if (ctrl)
-      joy_emu[4] <= upstroke;  // FIRE
-    else if (aleft & ~guileft)
-      joy_emu[5] <= upstroke;  // FIRE2
+always @ (posedge clk) begin
+  if (reset || !numlock) begin
+    mouse_emu_up    <= #1 1'b0;
+    mouse_emu_down  <= #1 1'b0;
+    mouse_emu_left  <= #1 1'b0;
+    mouse_emu_right <= #1 1'b0;
+  end else if (enable2 && keyrom[15]) begin
+    mouse_emu_up    <= #1 1'b0;
+    mouse_emu_down  <= #1 1'b0;
+    mouse_emu_left  <= #1 1'b0;
+    mouse_emu_right <= #1 1'b0;
+    case (keyrom[7:0])
+      MOUSE_EMU_KEY_9,
+      MOUSE_EMU_KEY_8,
+      MOUSE_EMU_KEY_7: mouse_emu_up <= #1 !upstroke;
+      MOUSE_EMU_KEY_3,
+      MOUSE_EMU_KEY_2,
+      MOUSE_EMU_KEY_1: mouse_emu_down <= #1 !upstroke;
+    endcase
+    case (keyrom[7:0])
+      MOUSE_EMU_KEY_9,
+      MOUSE_EMU_KEY_6,
+      MOUSE_EMU_KEY_3: mouse_emu_right <= #1!upstroke;
+      MOUSE_EMU_KEY_7,
+      MOUSE_EMU_KEY_4,
+      MOUSE_EMU_KEY_1: mouse_emu_left <= #1 !upstroke;
+    endcase
   end
 end
-
 
 
 //-------------------------------------------------------------------------------------------------

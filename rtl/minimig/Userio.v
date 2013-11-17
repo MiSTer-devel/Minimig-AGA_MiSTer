@@ -87,6 +87,7 @@ module userio
   input [2:0] mouse_btn,
   input _lmb,
   input _rmb,
+  input [5:0] mou_emu,
   input kbd_mouse_strobe,
   input [1:0] kbd_mouse_type,
   input [7:0] kbd_mouse_data,
@@ -306,6 +307,8 @@ ps2mouse pm1
   .reset(reset),
   .ps2mdat(ps2mdat),
   .ps2mclk(ps2mclk),
+  .mou_emu (mou_emu),
+  .sof (sof),
   .ycount(mouse0dat[15:8]),
   .xcount(mouse0dat[7:0]),
   ._mleft(_mleft),
@@ -1114,6 +1117,8 @@ module ps2mouse
 	input 	reset,			   	//reset 
 	inout	ps2mdat,			//mouse PS/2 data
 	inout	ps2mclk,			//mouse PS/2 clk
+  input [5:0] mou_emu,
+  input sof,
 	output	reg [7:0]ycount,	//mouse Y counter
 	output	reg [7:0]xcount,	//mouse X counter
 	output	reg _mleft,			//left mouse button output
@@ -1202,6 +1207,12 @@ begin
 		xcount[7:0] <= xcount[7:0] + mreceive[8:1];
 	else if (mpacket==3)//delta Y movement
 		ycount[7:0] <= ycount[7:0] - mreceive[8:1];
+  else if (sof) begin
+    if (mou_emu[3]) ycount <= ycount - 1'b1;
+    else if (mou_emu[2]) ycount <= ycount + 1'b1;
+    if (mou_emu[1]) xcount <= xcount - 1'b1;
+    else if (mou_emu[0]) xcount <= xcount + 1'b1;
+  end
 end
 
 //--------------------------------------------------------------------------------------

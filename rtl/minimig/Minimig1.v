@@ -396,7 +396,6 @@ wire	disk_led;				//floppy disk activity LED
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
 wire  [5:0] mou_emu;
-wire  [5:0] joy_emu;
 
 wire  dtr;
 
@@ -612,6 +611,7 @@ userio USERIO1
   .mouse_btn(mouse_btn),
   ._lmb(kb_lmb & mouse_btn1),
   ._rmb(kb_rmb & mouse_btn2),
+  .mou_emu (mou_emu),
 //	._joy2(_joy2 & joy_emu),
 //  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
 //  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
@@ -727,9 +727,7 @@ ciaa CIAA1
 	.freeze(freeze),
 	.disk_led(disk_led),
   .osd_enable(osd_enable),
-  .mou_emu (mou_emu),
-  .joy_emu (joy_emu),
-  .joy_emu_en(joy_emu_en)
+  .mou_emu (mou_emu)
 );
 
 //instantiate cia B
