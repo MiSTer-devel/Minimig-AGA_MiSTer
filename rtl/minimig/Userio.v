@@ -550,11 +550,10 @@ assign osd_blank = osdframe;
 //dual ported osd video buffer
 //video buffer is 1024*8
 //this buffer should be a single blockram
-reg [7:0] osdbuf_out;
+reg [7:0] osdbuf_out = 8'd0; // TODO remove!
 always @(posedge clk) begin//input part
 	if (wren)
 		osdbuf[wraddr[10:0]] <= wrdat[7:0];
-	osdbuf_out <= osdbuf[wraddr[10:0]];
 end
 
 always @(posedge clk28m)//output part
