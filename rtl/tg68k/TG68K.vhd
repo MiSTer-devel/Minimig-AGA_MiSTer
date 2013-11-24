@@ -56,11 +56,12 @@ entity TG68K is
         memcfg           : in std_logic_vector(5 downto 0);
         ramaddr    	  : out std_logic_vector(31 downto 0);
         cpustate      : out std_logic_vector(5 downto 0);
-		nResetOut	  : out std_logic;
+        nResetOut	  : out std_logic;
         skipFetch     : out std_logic;
         cpuDMA         : buffer std_logic;
         ramlds        : out std_logic;
-        ramuds        : out std_logic
+        ramuds        : out std_logic;
+        VBR_out       : out std_logic_vector(31 downto 0)
         );
 end TG68K;
 
@@ -80,19 +81,20 @@ COMPONENT TG68KdotC_Kernel
         nReset             	: in std_logic;			--low active
         clkena_in         	: in std_logic:='1';
         data_in          	: in std_logic_vector(15 downto 0);
-		IPL				  	: in std_logic_vector(2 downto 0):="111";
-		IPL_autovector   	: in std_logic:='0';
-		CPU             	: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only same parts - yet)
+		    IPL				  	: in std_logic_vector(2 downto 0):="111";
+		    IPL_autovector   	: in std_logic:='0';
+		    CPU             	: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only same parts - yet)
         addr           		: buffer std_logic_vector(31 downto 0);
         data_write        	: out std_logic_vector(15 downto 0);
-		nWr			  		: out std_logic;
-		nUDS, nLDS	  		: out std_logic;
-		nResetOut	  		: out std_logic;
+		    nWr			  		: out std_logic;
+		    nUDS, nLDS	  		: out std_logic;
+		    nResetOut	  		: out std_logic;
         FC              	: out std_logic_vector(2 downto 0);
 -- for debug		
-		busstate	  	  	: out std_logic_vector(1 downto 0);	-- 00-> fetch code 10->read data 11->write data 01->no memaccess
-		skipFetch	  		: out std_logic;
-        regin          		: buffer std_logic_vector(31 downto 0)
+		    busstate	  	  	: out std_logic_vector(1 downto 0);	-- 00-> fetch code 10->read data 11->write data 01->no memaccess
+		    skipFetch	  		: out std_logic;
+        regin          		: buffer std_logic_vector(31 downto 0);
+        VBR_out           : out std_logic_vector(31 downto 0)
         );
 	END COMPONENT;
 
@@ -203,7 +205,8 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 		nLDS => lds_in,	  			-- : out std_logic;
 		nResetOut => nResetOut,
 		CPU => cpu,
-		skipFetch => skipFetch 		-- : out std_logic
+		skipFetch => skipFetch, 		-- : out std_logic
+    VBR_out => VBR_out
         );
  
 	PROCESS (clk, memcfg, cpuaddr)

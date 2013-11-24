@@ -160,6 +160,7 @@ module Minimig1
 	output	_cpu_dtack,			// m68k data acknowledge
 	output	_cpu_reset,			// m68k reset
 	input	cpu_clk,			// m68k clock
+  input [31:0] cpu_vbr, // m68k VBR
 	//sram pins
 	output	[15:0] ram_data,	//sram data bus
 	input	[15:0] ramdata_in,		//sram data bus in

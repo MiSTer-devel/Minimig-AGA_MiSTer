@@ -176,6 +176,7 @@ wire [  6-1:0] tg68_cpustate;
 wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
+wire [ 32-1:0] tg68_VBR_out;
 
 // minimig
 wire           minimig_rst_out;
@@ -528,7 +529,8 @@ TG68K tg68k (
   .skipFetch    (                 ),
   .cpuDMA       (tg68_cdma        ),
   .ramlds       (tg68_clds        ),
-  .ramuds       (tg68_cuds        )
+  .ramuds       (tg68_cuds        ),
+  .VBR_out      (tg68_VBR_out     )
 );
 
 /*
@@ -615,6 +617,7 @@ Minimig1 minimig (
   ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
   ._cpu_reset   (tg68_rst         ), // M68K reset
   .cpu_clk      (clk_7            ), // M68K clock
+  .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
