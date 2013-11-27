@@ -649,7 +649,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Beamcounter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Cart.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_xcv_ram32x8d.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wbmux.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wb_biu.v
