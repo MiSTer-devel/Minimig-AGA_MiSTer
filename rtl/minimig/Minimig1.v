@@ -357,8 +357,9 @@ wire cpurst;
 
 wire	int7;					//int7 interrupt request from Action Replay
 wire	[2:0] _iplx;			//interrupt request lines from Paula
-wire	selcart;				//Action Replay RAM select
+wire	sel_cart;				//Action Replay RAM select
 wire	ovr;					//overide chip memmory decoding
+wire  [16-1:0] cart_data_out;
 
 wire	usrrst;					//user reset from osd interface
 wire	[1:0] lr_filter;		//lowres interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
@@ -807,8 +808,8 @@ bank_mapper BMAP1
 	.slow1(sel_slow[1]),
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
-	.cart(1'b0),
-	.aron(1'b0),
+	.cart(sel_cart),
+	.aron(aron),
   .ecs(chipset_config[3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
@@ -837,6 +838,27 @@ sram_bridge RAM1
 	.ramdata_in(ramdata_in)	
 );
 
+Cart CART1
+(
+  .clk            (clk            ),
+  .cpu_clk        (cpu_clk        ),
+  .cpu_rst        (!_cpu_reset    ),
+  .cpu_address    (cpu_address    ),
+  .cpu_address_in (cpu_address_out),
+  ._cpu_as        (_cpu_as        ),
+  .cpu_rd         (cpu_rd         ),
+  .cpu_hwr        (cpu_hwr        ),
+  .cpu_lwr        (cpu_lwr        ),
+  .dbr            (dbr            ),
+  .ovl            (ovl            ),
+  .freeze         (freeze         ),
+  .cart_data_out  (cart_data_out  ),
+  .int7           (int7           ),
+  .sel_cart       (sel_cart       ),
+  .ovr            (ovr            ),
+  .aron           (aron           )
+);
+/*
 ActionReplay CART1
 (
 	.clk(clk),
@@ -856,9 +878,10 @@ ActionReplay CART1
 	.freeze(freeze),
 	.int7(int7),
 	.ovr(ovr),
-	.selmem(selcart),
+	.sel_cart(sel_cart),
 	.aron(aron)
 );
+*/
 
 //level 7 interrupt for CPU
 assign _cpu_ipl = int7 ? 3'b000 : _iplx;	//m68k interrupt request
@@ -946,7 +969,8 @@ syscontrol CONTROL1
 //data multiplexer
 assign cpu_data_in[15:0] = gary_data_out[15:0]
 						 | cia_data_out[15:0]
-						 | gayle_data_out[15:0];
+						 | gayle_data_out[15:0]
+             | cart_data_out[15:0];
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]
