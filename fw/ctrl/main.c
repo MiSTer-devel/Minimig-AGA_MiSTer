@@ -214,6 +214,8 @@ __geta4 void main(void)
 /**/
   int i;
   for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
+  for (i=0; i<16; i++) printf("CART[%d]=0x%08x\r", i, read32(0xc00000+0x100000+(i<<2)));
+
   
   EnableOsd();
   SPI(OSD_CMD_RST);
