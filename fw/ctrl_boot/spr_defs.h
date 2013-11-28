@@ -20,6 +20,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 /* This file is also used by microkernel test bench. Among
 others it is also used in assembly file(s). */
 
+#ifndef __SPR_DEFS_H__
+#define __SPR_DEFS_H__
+
+
 /* Definition of special-purpose registers (SPRs) */
 
 #define MAX_GRPS (32)
@@ -427,3 +431,7 @@ others it is also used in assembly file(s). */
 #define NOP_PRINTF      0x0003      /* Simprintf instruction */
 #define NOP_REPORT_FIRST 0x0400     /* Report with number */
 #define NOP_REPORT_LAST 0x03ff      /* Report with number */
+
+
+#endif // __SPR_DEFS_H__
+

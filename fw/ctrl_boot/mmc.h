@@ -1,5 +1,5 @@
-#ifndef MMC_H
-#define MMC_H
+#ifndef __MMC_H__
+#define __MMC_H__
 
 #define CARDTYPE_NONE 0
 #define CARDTYPE_MMC  1
@@ -81,5 +81,6 @@ unsigned long MMC_GetCapacity(); // Returns the capacity in 512 byte blocks
 
 extern unsigned char CSDData[16];
 
-#endif
+
+#endif // __MMC_H__
 

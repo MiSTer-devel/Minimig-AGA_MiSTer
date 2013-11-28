@@ -43,11 +43,8 @@ void main(void)
 {
   DEBUG_FUNC_IN();
 
-  fileTYPE ft;
-  int i;
-
   // !!! a pointer to start of RAM
-  unsigned char * ram = ((unsigned char *)0x400000);
+  unsigned char* ram = ((unsigned char *)0x400000);
 
   // initialize SD card
   LEDS(led=0xf);

@@ -1,5 +1,5 @@
-#ifndef _FAT16_H_INCLUDED
-#define _FAT16_H_INCLUDED
+#ifndef __FAT_H__
+#define __FAT_H__
 
 #define MAXDIRENTRIES 8
 
@@ -107,5 +107,6 @@ unsigned char FileRead(fileTYPE *file, unsigned char *pBuffer);
 
 int LoadFile(const char *fn, unsigned char *buf);
 
-#endif
+
+#endif // __FAT_H__
 

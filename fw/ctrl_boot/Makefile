@@ -22,8 +22,7 @@ CROSS_COMPILE = $(OR32_TOOLCHAIN_PATH)or32-elf-
 endif
 
 
-
-# programs
+### programs ###
 AS      = $(CROSS_COMPILE)as
 LD      = $(CROSS_COMPILE)ld
 CC      = $(CROSS_COMPILE)gcc
@@ -37,8 +36,9 @@ XXD     = xxd
 HEX2MEM = $(HEX2MEM_DIR)hex2mem.py
 HEX2MIF = $(HEX2MIF_DIR)hex2mif.py
 
-# flags
-CFLAGS +=   -W -Wall -Wpacked -Wpadded -Winline -std=gnu99 -g \
+
+### flags ###
+CFLAGS +=   -W -Wall -Wpadded -Winline -std=gnu99 -g \
             -Os \
             -fomit-frame-pointer -ffreestanding -static -combine -fwhole-program \
             -fno-strict-aliasing \
@@ -101,10 +101,10 @@ endif
 ### build rules ###
 
 # all
-all:
+all: bin bin/ctrl_boot.mif
+
+bin:
 	@mkdir -p bin
-	@make bin/ctrl_boot.v
-	@make bin/ctrl_boot.mif
 
 bin/ctrl_boot.or32: Makefile $(LD_SCRIPT) $(ALL_SOURCES)
 	@echo $(MSG)
@@ -132,5 +132,5 @@ bin/ctrl_boot.mif : bin/ctrl_boot.hex
 # clean
 clean:
 	@echo clean
-	@rm -rf ./bin/*
+	@rm -rf ./bin
 

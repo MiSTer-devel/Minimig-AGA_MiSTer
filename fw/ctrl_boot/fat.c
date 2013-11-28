@@ -129,9 +129,9 @@ unsigned char FindDrive(void)
 		BootPrint("Read boot sector from first partition\n");
 	}
 
-    if (compare(sector_buffer+0x52, "FAT32   ",8)==0) // check for FAT16
+    if (compare((const char*)&sector_buffer[0x52], "FAT32   ",8)==0) // check for FAT16
 		fat32=1;
-	else if (compare(sector_buffer+0x36, "FAT16   ",8)!=0) // check for FAT32
+	else if (compare((const char*)&sector_buffer[0x36], "FAT16   ",8)!=0) // check for FAT32
 	{
         printf("Unsupported partition type!\r");
 		return(0);
@@ -193,7 +193,7 @@ unsigned char FindDrive(void)
 int GetCluster(int cluster)
 {
 	int i;
-	int sb;
+	uint32_t sb;
     if (fat32)
     {
         sb = cluster >> 7; // calculate sector number containing FAT-link
@@ -221,7 +221,6 @@ int GetCluster(int cluster)
 
 unsigned char FileOpen(fileTYPE *file, const char *name)
 {
-    unsigned long  iDirectory = 0;       // only root directory is supported
     DIRENTRY      *pEntry = 0;        // pointer to current entry in sector buffer
     unsigned long  iDirectorySector;     // current sector of directory entries table
     unsigned long  iDirectoryCluster;    // start cluster of subdirectory or FAT32 root directory
