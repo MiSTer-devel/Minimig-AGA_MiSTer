@@ -101,7 +101,7 @@ endif
 ### build rules ###
 
 # all
-all: bin bin/ctrl_boot.mif
+all: bin bin/ctrl_boot.v bin/ctrl_boot.mif
 
 bin:
 	@mkdir -p bin
