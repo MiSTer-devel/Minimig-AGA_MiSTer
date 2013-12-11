@@ -22,7 +22,6 @@
 // The module requires one 512KB RAM bank. The start address (entry point) is 0xa0000c.
 // TODO : custom registers and CIA registers shadow implemented as in WinUAE.
 // TODO : for better compatibility, load the monitor to $A10000 (requires recompilation!).
-// TODO : fix the config of HRTmon at offset $14 - the ctrl firmware should update the config of HRTmon from minimig config.
 //
 
 
@@ -37,6 +36,7 @@ module Cart
   input  wire          cpu_rd,
   input  wire          cpu_hwr,
   input  wire          cpu_lwr,
+  input  wire [32-1:0] cpu_vbr,
   input  wire          dbr,
   input  wire          ovl,
   input  wire          freeze,
@@ -50,6 +50,7 @@ module Cart
 
 
 //// internal signals ////
+reg  [32-1:0] nmi_vec_adr;
 reg           freeze_d = 1'b0;
 wire          freeze_req;
 wire          int7_req;
@@ -68,14 +69,20 @@ always @ (posedge clk) begin
     aron <= 1'b1;
 end
 */
+// TODO enable cart from firmware when uploading
 assign aron = 1'b1;
 
 // cart selected
 assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0);
 
+// latch VBR + NMI vector offset
+always @ (posedge clk) begin
+  nmi_vec_adr <= #1 cpu_vbr + 32'h0000007c;
+end
+
 // override decoding of NMI
-// TODO
-assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2]==22'b0000_0000_0000_0000_0111_11);
+//assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2]==22'b0000_0000_0000_0000_0111_11);
+assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2] == nmi_vec_adr[23:2]);
 
 // custom NMI vector address output
 assign cart_data_out = ovr ? (!cpu_address_in[1] ? 16'h00a0 : 16'h000c) : 16'h0000;
@@ -104,7 +111,6 @@ always @ (posedge cpu_clk) begin
   else if (int7_ack)
     int7 <= 1'b0;
 end
-
 
 always @ (posedge clk) begin
   l_int7_req <= int7_req;

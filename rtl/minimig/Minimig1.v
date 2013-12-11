@@ -849,6 +849,7 @@ Cart CART1
   .cpu_rd         (cpu_rd         ),
   .cpu_hwr        (cpu_hwr        ),
   .cpu_lwr        (cpu_lwr        ),
+  .cpu_vbr        (cpu_vbr        ),
   .dbr            (dbr            ),
   .ovl            (ovl            ),
   .freeze         (freeze         ),
