@@ -312,6 +312,7 @@ end
 ////////////////////////////////////////
 
 reg  [ 16-1:0] chipRDd;
+/*
 reg  [ 16-1:0] chip_cache_dat [0:4-1];
 reg  [ 24-1:0] chip_cache_adr;
 reg            chip_cache_fill;
@@ -348,6 +349,7 @@ always @ (posedge sysclk or negedge reset) begin
     end
   end
 end
+*/
 
 always @ (posedge sysclk) begin
   if ((sdram_state == ph9) && chipCycle)
@@ -356,9 +358,10 @@ end
 
 // chip cache read
 always @ (*) begin
-  if (cctrl[0] && chip_cache_equal && &chip_cache_valid)
+/*  if (cctrl[0] && chip_cache_equal && &chip_cache_valid)
     chipRD = chip_cache_dat[chip_cache_index];
   else
+*/
     chipRD = chipRDd;
 end
 
@@ -589,7 +592,8 @@ always @ (posedge sysclk) begin
       cas_sd_ras <= 1'b1;
       cas_sd_cas <= 1'b1;
       cas_sd_we  <= 1'b1;
-      if ((!(cctrl[0] && chip_cache_equal && &chip_cache_valid) && (!chip_dma)) || !chipRW) begin
+      //if ((!(cctrl[0] && chip_cache_equal && &chip_cache_valid) && (!chip_dma)) || !chipRW) begin
+      if (!chip_dma || !chipRW) begin
         // chip cycle
         chipCycle  <= 1'b1;
         sdaddr     <= chipAddr[20:9];
