@@ -61,6 +61,8 @@ char debugmsg2[40] = { 0 };
 
 static void RDBChecksum(unsigned long *p)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
 	unsigned long count=p[1];
 	unsigned long c2;
 	long result=0;
@@ -69,6 +71,8 @@ static void RDBChecksum(unsigned long *p)
 	for(c2=0;c2<count;++c2)
 		result+=p[c2];
 	p[2]=(unsigned long)-result;
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
 
 
@@ -76,6 +80,8 @@ static void RDBChecksum(unsigned long *p)
 // we synthesize one.
 static void FakeRDB(int unit,int block)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
 	int i;
 	DebugMessage("Clearing sector buffer");
 	// Start by clearing the sector buffer
@@ -160,11 +166,15 @@ static void FakeRDB(int unit,int block)
 		default:
 			break;
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
 
 
 void IdentifyDevice(unsigned short *pBuffer, unsigned char unit)
 { // builds Identify Device struct
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
     char *p, i, x;
     unsigned long total_sectors = hdf[unit].cylinders * hdf[unit].heads * hdf[unit].sectors;
 
@@ -242,15 +252,25 @@ void IdentifyDevice(unsigned short *pBuffer, unsigned char unit)
     pBuffer[56] = hdf[unit].sectors;
     pBuffer[57] = (unsigned short)total_sectors;
     pBuffer[58] = (unsigned short)(total_sectors >> 16);
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
+
 
 unsigned long chs2lba(unsigned short cylinder, unsigned char head, unsigned short sector, unsigned char unit)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L2);
+
     return(cylinder * hdf[unit].heads + head) * hdf[unit].sectors + sector - 1;
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L2);
 }
+
 
 void WriteTaskFile(unsigned char error, unsigned char sector_count, unsigned char sector_number, unsigned char cylinder_low, unsigned char cylinder_high, unsigned char drive_head)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L2);
+
     EnableFpga();
 
     SPI(CMD_IDE_REGS_WR); // write task file registers command
@@ -279,10 +299,15 @@ void WriteTaskFile(unsigned char error, unsigned char sector_count, unsigned cha
     SPI(drive_head); // drive/head
 
     DisableFpga();
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L2);
 }
+
 
 void WriteStatus(unsigned char status)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L2);
+
     EnableFpga();
 
     SPI(CMD_IDE_STATUS_WR);
@@ -293,10 +318,15 @@ void WriteStatus(unsigned char status)
     SPI(0x00);
 
     DisableFpga();
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L2);
 }
+
 
 void HandleHDD(unsigned char c1, unsigned char c2)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L3);
+
     unsigned short id[256];
     unsigned char  tfr[8];
     unsigned short i;
@@ -800,10 +830,14 @@ void HandleHDD(unsigned char c1, unsigned char c2)
         }
         DISKLED_OFF;
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L3);
 }
+
 
 void GetHardfileGeometry(hdfTYPE *pHDF)
 { // this function comes from WinUAE, should return the same CHS as WinUAE
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
 
     unsigned long total=0;
     unsigned long i, head, cyl, spt;
@@ -864,10 +898,15 @@ void GetHardfileGeometry(hdfTYPE *pHDF)
     pHDF->cylinders = (unsigned short)cyl;
     pHDF->heads = (unsigned short)head;
     pHDF->sectors = (unsigned short)spt;
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
+
 
 void BuildHardfileIndex(hdfTYPE *pHDF)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
     // builds index to speed up hard file seek
 
     fileTYPE *file = &pHDF->file;
@@ -889,10 +928,15 @@ void BuildHardfileIndex(hdfTYPE *pHDF)
         FileSeek(file, i >> 9, SEEK_SET); // FileSeek seeks in 512-byte sectors
         *index++ = file->cluster;
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
+
 
 unsigned char HardFileSeek(hdfTYPE *pHDF, unsigned long lba)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L2);
+
     if ((pHDF->file.sector ^ lba) & cluster_mask)
     { // different clusters
         if ((pHDF->file.sector > lba) || ((pHDF->file.sector ^ lba) & (cluster_mask << (fat32 ? 7 : 8)))) // 7: 128 FAT32 links per sector, 8: 256 FAT16 links per sector
@@ -902,10 +946,15 @@ unsigned char HardFileSeek(hdfTYPE *pHDF, unsigned long lba)
         }
     }
     return FileSeek(&pHDF->file, lba, SEEK_SET);
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L2);
 }
+
 
 unsigned char OpenHardfile(unsigned char unit)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
     unsigned long time;
     char filename[12];
 
@@ -967,6 +1016,8 @@ unsigned char OpenHardfile(unsigned char unit)
 	}
     config.hardfile[unit].present = 0;
     return 0;
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
 
 
@@ -974,6 +1025,8 @@ fileTYPE rdbfile;	// We scan for RDB without mounting the file as a unit, so nee
 
 unsigned char GetHDFFileType(char *filename)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HDD | DEBUG_L1);
+
 	if(FileOpen(&rdbfile,filename))
 	{
 		int i;
@@ -994,6 +1047,8 @@ unsigned char GetHDFFileType(char *filename)
 		return(HDF_FILETYPE_UNKNOWN);
 	}
 	return(HDF_FILETYPE_NOTFOUND);
+
+  DEBUG_FUNC_OUT(DEBUG_F_HDD | DEBUG_L1);
 }
 
 

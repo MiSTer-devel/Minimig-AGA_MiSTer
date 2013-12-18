@@ -1,7 +1,13 @@
+
 #include "rafile.h"
+#include "stdio.h"
+#include "hardware.h"
+
 
 int RARead(RAFile *file,unsigned char *pBuffer, unsigned long bytes)
 {
+  DEBUG_FUNC_IN(DEBUG_F_RAFILE | DEBUG_L2);
+
 	int result=1;
 	// Since we can only read from the SD card on 512-byte aligned boundaries,
 	// we need to copy in multiple pieces.
@@ -35,7 +41,7 @@ int RARead(RAFile *file,unsigned char *pBuffer, unsigned long bytes)
 
 	if(bytes)	// Do we have any bytes left to read?
 	{
-		int i;
+		unsigned int i;
 		result&=FileRead(&file->file,file->buffer);	// Read to temporary buffer, allowing us to preserve any leftover for the next read.
 		FileNextSector(&file->file);
 		for(i=0;i<bytes;++i)
@@ -45,11 +51,15 @@ int RARead(RAFile *file,unsigned char *pBuffer, unsigned long bytes)
 		file->ptr+=bytes;
 	}
 	return(result);
+
+  DEBUG_FUNC_OUT(DEBUG_F_RAFILE | DEBUG_L2);
 }
 
 
 int RASeek(RAFile *file,unsigned long offset,unsigned long origin)
 {
+  DEBUG_FUNC_IN(DEBUG_F_RAFILE | DEBUG_L1);
+
 	int result=1;
 	unsigned long blockoffset;
 	unsigned long blockaddress;
@@ -65,11 +75,15 @@ int RASeek(RAFile *file,unsigned long offset,unsigned long origin)
 	}
 	file->ptr=offset;
 	return(result);
+
+  DEBUG_FUNC_OUT(DEBUG_F_RAFILE | DEBUG_L1);
 }
 
 
 int RAOpen(RAFile *file,const char *filename)
 {
+  DEBUG_FUNC_IN(DEBUG_F_RAFILE | DEBUG_L1);
+
 	int result=1;
 	if(!file)
 		return(0);
@@ -77,5 +91,7 @@ int RAOpen(RAFile *file,const char *filename)
 	file->size=file->file.size;
 	file->ptr=0;
 	return(result);
+
+  DEBUG_FUNC_OUT(DEBUG_F_RAFILE | DEBUG_L1);
 }
 

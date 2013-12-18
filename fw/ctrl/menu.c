@@ -110,6 +110,8 @@ static char debugptr=0;
 
 void _showdebugmessages()
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L2);
+
 	int i;
 	for(i=0;i<8;++i)
 	{
@@ -117,10 +119,14 @@ void _showdebugmessages()
 		debuglines[j*32+31]=0;
 		OsdWrite(i,&debuglines[j*32],i==7,0);
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L2);
 }
 
 void SelectFile(char* pFileExt, unsigned char Options, unsigned char MenuSelect, unsigned char MenuCancel)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
     // this function displays file selection menu
 
     if (strncmp(pFileExt, fs_pFileExt, 3) != 0) // check desired file extension
@@ -135,6 +141,8 @@ void SelectFile(char* pFileExt, unsigned char Options, unsigned char MenuSelect,
     fs_MenuCancel = MenuCancel;
 
     menustate = MENU_FILE_SELECT1;
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
 
 #define STD_EXIT "            exit"
@@ -144,6 +152,8 @@ void SelectFile(char* pFileExt, unsigned char Options, unsigned char MenuSelect,
 
 void ShowSplash()
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L0);
+
 	OsdSetTitle("Welcome",0);
     OsdWrite(0, "", 0,0);
 	OsdDrawLogo(1,0,0);
@@ -154,17 +164,25 @@ void ShowSplash()
     OsdWrite(6, "", 0,0);
     OsdWrite(7, "", 0,0);
 	OsdEnable(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L0);
 }
 
 
 void HideSplash()
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L0);
+
 	OsdDisable();
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L0);
 }
 
 
 void HandleUI(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L2);
+
     unsigned char i, c, up, down, select, menu, right, left, plus, minus;
     unsigned long len;
     static hardfileTYPE t_hardfile[2]; // temporary copy of former hardfile configuration
@@ -307,7 +325,7 @@ void HandleUI(void)
 	// Also set parentstate to the appropriate menustate.
 	if(menumask)
 	{
-        if (down && (menumask>=(1<<(menusub+1))))	// Any active entries left?
+        if ((unsigned)down && ((unsigned)menumask>=(unsigned)(1<<(menusub+1))))	// Any active entries left?
 		{
 			do
 				menusub++;
@@ -2163,11 +2181,15 @@ void HandleUI(void)
 
         break;
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L2);
 }
 
 
 void ScrollLongName(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L2);
+
 // this function is called periodically when file selection window is displayed
 // it checks if predefined period of time has elapsed and scrolls the name if necessary
 
@@ -2190,11 +2212,15 @@ void ScrollLongName(void)
 
 		ScrollText(iSelectedEntry,DirEntryLFN[k],len,max_len,1);
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L2);
 }
 
 
 char* GetDiskInfo(char* lfn, long len)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
 // extracts disk number substring form file name
 // if file name contains "X of Y" substring where X and Y are one or two digit number
 // then the number substrings are extracted and put into the temporary buffer for further processing
@@ -2213,7 +2239,7 @@ char* GetDiskInfo(char* lfn, long len)
             ptr1 = &lfn[i]; // current start position
             ptr2 = template;
             cmp = 0;
-            for (k = 0; k < sizeof(template); k++) // scan through template
+            for (k = 0; (unsigned int)k < sizeof(template); k++) // scan through template
             {
                 cmp |= *ptr1++ ^ *ptr2++; // compare substrings' characters one by one
                 if (cmp)
@@ -2257,11 +2283,16 @@ char* GetDiskInfo(char* lfn, long len)
         }
     }
     return NULL;
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
+
 
 // print directory contents
 void PrintDirectory(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
     unsigned char i;
     unsigned char k;
     unsigned long len;
@@ -2340,10 +2371,15 @@ void PrintDirectory(void)
 
         OsdWrite(i, s, i == iSelectedEntry,0); // display formatted line text
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
+
 
 void _strncpy(char* pStr1, const char* pStr2, size_t nCount)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L2);
+
 // customized strncpy() function to fill remaing destination string part with spaces
 
     while (*pStr2 && nCount)
@@ -2354,11 +2390,16 @@ void _strncpy(char* pStr1, const char* pStr2, size_t nCount)
 
     while (nCount--)
         *pStr1++ = ' '; // fill remaining space with spaces
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L2);
 }
+
 
 // insert floppy image pointed to to by global <file> into <drive>
 void InsertFloppy(adfTYPE *drive)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
     unsigned char i, j;
     unsigned long tracks;
 
@@ -2414,11 +2455,16 @@ void InsertFloppy(adfTYPE *drive)
     printf("file size: %lu (%lu KB)\r", file.size, file.size >> 10);
     printf("drive tracks: %u\r", drive->tracks);
     printf("drive status: 0x%02X\r", drive->status);
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
+
 
 /*  Error Message */
 void ErrorMessage(const char *message, unsigned char code)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
     if (menustate == MENU_NONE2)
         menustate = MENU_ERROR;
 
@@ -2445,10 +2491,15 @@ void ErrorMessage(const char *message, unsigned char code)
 
         OsdEnable(0); // do not disable KEYBOARD
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
+
 
 void InfoMessage(char *message)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
     OsdWaitVBL();
     if (menustate != MENU_INFO)
     {
@@ -2466,12 +2517,19 @@ void InfoMessage(char *message)
     OsdWrite(7, "", 0,0);
     menu_timer = GetTimer(1000);
     menustate = MENU_INFO;
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
+
 
 void DebugMessage(char *message)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MENU | DEBUG_L1);
+
 	strncpy(&debuglines[debugptr*32],message,31);
 	debuglines[debugptr*32+31]=0;
 	debugptr=(debugptr+1)&7;
+
+  DEBUG_FUNC_OUT(DEBUG_F_MENU | DEBUG_L1);
 }
 

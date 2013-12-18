@@ -36,29 +36,13 @@
 #include <inttypes.h>
 #include "spr_defs.h"
 #include "or32_defs.h"
+#include "debug.h"
 
 
 //// make sure NULL is defined ////
 #ifndef NULL
 #define NULL 0
 #endif
-
-
-//// debug output ////
-//#define DEBUG
-
-#ifdef DEBUG
-#define DBGPRINT(...)       printf(__VA_ARGS__)
-#else
-#define DBGPRINT(...)
-#endif
-
-#define STR(x)              #x
-#define XSTR(x)             STR(x)
-
-#define DEBUG_FUNC_IN()     DBGPRINT("* DEBUG : FUNC IN  : %s(), file " __FILE__ ", line " XSTR(__LINE__) "\r", __FUNCTION__)
-#define DEBUG_FUNC_OUT()    DBGPRINT("* DEBUG : FUNC OUT : %s()\r", __FUNCTION__)
-#define DEBUG_MSG(x)        DBGPRINT("* DEBUG : " x "\r")
 
 
 //// memory read/write ////
@@ -106,7 +90,7 @@
 #define DisableDMode()      write32(REG_SPI_CS_ADR, 0x80)
 
 #define SPI_slow()          write32(REG_SPI_DIV_ADR, 0x3f)
-#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x00)
+#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x04)
 #define SPI_write(x)        write32(REG_SPI_DAT_ADR, (x))
 #define SPI_read()          (read32(REG_SPI_DAT_ADR))
 #define SPI(x)              (SPI_write(x), SPI_read())

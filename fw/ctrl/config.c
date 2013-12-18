@@ -23,8 +23,11 @@ unsigned char romkey[3072];
 
 RAFile romfile;
 
+
 char UploadKickstart(char *name)
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L0);
+
 	int keysize=0;
     char filename[12];
     strncpy(filename, name, 8); // copy base name
@@ -158,6 +161,8 @@ char UploadKickstart(char *name)
         BootPrint(s);
     }
     return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L0);
 }
 
 typedef struct {
@@ -193,8 +198,11 @@ typedef struct {
   uint32_t whd_expstop;
 } __attribute__((__packed__)) hrtmon_cfg_t;
 
+
 void hrtcfg_print()
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L2);
+
   int i;
   volatile hrtmon_cfg_t* hrtcfg = (hrtmon_cfg_t*)(0xd00000);
 
@@ -232,10 +240,15 @@ void hrtcfg_print()
   printf("max_chip: %x\r", hrtcfg->max_chip);
   printf("whd_expstrt: %x\r", hrtcfg->whd_expstrt);
   printf("whd_expstop: %x\r", hrtcfg->whd_expstop);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L0);
 }
+
 
 char UploadActionReplay()
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L0);
+
   int i,j;
   unsigned int adr, size, base=0x100000, offset=0xc00000, data;
 
@@ -332,21 +345,28 @@ char UploadActionReplay()
     //DisableOsd();
   }
   return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L0);
 }
 
 
 void SetConfigurationFilename(int config)
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L1);
+
 	if(config)
 		sprintf(configfilename,"MINIMIG%dCFG",config);
 	else
 		strcpy(configfilename,"MINIMIG CFG");
-}
 
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
+}
 
 
 unsigned char ConfigurationExists(char *filename)
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L1);
+
 	if(!filename)
 		filename=configfilename;	// Use slot-based filename if none provided.
     if (FileOpen(&file, filename))
@@ -354,11 +374,15 @@ unsigned char ConfigurationExists(char *filename)
 		return(1);
 	}
 	return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
 }
 
 
 unsigned char LoadConfiguration(char *filename)
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L1);
+
     static const char config_id[] = "MNMGCFG0";
 	char updatekickstart=0;
 	char result=0;
@@ -438,13 +462,14 @@ unsigned char LoadConfiguration(char *filename)
 	ApplyConfiguration(updatekickstart);
 
     return(result);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
 }
 
 
 void ApplyConfiguration(char reloadkickstart)
 {
-  DEBUG_FUNC_IN();
-
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L1);
 
     ConfigCPU(config.cpu);
 
@@ -607,12 +632,15 @@ void ApplyConfiguration(char reloadkickstart)
 
   ConfigChipset(config.chipset);
   ConfigFloppy(config.floppy.drives, config.floppy.speed);
-  DEBUG_FUNC_OUT();
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
 }
 
 
 unsigned char SaveConfiguration(char *filename)
 {
+  DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L1);
+
 	if(!filename)
 		filename=configfilename;	// Use slot-based filename if none provided.
 
@@ -658,5 +686,7 @@ unsigned char SaveConfiguration(char *filename)
             printf("File creation failed!\r");
     }
     return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
 }
 

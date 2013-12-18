@@ -63,10 +63,13 @@ struct star
 };
 
 struct star stars[64];
-
 char framebuffer[8][256];
+
+
 void framebuffer_clear()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	int i,j;
 	for(i=0;i<8;++i)
 	{
@@ -75,26 +78,40 @@ void framebuffer_clear()
 			framebuffer[i][j]=0;
 		}
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void framebuffer_plot(int x,int y)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	framebuffer[y/8][x]|=(1<<(y & 7));
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 static int quickrand()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	static int prev;
 	int r=*(volatile unsigned long *)0x80000c;
 	r^=(prev&0xc75a)<<4;
 	r^=(prev&0x5a7c)>>(prev&7);
 	prev=r;
 	return(r);
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
 void StarsInit()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
 	int i;
 	for(i=0;i<64;++i)
 	{
@@ -103,10 +120,15 @@ void StarsInit()
 			stars[i].dx=-(quickrand()&7)-3;
 		stars[i].dy=0;
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
+
 
 void StarsUpdate()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	framebuffer_clear();
 	int i;
 	for(i=0;i<64;++i)
@@ -123,6 +145,8 @@ void StarsUpdate()
 		}			
 		framebuffer_plot(stars[i].x>>4,stars[i].y>>4);
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
@@ -140,6 +164,8 @@ static unsigned char titlebuffer[64];
 
 static void rotatechar(unsigned char *in,unsigned char *out)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	int a;
 	int b;
 	int c;
@@ -153,16 +179,21 @@ static void rotatechar(unsigned char *in,unsigned char *out)
 		}
 		out[b]=a;
 	}		
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
 void OsdSetTitle(char *s,int a)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	// Compose the title, condensing character gaps
 	arrow=a;
 	char zeros=0;
-	char i=0,j=0;
-	char outp=0;
+	int i=0;
+  char j=0;
+	int outp=0;
 	while(1)
 	{
 		int c=s[i++];
@@ -213,16 +244,26 @@ void OsdSetTitle(char *s,int a)
 			titlebuffer[i+c]=tmp[c];
 		}
 	}
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void OsdWrite(unsigned char n, char *s, unsigned char invert, unsigned char stipple)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	OsdWriteOffset(n,s,invert,stipple,0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 // write a null-terminated string <s> to the OSD buffer starting at line <n>
 void OsdWriteOffset(unsigned char n, char *s, unsigned char invert, unsigned char stipple,char offset)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     unsigned short i;
     unsigned char b;
     const unsigned char *p;
@@ -355,11 +396,15 @@ void OsdWriteOffset(unsigned char n, char *s, unsigned char invert, unsigned cha
 
     // deselect OSD SPI device
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
 void OsdDrawLogo(unsigned char n, char row,char superimpose)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     unsigned short i;
     const unsigned char *p;
 	int linelimit=OSDLINELEN;
@@ -372,9 +417,9 @@ void OsdDrawLogo(unsigned char n, char row,char superimpose)
     SPI(OSD_CMD_OSD_WR);
     SPI(0x00); SPI(0x00); SPI(0x00); SPI(n);
 
-	const unsigned char *lp=logodata[row];
+	const unsigned char *lp=logodata[(int)row];
 	int bytes=sizeof(logodata[0]);
-	if(row>=(sizeof(logodata)/bytes))
+	if((unsigned int)row>=(sizeof(logodata)/bytes))
 		lp=0;
     i = 0;
     // send all characters in string to OSD
@@ -452,11 +497,15 @@ void OsdDrawLogo(unsigned char n, char row,char superimpose)
 	}
     // deselect OSD SPI device
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 
 void OsdWriteDoubleSize(unsigned char n, char *s, unsigned char pass)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     unsigned short i;
     unsigned char b;
     const unsigned char *p;
@@ -541,11 +590,16 @@ void OsdWriteDoubleSize(unsigned char n, char *s, unsigned char pass)
 
     // deselect OSD SPI device
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 // write a null-terminated string <s> to the OSD buffer starting at line <n>
 void OSD_PrintText(unsigned char line, char *text, unsigned long start, unsigned long width, unsigned long offset, unsigned char invert)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 // line : OSD line number (0-7)
 // text : pointer to null-terminated string
 // start : start position (in pixels)
@@ -594,14 +648,14 @@ void OSD_PrintText(unsigned char line, char *text, unsigned long start, unsigned
     if (offset)
     {
         width -= 8 - offset;
-        p = &charfont[*text++][offset];
+        p = &charfont[(unsigned int)*text++][offset];
         for (; offset < 8; offset++)
             SPI(*p++^invert);
     }
 
     while (width > 8)
     {
-            p = &charfont[*text++][0];
+            p = &charfont[(unsigned int)*text++][0];
             SPI(*p++^invert);
             SPI(*p++^invert);
             SPI(*p++^invert);
@@ -615,17 +669,22 @@ void OSD_PrintText(unsigned char line, char *text, unsigned long start, unsigned
 
     if (width)
     {
-        p = &charfont[*text++][0];
+        p = &charfont[(unsigned int)*text++][0];
         while (width--)
               SPI(*p++^invert);
     }
 
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 // clear OSD frame buffer
 void OsdClear(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     unsigned short n;
 
     // select OSD SPI device
@@ -642,10 +701,15 @@ void OsdClear(void)
 
     // deselect OSD SPI device
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void OsdWaitVBL(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
 //    unsigned long pioa_old = 0;
 //    unsigned long pioa = 0;
 //
@@ -654,30 +718,45 @@ void OsdWaitVBL(void)
 //        pioa_old = pioa;
 //        pioa = *AT91C_PIOA_PDSR;
 //    }
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
+
 
 // enable displaying of OSD
 void OsdEnable(unsigned char mode)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     EnableOsd();
     //SPI(OSDCMDENABLE | (mode & DISABLE_KEYBOARD));
     SPI(OSD_CMD_OSD);
     SPI(0x01 | (mode & DISABLE_KEYBOARD));
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 // disable displaying of OSD
 void OsdDisable(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     EnableOsd();
     //SPI(OSDCMDDISABLE);
     SPI(OSD_CMD_OSD);
     SPI(0x00);
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void OsdReset(unsigned char boot)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     EnableOsd();
     //SPI(OSDCMDRST | (boot & 0x01));
     SPI(OSD_CMD_RST);
@@ -687,10 +766,15 @@ void OsdReset(unsigned char boot)
     SPI(OSD_CMD_RST);
     SPI(0x0);
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void OsdReconfig()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 	EnableOsd();
 	//SPI(OSDCMDRECONFIG);
   SPI(OSD_CMD_RST);
@@ -700,6 +784,8 @@ void OsdReconfig()
   SPI(OSD_CMD_RST);
   SPI(0x00);
 	DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
@@ -719,18 +805,25 @@ void OsdReconfig()
 //    DisableOsd();
 //}
 
+
 void ConfigVideo(unsigned char hires, unsigned char lores, unsigned char scanlines)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGFLT | ((hires & 0x03) << 2) | (lores & 0x03));
     SPI(OSD_CMD_VID);
     SPI(((hires & 0x03) << 4) | ((lores & 0x03)<<2) | (scanlines & 0x03));
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 
 void ConfigMemory(unsigned char memory)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGMEM | (memory & 0x03));				//chip
     //DisableOsd();
@@ -745,63 +838,94 @@ void ConfigMemory(unsigned char memory)
     //EnableOsd(); TODO BUG probably!
 //    SPI(OSDCMDCFGCPU|  0x00);	//68000  -  Don't want to disable '020 here!  AMR
 //    DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 void ConfigCPU(unsigned char cpu)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGCPU | (cpu & 0x03));					//CPU
     SPI(OSD_CMD_CPU);
     SPI(cpu & 0x03);
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 void ConfigChipset(unsigned char chipset)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGCHP | (chipset & 0x0F));
     SPI(OSD_CMD_CHIP);
     SPI(chipset & 0x0f);
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 void ConfigFloppy(unsigned char drives, unsigned char speed)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGFLP | ((drives & 0x03) << 2) | (speed & 0x03));
     SPI(OSD_CMD_FLP);
     SPI(((drives & 0x03) << 2) | (speed & 0x03));
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
 
 void ConfigScanlines(unsigned char scanlines)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGSCL | (scanlines & 0x0F)); TODO! same reg as OSD_CMD_VID!
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
+
 
 void ConfigIDE(unsigned char gayle, unsigned char master, unsigned char slave)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDCFGIDE | (slave ? 4 : 0) | (master ? 2 : 0) | (gayle ? 1 : 0));
     SPI(OSD_CMD_HDD);
     SPI((slave ? 4 : 0) | (master ? 2 : 0) | (gayle ? 1 : 0));
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
+
 
 void ConfigAutofire(unsigned char autofire)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L1);
+
     EnableOsd();
     //SPI(OSDCMDAUTOFIRE | (autofire & 0x03));
     SPI(OSD_CMD_JOY);
     SPI(autofire & 0x03);
     DisableOsd();
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);
 }
+
 
 // get key status
 unsigned char OsdGetCtrl(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     static unsigned char c2;
     static unsigned long delay;
     static unsigned long repeat;
@@ -849,19 +973,28 @@ unsigned char OsdGetCtrl(void)
     }
 
     return(c);
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 unsigned char GetASCIIKey(unsigned char keycode)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     if (keycode & KEY_UPSTROKE)
        return 0;
 
     return keycode_table[keycode & 0x7F];
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
 
 
 void ScrollText(char n,const char *str, int len,int max_len,unsigned char invert)
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
 // this function is called periodically when a string longer than the window is displayed.
 
     #define BLANKSPACE 10 // number of spaces between the end and start of repeated name
@@ -882,7 +1015,7 @@ void ScrollText(char n,const char *str, int len,int max_len,unsigned char invert
 
         if (len > max_len) // scroll name if longer than display size
         {
-            if (scroll_offset >= (len + BLANKSPACE) << 3) // reset scroll position if it exceeds predefined maximum
+            if (scroll_offset >= ((unsigned int)len + BLANKSPACE) << 3) // reset scroll position if it exceeds predefined maximum
                 scroll_offset = 0;
 
             offset = scroll_offset >> 3; // get new starting character of the name (scroll_offset is no longer in 2 pixel unit)
@@ -901,12 +1034,18 @@ void ScrollText(char n,const char *str, int len,int max_len,unsigned char invert
             OSD_PrintText(n, s, 22, (max_len - 1) << 3, (scroll_offset & 0x7), invert); // OSD print function with pixel precision
         }
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
 }
+
 
 void ScrollReset()
 {
+  DEBUG_FUNC_IN(DEBUG_F_OSD | DEBUG_L2);
+
     scroll_timer = GetTimer(SCROLL_DELAY); // set timer to start name scrolling after predefined time delay
     scroll_offset = 0; // start scrolling from the start
-}
 
+  DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L2);
+}
 

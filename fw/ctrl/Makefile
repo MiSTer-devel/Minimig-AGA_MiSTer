@@ -29,7 +29,7 @@ RANLIB  = $(CROSS_COMPILE)ranlib
 
 
 # flags
-CFLAGS +=   -W -Wall -Wpacked -Wpadded -Winline -std=gnu99 -g \
+CFLAGS +=   -W -Winline -std=gnu99 -g \
             -Os \
             -fomit-frame-pointer -ffreestanding -static -combine -fwhole-program \
             -fno-strict-aliasing \
@@ -37,6 +37,7 @@ CFLAGS +=   -W -Wall -Wpacked -Wpadded -Winline -std=gnu99 -g \
             -Wl,--relax \
             -msoft-mul -msoft-div
 # -fpack_struct
+# -Wpacked -Wpadded
 
 LDFLAGS +=
 

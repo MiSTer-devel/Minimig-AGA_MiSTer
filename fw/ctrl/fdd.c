@@ -52,6 +52,8 @@ adfTYPE df[4];            // drive 0 information structure
 // note that we do not insert clock bits because they will be stripped by the Amiga software anyway
 void SendSector(unsigned char *pData, unsigned char sector, unsigned char track, unsigned char dsksynch, unsigned char dsksyncl)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned char checksum[4];
     unsigned short i;
     unsigned char x;
@@ -153,18 +155,27 @@ void SendSector(unsigned char *pData, unsigned char sector, unsigned char track,
     p = pData;
     while (i--)
         SPI(*p++ | 0xAA);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 void SendGap(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned short i = GAP_SIZE;
     while (i--)
         SPI(0xAA);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 // read a track from disk
 void ReadTrack(adfTYPE *drive)
 { // track number is updated in drive struct before calling this function
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
 
     unsigned char sector;
     unsigned char status;
@@ -294,11 +305,16 @@ void ReadTrack(adfTYPE *drive)
     }
     if (vDEBUG)
         printf(":OK\r");
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 unsigned char FindSync(adfTYPE *drive)
 // reads data from fifo till it finds sync word or fifo is empty and dma inactive (so no more data is expected)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned char  c1, c2, c3, c4;
     unsigned short n;
 
@@ -338,11 +354,16 @@ unsigned char FindSync(adfTYPE *drive)
     }
     DisableFpga();
     return 0;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
 // this function reads data from fifo till it finds sync word or dma is inactive
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned char c, c1, c2, c3, c4;
     unsigned char i;
     unsigned char checksum[4];
@@ -483,10 +504,15 @@ unsigned char GetHeader(unsigned char *pTrack, unsigned char *pSector)
 
     DisableFpga();
     return 0;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 unsigned char GetData(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned char c, c1, c2, c3, c4;
     unsigned char i;
     unsigned char *p;
@@ -599,10 +625,15 @@ unsigned char GetData(void)
     }
     DisableFpga();
     return 0;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 void WriteTrack(adfTYPE *drive)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     unsigned char sector;
     unsigned char Track;
     unsigned char Sector;
@@ -658,18 +689,28 @@ void WriteTrack(adfTYPE *drive)
             ErrorMessage("  WriteTrack", Error);
         }
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 void UpdateDriveStatus(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L2);
+
     EnableFpga();
     SPI(0x10);
     SPI(df[0].status | (df[1].status << 1) | (df[2].status << 2) | (df[3].status << 3));
     DisableFpga();
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L2);
 }
+
 
 void HandleFDD(unsigned char c1, unsigned char c2)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FDD | DEBUG_L3);
+
     unsigned char sel;
     drives = (c1 >> 4) & 0x03; // number of active floppy drives
 
@@ -689,5 +730,7 @@ void HandleFDD(unsigned char c1, unsigned char c2)
         WriteTrack(&df[sel]);
         DISKLED_OFF;
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_FDD | DEBUG_L3);
 }
 

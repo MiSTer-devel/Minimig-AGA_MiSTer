@@ -1,6 +1,8 @@
 /* boot_logo.c */
 /* 2012, rok.krajnc@gmail.com */
 
+#include "stdio.h"
+#include "hardware.h"
 #include "fpga.h"
 #include "boot_print.h"
 
@@ -95,6 +97,9 @@ static const char boot_logo[80][29] = {
 void draw_boot_logo()
 {
   return;
+
+  DEBUG_FUNC_IN(DEBUG_F_BOOT_LOGO | DEBUG_L1);
+
   unsigned int line;
   unsigned short int offset;
   char * p;
@@ -106,5 +111,7 @@ void draw_boot_logo()
     offset += 640/8;
     bcury+=640/8;
   }
+
+  DEBUG_FUNC_OUT(DEBUG_F_BOOT_LOGO | DEBUG_L1);
 }
 

@@ -36,20 +36,32 @@
 
 uint32_t SwapBBBB(uint32_t i)
 {
+  DEBUG_FUNC_IN(DEBUG_F_SWAP | DEBUG_L2);
+
   return ((i&0x00ff0000)>>8) | ((i&0xff000000)>>24) | ((i&0x000000ff)<<24) | ((i&0x0000ff00)<<8);
+
+  DEBUG_FUNC_OUT(DEBUG_F_SWAP | DEBUG_L2);
 }
 
 
 uint16_t SwapBB(uint16_t i)
 {
+  DEBUG_FUNC_IN(DEBUG_F_SWAP | DEBUG_L2);
+
   return ((i&0x00ff)<<8) | ((i&0xff00)>>8);
+
+  DEBUG_FUNC_OUT(DEBUG_F_SWAP | DEBUG_L2);
 }
 
 
 uint32_t SwapWW(uint32_t i)
 {
+  DEBUG_FUNC_IN(DEBUG_F_SWAP | DEBUG_L2);
+
   //return ((i&0x0000ffff)<<16) | ((i&0xffff0000)>>16);
   return ((i<<16) | (i>>16));
+
+  DEBUG_FUNC_OUT(DEBUG_F_SWAP | DEBUG_L2);
 }
 
 #endif // SWAP_MACROS

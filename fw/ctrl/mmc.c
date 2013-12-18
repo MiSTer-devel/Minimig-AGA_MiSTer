@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // variables
 unsigned char crc;
-unsigned long timeout;
+unsigned int timeout;
 unsigned char response;
 unsigned char CardType;
 
@@ -50,6 +50,8 @@ unsigned char MMC_CMD12(void);
 // init memory card
 unsigned char MMC_Init(void)
 {
+   DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L0);
+
     unsigned char n;
     unsigned char ocr[4];
 
@@ -70,9 +72,9 @@ unsigned char MMC_Init(void)
     if (n<16) // got CMD0 IDLE response
     { // idle state
         timeout = GetTimer(4000); // initialization timeout 4s
-        printf("timeout:%08X\r",timeout);
+        printf("timeout:0x%08X\r", timeout);
         timeout = GetTimer(4000); // initialization timeout 4s
-        printf("timeout:%08X\r",timeout);
+        printf("timeout:0x%08X\r", timeout);
         if (MMC_Command(CMD8, 0x1AA) == 0x01) // check if the card can operate with 2.7-3.6V power
         {   // SDHC card
             for (n = 0; n < 4; n++)
@@ -128,7 +130,7 @@ unsigned char MMC_Init(void)
             if (MMC_Command(CMD41, 0) <= 0x01)
             { // SD card detected - wait for the end of initialization
                 printf("SD card detected\r");
-                printf("timeout:%08X\r",GetTimer(0));
+                printf("timeout:0x%08X\r",GetTimer(0));
                 while (!CheckTimer(timeout))
                 { // now we must wait until CMD41 returns 0 (or timeout elapses)
                     if (MMC_Command(CMD55, 0) == 0x01)
@@ -201,12 +203,16 @@ unsigned char MMC_Init(void)
     DisableCard();
     printf("No memory card detected!\r");
     return(CARDTYPE_NONE); 
+
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L0);
 }
 
 
 // Read single 512-byte block
 unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
+
     // if pReadBuffer is NULL then use direct to the FPGA transfer mode (FPGA2 asserted)
 
     unsigned long i;
@@ -261,12 +267,16 @@ unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
 
     DisableCard();
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L0);
 }
 
 
 // Read CSD register
 unsigned char MMC_GetCSD()
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L1);
+
 	int i;
     EnableCard();
 
@@ -297,12 +307,16 @@ unsigned char MMC_GetCSD()
 
     DisableCard();
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L1);
 }
 
 
 // MMC get capacity
 unsigned long MMC_GetCapacity()
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L1);
+
 	unsigned long result=0;
 	MMC_GetCSD();
 //	switch(CardType)
@@ -348,12 +362,14 @@ unsigned long MMC_GetCapacity()
 			result<<=cmult+2;
 			return(result);
     }
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L1);
 }
 
 
 // read multiple 512-byte blocks
 unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
     // if pReadBuffer is NULL then use direct to the FPGA transfer mode (FPGA2 asserted)
 
     unsigned long i;
@@ -414,12 +430,14 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
 
     DisableCard();
     return(1);
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L2);
 }
 
 
 // write 512-byte block
 unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
     unsigned long i;
 
    if (CardType != CARDTYPE_SDHC) // SDHC cards are addressed in sectors not bytes
@@ -470,12 +488,16 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
 
     DisableCard();
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L2);
 }
 
 
 // MMC command
 unsigned char MMC_Command(unsigned char cmd, unsigned long arg)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
+
     unsigned char c;
 
     crc = 0;
@@ -510,12 +532,16 @@ unsigned char MMC_Command(unsigned char cmd, unsigned long arg)
     while (response == 0xFF && Ncr--);
 
     return response;
+
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L2);
 }
 
 
 // stop multi block data transmission
 unsigned char MMC_CMD12(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
+
     SPI(CMD12); // command
     SPI(0x00);
     SPI(0x00);
@@ -541,12 +567,14 @@ unsigned char MMC_CMD12(void)
         }
 }
     return response;
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L2);
 }
 
 
 // MMC CRC calc
 void MMC_CRC(unsigned char c)
 {
+  DEBUG_FUNC_IN(DEBUG_F_MMC | DEBUG_L2);
     unsigned char i;
 
     for (i = 0; i < 8; i++)
@@ -558,5 +586,6 @@ void MMC_CRC(unsigned char c)
             crc ^= 0x09;
         c <<= 1;
     }
+  DEBUG_FUNC_OUT(DEBUG_F_MMC | DEBUG_L2);
 }
 

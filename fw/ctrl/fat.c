@@ -43,6 +43,7 @@ JB:
 #include "mmc.h"
 #include "fat.h"
 #include "swap.h"
+#include "hardware.h"
 
 int tolower(int c);
 
@@ -92,28 +93,43 @@ extern void ErrorMessage(const char *message, unsigned char code);
 
 unsigned long SwapEndianL(unsigned long l)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L3);
+
 	unsigned char c[4];
 	c[0] = (unsigned char)(l & 0xff);
 	c[1] = (unsigned char)((l >> 8) & 0xff);
 	c[2] = (unsigned char)((l >> 16) & 0xff);
 	c[3] = (unsigned char)((l >> 24) & 0xff);
 	return((c[0]<<24)+(c[1]<<16)+(c[2]<<8)+c[3]);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L3);
 }
+
 
 void SwapPartitionBytes(int i)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
 	// We don't bother to byteswap the CHS geometry fields since we don't use them.
 	partitions[i].startlba=SwapEndianL(partitions[i].startlba);
 	partitions[i].sectors=SwapEndianL(partitions[i].sectors);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
+
 
 extern char BootPrint(const char *s);
 void bprintfl(const char *fmt,unsigned long l)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
 	char s[64];
 	sprintf(s,fmt,l);
 	BootPrint(s);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 /*
 unsigned char FindDrive(void)
@@ -239,10 +255,11 @@ unsigned char FindDrive(void)
 */
 
 
-
 // FindDrive() checks if a card is present and contains FAT formatted primary partition
 unsigned char FindDrive(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
     buffered_fat_index = -1;
 
     if (!MMC_Read(0, sector_buffer)) // read MBR
@@ -405,10 +422,15 @@ unsigned char FindDrive(void)
     printf("cluster_mask: %08lX\r", cluster_mask);
 
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
+
 
 unsigned char FileOpen(fileTYPE *file, const char *name)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
     unsigned long  iDirectory = 0;       // only root directory is supported
     DIRENTRY      *pEntry = NULL;        // pointer to current entry in sector buffer
     unsigned long  iDirectorySector;     // current sector of directory entries table
@@ -485,10 +507,15 @@ unsigned char FileOpen(fileTYPE *file, const char *name)
     printf("file \"%s\" not found\r", name);
     memset(file, 0, sizeof(fileTYPE));
     return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
+
 
 unsigned char lfn_checksum(unsigned char *pName)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     unsigned char i = 11;
     unsigned char checksum = 0;
 
@@ -496,10 +523,15 @@ unsigned char lfn_checksum(unsigned char *pName)
         checksum = ((checksum & 1) << 7) + (checksum >> 1) + *pName++;
 
     return checksum;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 int _strnicmp(const char *s1, const char *s2, size_t n)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L3);
+
     char c1, c2;
     int v;
 
@@ -512,10 +544,15 @@ int _strnicmp(const char *s1, const char *s2, size_t n)
     while (v == 0 && c1 != '\0' && --n > 0);
 
     return v;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L3);
 }
+
 
 int CompareDirEntries(DIRENTRY *pDirEntry1, char *pLFN1, DIRENTRY *pDirEntry2, char *pLFN2)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     const char *pStr1, *pStr2;
     int len;
     int rc;
@@ -559,10 +596,15 @@ int CompareDirEntries(DIRENTRY *pDirEntry1, char *pLFN1, DIRENTRY *pDirEntry2, c
         }
     }
     return(rc);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 char ScanDirectory(unsigned long mode, char *extension, unsigned char options)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     DIRENTRY *pEntry = NULL;            // pointer to current entry in sector buffer
     unsigned long iDirectorySector;     // current sector of directory entries table
     unsigned long iDirectoryCluster;
@@ -1112,16 +1154,26 @@ char ScanDirectory(unsigned long mode, char *extension, unsigned char options)
     printf("ScanDirectory(): %lu ms\r", time >> 20);
     */
     return rc;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 void ChangeDirectory(unsigned long iStartCluster)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
     iPreviousDirectory = iCurrentDirectory;
     iCurrentDirectory = iStartCluster;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
+
 
 unsigned long GetFATLink(unsigned long cluster)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
 // this function returns linked cluster for the given one
 // remember to check if the returned value indicates end of chain condition
 
@@ -1151,11 +1203,16 @@ unsigned long GetFATLink(unsigned long cluster)
 
 //    return(fat32 ? fat_buffer.fat32[buffer_index] & 0x0FFFFFFF : fat_buffer.fat16[buffer_index]); // get FAT link
     return(fat32 ? SwapBBBB(fat_buffer.fat32[buffer_index]) & 0x0FFFFFFF : SwapBB(fat_buffer.fat16[buffer_index])); // get FAT link for 68000
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
 
-#pragma section_code_init
+
+//#pragma section_code_init
 unsigned char FileNextSector(fileTYPE *file)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     unsigned long sb;
     unsigned short i;
 
@@ -1191,11 +1248,16 @@ unsigned char FileNextSector(fileTYPE *file)
     }
 
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
-#pragma section_no_code_init
+//#pragma section_no_code_init
+
 
 unsigned char FileSeek(fileTYPE *file, unsigned long offset, unsigned long origin)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
 // offset in sectors (512 bytes)
 // origin can be set to SEEK_SET or SEEK_CUR
 
@@ -1261,11 +1323,16 @@ unsigned char FileSeek(fileTYPE *file, unsigned long offset, unsigned long origi
     file->sector = offset; // same clusters
 
     return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
 
-#pragma section_code_init
+
+//#pragma section_code_init
 unsigned char FileRead(fileTYPE *file, unsigned char *pBuffer)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     unsigned long sb;
 
     sb = data_start;                         // start of data in partition
@@ -1276,11 +1343,16 @@ unsigned char FileRead(fileTYPE *file, unsigned char *pBuffer)
         return(0);
     else
         return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
-#pragma section_no_code_init
+//#pragma section_no_code_init
+
 
 unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long nSize)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     unsigned long sb;
     unsigned long bc; // block count of single multisector read operation
 
@@ -1303,10 +1375,15 @@ unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long n
     }
 
     return 1;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 unsigned char FileWrite(fileTYPE *file,unsigned char *pBuffer)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L2);
+
     unsigned long sector;
 
     sector = data_start;                       // start of data in partition
@@ -1317,10 +1394,15 @@ unsigned char FileWrite(fileTYPE *file,unsigned char *pBuffer)
         return(0);
     else
         return(1);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L2);
 }
+
 
 unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
     // TODO: deleted entries are not empty, they have to be cleared first
     /*
     find empty dir entry
@@ -1478,11 +1560,16 @@ unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file)
 
     ErrorMessage("   Can\'t create config file!", 0);
     return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
 }
+
 
 // changing of allocated cluster number is not supported - new size must be within current cluster number
 unsigned char UpdateEntry(fileTYPE *file)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FAT | DEBUG_L1);
+
     DIRENTRY *pEntry;
 
     if (!MMC_Read(file->entry.sector, sector_buffer))
@@ -1515,6 +1602,7 @@ unsigned char UpdateEntry(fileTYPE *file)
     }
 
     return(1);
-}
 
+  DEBUG_FUNC_OUT(DEBUG_F_FAT | DEBUG_L1);
+}
 

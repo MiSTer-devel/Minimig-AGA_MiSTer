@@ -1,6 +1,8 @@
 /* boot_print.c */
 /* 2012, rok.krajnc@gmail.com */
 
+#include "stdio.h"
+#include "hardware.h"
 #include "fpga.h"
 #include "string.h"
 
@@ -111,6 +113,9 @@ static const char boot_font [96][8] = {
 void BootPrintEx(char * str)
 {
   return;
+
+  DEBUG_FUNC_IN(DEBUG_F_BOOT_PRINT | DEBUG_L1);
+
   char buf[80];
   unsigned char i,j;
   unsigned char len;
@@ -124,5 +129,7 @@ void BootPrintEx(char * str)
     }
     BootDraw(buf, len, bcury+=640/8, 0);
   }
+
+  DEBUG_FUNC_OUT(DEBUG_F_BOOT_PRINT | DEBUG_L1);
 }
 

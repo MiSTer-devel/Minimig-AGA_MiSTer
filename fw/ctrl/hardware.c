@@ -29,7 +29,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-
+#include "stdio.h"
 #include "hardware.h"
 
 //// firmware copy routine ////
@@ -64,34 +64,50 @@ uint32_t fw_copy_routine[] = {
 //// button ////
 unsigned long CheckButton(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
 //  return((~*AT91C_PIOA_PDSR) & BUTTON);
   return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 //// timer ////
 unsigned long GetTimer(unsigned long offset)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   unsigned long systimer = TIMER_get();
   systimer = systimer<< 16;
   systimer += offset << 16;
   return (systimer); // valid bits [31:16]
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 
 unsigned long CheckTimer(unsigned long time)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   unsigned long systimer = TIMER_get();
   systimer = systimer<< 16;
   time -= systimer;
   if(time & 0x80000000) return(1);
   return(0);
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 
 void WaitTimer(unsigned long time)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   time = GetTimer(time);
   while (!CheckTimer(time));
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 
@@ -102,6 +118,8 @@ static int *__heap_cur = 0;
 
 void *hmalloc(int size)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   int *new, *old;
 
   if(__heap_cur == NULL) __heap_cur = (int *)&_heap_start;
@@ -113,27 +131,37 @@ void *hmalloc(int size)
   __heap_cur = new;
 
   return old;
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 
 //// sys jump() ////
 void sys_jump(unsigned long addr)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   disable_ints();
   __asm__("l.sw  0x4(r1),r9");
   __asm__("l.jalr  %0" : : "r" (addr));
   __asm__("l.nop");
   __asm__("l.lwz r9,0x4(r1)");
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 
 
 //// sys_load() ////
 void sys_load(uint32_t * origin, uint32_t * dest, uint32_t size, uint32_t * routine)
 {
+  DEBUG_FUNC_IN(DEBUG_F_HARDWARE | DEBUG_L3);
+
   disable_ints();
   __asm__ __volatile__ ("l.add r4,r0,%0" : : "r" (origin)   : "r4");
   __asm__ __volatile__ ("l.add r2,r0,%0" : : "r" (dest)     : "r2");
   __asm__ __volatile__ ("l.add r3,r0,%0" : : "r" (size)     : "r3");
   __asm__ __volatile__ ("l.jr  %0"       : : "r" (routine)        );
+
+  DEBUG_FUNC_OUT(DEBUG_F_HARDWARE | DEBUG_L3);
 }
 

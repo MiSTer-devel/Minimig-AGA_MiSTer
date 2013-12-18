@@ -63,12 +63,12 @@ const char * firmware="1          ";
 unsigned char Error;
 extern adfTYPE df[4];
 char s[40];
-
+char led = 0;
 
 //// FatalError() ////
 void FatalError(unsigned long error)
 {
-  DEBUG_FUNC_IN();
+  DEBUG_FUNC_IN(DEBUG_F_MAIN | DEBUG_L2);
 
   sprintf(s,"Fatal error: %lu", error);
   BootPrintEx(s);
@@ -82,17 +82,18 @@ void FatalError(unsigned long error)
     LEDS(error);
   }
 
-  DEBUG_FUNC_OUT();
+  DEBUG_FUNC_OUT(DEBUG_F_MAIN | DEBUG_L2);
 }
 
 
 //// HandleFpga() ////
 void HandleFpga(void)
 {
-  //DEBUG_FUNC_IN();
+  DEBUG_FUNC_IN(DEBUG_F_MAIN | DEBUG_L3);
 
   unsigned char  c1, c2;
 
+  LEDS(!led);
   EnableFpga();
   c1 = SPI(0); // cmd request and drive number
   c2 = SPI(0); // track number
@@ -107,7 +108,7 @@ void HandleFpga(void)
 
   UpdateDriveStatus();
 
-  //DEBUG_FUNC_OUT();
+  DEBUG_FUNC_OUT(DEBUG_F_MAIN | DEBUG_L3);
 }
 
 
@@ -118,7 +119,7 @@ void main(void)
 __geta4 void main(void)
 #endif
 {
-  DEBUG_FUNC_IN();
+  DEBUG_FUNC_IN(DEBUG_F_MAIN | DEBUG_L0);
 
   uint32_t spiclk;
   fileTYPE sd_boot_file;
@@ -149,18 +150,19 @@ __geta4 void main(void)
   //printf(__BUILD_USER);
   printf("\rgit commit ");
   printf(__BUILD_REV);
-  printf("\rgit tag");
+  printf("\rgit tag ");
   printf(__BUILD_TAG);
   printf("\r\r");
   printf("For updates & code see https://github.com/rkrajnc/minimig-de1\r");
   printf("For support, see http://www.minimig.net/\r\r");
 
+  DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "read SPI divider ...");
   spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
   printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
   sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
   BootPrintEx(s);
   printf("%s\r", s);
-
+  DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "... done");
 
   draw_boot_logo();
   BootPrintEx("**** MINIMIG-DE1 ****");
@@ -230,6 +232,6 @@ __geta4 void main(void)
     HandleUI();
   }
 
-  DEBUG_FUNC_OUT();
+  DEBUG_FUNC_OUT(DEBUG_F_MAIN | DEBUG_L0);
 }
 

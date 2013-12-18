@@ -207,6 +207,8 @@ char BootPrint(const char *text);
 
 void SendFile(RAFile *file)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
+
     unsigned char  c1, c2;
     unsigned long  j;
     unsigned long  n;
@@ -252,11 +254,15 @@ void SendFile(RAFile *file)
         DisableFpga();
     }
     printf("]\r");
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
 
 
 void SendFileEncrypted(RAFile *file,unsigned char *key,int keysize)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
+
     unsigned char  c1, c2;
 	unsigned char headersize;
 	unsigned int keyidx=0;
@@ -277,7 +283,7 @@ void SendFileEncrypted(RAFile *file,unsigned char *key,int keysize)
         for (j = 0; j < 512; j++)
 		{
 			sector_buffer[j]^=key[keyidx++];
-			if(keyidx>=keysize)
+			if(keyidx>=(unsigned)keysize)
 				keyidx-=keysize;
 		}
 
@@ -313,13 +319,15 @@ void SendFileEncrypted(RAFile *file,unsigned char *key,int keysize)
         DisableFpga();
     }
     printf("]\r");
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
 
 
 // draw on screen
 char BootDraw(char *data, unsigned short len, unsigned short offset, unsigned char stretch)
 {
-  DEBUG_FUNC_IN();
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
 
     unsigned char c1, c2, c3, c4;
     unsigned char cmd;
@@ -400,13 +408,15 @@ char BootDraw(char *data, unsigned short len, unsigned short offset, unsigned ch
     DisableFpga();
     return 0;
 
-  DEBUG_FUNC_OUT();
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
 
 
 // print message on the boot screen
 char BootPrint(const char *text)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L1);
+
     unsigned char c1, c2, c3, c4;
     unsigned char cmd;
     const char *p;
@@ -482,13 +492,18 @@ char BootPrint(const char *text)
     }
     DisableFpga();
     return 0;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L1);
 }
+
 
 char PrepareBootUpload(unsigned char base, unsigned char size)
 // this function sends given file to Minimig's memory
 // base - memory base address (bits 23..16)
 // size - memory size (bits 23..16)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
+
     unsigned char c1, c2, c3, c4;
     unsigned char cmd = 1;
 
@@ -541,10 +556,15 @@ char PrepareBootUpload(unsigned char base, unsigned char size)
     }
     DisableFpga();
     return -1;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
+
 
 void BootExit(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
+
     unsigned char c1, c2, c3, c4;
 
     while (1)
@@ -580,10 +600,15 @@ void BootExit(void)
         }
         DisableFpga();
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
+
 
 void ClearMemory(unsigned long base, unsigned long size)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L0);
+
     unsigned char c1, c2, c3, c4;
 
     while (1)
@@ -619,10 +644,15 @@ void ClearMemory(unsigned long base, unsigned long size)
         }
         DisableFpga();
     }
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L0);
 }
+
 
 unsigned char GetFPGAStatus(void)
 {
+  DEBUG_FUNC_IN(DEBUG_F_FPGA | DEBUG_L2);
+
     unsigned char status;
 
     EnableFpga();
@@ -635,4 +665,7 @@ unsigned char GetFPGAStatus(void)
     DisableFpga();
 
     return status;
+
+  DEBUG_FUNC_OUT(DEBUG_F_FPGA | DEBUG_L2);
 }
+
