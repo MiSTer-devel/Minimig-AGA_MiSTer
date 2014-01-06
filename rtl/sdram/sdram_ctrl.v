@@ -202,21 +202,9 @@ end
 // cpu cache
 ////////////////////////////////////////
 
-reg  [ 16-1:0] cpu_cache_dat0[0:4-1];
-reg  [ 16-1:0] cpu_cache_dat1[0:4-1];
-wire [  2-1:0] cpu_cache_index0, cpu_cache_index1;
+wire cache_ack;
 
-reg  [ 64-1:0] ccache0, ccache1;
-reg  [ 25-1:0] ccache_addr0, ccache_addr1;
-reg            ccache_fill0, ccache_fill1;
-reg  [  4-1:0] cvalid0, cvalid1;
-wire           cequal0, cequal1;
-
-assign cpuena = cena || ccachehit || (cpustate[1:0] == 2'b01);
-assign cequal0 = (cpuAddr[24:3] == ccache_addr0[24:3]);
-assign cequal1 = (cpuAddr[24:3] == ccache_addr1[24:3]);
-assign cpu_cache_index0 = (cpuAddr[2:1] - ccache_addr0[2:1]);
-assign cpu_cache_index1 = (cpuAddr[2:1] - ccache_addr1[2:1]);
+assign cpuena = cena || cache_ack || (cpustate[1:0] == 2'b01);
 
 always @ (posedge sysclk or negedge reset) begin
   if (~reset) begin
@@ -233,6 +221,44 @@ always @ (posedge sysclk or negedge reset) begin
   end
 end
 
+cpu_cache cpu_cache (
+  // system
+  .clk          (sysclk       ),
+  .rst          (!reset       ),
+  // cpu if
+  .cpu_state    (cpustate     ),
+  .cpu_cs       (cpu_dma      ),
+  .cpu_adr      (cpuAddr      ),
+  .cpu_bs       ({cpuU, cpuL} ),
+  .cpu_dat_w    (cpuWR        ),
+  .cpu_dat_r    (cpuRD        ),
+  .cpu_ack      (cache_ack    ),
+  // sdram if
+  .sdr_state    (sdram_state  ),
+  .sdr_adr      ( /* ? */     ),
+  .sdr_cpucycle (cpuCycle     ),
+  .sdr_cas      (cas_sd_cas   ),
+  .sdr_dat_w    ( /* ? */     ),
+  .sdr_dat_r    (sdata_reg    ),
+  .sdr_cpu_act  ( /* ? */     )
+);
+
+/*
+reg  [ 16-1:0] cpu_cache_dat0[0:4-1];
+reg  [ 16-1:0] cpu_cache_dat1[0:4-1];
+wire [  2-1:0] cpu_cache_index0, cpu_cache_index1;
+
+reg  [ 64-1:0] ccache0, ccache1;
+reg  [ 25-1:0] ccache_addr0, ccache_addr1;
+reg            ccache_fill0, ccache_fill1;
+reg  [  4-1:0] cvalid0, cvalid1;
+wire           cequal0, cequal1;
+
+assign cequal0 = (cpuAddr[24:3] == ccache_addr0[24:3]);
+assign cequal1 = (cpuAddr[24:3] == ccache_addr1[24:3]);
+assign cpu_cache_index0 = (cpuAddr[2:1] - ccache_addr0[2:1]);
+assign cpu_cache_index1 = (cpuAddr[2:1] - ccache_addr1[2:1]);
+
 always @ (posedge sysclk) cpustated <= cpustate[1:0];
 
 // cpu cache fill
@@ -248,7 +274,7 @@ always @ (posedge sysclk or negedge reset) begin
       if (cequal1) cvalid1 <= 4'b0000;
     end
     // only instruction cache
-    if ((sdram_state == ph7) && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0) && cpuCycle) begin
+    if ((sdram_state == ph7) && (cpustate[0:0] == 1'b0) && cpuCycle) begin
       if (!casaddr[3] && !cequal0) begin
         ccache_addr0 <= casaddr;
         ccache_fill0 <= 1'b1;
@@ -268,9 +294,7 @@ always @ (posedge sysclk or negedge reset) begin
         ph12 : begin cpu_cache_dat0[3] <= sdata_reg; cvalid0[3] <= 1'b1; ccache_fill0 <= 1'b0; end
       endcase
     end else if ((cpustate[1:0] == 2'b11) && cequal0) begin
-      //cvalid0 <= 4'b0000;
       cvalid0[cpu_cache_index0] <= 1'b0;
-      //cpu_cache_dat0[cpu_cache_index0] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat0[cpu_cache_index0]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
     end
     if (ccache_fill1) begin
       case (sdram_state)
@@ -280,9 +304,7 @@ always @ (posedge sysclk or negedge reset) begin
         ph12 : begin cpu_cache_dat1[3] <= sdata_reg; cvalid1[3] <= 1'b1; ccache_fill1 <= 1'b0; end
       endcase
     end else if ((cpustate[1:0] == 2'b11) && cequal1) begin
-      //cvalid1 <= 4'b0000;
       cvalid1[cpu_cache_index1] <= 1'b0;
-      //cpu_cache_dat1[cpu_cache_index1] <= ({{8{cpuU}}, {8{cpuL}}} & cpu_cache_dat1[cpu_cache_index1]) | ({{8{!cpuU}}, {8{!cpuL}}} & cpuWR);
     end
   end
 end
@@ -294,10 +316,10 @@ end
 
 // cpu cache read
 always @ (*) begin
-  if (cctrl[2] && cequal0 && &cvalid0 && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0)) begin
+  if (cctrl[2] && cequal0 && &cvalid0 && (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid0[cpu_cache_index0];
     cpuRD = cpu_cache_dat0[cpu_cache_index0];
-  end else if (cctrl[2] && cequal1 && &cvalid1 && /*!cpustated[1]*/ (cpustate[0:0] == 1'b0)) begin
+  end else if (cctrl[2] && cequal1 && &cvalid1 && (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid1[cpu_cache_index1];
     cpuRD = cpu_cache_dat1[cpu_cache_index1];
   end else begin
@@ -305,6 +327,7 @@ always @ (*) begin
     cpuRD = cpuRDd;
   end
 end
+*/
 
 
 ////////////////////////////////////////
