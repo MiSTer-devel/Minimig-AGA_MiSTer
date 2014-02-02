@@ -419,7 +419,7 @@ module osd
   output  reg key_disable = 0,      // keyboard disable
 	output	reg [1:0] lr_filter = 0,
 	output	reg [1:0] hr_filter = 0,
-	output	reg [5:0] memory_config = 0,
+	output	reg [5:0] memory_config = 6'b000101,
 	output	reg [3:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
@@ -453,7 +453,7 @@ reg		invert;					//invertion of highlighted line
 reg		[5:0] vpos;
 reg		vena;
 
-reg 	[5:0] t_memory_config = 0;
+reg 	[5:0] t_memory_config = 6'b000101;
 reg		[2:0] t_ide_config = 0;
 reg   [1:0] t_cpu_config = 0;
 reg   [3:0] t_chipset_config = 0;
@@ -790,7 +790,7 @@ end
 // memory write
 reg mem_toggle = 1'b0, mem_toggle_d = 1'b0;
 always @ (posedge clk) begin
-  if (!spi_mem_write_sel) begin
+  if (cmd) begin
     mem_toggle <= #1 1'b0;
     mem_toggle_d <= #1 1'b0;
   end else if (rx && !cmd && spi_mem_write_sel && (dat_cnt == 4)) begin
@@ -812,10 +812,10 @@ sync_fifo #(
   .DW (16)
 ) wr_fifo (
   .clk          (clk),
-  .rst          (reset),
+  .rst          (reset || cmd),
   .fifo_in      ({mem_dat_r, wrdat}),
   .fifo_out     (host_wdat),
-  .fifo_wr_en   (rx && mem_toggle),
+  .fifo_wr_en   (rx && !cmd && mem_toggle),
   .fifo_rd_en   (wr_fifo_rd_en),
   .fifo_full    (wr_fifo_full),
   .fifo_empty   (wr_fifo_empty)
@@ -856,8 +856,8 @@ always @ (posedge clk or posedge reset) begin
   end
 end
 */
-always @ (posedge clk or posedge reset) begin
-  if (reset)
+always @ (posedge clk) begin
+  if (reset || cmd)
     wr_state <= #1 ST_WR_IDLE;
   else begin
     case (wr_state)
@@ -1048,53 +1048,53 @@ assign vld = spi_valid;
 
 //------ input shift register ------//
 always @(posedge sck)
-		sdi_reg <= {sdi_reg[6:0],sdi};
+		sdi_reg <= #1 {sdi_reg[6:0],sdi};
 
 always @(posedge sck)
     if (bit_cnt==7)
-      out <= {sdi_reg[6:0],sdi};
+      out <= #1 {sdi_reg[6:0],sdi};
 
 //------ receive bit counter ------//
 always @(posedge sck or posedge _scs)
 	if (_scs)
-		bit_cnt <= 0;					//always clear bit counter when CS is not active
+		bit_cnt <= #1 0;					//always clear bit counter when CS is not active
 	else
-		bit_cnt <= bit_cnt + 3'd1;		//increment bit counter when new bit has been received
+		bit_cnt <= #1 bit_cnt + 3'd1;		//increment bit counter when new bit has been received
 
 //----- rx signal ------//
 //this signal goes high for one clk clock period just after new byte has been received
 //it's synchronous with clk, output data shouldn't change when rx is active
 always @(posedge sck or posedge rx)
 	if (rx)
-		new_byte <= 0;		//cleared asynchronously when rx is high (rx is synchronous with clk)
+		new_byte <= #1 0;		//cleared asynchronously when rx is high (rx is synchronous with clk)
 	else if (bit_cnt == 3'd7)
-		new_byte <= 1;		//set when last bit of a new byte has been just received
+		new_byte <= #1 1;		//set when last bit of a new byte has been just received
 
 always @(negedge clk)
-	rx_sync <= new_byte;	//double synchronization to avoid metastability
+	rx_sync <= #1 new_byte;	//double synchronization to avoid metastability
 
 always @(posedge clk)
-	rx <= rx_sync;			//synchronous with clk
+	rx <= #1 rx_sync;			//synchronous with clk
 
 //------ cmd signal generation ------//
 //this signal becomes active after reception of first byte
 //when any other byte is received it's deactivated indicating data bytes
 always @(posedge sck or posedge _scs)
 	if (_scs)
-		first_byte <= 1'b1;		//set when CS is not active
+		first_byte <= #1 1'b1;		//set when CS is not active
 	else if (bit_cnt == 3'd7)
-		first_byte <= 1'b0;		//cleared after reception of first byte
+		first_byte <= #1 1'b0;		//cleared after reception of first byte
 
 always @(posedge sck)
 	if (bit_cnt == 3'd7)
-		cmd <= first_byte;		//active only when first byte received
+		cmd <= #1 first_byte;		//active only when first byte received
 	
 //------ serial data output register ------//
 always @(negedge sck)	//output change on falling SPI clock
 	if (bit_cnt == 3'd0)
-		sdo_reg <= in;
+		sdo_reg <= #1 in;
 	else
-		sdo_reg <= {sdo_reg[6:0],1'b0};
+		sdo_reg <= #1 {sdo_reg[6:0],1'b0};
 
 //------ SPI output signal ------//
 assign sdo = ~_scs & sdo_reg[7];	//force zero if SPI not selected
