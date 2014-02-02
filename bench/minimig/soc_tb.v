@@ -206,7 +206,7 @@ initial begin
   // try qmem bridge
   ctrl_bridge_cycle(32'h00180000, 1'b1, 4'hf, 32'h01234567);
   ctrl_bridge_cycle(32'h00180000, 1'b1, 4'hf, 32'hdeadbeef);
-  repeat(10) @ (posedge soc_top.clk_7);
+  repeat(10) @ (posedge soc_top.ctrl_top.clk);
 
   // write to OSD SPI slave
   // enable OSD (SPI chip select)
@@ -233,11 +233,39 @@ initial begin
   ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ab);
   ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000cd);
   ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ef);
-  repeat (100) @ (posedge soc_top.clk_7);
+  repeat (10) @ (posedge soc_top.ctrl_top.clk);
 
   // disable OSD (SPI chip select)
   ctrl_regs_cycle(32'h00800020, 1'b1, 4'hf, 32'h00000040);
-  repeat (100) @ (posedge soc_top.clk_7);
+  repeat (10) @ (posedge soc_top.ctrl_top.clk);
+
+  // write to OSD SPI slave
+  // enable OSD (SPI chip select)
+  ctrl_regs_cycle(32'h00800020, 1'b1, 4'hf, 32'h00000044);
+  // send write command
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h0000001c);
+  // send address
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000080);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000f0);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000df);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000000);
+  // send data
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000aa);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000bb);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000cc);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000dd);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ee);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ff);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000001);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000023);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000045);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000067);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h00000089);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ab);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000cd);
+  ctrl_regs_cycle(32'h00800024, 1'b1, 4'hf, 32'h000000ef);
+  repeat (10) @ (posedge soc_top.ctrl_top.clk);
+
 
   // readback
   ctrl_bridge_cycle(32'h00180000, 1'b0, 4'hf, 32'h00000000, datr);

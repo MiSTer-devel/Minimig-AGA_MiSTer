@@ -4,7 +4,7 @@
 
 ../../../../rtl/fifo/sync_fifo.v
 
-../../../../rtl/minimig/ActionReplay3.v
+../../../../rtl/minimig/Cart.v
 ../../../../rtl/minimig/Agnus.v
 ../../../../rtl/minimig/Amber.v
 ../../../../rtl/minimig/Audio.v
@@ -104,6 +104,9 @@
 
 ../../../../rtl/sdram/sdram_ctrl.v
 ../../../../rtl/sdram/sdram.vhd
+../../../../rtl/sdram/cpu_cache.v
+../../../../rtl/sdram/tpram_inf_128x32.v
+../../../../rtl/sdram/tpram_inf_be_512x16.v
 
 ../../../../fw/amiga_boot/bin/amiga_boot.v
 
