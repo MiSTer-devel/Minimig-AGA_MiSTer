@@ -50,6 +50,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "firmware.h"
 #include "menu.h"
 #include "config.h"
+#include "boot.h"
 #include "boot_logo.h"
 #include "boot_print.h"
 
@@ -136,58 +137,43 @@ __geta4 void main(void)
   DisableOsd();
   write32(REG_RST_ADR, 0);
 
-  //HideSplash();
+  // enable fast SPI
   SPI_fast();
 
+  //DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "read SPI divider ...");
+  //spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
+  //printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
+  //sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
+  //printf("%s\r", s);
+  //DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "... done");
+
+  if (!MMC_Init()) FatalError(1);
+  printf("SD card found ...\r");
+
+  if (!FindDrive()) FatalError(2);
+  printf("Drive found ...\r");
+
+  ChangeDirectory(DIRECTORY_ROOT);
+
   // boot message
-  printf("\r\r**** MINIMIG-DE1 ****\r\r");
-  printf("Minimig by Dennis van Weeren\r");
-  printf("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others\r");
-  printf("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)\r\r");
-  printf("Build no. ");
-  printf(__BUILD_NUM);
-  //printf(" by ");
-  //printf(__BUILD_USER);
-  printf("\rgit commit ");
-  printf(__BUILD_REV);
-  printf("\rgit tag ");
-  printf(__BUILD_TAG);
-  printf("\r\r");
-  printf("For updates & code see https://github.com/rkrajnc/minimig-de1\r");
-  printf("For support, see http://www.minimig.net/\r\r");
-
-  DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "read SPI divider ...");
-  spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
-  printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
-  sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
-  BootPrintEx(s);
-  printf("%s\r", s);
-  DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "... done");
-
-  draw_boot_logo();
+  BootInit();
   BootPrintEx("**** MINIMIG-DE1 ****");
   BootPrintEx("Minimig by Dennis van Weeren");
   BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
   BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
-  BootPrintEx(" ");
-  sprintf(s, "Build git commit: %s", __BUILD_REV);
-  BootPrintEx(s);
-  sprintf(s, "Build git tag: %s", __BUILD_TAG);
-  BootPrintEx(s);
-  BootPrintEx(" ");
   BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
   BootPrintEx("For support, see http://www.minimig.net");
   BootPrintEx(" ");
-
-  if (!MMC_Init()) FatalError(1);
-  BootPrintEx("SD card found ...");
-  printf("SD card found ...\r");
-
-  if (!FindDrive()) FatalError(2);
-  BootPrintEx("Drive found ...");
-  printf("Drive found ...\r");
-
-  ChangeDirectory(DIRECTORY_ROOT);
+  //sprintf(s, "Build git commit: %s", __BUILD_REV);
+  //BootPrintEx(s);
+  sprintf(s, "Build git tag: %s", __BUILD_TAG);
+  BootPrintEx(s);
+  BootPrintEx(" ");
+  spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
+  sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
+  BootPrintEx(s);
+  BootPrintEx(" ");
+  TIMER_wait(2000);
 
   //eject all disk
   df[0].status = 0;
@@ -196,9 +182,7 @@ __geta4 void main(void)
   df[3].status = 0;
  
   BootPrintEx("Booting ...");
-  printf("Booting ...\r");
 
-  //TIMER_wait(5000);
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
 
@@ -217,8 +201,9 @@ __geta4 void main(void)
   int i;
   for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
   for (i=0; i<16; i++) printf("CART[%d]=0x%08x\r", i, read32(0xc00000+0x100000+(i<<2)));
-
-  
+  for (i=0; i<32; i++) printf("RAM[%d]=0x%08x\r",  i, read32(0xc00000+0x80000+(i<<2)));
+  for (i=0; i<32; i++) printf("COP[%d]=0x%08x\r",  i, read32(0xc00000+0x8e680+(i<<2)));
+ 
   EnableOsd();
   SPI(OSD_CMD_RST);
   SPI(0);

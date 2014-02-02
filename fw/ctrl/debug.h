@@ -59,7 +59,7 @@
 
 //// debug enable ////
 //#define DEBUG
-#define DEBUG_LMASK DEBUG_L0 | DEBUG_L1
+#define DEBUG_LMASK (DEBUG_L0 | DEBUG_L1)
 #define DEBUG_FMASK 0xffff0000
 
 
@@ -67,15 +67,15 @@
 #ifdef DEBUG
 #define DBGPRINT(...)       printf(__VA_ARGS__)
 #else
-#define DBGPRINT(...)
+#define DBGPRINT(...)       ;
 #endif
 
 #define STR(x)              #x
 #define XSTR(x)             STR(x)
 
-#define DEBUG_FUNC_IN(m)    if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) DBGPRINT("* DBG : FUNC IN  : %s(), file " __FILE__ ", line " XSTR(__LINE__) "\r", __FUNCTION__)
-#define DEBUG_FUNC_OUT(m)   if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) DBGPRINT("* DBG : FUNC OUT : %s()\r", __FUNCTION__)
-#define DEBUG_MSG(m,x)      if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) DBGPRINT("* DBG : " x "\r")
+#define DEBUG_FUNC_IN(m)    if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) { DBGPRINT("* DBG : FUNC IN  : %s(), file " __FILE__ ", line " XSTR(__LINE__) "\r", __FUNCTION__) }
+#define DEBUG_FUNC_OUT(m)   if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) { DBGPRINT("* DBG : FUNC OUT : %s()\r", __FUNCTION__) }
+#define DEBUG_MSG(m,x)      if(((m)&(DEBUG_LMASK)) && ((m)&(DEBUG_FMASK))) { DBGPRINT("* DBG : " x "\r") }
 
 
 #endif // __DEBUG_H__

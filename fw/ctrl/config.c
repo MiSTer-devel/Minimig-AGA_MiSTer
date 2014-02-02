@@ -9,6 +9,7 @@
 #include "firmware.h"
 #include "menu.h"
 #include "config.h"
+#include "boot.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -73,7 +74,7 @@ char UploadKickstart(char *name)
   {
     int i,j;
     unsigned int adr, size, base=0x180000, offset=0xc00000, data;
-    BootPrint("Uploading 512KB Kickstart ...");
+    BootPrintEx("Uploading 512KB Kickstart ...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
 
@@ -98,13 +99,11 @@ char UploadKickstart(char *name)
       SPI(adr&0xff); adr = adr>>8;
       for (j=0; j<512; j=j+4) {
         SPI(sector_buffer[j+0]);
-        SPIN(); SPIN();
         SPI(sector_buffer[j+1]);
-        SPIN(); SPIN();
+        SPIN(); SPIN(); SPIN(); SPIN();
         SPI(sector_buffer[j+2]);
-        SPIN(); SPIN();
         SPI(sector_buffer[j+3]);
-        SPIN(); SPIN();
+        SPIN(); SPIN(); SPIN(); SPIN();
         //data = ((unsigned int*)sector_buffer)[j>>2];
         //if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
       }
@@ -272,7 +271,7 @@ char UploadActionReplay()
   //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 
   if (RAOpen(&romfile, "HRTMON  ROM")) {
-    BootPrint("\nUploading HRTmon ROM...");
+    BootPrintEx("Uploading HRTmon ROM...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
     printf("[");
@@ -294,13 +293,11 @@ char UploadActionReplay()
       //SPI(adr&0xff); adr = adr>>8;
       //for (j=0; j<512; j=j+4) {
       //  SPI(sector_buffer[j+0]);
-      //  SPIN(); SPIN();
       //  SPI(sector_buffer[j+1]);
-      //  SPIN(); SPIN();
+      //  SPIN(); SPIN(); SPIN(); SPIN();
       //  SPI(sector_buffer[j+2]);
-      //  SPIN(); SPIN();
       //  SPI(sector_buffer[j+3]);
-      //  SPIN(); SPIN();
+      //  SPIN(); SPIN(); SPIN(); SPIN();
       //  //data = ((unsigned int*)sector_buffer)[j>>2];
       //  //if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
       //}
