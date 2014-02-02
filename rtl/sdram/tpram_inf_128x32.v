@@ -15,7 +15,7 @@ module tpram_inf_128x32 (
 reg [32-1:0] mem [0:128-1];
 
 // read / write
-always @ (posedge clk) begin
+always @ (posedge clock) begin
   if (wren) mem[wraddress] <= #1 data;
   q <= #1 mem[rdaddress];
 end

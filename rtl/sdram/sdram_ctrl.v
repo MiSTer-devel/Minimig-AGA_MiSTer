@@ -67,7 +67,7 @@ module sdram_ctrl(
   input  wire           cpuU,
   input  wire           cpu_dma,
   input  wire [ 16-1:0] cpuWR,
-  output reg  [ 16-1:0] cpuRD,
+  output wire [ 16-1:0] cpuRD,
   output reg            enaWRreg,
   output reg            ena7RDreg,
   output reg            ena7WRreg,
