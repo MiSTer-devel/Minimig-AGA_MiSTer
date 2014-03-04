@@ -21,7 +21,7 @@ always @ (posedge clock) begin
   if (wren && byteena_a[0]) mem0[wraddress] <= #1 data[ 8-1:0];
   if (wren && byteena_a[1]) mem1[wraddress] <= #1 data[16-1:8];
   q[ 8-1:0] <= #1 mem0[rdaddress];
-  q[16-1:0] <= #1 mem1[rdaddress];
+  q[16-1:8] <= #1 mem1[rdaddress];
 end
 
 endmodule

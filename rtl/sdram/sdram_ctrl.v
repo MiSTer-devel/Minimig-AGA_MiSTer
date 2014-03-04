@@ -32,9 +32,10 @@ module sdram_ctrl(
   input  wire           sysclk,
   input  wire           c_7m,
   input  wire           reset_in,
+  input  wire           cache_rst,
   output wire           reset_out,
   // temp - cache control
-  input wire  [  3-1:0] cctrl,
+  input wire            cache_ena,
   // sdram
   output reg  [ 12-1:0] sdaddr,
   output reg  [  4-1:0] sd_cs,
@@ -202,9 +203,51 @@ end
 // cpu cache
 ////////////////////////////////////////
 
-wire cache_ack;
+// CPU bus register
+reg     [24:1] cpuAddr_reg = 0;
+reg  [  6-1:0] cpustate_reg = 0;
+reg            cpuL_reg = 0;
+reg            cpuU_reg = 0;
+reg            cpu_dma_reg = 0;
+reg  [ 16-1:0] cpuWR_reg = 0;
+//  output wire [ 16-1:0] cpuRD,
+//  output reg            enaWRreg,
+//  output reg            ena7RDreg,
+//  output reg            ena7WRreg,
+//  output wire           cpuena
 
-assign cpuena = cena || cache_ack || (cpustate[1:0] == 2'b01);
+always @ (posedge sysclk) begin
+  cpuWR_reg <= #1 cpuWR;
+end
+
+wire cache_ack;
+assign cpuena = cache_ack || (cpustate[1:0] == 2'b01);
+
+cpu_cache cpu_cache (
+  // system
+  .clk          (sysclk       ),
+  .rst          (!(reset && cache_rst)),
+  .cache_ena    (cache_ena    ),
+  // cpu if
+  .cpu_state    (cpustate     ),
+  .cpu_adr      (cpuAddr      ),
+  .cpu_bs       ({cpuU, cpuL} ),
+  .cpu_dat_w    (cpuWR_reg    ),
+  .cpu_dat_r    (cpuRD        ),
+  .cpu_ack      (cache_ack    ),
+  // sdram if
+  .sdr_state    (sdram_state  ),
+  .sdr_adr      (casaddr      ),
+  .sdr_cpucycle (cpuCycle     ),
+  .sdr_cas      (cas_sd_cas   ),
+  .sdr_dat_w    (             ),
+  .sdr_dat_r    (sdata_reg    ),
+  .sdr_cpu_act  (             )
+);
+
+
+/*
+assign cpuena = cena || ccachehit || (cpustate[1:0] == 2'b01);
 
 always @ (posedge sysclk or negedge reset) begin
   if (~reset) begin
@@ -221,29 +264,6 @@ always @ (posedge sysclk or negedge reset) begin
   end
 end
 
-cpu_cache cpu_cache (
-  // system
-  .clk          (sysclk       ),
-  .rst          (!reset       ),
-  // cpu if
-  .cpu_state    (cpustate     ),
-  .cpu_cs       (cpu_dma      ),
-  .cpu_adr      (cpuAddr      ),
-  .cpu_bs       ({cpuU, cpuL} ),
-  .cpu_dat_w    (cpuWR        ),
-  .cpu_dat_r    (cpuRD        ),
-  .cpu_ack      (cache_ack    ),
-  // sdram if
-  .sdr_state    (sdram_state  ),
-  .sdr_adr      ( /* ? */     ),
-  .sdr_cpucycle (cpuCycle     ),
-  .sdr_cas      (cas_sd_cas   ),
-  .sdr_dat_w    ( /* ? */     ),
-  .sdr_dat_r    (sdata_reg    ),
-  .sdr_cpu_act  ( /* ? */     )
-);
-
-/*
 reg  [ 16-1:0] cpu_cache_dat0[0:4-1];
 reg  [ 16-1:0] cpu_cache_dat1[0:4-1];
 wire [  2-1:0] cpu_cache_index0, cpu_cache_index1;
@@ -315,19 +335,22 @@ always @ (posedge sysclk) begin
 end
 
 // cpu cache read
+reg [15:0] cpuRD_reg = 0;
 always @ (*) begin
   if (cctrl[2] && cequal0 && &cvalid0 && (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid0[cpu_cache_index0];
-    cpuRD = cpu_cache_dat0[cpu_cache_index0];
+    cpuRD_reg = cpu_cache_dat0[cpu_cache_index0];
   end else if (cctrl[2] && cequal1 && &cvalid1 && (cpustate[0:0] == 1'b0)) begin
     ccachehit = cvalid1[cpu_cache_index1];
-    cpuRD = cpu_cache_dat1[cpu_cache_index1];
+    cpuRD_reg = cpu_cache_dat1[cpu_cache_index1];
   end else begin
     ccachehit = 1'b0;
-    cpuRD = cpuRDd;
+    cpuRD_reg = cpuRDd;
   end
 end
+assign cpuRD = cpuRD_reg;
 */
+
 
 
 ////////////////////////////////////////
@@ -416,7 +439,7 @@ always @ (posedge sysclk) begin
     if (chipCycle) begin
       datawr <= chipWR;
     end else if (cpuCycle) begin
-      datawr <= cpuWR;
+      datawr <= cpuWR_reg;
     end else begin
       datawr <= host_wdat;
     end
