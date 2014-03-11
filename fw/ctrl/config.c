@@ -248,6 +248,8 @@ char UploadActionReplay()
 {
   DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L0);
 
+  return (0);
+
   int i,j;
   unsigned int adr, size, base=0x100000, offset=0xc00000, data;
 
