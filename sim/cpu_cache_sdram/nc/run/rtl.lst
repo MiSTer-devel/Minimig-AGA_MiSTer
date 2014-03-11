@@ -1,0 +1,12 @@
+../../../../rtl/clock/amiga_clk.v
+
+../../../../rtl/sdram/sdram_ctrl.v
+../../../../rtl/sdram/cpu_cache.v
+../../../../rtl/sdram/tpram_inf_128x32.v
+../../../../rtl/sdram/tpram_inf_be_512x16.v
+
+../../../../rtl/tg68k/TG68K.vhd
+../../../../rtl/tg68k/TG68K_Pack.vhd
+../../../../rtl/tg68k/TG68KdotC_Kernel.vhd
+../../../../rtl/tg68k/TG68K_ALU.vhd
+

@@ -1,0 +1,4 @@
+../../../../bench/cpu_cache_sdram/cpu_cache_sdram_tb.v
+../../../../bench/de1/de1_clk_rst.v
+../../../../bench/cpu_cache_sdram/tg68_ram.v
+
