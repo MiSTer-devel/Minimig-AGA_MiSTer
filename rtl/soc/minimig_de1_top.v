@@ -387,7 +387,7 @@ ctrl_top ctrl_top (
   .fl_rst_n     (FL_RST_N         ),  // FLASH reset
   .fl_dat_w     (FL_DAT_W         ),  // FLASH write data
   .fl_dat_r     (FL_DAT_R         ),  // FLASH read data
-  // slave 3 (dram)
+  // DRAM interface
   .dram_adr     (dram_adr         ), 
   .dram_cs      (dram_cs          ),
   .dram_we      (dram_we          ),
@@ -408,6 +408,8 @@ ctrl_top ctrl_top (
 
 
 //// qmem async 32-to-16 bridge ////
+//`define CTRL_SDRAM_BRIDGE
+`ifdef CTRL_SDRAM_BRIDGE
 qmem_bridge #(
   .MAW (22),
   .MSW (4 ),
@@ -437,6 +439,15 @@ qmem_bridge #(
   .s_ack        (bridge_ack       ),
   .s_err        (bridge_err       )
 );
+`else
+assign dram_ack = 1'b1;
+assign dram_err = 1'b0;
+assign bridge_adr = 22'hxxxxxx;
+assign bridge_cs = 1'b0;
+assign bridge_we = 1'bx;
+assign bridge_sel = 2'bxx;
+assign bridge_dat_w = 16'hxxxx;
+`endif // CTRL_SDRAM_BRIDGE
 
 
 //// indicators ////
@@ -561,8 +572,9 @@ sdram_ctrl sdram (
   .sysclk       (clk_114          ),
   .c_7m         (clk_7            ),
   .reset_in     (sdctl_rst        ),
+  .cache_rst    (tg68_rst         ),
   .reset_out    (reset_out        ),
-  .cctrl        (cctrl            ),
+  .cache_ena    (cctrl[0]         ),
   // sdram
   .sdaddr       (DRAM_ADDR        ),
   .sd_cs        (sdram_cs         ),

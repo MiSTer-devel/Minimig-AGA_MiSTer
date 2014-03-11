@@ -226,19 +226,19 @@ always @ (posedge clk) begin
         end
       end
       ST_CPU_WRITE : begin
-        // on hit, update cache, on miss, no update neccessary
-        st_mem_bs <= #1 ~cpu_bs_r;
-        st_mem_dat_w <= #1 cpu_dat_w_r;
-        st_mem_we_0 <= #1 tag_w0_match;
-        st_mem_we_1 <= #1 tag_w1_match;
-        state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
-        //if (cpu_cs) begin
-        //  if (tag_w0_match || tag_w1_match) begin
-        //    st_tag_we <= #1 1'b1;
-        //    st_tag_dat_w <= #1 32'd0;
-        //  end
-        //  state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
-        //end
+        //// on hit, update cache, on miss, no update neccessary
+        //st_mem_bs <= #1 ~cpu_bs_r;
+        //st_mem_dat_w <= #1 cpu_dat_w_r;
+        //st_mem_we_0 <= #1 tag_w0_match;
+        //st_mem_we_1 <= #1 tag_w1_match;
+        //state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
+        if (cpu_cs) begin
+          if (tag_w0_match || tag_w1_match) begin
+            st_tag_we <= #1 1'b1;
+            st_tag_dat_w <= #1 32'd0;
+          end
+          state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
+        end
       end
       ST_CPU_READ : begin
         //if (cpu_cs) begin
