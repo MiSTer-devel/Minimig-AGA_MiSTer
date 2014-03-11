@@ -32,17 +32,23 @@ initial begin
 end
 initial begin
   clk_114_r     = 1'b1;
-  wait (!rst);
+  #1;
+  wait (pll_locked_r);
+  #3;
   forever #4.357  clk_114_r   = ~clk_114_r;
 end
 initial begin
   clk_28_r      = 1'b1;
-  wait (!rst);
+  #1;
+  wait (pll_locked_r);
+  #5;
   forever #17.428 clk_28_r    = ~clk_28_r;
 end
 initial begin
   clk_sdram_r   = 1'b1;
-  wait (!rst);
+  #1;
+  wait (pll_locked_r);
+  #3;
   forever #4.357  clk_sdram_r = ~clk_sdram_r;
 end
 assign clk_114    = clk_114_r;
