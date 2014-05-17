@@ -62,15 +62,13 @@ module ps2keyboard
 	output	[7:0] keydat,		//keyboard data out
 	output	reg keystrobe,		//keyboard data out strobe
 	input	keyack,				//keyboard data out acknowledge
-  input   osd_enable,
 	output	[7:0] osd_ctrl,		//on-screen-display controll
 	output	_lmb,				//emulated left mouse button
 	output	_rmb,				//emulated right mouse button
 	output	[5:0] _joy2,		//joystick emulation
 	output	freeze,				//Action Replay freeze button
   output [5:0] mou_emu,
-  output [5:0] joy_emu,
-  input joy_emu_en
+  output [5:0] joy_emu
 );
 
 //local signals
@@ -277,15 +275,13 @@ ps2keyboardmap km1
 	.aright(aright),
 	.caps(caps),
 	.numlock(numlock),
-  .osd_enable(osd_enable),
 	.osd_ctrl(osd_ctrl),
 	._lmb(_lmb),
 	._rmb(_rmb),
 	._joy2(_joy2),
 	.freeze(freeze),
   .mou_emu(mou_emu),
-  .joy_emu(joy_emu),
-  .joy_emu_en(joy_emu_en)
+  .joy_emu(joy_emu)
 );
 
 //Duplicate key filter and caps lock handling.
@@ -377,16 +373,15 @@ module ps2keyboardmap
 	output	aright,	   			//amiga right alt key
 	output	caps,	   			//amiga capslock key
 	output	reg numlock = 0, 	//ps/2 numlock status
-  input osd_enable,
 	output	reg [7:0] osd_ctrl,	//osd menu control
 	output	reg _lmb,			//mouse button emulation
 	output	reg _rmb,			//mouse button emulation
 	output	reg [5:0] _joy2,	//joystick emulation
 	output	reg freeze,			//int7 freeze button
   output [5:0] mou_emu,
-  output reg [5:0] joy_emu,
-  input joy_emu_en
+  output reg [5:0] joy_emu
 );
+
 //local parameters
 //localparam JOY2KEY_UP    = 7'h3E;
 //localparam JOY2KEY_DOWN  = 7'h2E;
