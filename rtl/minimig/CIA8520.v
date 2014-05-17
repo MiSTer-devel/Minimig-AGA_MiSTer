@@ -106,10 +106,8 @@ module ciaa
   output  aflock,       // auto fire lock
 	output	freeze,				// Action Replay freeze key
 	input	disk_led,			// floppy disk activity LED
-  input osd_enable,
   output [5:0] mou_emu,
-  output [5:0] joy_emu,
-  input joy_emu_en
+  output [5:0] joy_emu
 );
 
 // local signals
@@ -187,15 +185,13 @@ ps2keyboard	kbd1
 	.keydat(keydat[7:0]),
 	.keystrobe(keystrobe),
 	.keyack(keyack),
-  .osd_enable(osd_enable),
 	.osd_ctrl(osd_ctrl),
 	._lmb(_lmb),
 	._rmb(_rmb),
 	._joy2(_joy2),
 	.freeze(freeze),
   .mou_emu(mou_emu),
-  .joy_emu(joy_emu),
-  .joy_emu_en (joy_emu_en)
+  .joy_emu(joy_emu)
 );
 
 // sdr register

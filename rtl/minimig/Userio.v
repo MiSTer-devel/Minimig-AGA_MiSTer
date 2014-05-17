@@ -99,7 +99,6 @@ module userio
 	input	sck,	  				//SPI clock
 	output	osd_blank,				//osd overlay, normal video blank output
 	output	osd_pixel,				//osd video pixel
-  output  osd_enable,
 	output	[1:0] lr_filter,
 	output	[1:0] hr_filter,
 	output	[5:0] memory_config,
@@ -131,7 +130,7 @@ wire	_mthird;					//middle mouse button
 wire	_mright;					//right mouse buttons
 reg		joy1enable;					//joystick 1 enable (mouse/joy switch)
 reg		joy2enable;					//joystick 2 enable when no osd
-//wire	osd_enable;					// OSD display enable
+wire	osd_enable;					// OSD display enable
 wire  key_disable;        // Amiga keyboard disable
 reg		[7:0] t_osd_ctrl;			//JB: osd control lines
 wire	test_load;					//load test value to mouse counter 

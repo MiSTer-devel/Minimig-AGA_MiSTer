@@ -660,7 +660,6 @@ Minimig1 minimig (
   ._joy2        (Joyb             ), // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
   .mouse_btn1   (key_3            ), // mouse button 1
   .mouse_btn2   (key_2            ), // mouse button 2
-  .joy_emu_en   (joy_emu_en       ), // enable keyboard joystick emulation
   ._15khz       (_15khz           ), // scandoubler disable
   .pwrled       (                 ), // power led
   .msdat        (PS2_MDAT         ), // PS2 mouse data

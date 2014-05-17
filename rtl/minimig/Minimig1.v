@@ -195,7 +195,6 @@ module Minimig1
   input kbd_mouse_strobe,
   input [1:0] kbd_mouse_type,
   input [7:0] kbd_mouse_data,
-  input joy_emu_en, // enable keyboard joystick emulation
 	input	_15khz,				//scandoubler disable
 	output	pwrled,				//power led
 	inout	msdat,				//PS2 mouse data
@@ -329,7 +328,6 @@ wire		[3:0]green_i;			//denise green (internal)
 wire		[3:0]blue_i;			//denise blue (internal)
 wire		osd_blank;				//osd blanking 
 wire		osd_pixel;				//osd pixel(video) data
-wire    osd_enable;
 wire		_hsync_i;				//horizontal sync (internal)
 wire		_vsync_i;				//vertical sync (internal)
 wire		_csync_i;				//composite sync (internal)
@@ -628,7 +626,6 @@ userio USERIO1
 	.sck(sck),
 	.osd_blank(osd_blank),
 	.osd_pixel(osd_pixel),
-  .osd_enable(osd_enable),
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
 	.memory_config(memory_config),
@@ -728,7 +725,6 @@ ciaa CIAA1
   .aflock(aflock),
 	.freeze(freeze),
 	.disk_led(disk_led),
-  .osd_enable(osd_enable),
   .mou_emu (mou_emu)
 );
 
