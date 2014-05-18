@@ -67,8 +67,10 @@ reg  [ 6-1:0] cpu_state_r = 0;
 reg  [25-1:1] cpu_adr_r = 0;
 reg  [ 2-1:0] cpu_bs_r = 0;
 reg  [16-1:0] cpu_dat_w_r = 0;
+reg  [16-1:0] sdr_dat_r_r = 0;
 
 wire          cpu_cs;
+wire          cpu_rw;
 wire          cpu_wr;
 wire          cpu_rd;
 wire [ 2-1:0] adr_blk;
@@ -127,28 +129,52 @@ always @ (posedge clk) begin
   end
 end
 
+always @ (posedge clk) begin
+  sdr_dat_r_r <= #1 sdr_dat_r;
+end
+
 // decode cpu control signals
 // 00-> fetch code 10->read data 11->write data 01->no memaccess
-assign cpu_cs = !cpu_state_r[2] && !cpu_state_r[5] && (cpu_state_r[1:0] != 2'b01);
-assign cpu_wr = &cpu_state_r[1:0];
-assign cpu_rd = !cpu_state_r[0];
-//assign cpu_rd = cpu_state_r[1:0] == 2'b00; // instruction
-//assign cpu_rd = cpu_state_r[1:0] == 2'b10; // data
+//assign cpu_cs = !cpu_state[2] && !cpu_state[5] && (cpu_state[1:0] != 2'b01);
+assign cpu_cs = !cpu_state[2];
+assign cpu_rw = !cpu_state[1] | !cpu_state[0];
+assign cpu_wr = &cpu_state[1:0];
+//assign cpu_rd = !cpu_state[0];
+assign cpu_rd = cpu_state[1:0] == 2'b00; // instruction
+//assign cpu_rd = cpu_state[1:0] == 2'b10; // data
 //assign cpu_rd = 0;
 
 // slice up cpu address
-assign adr_blk = cpu_adr_r[2:1];
-assign adr_idx = cpu_adr_r[9:3];
-assign adr_tag = cpu_adr_r[24:10];
+assign adr_blk = cpu_adr[2:1];
+assign adr_idx = cpu_adr[9:3];
+assign adr_tag = cpu_adr[24:10];
 
 // CPU read register
 always @ (posedge clk) begin
   if (cache_ena && cpu_cs && tag_w0_match && (state == ST_CPU_READ))
-    cpu_dat_r <= #1 mem_dat_r_0_reg;
+    cpu_dat_r <= #1 mem_dat_r_0;
   else if (cache_ena && cpu_cs && tag_w1_match && (state == ST_CPU_READ))
-    cpu_dat_r <= #1 mem_dat_r_1_reg;
+    cpu_dat_r <= #1 mem_dat_r_1;
   else if (sdr_cpucycle && (sdr_state == ph9))
     cpu_dat_r <= #1 sdr_dat_r;
+end
+
+// CPU write buffer
+reg cpu_wb_act = 0;
+reg [16-1:0] cpu_wb = 0;
+
+always @ (posedge clk) begin
+  if (rst)
+    cpu_wb_act <= #1 1'b0;
+  else if (sdr_cpucycle && (sdr_state == ph11) && !sdr_cas && (sdr_adr[24:1] == cpu_adr))
+    cpu_wb_act <= #1 1'b0;
+  else if (cpu_cs && cpu_wr)
+    cpu_wb_act <= #1 1'b1;
+end
+
+always @ (posedge clk) begin
+  if (cpu_cs && cpu_wr && !cpu_wb_act)
+    cpu_wb <= #1 cpu_dat_w;
 end
 
 // CPU acknowledge
@@ -174,7 +200,9 @@ always @ (posedge clk) begin
       cpu_ack <= #1 1'b1;
     else if (cache_ena && cpu_cs && tag_w1_match && (state == ST_CPU_READ))
       cpu_ack <= #1 1'b1;
-//    else if (1'b0 /*ack*/)
+//    else if (cpu_cs && cpu_wr && !cpu_wb_act)
+//      cpu_ack <= #1 1'b1;
+//    else if (ack)
 //      cpu_ack <= #1 1'b1;
     else if (sdr_cpucycle && (sdr_state == ph11) && !sdr_cas && (sdr_adr[24:1] == cpu_adr))
       cpu_ack <= #1 1'b1;
@@ -221,35 +249,36 @@ always @ (posedge clk) begin
       end
       ST_PREP : begin
         if (cpu_cs) begin
+          // state <= #1 cpu_rw ? ST_CPU_READ : ST_CPU_WRITE;
           if (cpu_wr) state <= #1 ST_CPU_WRITE;
           else if (cpu_rd) state <= #1 ST_CPU_READ;
         end
       end
       ST_CPU_WRITE : begin
-        //// on hit, update cache, on miss, no update neccessary
-        //st_mem_bs <= #1 ~cpu_bs_r;
-        //st_mem_dat_w <= #1 cpu_dat_w_r;
-        //st_mem_we_0 <= #1 tag_w0_match;
-        //st_mem_we_1 <= #1 tag_w1_match;
-        //state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
-        if (cpu_cs) begin
-          if (tag_w0_match || tag_w1_match) begin
-            st_tag_we <= #1 1'b1;
-            st_tag_dat_w <= #1 32'd0;
-          end
-          state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
-        end
+        // on hit, update cache, on miss, no update neccessary
+        st_mem_bs <= #1 ~cpu_bs;
+        st_mem_dat_w <= #1 cpu_dat_w;
+        st_mem_we_0 <= #1 tag_w0_match;
+        st_mem_we_1 <= #1 tag_w1_match;
+        state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
+        //if (cpu_cs) begin
+        //  if (tag_w0_match || tag_w1_match) begin
+        //    st_tag_we <= #1 1'b1;
+        //    st_tag_dat_w <= #1 32'd0;
+        //  end
+        //  state <= #1 cpu_ack ? ST_IDLE : ST_CPU_WRITE;
+        //end
       end
       ST_CPU_READ : begin
         //if (cpu_cs) begin
           // on hit, update LRU flag in tag memory
           if (tag_w0_match) begin
             st_tag_we <= #1 1'b1;
-            st_tag_dat_w <= #1 {1'b0, tag_dat_r_reg[30:0]};
+            st_tag_dat_w <= #1 {1'b0, tag_dat_r[30:0]};
             state <= #1 cpu_ack ? ST_IDLE : ST_CPU_READ;
           end else if (tag_w1_match) begin
             st_tag_we <= #1 1'b1;
-            st_tag_dat_w <= #1 {1'b1, tag_dat_r_reg[30:0]};
+            st_tag_dat_w <= #1 {1'b1, tag_dat_r[30:0]};
             state <= #1 cpu_ack ? ST_IDLE : ST_CPU_READ;
           end else begin
             // on miss, fetch data from SDRAM & update tag
@@ -280,7 +309,7 @@ always @ (posedge clk) begin
           endcase
           if (sdr_state == ph12) begin
             st_tag_we <= #1 1'b1;
-            st_tag_dat_w <= #1 {!st_lru, st_lru ? {tag_dat_r_reg[30:16], 1'b0, adr_tag} : {adr_tag, tag_dat_r_reg[15:0]}};
+            st_tag_dat_w <= #1 {!st_lru, st_lru ? {tag_dat_r[30:16], 1'b0, adr_tag} : {adr_tag, tag_dat_r[15:0]}};
           end
         end
         state <= #1 cpu_ack ? ST_IDLE : ST_FILL;
@@ -295,10 +324,10 @@ assign tag_radr     = adr_idx;
 assign tag_wadr     = st_adr[8:2];
 assign tag_dat_w    = st_tag_dat_w;
 assign tag_we       = st_tag_we;
-assign tag_w0_match = (adr_tag == tag_dat_r_reg[14: 0]);
-assign tag_w1_match = (adr_tag == tag_dat_r_reg[30:16]);
+assign tag_w0_match = (adr_tag == tag_dat_r[14: 0]);
+assign tag_w1_match = (adr_tag == tag_dat_r[30:16]);
 assign tag_hit      = tag_w0_match || tag_w1_match;
-assign tag_lru      = tag_dat_r_reg[31];
+assign tag_lru      = tag_dat_r[31];
 
 `ifdef SOC_SIM
 tpram_inf_128x32

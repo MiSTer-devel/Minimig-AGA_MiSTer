@@ -672,14 +672,6 @@ Minimig1 minimig (
   .sdi          (SD_CMD           ), // SPI data input
   .sdo          (sdo              ), // SPI data output
   .sck          (SD_CLK           ), // SPI clock
-//  // host mem bus
-//  .host_cs      (host_cs          ),
-//  .host_adr     (host_adr         ),
-//  .host_we      (host_we          ),
-//  .host_bs      (host_bs          ),
-//  .host_wdat    (host_wdat        ),
-//  .host_rdat    (host_rdat        ),
-//  .host_ack     (host_ack         ),
   //video
   ._hsync       (VGA_HS           ), // horizontal sync
   ._vsync       (VGA_VS           ), // vertical sync

@@ -232,7 +232,7 @@ cpu_cache cpu_cache (
   .cpu_state    (cpustate     ),
   .cpu_adr      (cpuAddr      ),
   .cpu_bs       ({cpuU, cpuL} ),
-  .cpu_dat_w    (cpuWR_reg    ),
+  .cpu_dat_w    (cpuWR        ),
   .cpu_dat_r    (cpuRD        ),
   .cpu_ack      (cache_ack    ),
   // sdram if
@@ -439,7 +439,7 @@ always @ (posedge sysclk) begin
     if (chipCycle) begin
       datawr <= chipWR;
     end else if (cpuCycle) begin
-      datawr <= cpuWR_reg;
+      datawr <= cpuWR;
     end else begin
       datawr <= host_wdat;
     end
