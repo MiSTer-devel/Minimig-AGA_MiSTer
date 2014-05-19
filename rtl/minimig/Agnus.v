@@ -184,7 +184,7 @@ module Agnus
 	input	bls,						// blitter slowdown
 	input	ntsc,						// chip is NTSC
 	input	a1k,						// enable A1000 OCS features
-	input	ecs,						// enabl ECS features
+	input	ecs,						// enable ECS features
 	input	floppy_speed,				// allocates refresh slots for disk DMA
 	input	turbo						// alows blitter to take extra DMA slots
 );
@@ -938,7 +938,7 @@ assign planes = bpu[2:0]==3'b111 ? 3'b100 : bpu[2:0];
 
 // generate dma signal
 // for a dma to happen plane must be less than BPU, dma must be enabled and data fetch must be true
-assign dma = ddfrun && dmaena_delayed[1] && hpos[0] && plane[2:0] < planes[2:0] ? 1'b1 : 1'b0;
+assign dma = ddfrun && dmaena_delayed[1] && hpos[0] && (plane[2:0] < bpu[2:0]) ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 

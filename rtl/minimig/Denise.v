@@ -59,6 +59,13 @@
 // SB:
 // 2012-03-23 - fixed sprite enable signal (coppermaster demo)
 // 2013-10-19 - fixed self-made sprite collision bug. Now YQ100818 code is working again!
+//
+// Herzi
+// 2014-03-08	- fixed detect collisions
+//
+// SB:
+// 2014-04-12	- implemented sprite collision detection fix, developed by Yaqube. thanks a lot!
+//		- games Archon1, Rotor and Spaceport finally works normal
 
 module Denise
 (
@@ -317,6 +324,7 @@ collision col0
 	.reg_address_in(reg_address_in),
 	.data_in(data_in),
 	.data_out(col_out),
+	.dblpf(dblpf),
 	.bpldata(bpldata),
 	.nsprite(nsprite)	
 );
@@ -523,11 +531,12 @@ module collision
 	input 	[8:1] reg_address_in,	//register adress inputs
 	input 	[15:0] data_in,			//bus data in
 	output	[15:0] data_out,		//bus data out
+	input	dblpf,				//dual playfield signal, required to support undocumented feature
 	input	[5:0] bpldata,			//bitplane serial video data in
 	input	[7:0] nsprite
 );
 
-//register names and adresses		
+//register names and adresses
 parameter CLXCON = 9'h098;
 parameter CLXDAT = 9'h00E;
 
@@ -553,7 +562,12 @@ always @(posedge clk)
 wire [5:0] bm;
 assign bm = (bpldata[5:0] ^ ~clxcon[5:0]) | (~clxcon[11:6]); // JB: playfield collision detection fix
 
-assign oddmatch = bm[4] & bm[2] & bm[0];
+// this is the implementation of an undocumented function in the real Denise chip, developed by Yaqube.
+// trigger was the game Rotor. mentioned in WinUAE sources to be the only known game needing this feature.
+// it also fixes the Spaceport instandly helicopter crash at takeoff
+// and Archon-1 'sticky effect' of player sprite at the battlefield.
+// the OCS mystery is cleaning up :)
+assign oddmatch = bm[4] & bm[2] & bm[0] & (dblpf | evenmatch);
 assign evenmatch = bm[5] & bm[3] & bm[1];
 
 //generate sprite group match signal
@@ -570,6 +584,7 @@ assign sprmatch[3] = nsprite[6] | (nsprite[7] & clxcon[15]);
 
 //detect collisions
 wire [14:0] cl;
+reg clxdat_read_del;
 
 assign cl[0]  = evenmatch   & oddmatch;		//odd to even bitplanes
 assign cl[1]  = oddmatch    & sprmatch[0];	//odd bitplanes to sprite 0(or 1)
@@ -587,9 +602,15 @@ assign cl[12] = sprmatch[1] & sprmatch[2];	//sprite 2(or 3) to sprite 4(or 5)
 assign cl[13] = sprmatch[1] & sprmatch[3];	//sprite 2(or 3) to sprite 6(or 7)
 assign cl[14] = sprmatch[2] & sprmatch[3];	//sprite 4(or 5) to sprite 6(or 7)
 
+wire clxdat_read = (reg_address_in[8:1]==CLXDAT[8:1]);// clxdat read
+
+always @(posedge clk)
+	clxdat_read_del <= clxdat_read;  
+	
 //register detected collisions
 always @(posedge clk)
-	if (reg_address_in[8:1]==CLXDAT[8:1]) //if clxdat is read, clxdat is cleared to all zero's
+//	if (reg_address_in[8:1]==CLXDAT[8:1])		//if clxdat is read, clxdat is cleared to all zero's
+	if (!clxdat_read & clxdat_read_del)	//if clxdat is read, clxdat is cleared to all zero's after read
 		clxdat <= 0;
 	else //else register collisions
 		clxdat <= clxdat[14:0] | cl[14:0];

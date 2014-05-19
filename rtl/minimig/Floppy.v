@@ -516,7 +516,7 @@ assign _ready   = (_sel[3] | ~(drives[1] & drives[0]))
 
 //disk data byte and status read
 assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;
-	 
+
 //disk sync register
 always @(posedge clk)
 	if (reset) 
