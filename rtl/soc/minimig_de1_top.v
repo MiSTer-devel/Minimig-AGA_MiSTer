@@ -188,7 +188,6 @@ wire           _ram_ble;      // sram lower byte select
 wire           _ram_we;       // sram write enable
 wire           _ram_oe;       // sram output enable
 wire           _15khz;        // scandoubler disable
-wire           joy_emu_en;    // joystick emulation enable
 wire           sdo;           // SPI data output
 wire [ 15-1:0] ldata;         // left DAC data
 wire [ 15-1:0] rdata;         // right DAC data
@@ -327,7 +326,6 @@ assign AUDIORIGHT       = 1'b0;
 // ctrl
 assign SPI_DI           = !SPI_CS_N[0] ? SD_DAT : sdo;
 assign rst_ext          = !KEY[0];
-//assign boot_sel         = sw_5;
 assign ctrl_cfg         = {sw_4, sw_3, sw_2, sw_1};
 
 // clock
@@ -343,7 +341,6 @@ assign audio_lr_mix     = sw_6;
 
 // minimig
 assign _15khz           = sw_9;
-assign joy_emu_en       = sw_8;
 
 
 
@@ -634,7 +631,6 @@ Minimig1 minimig (
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
   .ram_address  (ram_address[21:1]), // SRAM address bus
-  ._ram_ce      (                 ), // SRAM chip enable
   ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
   ._ram_ble     (_ram_ble         ), // SRAM lower byte select
   ._ram_we      (_ram_we          ), // SRAM write enable
@@ -649,7 +645,6 @@ Minimig1 minimig (
   .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   .cck          (cck              ), // colour clock output (3.54 MHz)
   .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
-  .cpu_speed    (1'b0             ), // turbo enable
   //rs232 pins
   .rxd          (minimig_rxd      ), // RS232 receive
   .txd          (minimig_txd      ), // RS232 send
@@ -661,7 +656,6 @@ Minimig1 minimig (
   .mouse_btn1   (key_3            ), // mouse button 1
   .mouse_btn2   (key_2            ), // mouse button 2
   ._15khz       (_15khz           ), // scandoubler disable
-  .pwrled       (                 ), // power led
   .msdat        (PS2_MDAT         ), // PS2 mouse data
   .msclk        (PS2_MCLK         ), // PS2 mouse clk
   .kbddat       (PS2_DAT          ), // PS2 keyboard data
@@ -684,10 +678,8 @@ Minimig1 minimig (
   .ldata        (ldata            ), // left DAC data
   .rdata        (rdata            ), // right DAC data
   //user i/o
-  .gpio         (                 ), // spare GPIO
   .cpu_config   (cpu_config       ), // CPU config
   .memcfg       (memcfg           ), // memory config
-  .drv_snd      (                 ), // drive sound
   .init_b       (vsync            ), // vertical sync for MCU (sync OSD update)
   // fifo / track display
   .trackdisp    (track            ), // floppy track number

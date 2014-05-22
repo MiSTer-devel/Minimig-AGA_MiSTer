@@ -165,7 +165,6 @@ module Minimig1
 	output	[15:0] ram_data,	//sram data bus
 	input	[15:0] ramdata_in,		//sram data bus in
 	output	[21:1] ram_address,	//sram address bus
-	output	[3:0] _ram_ce,		//sram chip enable
 	output	_ram_bhe,			//sram upper byte select
 	output	_ram_ble,			//sram lower byte select
 	output	_ram_we,			//sram write enable
@@ -180,7 +179,6 @@ module Minimig1
 	input c3,			// clock enable signal
 	input cck,			// colour clock enable
 	input [9:0] eclk,			// ECLK enable (1/10th of CLK)
-  input cpu_speed,
 	//rs232 pins
 	input	rxd,				//rs232 receive
 	output	txd,				//rs232 send
@@ -196,7 +194,6 @@ module Minimig1
   input [1:0] kbd_mouse_type,
   input [7:0] kbd_mouse_data,
 	input	_15khz,				//scandoubler disable
-	output	pwrled,				//power led
 	inout	msdat,				//PS2 mouse data
 	inout	msclk,				//PS2 mouse clk
 	inout	kbddat,				//PS2 keyboard data
@@ -227,10 +224,8 @@ module Minimig1
 	output	[14:0]ldata,			//left DAC data
 	output	[14:0]rdata, 			//right DAC data
 	//user i/o
-	output	gpio,
   output  [1:0] cpu_config,
   output  [5:0] memcfg,
-  output  drv_snd,
   output  init_b,       // vertical sync for MCU (sync OSD update)
   // fifo / track display
 	output  [7:0]trackdisp,
@@ -365,7 +360,7 @@ wire	[1:0] hr_filter;		//hires interpolation filter mode: bit 0 - horizontal, bi
 wire	[1:0] scanline;			//scanline effect configuration
 wire	hires;					//hires signal from Denise for interpolation filter enable in Amber
 wire	aron;					//Action Replay is enabled
-//wire	cpu_speed;				//requests CPU to switch speed mode
+wire	cpu_speed;				//requests CPU to switch speed mode
 wire	turbo;					//CPU is working in turbo mode
 wire	[5:0] memory_config;	//memory configuration
 wire	[3:0] floppy_config;	//floppy drives configuration (drive number and speed)
@@ -412,55 +407,6 @@ wire           host_ack;
 //--------------------------------------------------------------------------------------
 
 assign memcfg = memory_config;
-
-// SPI clock buffer
-//wire buf_sck;
-//BUFG sckbuf1 ( .I(sck), .O(buf_sck) );
-
-// power led control
-reg [3:0] led_cnt;
-reg led_dim;
-
-assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-state and active turbo mode
-//assign pwrled = _led ? 1'b0 : 1'b1;
-
-// power led pwm 
-always @(posedge clk)
-  if (_hsync)
-    led_cnt <= led_cnt + 4'd1;
-
-always @(posedge clk)
-  if (!_hsync)
-    led_dim <= |led_cnt;
-
-// drive step sound emulation
-reg _step_del;
-always @(posedge clk)
-  _step_del <= _step; // delayed version of _step for edge detection
-
-wire  step_pulse;
-assign  step_pulse = _step & ~_step_del; // rising edge detection
-
-reg sol_del;
-always @(posedge clk)
-  sol_del <= sol; // delayed version of sol (Amiga display line) for edge detection
-
-wire  sol_pulse;
-assign sol_pulse = sol & ~sol_del; // rising edge detection
-
-reg [3:0] drv_cnt;
-always @(posedge clk)
-  if (drv_cnt != 0 && sol_pulse || drv_cnt == 0 && step_pulse && _change) // count only sol pulses when counter is not zero or step pulses and bootloader is not active
-    drv_cnt <= drv_cnt + 4'd1;
-
-reg drvsnd;
-always @(posedge clk)
-  drvsnd <= |drv_cnt; // high when at least one bit of drv_cnt vector is not zero (| is the reduction operator) and any drive has an inserted disk
-
-assign drv_snd = drvsnd ? 1'b1 : 1'b0;
-
-//extra memory Chip Selects for additional RAM chips
-assign gpio = 1'bz;
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk)
@@ -612,9 +558,6 @@ userio USERIO1
   ._lmb(kb_lmb & mouse_btn1),
   ._rmb(kb_rmb & mouse_btn2),
   .mou_emu (mou_emu),
-//	._joy2(_joy2 & joy_emu),
-//  ._lmb(kb_lmb & mou_emu[4] & mouse_btn1),
-//  ._rmb(kb_rmb & mou_emu[5] & mouse_btn2),
   .kbd_mouse_type(kbd_mouse_type),
   .kbd_mouse_strobe(kbd_mouse_strobe),
   .kbd_mouse_data(kbd_mouse_data), 
@@ -646,7 +589,7 @@ userio USERIO1
 );
 
 //assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
-//assign cpu_speed = 1'b0;
+assign cpu_speed = 1'b0;
 
 //instantiate Denise
 Denise DENISE1
@@ -828,7 +771,6 @@ sram_bridge RAM1
 	._ble(_ram_ble),
 	._we(_ram_we),
 	._oe(_ram_oe),
-	._ce({_ram_ce[3],_ram_ce[2],_ram_ce[1],_ram_ce[0]}),
 	.address(ram_address),
 	.data(ram_data),	
 	.ramdata_in(ramdata_in)	
@@ -855,30 +797,6 @@ Cart CART1
   .ovr            (ovr            ),
   .aron           (aron           )
 );
-/*
-ActionReplay CART1
-(
-	.clk(clk),
-	.reset(reset),
-	.cpu_address(cpu_address),
-	.cpu_address_in(cpu_address_out),
-	.cpu_clk(cpu_clk),
-	._cpu_as(_cpu_as),
-	.reg_address_in(reg_address),
-	.reg_data_in(custom_data_in),
-	.data_in(cpu_data_out),
-	.data_out(ar3_data_out),
-	.cpu_rd(cpu_rd),
-	.cpu_hwr(cpu_hwr),
-	.cpu_lwr(cpu_lwr),
-	.dbr(dbr),
-	.freeze(freeze),
-	.int7(int7),
-	.ovr(ovr),
-	.sel_cart(sel_cart),
-	.aron(aron)
-);
-*/
 
 //level 7 interrupt for CPU
 assign _cpu_ipl = int7 ? 3'b000 : _iplx;	//m68k interrupt request
@@ -1146,7 +1064,6 @@ module sram_bridge
 	output	_ble,   				// sram lower byte
 	output	_we,				// sram write enable
 	output	_oe,				// sram output enable
-	output	[3:0] _ce,	// sram chip enable
 	output	[21:1] address,			// sram address bus
 	output	[15:0] data,	  			// sram data das
 	input	[15:0] ramdata_in	  		// sram data das in
@@ -1235,7 +1152,7 @@ always @(posedge clk28m)
 		doe <= 1'b1;	
 
 // generate sram chip selects (every sram chip is 512K x 16bits)
-assign		_ce[3:0] = {~|bank[7:6],~|bank[5:4],~|bank[3:2],~|bank[1:0]};
+//assign		_ce[3:0] = {~|bank[7:6],~|bank[5:4],~|bank[3:2],~|bank[1:0]};
 //always @(posedge clk28m)
 //	if (!c1 && !c3) // deassert chip selects in Q0
 //		_ce[3:0] <= 4'b1111;
