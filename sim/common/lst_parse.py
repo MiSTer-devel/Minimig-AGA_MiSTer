@@ -149,9 +149,9 @@ def lst_parse(debug=DEBUG, run_log=RUN_LOG, rtl_list=RTL_LST, lib_list=LIB_LST, 
   vlog_list = []
   vinc_list = []
   vhdl_list = []
-  vlog_list = lib_vlog + sim_vlog + rtl_vlog
-  vinc_list = lib_vinc + sim_vinc + rtl_vinc
-  vhdl_list = lib_vhdl + sim_vhdl + rtl_vhdl
+  vlog_list = sim_vlog + lib_vlog + rtl_vlog
+  vinc_list = sim_vinc + lib_vinc + rtl_vinc
+  vhdl_list = sim_vhdl + lib_vhdl + rtl_vhdl
 
   # check that files exist
   log.info("Checking that files exist ...")
