@@ -125,6 +125,7 @@ reg		[5:0] _xjoy2;				//synchronized joystick 2 signals
 wire	[5:0] _sjoy2;				//synchronized joystick 2 signals
 reg   [15:0] potreg;      // POTGO write
 wire	[15:0] mouse0dat;			//mouse counters
+wire  [7:0]  mouse0scr;   // mouse scroller
 wire	_mleft;						//left mouse button
 wire	_mthird;					//middle mouse button
 wire	_mright;					//right mouse buttons
@@ -143,6 +144,7 @@ reg   sel_autofire;     // select autofire and permanent fire
 //register names and adresses		
 parameter JOY0DAT = 9'h00a;
 parameter JOY1DAT = 9'h00c;
+parameter SCRDAT  = 9'h1f0;
 parameter POTINP  = 9'h016;
 parameter POTGO   = 9'h034;
 parameter JOYTEST = 9'h036;
@@ -282,7 +284,8 @@ always @(*)
                       1'b0, potcap[1],
                       1'b0, potcap[0],
                       8'h00};
-
+	else if (reg_address_in[8:1]==SCRDAT[8:1])//read mouse scroll wheel
+		data_out[15:0] = {8'h00,mouse0scr};
 	else
 		data_out[15:0] = 16'h0000;
 
@@ -308,6 +311,7 @@ ps2mouse pm1
   .ps2mclk(ps2mclk),
   .mou_emu (mou_emu),
   .sof (sof),
+  .zcount(mouse0scr),
   .ycount(mouse0dat[15:8]),
   .xcount(mouse0dat[7:0]),
   ._mleft(_mleft),
@@ -1117,6 +1121,7 @@ module ps2mouse
 	inout	ps2mclk,			//mouse PS/2 clk
   input [5:0] mou_emu,
   input sof,
+  output  reg [7:0]zcount,  // mouse Z counter
 	output	reg [7:0]ycount,	//mouse Y counter
 	output	reg [7:0]xcount,	//mouse X counter
 	output	reg _mleft,			//left mouse button output
@@ -1126,215 +1131,269 @@ module ps2mouse
 	input	[15:0] test_data	//mouse counter test value
 );
 
-//local signals
-reg		mclkout; 				//mouse clk out
-wire	mdatout;				//mouse data out
-reg		mdatb,mclkb,mclkc;		//input synchronization	
+reg           mclkout;
+wire          mdatout;
+reg  [ 2-1:0] mdatr;
+reg  [ 3-1:0] mclkr;
 
-reg		[10:0] mreceive;		//mouse receive register	
-reg		[11:0] msend;			//mouse send register
-reg		[15:0] mtimer;			//mouse timer
-reg		[2:0] mstate;			//mouse current state
-reg		[2:0] mnext;			//mouse next state
+reg  [11-1:0] mreceive;
+reg  [12-1:0] msend;
+reg  [16-1:0] mtimer;
+reg  [ 3-1:0] mstate;
+reg  [ 3-1:0] mnext;
 
-wire	mclkneg;				//negative edge of mouse clock strobe
-reg		mrreset;				//mouse receive reset
-wire	mrready;				//mouse receive ready;
-reg		msreset;				//mosue send reset
-wire	msready;				//mouse send ready;
-reg		mtreset;				//mouse timer reset
-wire	mtready;				//mouse timer ready	 
-wire	mthalf;					//mouse timer somewhere halfway timeout
-reg		[1:0] mpacket;			//mouse packet byte valid number
+wire          mclkneg;
+reg           mrreset;
+wire          mrready;
+reg           msreset;
+wire          msready;
+reg           mtreset;
+wire          mtready;
+wire          mthalf;
+reg  [ 3-1:0] mpacket;
+reg           intellimouse=0;
+wire          mcmd_done;
+reg  [ 4-1:0] mcmd_cnt=1;
+reg           mcmd_inc=0;
+reg  [12-1:0] mcmd;
 
-//bidirectional open collector IO buffers
+
+// bidirectional open collector IO buffers
 assign ps2mclk = (mclkout) ? 1'bz : 1'b0;
 assign ps2mdat = (mdatout) ? 1'bz : 1'b0;
 
-//input synchronization of external signals
-always @(posedge clk)
-begin
-	mdatb <= ps2mdat;
-	mclkb <= ps2mclk;
-	mclkc <= mclkb;
-end						
+// input synchronization of external signals
+always @ (posedge clk) begin
+  mdatr[1:0] <= #1 {mdatr[0],   ps2mdat};
+  mclkr[2:0] <= #1 {mclkr[1:0], ps2mclk};
+end
 
-//detect mouse clock negative edge
-assign mclkneg = mclkc & (~mclkb);
+// detect mouse clock negative edge
+assign mclkneg = mclkr[2] & !mclkr[1];
 
-//PS2 mouse input shifter
-always @(posedge clk)
-	if (mrreset)
-		mreceive[10:0]<=11'b11111111111;
-	else if (mclkneg)
-		mreceive[10:0]<={mdatb,mreceive[10:1]};
-assign mrready=~mreceive[0];
+// PS2 mouse input shifter
+always @ (posedge clk) begin
+  if (mrreset)
+    mreceive[10:0] <= #1 11'b11111111111;
+  else if (mclkneg)
+    mreceive[10:0] <= #1 {mdatr[1],mreceive[10:1]};
+end
 
-//PS2 mouse send shifter
-always @(posedge clk)
-	if (msreset)
-		msend[11:0]<=12'b110111101000;
-	else if (!msready && mclkneg)
-		msend[11:0]<={1'b0,msend[11:1]};
-assign msready=(msend[11:0]==12'b000000000001) ? 1'b1 : 1'b0;
-assign mdatout=msend[0];
+assign mrready = !mreceive[0];
 
-//PS2 mouse timer
-always @(posedge clk)
-	if (mtreset)
-		mtimer[15:0]<=16'h0000;
-	else
-		mtimer[15:0]<=mtimer[15:0] + 16'd1;
-assign mtready=(mtimer[15:0]==16'hffff) ? 1'b1 : 1'b0;
-assign mthalf=mtimer[11];
+// PS2 mouse data counter
+always @ (posedge clk) begin
+  if (reset)
+    mcmd_cnt <= #1 4'd0;
+  else if (mcmd_inc && !mcmd_done)
+    mcmd_cnt <= #1 mcmd_cnt + 4'd1;
+end
 
-//PS2 mouse packet decoding and handling
-always @(posedge clk)
-begin
-	if (reset)//reset
-	begin
-		{_mthird,_mright,_mleft} <= 3'b111;
-		xcount[7:0] <= 8'h00;	
-		ycount[7:0] <= 8'h00;
-	end
-	else if (test_load) //test value preload
-		{ycount[7:2],xcount[7:2]} <= {test_data[15:10],test_data[7:2]};
-	else if (mpacket==1)//buttons
-		{_mthird,_mright,_mleft} <= ~mreceive[3:1];
-	else if (mpacket==2)//delta X movement
-		xcount[7:0] <= xcount[7:0] + mreceive[8:1];
-	else if (mpacket==3)//delta Y movement
-		ycount[7:0] <= ycount[7:0] - mreceive[8:1];
-  else if (sof) begin
-    if (mou_emu[3]) ycount <= ycount - 1'b1;
-    else if (mou_emu[2]) ycount <= ycount + 1'b1;
-    if (mou_emu[1]) xcount <= xcount - 1'b1;
-    else if (mou_emu[0]) xcount <= xcount + 1'b1;
+assign mcmd_done = (mcmd_cnt == 4'd9);
+
+// mouse init commands
+always @ (*) begin
+  case (mcmd_cnt)
+    //                GUARD STOP  PARITY DATA   START
+    4'h0    : mcmd = {1'b1, 1'b1, 1'b1,  8'hff, 1'b0}; // reset
+    4'h1    : mcmd = {1'b1, 1'b1, 1'b1,  8'hf3, 1'b0}; // set sample rate
+    4'h2    : mcmd = {1'b1, 1'b1, 1'b0,  8'hc8, 1'b0}; // sample rate = 200
+    4'h3    : mcmd = {1'b1, 1'b1, 1'b1,  8'hf3, 1'b0}; // set sample rate
+    4'h4    : mcmd = {1'b1, 1'b1, 1'b0,  8'h64, 1'b0}; // sample rate = 100
+    4'h5    : mcmd = {1'b1, 1'b1, 1'b1,  8'hf3, 1'b0}; // set sample rate
+    4'h6    : mcmd = {1'b1, 1'b1, 1'b1,  8'h50, 1'b0}; // sample rate = 80
+    4'h7    : mcmd = {1'b1, 1'b1, 1'b0,  8'hf2, 1'b0}; // read device type
+    4'h8    : mcmd = {1'b1, 1'b1, 1'b0,  8'hf4, 1'b0}; // enable data reporting
+    default : mcmd = {1'b1, 1'b1, 1'b0,  8'hf4, 1'b0}; // enable data reporting
+  endcase
+end
+
+// PS2 mouse send shifter
+always @ (posedge clk) begin
+  if (msreset)
+    msend[11:0] <= #1 mcmd;
+  else if (!msready && mclkneg)
+    msend[11:0] <= #1 {1'b0,msend[11:1]};
+end
+
+assign msready = (msend[11:0]==12'b000000000001);
+assign mdatout = msend[0];
+
+// PS2 mouse timer
+always @(posedge clk) begin
+  if (mtreset)
+    mtimer[15:0] <= #1 16'h0000;
+  else
+    mtimer[15:0] <= #1 mtimer[15:0] + 16'd1;
+end
+
+assign mtready = (mtimer[15:0]==16'hffff);
+assign mthalf = mtimer[11];
+
+// PS2 mouse packet decoding and handling
+always @ (posedge clk) begin
+  if (reset) begin
+    {_mthird,_mright,_mleft} <= #1 3'b111;
+    xcount[7:0] <= #1 8'h00;
+    ycount[7:0] <= #1 8'h00;
+    zcount[7:0] <= #1 8'h00;
+  end else begin
+    if (test_load) // test value preload
+      {ycount[7:2],xcount[7:2]} <= #1 {test_data[15:10],test_data[7:2]};
+    else if (mpacket == 3'd1) // buttons
+      {_mthird,_mright,_mleft} <= #1 ~mreceive[3:1];
+    else if (mpacket == 3'd2) // delta X movement
+      xcount[7:0] <= #1 xcount[7:0] +  mreceive[8:1];
+    else if (mpacket == 3'd3) // delta Y movement
+      ycount[7:0] <= #1 ycount[7:0] - mreceive[8:1];
+    else if (mpacket == 3'd4) // delta Z movement
+      zcount[7:0] <= #1 zcount[7:0] + {{4{mreceive[4]}}, mreceive[4:1]};
+    else if (sof) begin
+      if (mou_emu[3]) ycount <= #1 ycount - 1'b1;
+      else if (mou_emu[2]) ycount <= #1 ycount + 1'b1;
+      if (mou_emu[1]) xcount <= #1 xcount - 1'b1;
+      else if (mou_emu[0]) xcount <= #1 xcount + 1'b1;
+    end
   end
 end
 
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-//PS2 mouse state machine
-always @(posedge clk)
-	if (reset || mtready)//master reset OR timeout
-		mstate<=0;
-	else 
-		mstate<=mnext;
-always @(mstate or mthalf or msready or mrready or mreceive)
-begin
-	case(mstate)
-		0://initialize mouse phase 0, start timer
-			begin
-				mclkout=1;
-				mrreset=0;
-				mtreset=1;
-				msreset=0;
-				mpacket=0;
-				mnext=1;
-			end
-
-		1://initialize mouse phase 1, hold clk low and reset send logic
-			begin
-				mclkout=0;
-				mrreset=0;
-				mtreset=0;
-				msreset=1;
-				mpacket=0;
-				if (mthalf)//clk was low long enough, go to next state
-					mnext=2;
-				else
-					mnext=1;
-			end
-
-		2://initialize mouse phase 2, send 'enable data reporting' command to mouse
-			begin
-				mclkout=1;
-				mrreset=1;
-				mtreset=0;
-				msreset=0;
-				mpacket=0;
-				if (msready)//command set, go get 'ack' byte
-					mnext=5;
-				else
-					mnext=2;
-			end
-
-		3://get first packet byte
-			begin
-				mclkout=1;
-				mtreset=1;
-				msreset=0;
-				if (mrready)//we got our first packet byte
-				begin
-					mpacket=1;
-					mrreset=1;
-					mnext=4;
- 				end
-				else//we are still waiting				
- 				begin
-					mpacket=0;
-					mrreset=0;
-					mnext=3;
-				end
-			end
-
-		4://get second packet byte
-			begin
-				mclkout=1;
-				mtreset=0;
-				msreset=0;
-				if (mrready)//we got our second packet byte
-				begin
-					mpacket=2;
-					mrreset=1;
-					mnext=5;
-
-				end
-				else//we are still waiting				
- 				begin
-					mpacket=0;
-					mrreset=0;
-					mnext=4;
-				end
-			end
-
-		5://get third packet byte (or get 'ACK' byte..)
-			begin
-				mclkout=1;
-				mtreset=0;
-				msreset=0;
-				if (mrready)//we got our third packet byte
-				begin
-					mpacket=3;
-					mrreset=1;
-					mnext=3;
-
-				end
-				else//we are still waiting				
- 				begin
-					mpacket=0;
-					mrreset=0;
-					mnext=5;
-				end
-			end
- 
-		default://we should never come here
-			begin
-				mclkout=1'bx;
-				mrreset=1'bx;
-				mtreset=1'bx;
-				msreset=1'bx;
-				mpacket=2'bxx;
-				mnext=0;
-			end
-
-	endcase
+// PS2 intellimouse flag
+always @ (posedge clk) begin
+  if (reset)
+    intellimouse <= #1 1'b0;
+  else if ((mpacket==5) && (mreceive[2:1] == 2'b11))
+    intellimouse <= #1 1'b1;
 end
 
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
+// PS2 mouse state machine
+always @ (posedge clk) begin
+  if (reset || mtready)
+    mstate <= #1 0;
+  else
+    mstate <= #1 mnext;
+end
+
+always @ (*) begin
+  mclkout  = 1'b1;
+  mtreset  = 1'b1;
+  mrreset  = 1'b0;
+  msreset  = 1'b0;
+  mpacket  = 3'd0;
+  mcmd_inc = 1'b0;
+  case(mstate)
+
+    0 : begin
+      // initialize mouse phase 0, start timer
+      mtreset=1;
+      mnext=1;
+    end
+
+    1 : begin
+      //initialize mouse phase 1, hold clk low and reset send logic
+      mclkout=0;
+      mtreset=0;
+      msreset=1;
+      if (mthalf) begin
+        // clk was low long enough, go to next state
+        mnext=2;
+      end else begin
+        mnext=1;
+      end
+    end
+
+    2 : begin
+      // initialize mouse phase 2, send command/data to mouse
+      mrreset=1;
+      mtreset=0;
+      if (msready) begin
+        // command sent
+        mcmd_inc = 1;
+        case (mcmd_cnt)
+          0 : mnext = 4;
+          1 : mnext = 6;
+          2 : mnext = 6;
+          3 : mnext = 6;
+          4 : mnext = 6;
+          5 : mnext = 6;
+          6 : mnext = 6;
+          7 : mnext = 5;
+          8 : mnext = 6;
+          default : mnext = 6;
+        endcase
+      end else begin
+        mnext=2;
+      end
+    end
+
+    3 : begin
+      // get first packet byte
+      mtreset=1;
+      if (mrready) begin
+        // we got our first packet byte
+        mpacket=1;
+        mrreset=1;
+        mnext=4;
+      end else begin
+        // we are still waiting
+        mnext=3;
+      end
+    end
+
+    4 : begin
+      // get second packet byte
+      mtreset=1;
+      if (mrready) begin
+        // we got our second packet byte
+        mpacket=2;
+        mrreset=1;
+        mnext=5;
+      end else begin
+        // we are still waiting
+        mnext=4;
+      end
+    end
+
+    5 : begin
+      // get third packet byte 
+      mtreset=1;
+      if (mrready) begin
+        // we got our third packet byte
+        mpacket=3;
+        mrreset=1;
+        mnext = (intellimouse || !mcmd_done) ? 6 : 3;
+      end else begin
+        // we are still waiting
+        mnext=5;
+      end
+    end
+
+    6 : begin
+      // get fourth packet byte
+      mtreset=1;
+      if (mrready) begin
+        // we got our fourth packet byte
+        mpacket = (mcmd_cnt == 8) ? 5 : 4;
+        mrreset=1;
+        mnext = !mcmd_done ? 0 : 3;
+      end else begin
+        // we are still waiting
+        mnext=6;
+      end
+    end
+
+    default : begin
+      //we should never come here
+      mclkout=1'bx;
+      mrreset=1'bx;
+      mtreset=1'bx;
+      msreset=1'bx;
+      mpacket=2'bxx;
+      mnext=0;
+    end
+
+  endcase
+end
+
 
 endmodule
 

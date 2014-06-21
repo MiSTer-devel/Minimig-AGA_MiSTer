@@ -552,6 +552,8 @@ def ncsim (top_sim=SIM_TOP, opt_waves=WAVES, opt_mems=MEMS, opt_tasks=TASKS, do_
   # run simulation
   log.info("Running test %s ..." % testname)
 
+  log.info("ncsim " + arg)
+
   try:
     p = Popen ("ncsim "+arg, shell=True, stdout=PIPE)
     ret = p.communicate()
