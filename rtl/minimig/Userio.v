@@ -120,12 +120,17 @@ module userio
 );
 
 //local signals	
-reg		[5:0] _sjoy1;				//synchronized joystick 1 signals
-reg		[5:0] _xjoy2;				//synchronized joystick 2 signals
-wire	[5:0] _sjoy2;				//synchronized joystick 2 signals
+reg   [5:0] _sjoy1;       // synchronized joystick 1 signals
+reg   [5:0] _djoy1;       // synchronized joystick 1 signals
+reg   [5:0] _xjoy2;       // synchronized joystick 2 signals
+reg   [5:0] _tjoy2;       // synchronized joystick 2 signals
+reg   [5:0] _djoy2;       // synchronized joystick 2 signals
+wire  [5:0] _sjoy2;       // synchronized joystick 2 signals
 reg   [15:0] potreg;      // POTGO write
 wire	[15:0] mouse0dat;			//mouse counters
 wire  [7:0]  mouse0scr;   // mouse scroller
+reg   [15:0] dmouse0dat;      // docking mouse counters
+reg   [15:0] dmouse1dat;      // docking mouse counters
 wire	_mleft;						//left mouse button
 wire	_mthird;					//middle mouse button
 wire	_mright;					//right mouse buttons
@@ -180,7 +185,7 @@ always @ (posedge clk) begin
     else if (potreg[15] & potreg[14]) potcap[3] <= 1'b1;
     /*if (!1'b1) potcap[2] <= 1'b0;
     else*/ if (potreg[13]) potcap[2] <= potreg[12];
-    if (!(_mright&_sjoy1[5]&_rmb)) potcap[1] <= 1'b0;
+    if (!(_mright&_djoy1[5]&_rmb)) potcap[1] <= 1'b0;
     else if (potreg[11] & potreg[10]) potcap[1] <= 1'b1;
     if (!_mthird) potcap[0] <= #1 1'b0;
     else if (potreg[ 9] & potreg[ 8]) potcap[0] <= 1'b1;
@@ -214,6 +219,13 @@ always @(key_disable)
 //input synchronization of external signals
 always @(posedge clk)
 	_sjoy1[5:0] <= _joy1[5:0];	
+always @(posedge clk)
+  _djoy1[5:0] <= _sjoy1[5:0]; 
+
+always @(posedge clk)
+  _tjoy2[5:0] <= _joy2[5:0];  
+always @(posedge clk)
+  _djoy2[5:0] <= _tjoy2[5:0]; 
 
 always @(posedge clk)
 	if (sof)
@@ -262,17 +274,63 @@ always @(posedge clk)
 	else if (!_sjoy1[4])//when joystick 1 fire pushed, switch to joystick
 		joy1enable = 1;
 
+//Port 1
+always @(posedge clk)
+  if (test_load)
+    dmouse0dat[7:0] <= 8'h00;
+  else if ((!_djoy1[0] && _sjoy1[0] && _sjoy1[2]) || (_djoy1[0] && !_sjoy1[0] && !_sjoy1[2]) || (!_djoy1[2] && _sjoy1[2] && !_sjoy1[0]) || (_djoy1[2] && !_sjoy1[2] && _sjoy1[0]))
+    dmouse0dat[7:0] <= dmouse0dat[7:0] + 1;
+  else if ((!_djoy1[0] && _sjoy1[0] && !_sjoy1[2]) || (_djoy1[0] && !_sjoy1[0] && _sjoy1[2]) || (!_djoy1[2] && _sjoy1[2] && _sjoy1[0]) || (_djoy1[2] && !_sjoy1[2] && !_sjoy1[0]))
+    dmouse0dat[7:0] <= dmouse0dat[7:0] - 1;
+  else  
+    dmouse0dat[1:0] <= {!_djoy1[0], _djoy1[0] ^ _djoy1[2]};
+  
+always @(posedge clk)
+  if (test_load)
+    dmouse0dat[15:8] <= 8'h00;
+  else if ((!_djoy1[1] && _sjoy1[1] && _sjoy1[3]) || (_djoy1[1] && !_sjoy1[1] && !_sjoy1[3]) || (!_djoy1[3] && _sjoy1[3] && !_sjoy1[1]) || (_djoy1[3] && !_sjoy1[3] && _sjoy1[1]))
+    dmouse0dat[15:8] <= dmouse0dat[15:8] + 1;
+  else if ((!_djoy1[1] && _sjoy1[1] && !_sjoy1[3]) || (_djoy1[1] && !_sjoy1[1] && _sjoy1[3]) || (!_djoy1[3] && _sjoy1[3] && _sjoy1[1]) || (_djoy1[3] && !_sjoy1[3] && !_sjoy1[1]))
+    dmouse0dat[15:8] <= dmouse0dat[15:8] - 1;
+  else  
+    dmouse0dat[9:8] <= {!_djoy1[1], _djoy1[1] ^ _djoy1[3]};
+
+//Port 2
+always @(posedge clk)
+  if (test_load)
+    dmouse1dat[7:2] <= test_data[7:2];
+  else if ((!_djoy2[0] && _tjoy2[0] && _tjoy2[2]) || (_djoy2[0] && !_tjoy2[0] && !_tjoy2[2]) || (!_djoy2[2] && _tjoy2[2] && !_tjoy2[0]) || (_djoy2[2] && !_tjoy2[2] && _tjoy2[0]))
+    dmouse1dat[7:0] <= dmouse1dat[7:0] + 1;
+  else if ((!_djoy2[0] && _tjoy2[0] && !_tjoy2[2]) || (_djoy2[0] && !_tjoy2[0] && _tjoy2[2]) || (!_djoy2[2] && _tjoy2[2] && _tjoy2[0]) || (_djoy2[2] && !_tjoy2[2] && !_tjoy2[0]))
+    dmouse1dat[7:0] <= dmouse1dat[7:0] - 1;
+  else  
+    dmouse1dat[1:0] <= {!_djoy2[0], _djoy2[0] ^ _djoy2[2]};
+  
+always @(posedge clk)
+  if (test_load)
+    dmouse1dat[15:10] <= test_data[15:10];
+  else if ((!_djoy2[1] && _tjoy2[1] && _tjoy2[3]) || (_djoy2[1] && !_tjoy2[1] && !_tjoy2[3]) || (!_djoy2[3] && _tjoy2[3] && !_tjoy2[1]) || (_djoy2[3] && !_tjoy2[3] && _tjoy2[1]))
+    dmouse1dat[15:8] <= dmouse1dat[15:8] + 1;
+  else if ((!_djoy2[1] && _tjoy2[1] && !_tjoy2[3]) || (_djoy2[1] && !_tjoy2[1] && _tjoy2[3]) || (!_djoy2[3] && _tjoy2[3] && _tjoy2[1]) || (_djoy2[3] && !_tjoy2[3] && !_tjoy2[1]))
+    dmouse1dat[15:8] <= dmouse1dat[15:8] - 1;
+  else  
+    dmouse1dat[9:8] <= {!_djoy2[1], _djoy2[1] ^ _djoy2[3]};
+
+
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
 //data output multiplexer
 always @(*)
 	if ((reg_address_in[8:1]==JOY0DAT[8:1]) && joy1enable)//read port 1 joystick
-		data_out[15:0] = {6'b000000,~_sjoy1[1],_sjoy1[3]^_sjoy1[1],6'b000000,~_sjoy1[0],_sjoy1[2]^_sjoy1[0]};
+		//data_out[15:0] = {6'b000000,~_sjoy1[1],_sjoy1[3]^_sjoy1[1],6'b000000,~_sjoy1[0],_sjoy1[2]^_sjoy1[0]};
+    data_out[15:0] = {mouse0dat[15:10] + dmouse0dat[15:10],dmouse0dat[9:8],mouse0dat[7:2] + dmouse0dat[7:2],dmouse0dat[1:0]};
 	else if (reg_address_in[8:1]==JOY0DAT[8:1])//read port 1 mouse
-		data_out[15:0] = mouse0dat[15:0];
+		//data_out[15:0] = mouse0dat[15:0];
+    data_out[15:0] = {mouse0dat[15:8] + dmouse0dat[15:8],mouse0dat[7:0] + dmouse0dat[7:0]};
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
-		data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
+		//data_out[15:0] = {6'b000000,~_sjoy2[1],_sjoy2[3]^_sjoy2[1],6'b000000,~_sjoy2[0],_sjoy2[2]^_sjoy2[0]};
+    data_out[15:0] = dmouse1dat;
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
 //		data_out[15:0] = {1'b0, (1'b1 ? potreg[14]&_sjoy2[5]              : _sjoy2[5]),
 //                      1'b0, (1'b1 ? potreg[12]&1'b1                   : 1'b1),
