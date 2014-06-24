@@ -1,16 +1,16 @@
-# SimVision Command Script (Tue Oct 22 16:45:20 CEST 2013)
+# SimVision Command Script (Tue Jun 24 23:18:32 CEST 2014)
 #
-# Version 11.10.s052
+# Version 05.82.p001
 #
 # You can restore this configuration with:
 #
-#     simvision -input uart.sv
-#  or simvision -input uart.sv database1 database2 ...
+#     simvision -input /home/rkrajnc/Dropbox/work/electronics/fpga/minimig-de1/sim/ctrl/nc/run/uart.sv
+#  or simvision -input /home/rkrajnc/Dropbox/work/electronics/fpga/minimig-de1/sim/ctrl/nc/run/uart.sv database1 database2 ...
 #
 
 
 #
-# Preferences
+# preferences
 #
 preferences set toolbar-Standard-WatchWindow {
   usual
@@ -26,6 +26,7 @@ preferences set signal-type-colors {input #FFFF00 fiber #FF99FF errorsignal #FF0
 preferences set schematic-color-highlight #ff0000
 preferences set txe-view-hold 0
 preferences set txe-navigate-search-locate 0
+preferences set plugin-enable-svdatabrowser-new 1
 preferences set toolbar-Windows-WatchWindow {
   usual
   shown 0
@@ -37,6 +38,10 @@ preferences set toolbar-CursorControl-WaveWindow {
 preferences set verilog-colors {Su #ff0099 0 {} 1 {} HiZ #ff9900 We #00ffff Pu #9900ff Sm #00ff99 X #ff0000 StrX #ff0000 other #ffff00 Z #ff9900 Me #0000ff La #ff00ff St {}}
 preferences set txe-navigate-waveform-locate 1
 preferences set txe-view-hidden 0
+preferences set toolbar-TimeSearch-WaveWindow {
+  usual
+  position -row 0 -pos 3
+}
 preferences set waveform-print-paper {A4 (210mm x 297mm)}
 preferences set waveform-height 12
 preferences set show-signal-tooltip 1
@@ -56,9 +61,17 @@ preferences set toolbar-OperatingMode-WaveWindow {
   name OperatingMode
 }
 preferences set plugin-enable-svdatabrowser 0
+preferences set toolbar-NavSignalList-WaveWindow {
+  usual
+  position -anchor e
+}
 preferences set toolbar-txe_waveform_toggle-WaveWindow {
   usual
   position -pos 1
+}
+preferences set toolbar-Windows-SrcBrowser {
+  usual
+  hide icheck
 }
 preferences set plugin-enable-groupscope 0
 preferences set key-bindings {PageUp PageUp ScrollLeft {Left arrow} View>ExpandSequenceTime>AtCursor Alt+X View>Zoom>FullX_widget = #Waveform Window Edit>Undo Ctrl+Z Simulation>Next F6 View>Zoom>InX Alt+I View>Zoom>In Alt+I File>CloseWindow Ctrl+Shift+w ScrollUp {Up arrow} View>Zoom>Out Alt+O ScrollRight {Right arrow} PageDown PageDown Select>All Ctrl+A Edit>Delete Del Edit>Copy Ctrl+C View>Zoom>FullX Alt+= ScrollDown {Down arrow} Simulation>Run F2 openDB Ctrl+O Edit>Cut Ctrl+X Edit>Create>Marker Ctrl+M Edit>Create>Bus Ctrl+W Edit>Paste Ctrl+V Explore>NextEdge Ctrl+\] View>Zoom>Cursor-Baseline Alt+Z View>Center Alt+C Edit>Select>All Ctrl+A View>Zoom>FullY_widget Y Edit>Create>Group Ctrl+G #Schematic window View>Zoom>OutX Alt+O Edit>Ungroup Ctrl+Shift+G Edit>SelectAll Ctrl+A View>CollapseSequenceTime>AtCursor Alt+S Edit>Create>Condition Ctrl+E TopOfPage Home Edit>Redo Ctrl+Y View>Zoom>InX_widget I Simulation>Step F5 View>Zoom>Fit Alt+= View>Zoom>OutX_widget O Explore>PreviousEdge {Ctrl+[} BottomOfPage End}
@@ -70,7 +83,17 @@ preferences set toolbar-SimControl-WatchWindow {
   hide vplan
   shown 0
 }
+preferences set waveform-print-colors {As shown on screen}
+preferences set toolbar-Windows-WaveWindow {
+  usual
+  hide icheck
+  position -row 1
+}
 preferences set txe-navigate-waveform-next-child 0
+preferences set toolbar-Windows-WatchList {
+  usual
+  hide icheck
+}
 preferences set toolbar-Edit-WatchWindow {
   usual
   shown 0
@@ -92,54 +115,57 @@ preferences set toolbar-TimeSearch-WatchWindow {
 }
 
 #
-# Databases
+# databases
 #
-array set dbNames ""
-set dbNames(realName1) [ database require wav -hints {
+database require wav -hints {
 	file ../out/wav/wav.trn
-	file /home/rokk/Dropbox/work/electronics/fpga/minimig-de1/sim/ctrl/nc/out/wav/wav.trn
-}]
-if {$dbNames(realName1) == ""} {
-    set dbNames(realName1) wav
+	file /home/rkrajnc/Dropbox/work/electronics/fpga/minimig-de1/sim/ctrl/nc/out/wav/wav.trn
 }
 
 #
-# Cursors
+# cursors
 #
-set time 99101000ps
+set time 0
+if {[catch {cursor new -name  TimeB -time $time}] != ""} {
+    cursor set -using TimeB -time $time
+}
+set time 90786558ps
 if {[catch {cursor new -name  TimeA -time $time}] != ""} {
     cursor set -using TimeA -time $time
 }
 
 #
-# Mnemonic Maps
+# mmaps
 #
-mmap new -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
-{%c=TRUE -edgepriority 1 -shape high}}
-mmap new -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+mmap new -reuse -name {Boolean as Logic} -contents {
+{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}
+}
+mmap new -reuse -name {Example Map} -contents {
+{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
 {%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
 {%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
-{%x=* -label %x -linecolor gray -shape bus}}
+{%x=* -label %x -linecolor gray -shape bus}
+}
 
 #
 # Design Browser windows
 #
-if {[catch {window new WatchList -name "Design Browser 1" -geometry 835x780+565+212}] != ""} {
-    window geometry "Design Browser 1" 835x780+565+212
+if {[catch {window new WatchList -name "Design Browser 1" -geometry 835x780+535+177}] != ""} {
+    window geometry "Design Browser 1" 835x780+535+177
 }
 window target "Design Browser 1" on
 browser using {Design Browser 1}
-browser set -scope [subst  {$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs}]} ]
 browser set \
-    -signalsort name
-browser yview see [subst  {$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs}]} ]
+    -scope ctrl_tb.ctrl_top.ctrl_regs
+browser yview see ctrl_tb.ctrl_top.ctrl_regs
 browser timecontrol set -lock 0
 
 #
 # Waveform windows
 #
-if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1680x998+1600+135}] != ""} {
-    window geometry "Waveform 1" 1680x998+1600+135
+if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1424x964+8+0}] != ""} {
+    window geometry "Waveform 1" 1424x964+8+0
 }
 window target "Waveform 1" on
 waveform using {Waveform 1}
@@ -150,40 +176,37 @@ waveform set \
     -signalwidth 175 \
     -units ns \
     -valuewidth 75
-cursor set -using TimeA -time 99,101,000ps
+cursor set -using TimeA -time 90,786,558ps
 waveform baseline set -time 18,472ns
 
-set id [waveform add -signals [subst  {
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.clk}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rst}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.tx_counter[3:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.tx_en}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.tx_ready}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.tx_reg[9:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.tx_timer[8:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.uart_txd}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rxd_sync[1:0]}]}
-	} ]]
-waveform hierarchy collapse $id
-set id [waveform add -signals [subst  {
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rxd_bit}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_start}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_sample_cnt[4:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_oversample_cnt[3:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_sample}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_bit_cnt[3:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_recv[9:0]}]}
-	} ]]
-waveform hierarchy collapse $id
-set id [waveform add -signals [subst  {
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_reg[7:0]}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_ready}]}
-	{$dbNames(realName1)::[format {ctrl_tb.ctrl_top.ctrl_regs.rx_valid}]}
-	} ]]
+set id [waveform add -signals [list ctrl_tb.ctrl_top.ctrl_regs.clk \
+	ctrl_tb.ctrl_top.ctrl_regs.rst \
+	ctrl_tb.ctrl_top.ctrl_regs.uart_txd \
+	ctrl_tb.ctrl_top.ctrl_regs.uart_rxd \
+	ctrl_tb.ctrl_top.ctrl_regs.tx_en \
+	ctrl_tb.ctrl_top.ctrl_regs.tx_ready \
+	{ctrl_tb.ctrl_top.ctrl_regs.tx_timer[8:0]} \
+	{ctrl_tb.ctrl_top.ctrl_regs.tx_counter[3:0]} \
+	{ctrl_tb.ctrl_top.ctrl_regs.tx_reg[9:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_en \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_ready \
+	{ctrl_tb.ctrl_top.ctrl_regs.rx_recv[9:0]} \
+	{ctrl_tb.ctrl_top.ctrl_regs.rx_reg[7:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_sample \
+	{ctrl_tb.ctrl_top.ctrl_regs.rx_sample_cnt[4:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_sample_d \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_start \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_valid \
+	ctrl_tb.ctrl_top.ctrl_regs.rxd_bit \
+	{ctrl_tb.ctrl_top.ctrl_regs.rxd_sync[1:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.rx_miss \
+	{ctrl_tb.ctrl_top.ctrl_regs.rx_bit_cnt[3:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.cs \
+	{ctrl_tb.ctrl_top.ctrl_regs.adr[21:0]} \
+	{ctrl_tb.ctrl_top.ctrl_regs.dat_w[31:0]} \
+	{ctrl_tb.ctrl_top.ctrl_regs.dat_r[31:0]} \
+	ctrl_tb.ctrl_top.ctrl_regs.ack \
+	ctrl_tb.ctrl_top.ctrl_regs.tx_ready_d \
+	{ctrl_tb.ctrl_top.ctrl_regs.adr_r[5:0]} ]]
 
-waveform xview limits 57006.717ns 141768.205ns
-
-#
-# Waveform Window Links
-#
-
+waveform xview limits 0 248090ns
