@@ -56,6 +56,7 @@ reg            BOOT_SEL;    // boot location select
 reg  [ 4-1:0]  CTRL_CFG;    // control block config input
 wire [ 4-1:0]  CTRL_STATUS; // control block status output
 
+reg  [32-1:0]  dat;
 
 
 ////////////////////////////////////////
@@ -99,9 +100,28 @@ initial begin
   @ (posedge ctrl_top.clk);
 
   // write a char to UART TX
-  ctrl_regs_cycle(32'h00800008, 1'b1, 4'hf, 32'h000000ab);
+  ctrl_regs_cycle(32'h0080000c, 1'b1, 4'hf, 32'h000000ab);
   repeat(5000) @ (posedge CLK);
-  ctrl_regs_cycle(32'h00800008, 1'b1, 4'hf, 32'h000000ba);
+  ctrl_regs_cycle(32'h00800014, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_STAT = 0x%02x", dat, dat);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800010, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_RX = %c (0x%02x)", dat, dat);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800014, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_STAT = 0x%02x", dat, dat);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h0080000c, 1'b1, 4'hf, 32'h000000ab);
+  ctrl_regs_cycle(32'h0080000c, 1'b1, 4'hf, 32'h000000ba);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800014, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_STAT = 0x%02x", dat, dat);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800010, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_RX = %c (0x%02x)", dat, dat);
+  repeat(5000) @ (posedge CLK);
+  ctrl_regs_cycle(32'h00800014, 1'b0, 4'hf, 32'hxxxxxxxx, dat);
+  $display("UART_STAT = 0x%02x", dat, dat);
 
   // wait
   repeat(10000) @ (posedge CLK);
