@@ -53,9 +53,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "boot.h"
 #include "boot_logo.h"
 #include "boot_print.h"
+#include "serial.h"
 
-#include <stdio.h>
-#include <string.h>
+#include "stdio.h"
+#include "string.h"
 #include <inttypes.h>
 
 
@@ -94,7 +95,7 @@ void HandleFpga(void)
 
   unsigned char  c1, c2;
 
-  LEDS(!led);
+  LEDS(led = !led);
   EnableFpga();
   c1 = SPI(0); // cmd request and drive number
   c2 = SPI(0); // track number
@@ -125,42 +126,44 @@ __geta4 void main(void)
   uint32_t spiclk;
   fileTYPE sd_boot_file;
 
-  // wait for SDRAM controller
-  printf("Waiting for SDRAM ... ");
-  while (!(read32(REG_SYS_STAT_ADR) & 0x1));
-  printf("OK (%01x)\r", read32(REG_SYS_STAT_ADR));
-
-  printf("Unresetting from ctrl block ...\r");
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(4);
-  DisableOsd();
-  write32(REG_RST_ADR, 0);
-
   // enable fast SPI
   SPI_fast();
 
-  //DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "read SPI divider ...");
-  //spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
-  //printf("SPI divider: %u\r", read32(REG_SPI_DIV_ADR));
-  //sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
-  //printf("%s\r", s);
-  //DEBUG_MSG((DEBUG_F_MAIN | DEBUG_L1), "... done");
+  // wait for SDRAM controller
+  printf("Waiting for SDRAM ... ");
+  while ((read32(REG_SYS_STAT_ADR) & 0x1));
+  printf("OK (%01x)\r", read32(REG_SYS_STAT_ADR));
 
+  // reset, unreset and halt cpu
+  printf("Unresetting from ctrl block ...\r");
+  write32(REG_RST_ADR, 0);
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  rstval = (SPI_RST_USR | SPI_RST_CPU | SPI_CPU_HLT);
+  SPI(rstval);
+  DisableOsd();
+  SPIN(); SPIN(); SPIN(); SPIN();
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  rstval = (SPI_RST_CPU | SPI_CPU_HLT);
+  SPI(rstval);
+  DisableOsd();
+  SPIN(); SPIN(); SPIN(); SPIN();
+
+  // initialize SD card
   if (!MMC_Init()) FatalError(1);
   printf("SD card found ...\r");
 
+  // find filesystem
   if (!FindDrive()) FatalError(2);
-  printf("Drive found ...\r");
-
   ChangeDirectory(DIRECTORY_ROOT);
+  printf("Drive found ...\r");
 
   // boot message
   BootInit();
-  BootPrintEx("**** MINIMIG-DE1 ****");
+  BootPrintEx("**** MINIMIG-DE1 by Rok Krajnc (rok.krajnc@gmail.com) ****");
   BootPrintEx("Minimig by Dennis van Weeren");
   BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
-  BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
   BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
   BootPrintEx("For support, see http://www.minimig.net");
   BootPrintEx(" ");
@@ -175,18 +178,17 @@ __geta4 void main(void)
   BootPrintEx(" ");
   TIMER_wait(2000);
 
-  //eject all disk
+  //eject all disks
   df[0].status = 0;
   df[1].status = 0;
   df[2].status = 0;
   df[3].status = 0;
  
   BootPrintEx("Booting ...");
-
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
 
-/**/
+/*
   //write32(REG_RST_ADR, 0);
   EnableOsd();
   SPI(OSD_CMD_RST);
@@ -195,26 +197,27 @@ __geta4 void main(void)
   printf("Waiting for minimig ... ");
   while ((read32(REG_SYS_STAT_ADR) & 0x2));
   printf("OK (%1x)\r", read32(REG_SYS_STAT_ADR));
-/**/ 
+*/ 
   LoadConfiguration(0);  // Use slot-based config filename
 /**/
-  int i;
-  for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
-  for (i=0; i<16; i++) printf("CART[%d]=0x%08x\r", i, read32(0xc00000+0x100000+(i<<2)));
-  for (i=0; i<32; i++) printf("RAM[%d]=0x%08x\r",  i, read32(0xc00000+0x80000+(i<<2)));
-  for (i=0; i<32; i++) printf("COP[%d]=0x%08x\r",  i, read32(0xc00000+0x8e680+(i<<2)));
+  //int i;
+  //for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
+  //for (i=0; i<16; i++) printf("CART[%d]=0x%08x\r", i, read32(0xc00000+0x100000+(i<<2)));
+  //for (i=0; i<32; i++) printf("RAM[%d]=0x%08x\r",  i, read32(0xc00000+0x80000+(i<<2)));
+  //for (i=0; i<32; i++) printf("COP[%d]=0x%08x\r",  i, read32(0xc00000+0x8e680+(i<<2)));
  
+  // un-reset
   EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(0);
-  DisableOsd();
-/**/ 
-
+  //SPI(OSD_CMD_RST);
+  //rstval = 0;
+  //SPI(rstval);
+  //DisableOsd();
 
   // main loop
   while (1) {
     HandleFpga();
     HandleUI();
+    HandleSerial();
   }
 
   DEBUG_FUNC_OUT(DEBUG_F_MAIN | DEBUG_L0);

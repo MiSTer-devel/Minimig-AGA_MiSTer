@@ -127,17 +127,13 @@ void BootEnableMem()
   SPI(0x5);
   DisableOsd();
   SPIN(); SPIN(); SPIN(); SPIN();
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(4+2);
-  DisableOsd();
-  SPIN(); SPIN(); SPIN(); SPIN();
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(4);
-  DisableOsd();
-  SPIN(); SPIN(); SPIN(); SPIN();
-  while ((read32(REG_SYS_STAT_ADR) & 0x2));
+  //EnableOsd();
+  //SPI(OSD_CMD_RST);
+  //rstval = (SPI_CPU_HLT | SPI_RST_CPU);
+  //SPI(rstval);
+  //DisableOsd();
+  //SPIN(); SPIN(); SPIN(); SPIN();
+  //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 }
 
 //// BootClearScreen() ////

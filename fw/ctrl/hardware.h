@@ -90,7 +90,7 @@
 #define DisableDMode()      write32(REG_SPI_CS_ADR, 0x80)
 
 #define SPI_slow()          write32(REG_SPI_DIV_ADR, 0x3f)
-#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x00)
+#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x04)
 #define SPI_write(x)        write32(REG_SPI_DAT_ADR, (x))
 #define SPI_read()          (read32(REG_SPI_DAT_ADR))
 #define SPI(x)              (SPI_write(x), SPI_read())
@@ -105,8 +105,15 @@
 // waste a few cycles to let the FPGA catch up
 #define SPIN()              {read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR); read32(REG_SPI_DIV_ADR);}
 
-#define RST_system()        write32(REG_RST_ADR, 0x1)
-#define RST_minimig()       write32(REG_RST_ADR, 0x2)
+// reset vals
+#define SPI_RST_USR         0x1
+#define SPI_RST_CPU         0x2
+#define SPI_CPU_HLT         0x4
+#define CTRL_RST_SYS        0x1
+#define CTRL_RST_MINIMIG    0x2
+#define CTRL_RST_CPU        0x4
+#define RST_system()        write32(REG_RST_ADR, CTRL_RST_SYS)
+#define RST_minimig()       write32(REG_RST_ADR, CTRL_RST_MINIMIG)
 
 
 //// system stuff ////
@@ -138,6 +145,7 @@
 
 //// global variables ////
 extern uint32_t fw_copy_routine[];
+extern uint32_t rstval;
 
 //// function declarations ////
 unsigned long CheckButton(void);

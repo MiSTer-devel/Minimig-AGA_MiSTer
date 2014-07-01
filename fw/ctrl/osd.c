@@ -41,7 +41,7 @@ This is the Minimig OSD (on-screen-display) handler.
 #include "charrom.h"
 #include "logo.h"
 
-#include <string.h>
+#include "string.h"
 
 // conversion table of Amiga keyboard scan codes to ASCII codes
 const char keycode_table[128] =
