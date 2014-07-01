@@ -161,7 +161,7 @@ always @ (posedge clk, posedge rst) begin
   if (rst)
     tx_counter <= #1 4'd0;
   else if (tx_en && tx_ready)
-    tx_counter <= #1 4'd10 - 4'd1;
+    tx_counter <= #1 4'd11 - 4'd1;
   else if ((|tx_counter) && (~|tx_timer))
     tx_counter <= #1 tx_counter - 4'd1;
 end
