@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "fdd.h"
 #include "config.h"
 
-#include <stdio.h>
+#include "stdio.h"
 
 unsigned char vDEBUG = 0;
 

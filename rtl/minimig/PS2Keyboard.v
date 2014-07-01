@@ -435,8 +435,8 @@ always @(posedge clk)
 //keyrom[6:0] = amiga keycode
 assign disable_amiga_key = numlock && ((keyrom[7:0]==JOY2KEY_LEFT) | (keyrom[7:0]==JOY2KEY_RIGHT) | (keyrom[7:0]==JOY2KEY_UP) | (keyrom[7:0]==JOY2KEY_DOWN) | keyrom[14] | keyrom[13]);
 assign valid = keyrom[15] & (~keyrom[9] | ~numlock) & enable2 && !disable_amiga_key;
-assign ctrl = keyrom[14];
-assign aleft = keyrom[13];
+assign ctrl = keyrom[14] && !numlock;
+assign aleft = keyrom[13] && !numlock;
 assign aright = keyrom[12];
 assign caps = keyrom[11];
 assign akey[7:0] = {upstroke, keyrom[6:0]};
@@ -504,7 +504,7 @@ always @(posedge clk)
 begin
 	if (reset || !numlock)
 		_joy2[4] <= 1'b1;
-	else if (enable2 && keyrom[14]/*ctrl*//*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE0*/)
+	else if (enable2 && keyrom[15] && keyrom[14]/*ctrl*//*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE0*/)
 		_joy2[4] <= upstroke;
 end
 
@@ -512,7 +512,7 @@ always @(posedge clk)
 begin
 	if (reset || !numlock)
 		_joy2[5] <= 1'b1;
-	else if (enable2 && keyrom[13]/*aleft*/ /*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE1*/)
+	else if (enable2 && keyrom[15] && keyrom[13]/*aleft*/ /*keyrom[15] && keyrom[7:0]==JOY2KEY_FIRE1*/)
 		_joy2[5] <= upstroke;
 end
 

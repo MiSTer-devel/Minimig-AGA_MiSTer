@@ -60,6 +60,8 @@ uint32_t fw_copy_routine[] = {
   0x15000000  // l.nop 0x0
 };
 
+uint32_t rstval = 0;
+
 
 //// button ////
 unsigned long CheckButton(void)

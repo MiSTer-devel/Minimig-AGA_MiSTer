@@ -63,6 +63,8 @@
 //                         
 // RK:
 // 2013-03-21 - more compatible right mouse & second joystick button handling; TODO tests
+// 2014-06-21 - added PS/2 mouse intellimouse support
+// 2014-06-22 - added real mouse support from Chameleon minimig port
 
 
 module userio
@@ -109,6 +111,8 @@ module userio
   output  [1:0] cpu_config,
 	output	usrrst,					//user reset from osd module
   output cpurst,
+  output cpuhlt,
+  output wire fifo_full,
   // host
   output wire           host_cs,
   output wire [ 24-1:0] host_adr,
@@ -440,6 +444,8 @@ osd	osd1
   .autofire_config(autofire_config),
 	.usrrst(usrrst),
   .cpurst(cpurst),
+  .cpuhlt(cpuhlt),
+  .fifo_full(fifo_full),
   .host_cs      (host_cs          ),
   .host_adr     (host_adr         ),
   .host_we      (host_we          ),
@@ -489,6 +495,8 @@ module osd
   output  reg [1:0] autofire_config = 0,
 	output	reg usrrst=1'b0,
   output reg cpurst=1'b1,
+  output reg cpuhlt=1'b1,
+  output wire fifo_full,
   // host
   output reg            host_cs,
   output wire [ 24-1:0] host_adr,
@@ -611,7 +619,6 @@ assign osd_blank = osdframe;
 //dual ported osd video buffer
 //video buffer is 1024*8
 //this buffer should be a single blockram
-reg [7:0] osdbuf_out = 8'd0; // TODO remove!
 always @(posedge clk) begin//input part
 	if (wren)
 		osdbuf[wraddr[10:0]] <= wrdat[7:0];
@@ -782,7 +789,7 @@ always @ (*) begin
     end
   endcase
 end
-// 8'b0_000_1000 | XXXXXRBC || reset control   | R - reset, B - reset to bootloader, C - reset control block
+// 8'b0_000_1000 | XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
 // 8'b0_001_1000 | XXXXXXXX || clock control   | unused
 // 8'b0_010_1000 | XXXXXXKE || osd control     | K - disable Amiga keyboard, E - enable OSD
 // 8'b0_000_0100 | XXXXEANT || chipset config  | E - ECS, A - OCS A1000, N - NTSC, T - turbo
@@ -799,7 +806,7 @@ end
 // write regs
 always @ (posedge clk) begin
   if (rx && !cmd) begin
-    if (spi_reset_ctrl_sel)   begin if (dat_cnt == 0) {cpurst, usrrst} <= #1 wrdat[2:1]; end
+    if (spi_reset_ctrl_sel)   begin if (dat_cnt == 0) {cpuhlt, cpurst, usrrst} <= #1 wrdat[2:0]; end
 //    if (spi_clock_ctrl_sel)   begin if (dat_cnt == 0) end
     if (spi_osd_ctrl_sel)     begin if (dat_cnt == 0) {key_disable, osd_enable} <= #1 wrdat[1:0]; end
     if (spi_chip_cfg_sel)     begin if (dat_cnt == 0) t_chipset_config <= #1 wrdat[3:0]; end
@@ -867,13 +874,14 @@ end
 
 wire wr_fifo_empty;
 wire wr_fifo_full;
+assign fifo_full = wr_fifo_full;
 reg  wr_fifo_rd_en;
 sync_fifo #(
   .FD (4),
   .DW (16)
 ) wr_fifo (
   .clk          (clk),
-  .rst          (reset || cmd),
+  .rst          (reset/* || cmd*/), // TODO possible problem (cmd)!
   .fifo_in      ({mem_dat_r, wrdat}),
   .fifo_out     (host_wdat),
   .fifo_wr_en   (rx && !cmd && mem_toggle),
@@ -886,37 +894,7 @@ reg  [2-1:0] wr_state = 2'b00;
 localparam ST_WR_IDLE = 2'b00;
 localparam ST_WR_WRITE = 2'b10;
 localparam ST_WR_WAIT = 2'b11;
-/*
-always @ (posedge clk or posedge reset) begin
-  if (reset)
-    wr_state <= #1 ST_WR_IDLE;
-  else begin
-    wr_fifo_rd_en <= #1 1'b0;
-    host_cs <= #1 1'b0;
-    host_we <= #1 1'b0;
-    host_bs <= #1 2'b00;
-    wr_fifo_rd_en <= #1 1'b0;
-    case (wr_state)
-      ST_WR_IDLE: begin
-        if (!wr_fifo_empty && !wr_fifo_rd_en) wr_state <= #1 ST_WR_WRITE;
-      end
-      ST_WR_WRITE: begin
-        host_cs <= #1 1'b1;
-        host_we <= #1 1'b1;
-        host_bs <= #1 2'b11;
-        if (host_ack) wr_state <= #1 ST_WR_WAIT;
-      end
-      ST_WR_WAIT: begin
-        host_cs <= #1 1'b1;
-        host_we <= #1 1'b1;
-        host_bs <= #1 2'b11;
-        wr_state <= #1 ST_WR_IDLE;
-        wr_fifo_rd_en <= #1 1'b1;
-      end
-    endcase
-  end
-end
-*/
+
 always @ (posedge clk) begin
   if (reset || cmd)
     wr_state <= #1 ST_WR_IDLE;
@@ -974,7 +952,7 @@ wire [7:0] rtl_version;
 assign rtl_version = 8'h32;
 
 assign rddat =  (spi_version_sel)  ? rtl_version :
-                (spi_mem_read_sel) ? osdbuf_out  : osd_ctrl;
+                (spi_mem_read_sel) ? 8'd00  : osd_ctrl;
 
 
 /*
@@ -1319,7 +1297,7 @@ end
 always @ (posedge clk) begin
   if (reset)
     intellimouse <= #1 1'b0;
-  else if ((mpacket==5) && (mreceive[2:1] == 2'b11))
+  else if ((mpacket==3'd5) && (mreceive[2:1] == 2'b11))
     intellimouse <= #1 1'b1;
 end
 
@@ -1445,7 +1423,7 @@ always @ (*) begin
       mrreset=1'bx;
       mtreset=1'bx;
       msreset=1'bx;
-      mpacket=2'bxx;
+      mpacket=3'bxxx;
       mnext=0;
     end
 

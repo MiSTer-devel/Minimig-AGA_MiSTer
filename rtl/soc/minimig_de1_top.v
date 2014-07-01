@@ -266,7 +266,7 @@ i_sync #(.DW(5)) i_sync_sw_50 (
 
 i_sync #(.DW(4)) i_sync_ctrl_50 (
   .clk  (clk_50),
-  .i    ({vsync, ~tg68_rst, minimig_rst_out, reset_out}),
+  .i    ({vsync, ~tg68_rst, minimig_rst_out, ~reset_out}),
   .o    (sys_status)
 );
 
@@ -405,7 +405,7 @@ ctrl_top ctrl_top (
 
 
 //// qmem async 32-to-16 bridge ////
-//`define CTRL_SDRAM_BRIDGE
+`define CTRL_SDRAM_BRIDGE
 `ifdef CTRL_SDRAM_BRIDGE
 qmem_bridge #(
   .MAW (22),
@@ -448,6 +448,8 @@ assign bridge_dat_w = 16'hxxxx;
 
 
 //// indicators ////
+wire fifo_full;
+
 indicators indicators(
   .clk          (clk_7            ),
   .rst          (~pll_locked      ),
@@ -459,6 +461,7 @@ indicators indicators(
   .status       ({rom_status, ram_status, reg_status, dram_status}),
   .ctrl_status  (ctrl_status      ),
   .sys_status   (sys_status       ),
+  .fifo_full    (fifo_full),
   .hex_0        (HEX0             ),
   .hex_1        (HEX1             ),
   .hex_2        (HEX2             ),
@@ -681,6 +684,7 @@ Minimig1 minimig (
   .cpu_config   (cpu_config       ), // CPU config
   .memcfg       (memcfg           ), // memory config
   .init_b       (vsync            ), // vertical sync for MCU (sync OSD update)
+  .fifo_full    (fifo_full        ),
   // fifo / track display
   .trackdisp    (track            ), // floppy track number
   .secdisp      (                 ), // sector

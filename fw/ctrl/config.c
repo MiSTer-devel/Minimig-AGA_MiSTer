@@ -11,8 +11,8 @@
 #include "config.h"
 #include "boot.h"
 
-#include <stdio.h>
-#include <string.h>
+#include "stdio.h"
+#include "string.h"
 
 configTYPE config;
 fileTYPE file;
@@ -56,31 +56,31 @@ char UploadKickstart(char *name)
 	BootPrint("Loading file: ");
 	BootPrint(filename);
 
-  // reset minimig & CPU
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(6);
-  DisableOsd();
+  //// reset minimig & CPU
+  //EnableOsd();
+  //SPI(OSD_CMD_RST);
+  //SPI(6);
+  //DisableOsd();
+  ////while ((read32(REG_SYS_STAT_ADR) & 0x2));
+  //SPIN(); SPIN();
+  //EnableOsd();
+  //SPI(OSD_CMD_RST);
+  //SPI(4);
+  //DisableOsd();
+  //SPIN(); SPIN();
   //while ((read32(REG_SYS_STAT_ADR) & 0x2));
-  SPIN(); SPIN();
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(4);
-  DisableOsd();
-  SPIN(); SPIN();
-  while ((read32(REG_SYS_STAT_ADR) & 0x2));
 
   if (RAOpen(&romfile, filename))
   {
     int i,j;
     unsigned int adr, size, base=0x180000, offset=0xc00000, data;
-    BootPrintEx("Uploading 512KB Kickstart ...");
+    //BootPrintEx("Uploading 512KB Kickstart ...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
 
     printf("[");
     for (i=0; i<size; i++) {
-      if (!(i&15)) printf("*");
+      if (!(i&31)) printf("*");
       RARead(&romfile,sector_buffer,512);
       //adr = offset + base + i*512;
       //data = ((unsigned int*)sector_buffer)[0];
@@ -91,31 +91,29 @@ char UploadKickstart(char *name)
       //  if (data != read32(adr+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", adr+j, data, read32(adr+j));
       //}
       EnableOsd();
-      adr = 0x00000 + i*512;
+      adr = 0xf80000 + i*512;
       SPI(OSD_CMD_WR);
+      SPIN(); SPIN(); SPIN(); SPIN();
       SPI(adr&0xff); adr = adr>>8;
       SPI(adr&0xff); adr = adr>>8;
+      SPIN(); SPIN(); SPIN(); SPIN();
       SPI(adr&0xff); adr = adr>>8;
       SPI(adr&0xff); adr = adr>>8;
+      SPIN(); SPIN(); SPIN(); SPIN();
       for (j=0; j<512; j=j+4) {
         SPI(sector_buffer[j+0]);
         SPI(sector_buffer[j+1]);
-        SPIN(); SPIN(); SPIN(); SPIN();
+        SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN();
         SPI(sector_buffer[j+2]);
         SPI(sector_buffer[j+3]);
-        SPIN(); SPIN(); SPIN(); SPIN();
-        //data = ((unsigned int*)sector_buffer)[j>>2];
-        //if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
+        SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN();
+        data = ((unsigned int*)sector_buffer)[j>>2];
+        if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
       }
       DisableOsd();
     }
     printf("]\r");
     return(1);
-    // unreset CPU
-    EnableOsd();
-    SPI(OSD_CMD_RST);
-    SPI(0);
-    DisableOsd();
   }
 
 /*
@@ -248,12 +246,10 @@ char UploadActionReplay()
 {
   DEBUG_FUNC_IN(DEBUG_F_CONFIG | DEBUG_L0);
 
-  return (0);
-
   int i,j;
   unsigned int adr, size, base=0x100000, offset=0xc00000, data;
 
-  hrtcfg_print();
+  //hrtcfg_print();
 
   // TODO ROM isn-t uploaded properly, probablz the same reason kickstart wasn't working.
   // Should probably fix in hardware. (see Gary.v)
@@ -474,24 +470,24 @@ void ApplyConfiguration(char reloadkickstart)
 
 	if(reloadkickstart)
 	{
-		ConfigChipset(config.chipset | CONFIG_TURBO); // set CPU in turbo mode
-		ConfigFloppy(1, CONFIG_FLOPPY2X); // set floppy speed
+		//ConfigChipset(config.chipset | CONFIG_TURBO); // set CPU in turbo mode
+		//ConfigFloppy(1, CONFIG_FLOPPY2X); // set floppy speed
 		//OsdReset(RESET_BOOTLOADER);
 
-		if (!UploadKickstart(config.kickstart.name))
-		{
-		    strcpy(config.kickstart.name, "KICK    ");
-		    if (!UploadKickstart(config.kickstart.name))
-		        FatalError(6);
-		}
+		//if (!UploadKickstart(config.kickstart.name))
+		//{
+		//    strcpy(config.kickstart.name, "KICK    ");
+		//    if (!UploadKickstart(config.kickstart.name))
+		//        FatalError(6);
+		//}
 
-		if (!CheckButton() && !config.disable_ar3) // if menu button pressed don't load Action Replay
-		{
-		//	if(config.memory & 0x20)
-		//		BootPrint("More than 2MB of Fast RAM configured - disabling Action Replay!");
-		//	else
-				UploadActionReplay();
-		}
+		//if (!CheckButton() && !config.disable_ar3) // if menu button pressed don't load Action Replay
+		//{
+		////	if(config.memory & 0x20)
+		////		BootPrint("More than 2MB of Fast RAM configured - disabling Action Replay!");
+		////	else
+		//		UploadActionReplay();
+		//}
 	}
 	else
 	{
@@ -597,40 +593,60 @@ void ApplyConfiguration(char reloadkickstart)
     //ConfigFilter(config.filter.lores, config.filter.hires);
     //ConfigScanlines(config.scanlines);
     ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
+    ConfigChipset(config.chipset);
+    ConfigFloppy(config.floppy.drives, config.floppy.speed);
+
 
 	if(reloadkickstart)
 	{
+    UploadActionReplay();
+
     printf("Reloading kickstart ...\r");
 	  TIMER_wait(1000);
 	    //BootExit();
     EnableOsd();
     SPI(OSD_CMD_RST);
-    SPI(6);
+    rstval |= (SPI_RST_CPU | SPI_CPU_HLT);
+    SPI(rstval);
     DisableOsd();
-    SPIN(); SPIN();
+    SPIN(); SPIN(); SPIN(); SPIN();
+		if (!UploadKickstart(config.kickstart.name))
+		{
+		    strcpy(config.kickstart.name, "KICK    ");
+		    if (!UploadKickstart(config.kickstart.name))
+		        FatalError(6);
+		}
     EnableOsd();
     SPI(OSD_CMD_RST);
-    SPI(0);
+    rstval |= (SPI_RST_USR | SPI_RST_CPU);
+    SPI(rstval);
     DisableOsd();
-    //while ((read32(REG_SYS_STAT_ADR) & 0x2));
+    SPIN(); SPIN(); SPIN(); SPIN();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    rstval = 0;
+    SPI(rstval);
+    DisableOsd();
+    SPIN(); SPIN(); SPIN(); SPIN();
+      //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 	}
 	else {
     printf("Resetting ...\r");
 		//OsdReset(RESET_NORMAL);
     EnableOsd();
     SPI(OSD_CMD_RST);
-    SPI(6);
+    rstval |= (SPI_RST_USR | SPI_RST_CPU);
+    SPI(rstval);
     DisableOsd();
-    SPIN(); SPIN();
+    SPIN(); SPIN(); SPIN(); SPIN();
     EnableOsd();
     SPI(OSD_CMD_RST);
-    SPI(0);
+    rstval = 0;
+    SPI(rstval);
     DisableOsd();
+    SPIN(); SPIN(); SPIN(); SPIN();
     //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 }
-
-  ConfigChipset(config.chipset);
-  ConfigFloppy(config.floppy.drives, config.floppy.speed);
 
   DEBUG_FUNC_OUT(DEBUG_F_CONFIG | DEBUG_L1);
 }

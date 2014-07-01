@@ -13,6 +13,7 @@ module indicators (
   input wire  [  4-1:0] status,       // control block slave status
   input wire  [  4-1:0] ctrl_status,  // control block reg-driven status
   input wire  [  4-1:0] sys_status,   // status from system
+  input wire            fifo_full,
   // outputs
   output wire [  7-1:0] hex_0,        // seven segment display 0
   output wire [  7-1:0] hex_1,        // seven segment display 1
@@ -82,7 +83,7 @@ always @ (posedge clk, posedge rst) begin
     ctrl_leds <= #1 ctrl_status;
 end
 
-assign led_g = {ctrl_leds, 2'b00,      g1_out, g0_out};
+assign led_g = {ctrl_leds, 1'b0,fifo_full,      g1_out, g0_out};
 assign led_r = {status,    sys_status, r1_out, r0_out};
 
 

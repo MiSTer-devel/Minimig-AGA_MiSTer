@@ -90,13 +90,14 @@ localparam SPI_CNT      = 6'd63;
 // address register                   //
 ////////////////////////////////////////
 
-reg  [RAW+2-1:0] adr_r;
+reg  [RAW+2-1:0] adr_r=0;
+reg              cs_r=0;
+reg              we_r=0;
 
-always @ (posedge clk, posedge rst) begin
-  if (rst)
-    adr_r <= #1 {(RAW+2){1'b0}};
-  else
-    adr_r <= #1 adr[RAW+2-1:0];
+always @ (posedge clk) begin
+  adr_r <= #1 adr[RAW+2-1:0];
+  cs_r  <= #1 cs;
+  we_r  <= #1 we;
 end
 
 
@@ -160,7 +161,7 @@ always @ (posedge clk, posedge rst) begin
   if (rst)
     tx_counter <= #1 4'd0;
   else if (tx_en && tx_ready)
-    tx_counter <= #1 4'd10 - 4'd1;
+    tx_counter <= #1 4'd11 - 4'd1;
   else if ((|tx_counter) && (~|tx_timer))
     tx_counter <= #1 tx_counter - 4'd1;
 end
@@ -169,7 +170,7 @@ end
 // set for 115200 Baud
 always @ (posedge clk, posedge rst) begin
   if (rst)
-    tx_timer <= #1 TXD_CNT - 9'd1;
+    tx_timer <= #1 9'd0;
   else if (tx_en && tx_ready)
     tx_timer <= #1 TXD_CNT - 9'd1;
   else if (|tx_timer)
@@ -209,14 +210,14 @@ wire           rx_start;
 reg  [  5-1:0] rx_sample_cnt = RXD_CNT;
 reg  [  4-1:0] rx_oversample_cnt = 4'b1111;
 wire           rx_sample;
-reg            rx_sample_d;
+reg            rx_sample_d=0;
 reg  [  4-1:0] rx_bit_cnt = 4'd0;
 reg  [ 10-1:0] rx_recv = 10'd0;
 reg  [  8-1:0] rx_reg = 8'd0;
 reg            rx_valid = 1'b0;
 wire           rx_ready;
 reg            rx_en;
-reg            rx_miss;
+reg            rx_miss=0;
 reg            uart_stat_en;
 
 // sync input
@@ -266,7 +267,7 @@ end
 // set when valid frame is received, reset when rx_reg is read
 always @ (posedge clk) begin
   if (~|rx_bit_cnt && rx_sample_d) rx_valid <= #1 rx_recv[9];
-  else if (rx_en) rx_valid <= #1 1'b0;
+  else if ((adr_r[RAW+2-1:2] == REG_UART_RX) && cs_r && !we_r) rx_valid <= #1 1'b0;
 end
 
 // RX ready
@@ -277,7 +278,7 @@ assign rx_ready = ~|rx_bit_cnt;
 // set when there is a valid char in output reg but it wasn't read, reset by reading the UART status
 always @ (posedge clk) begin
   if (rx_valid && (~|rx_bit_cnt && rx_recv[9] && rx_sample_d)) rx_miss <= #1 1'b1;
-  else if (uart_stat_en) rx_miss <= #1 1'b0;
+  else if ((adr_r[RAW+2-1:2] == REG_UART_RX) && cs_r && !we_r) rx_miss <= #1 1'b0;
 end
 
 
