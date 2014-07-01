@@ -227,6 +227,7 @@ module Minimig1
   output  [1:0] cpu_config,
   output  [5:0] memcfg,
   output  init_b,       // vertical sync for MCU (sync OSD update)
+  output wire fifo_full,
   // fifo / track display
 	output  [7:0]trackdisp,
 	output  [13:0]secdisp,
@@ -347,6 +348,7 @@ wire		_wprot;					//disk is write-protected
 wire	bls;					//blitter slowdown - required for sharing bus cycles between Blitter and CPU
 
 wire cpurst;
+wire cpuhlt;
 
 wire	int7;					//int7 interrupt request from Action Replay
 wire	[2:0] _iplx;			//interrupt request lines from Paula
@@ -579,6 +581,8 @@ userio USERIO1
   .cpu_config(cpu_config),
 	.usrrst(usrrst),
   .cpurst(cpurst),
+  .cpuhlt(cpuhlt),
+  .fifo_full(fifo_full),
   .host_cs      (host_cs          ),
   .host_adr     (host_adr         ),
   .host_we      (host_we          ),
@@ -727,6 +731,7 @@ m68k_bridge CPU1
 	.data_out(cpu_data_out),
 	.data_in(cpu_data_in),
   ._cpu_reset (_cpu_reset),
+  .cpu_halt (cpuhlt),
   .host_cs (host_cs),
   .host_adr (host_adr[23:1]),
   .host_we (host_we),
@@ -816,6 +821,7 @@ gary GARY1
 	.cpu_rd(cpu_rd),
 	.cpu_hwr(cpu_hwr),
 	.cpu_lwr(cpu_lwr),
+  .cpu_hlt(cpuhlt),
 	.ovl(ovl),
 	.dbr(dbr),
 	.dbwe(dbwe),
@@ -1244,6 +1250,7 @@ module m68k_bridge
   input [15:0] data_in,      // internal data bus input
   // UserIO interface
   input _cpu_reset,
+  input cpu_halt,
   input host_cs,
   input [23:1] host_adr,
   input host_we,
@@ -1302,6 +1309,17 @@ reg		lvpa;					// latched valid peripheral address (CIAs)
 reg		vma;					// valid memory address (synchronised VPA with ECLK)
 reg		_ta;					// transfer acknowledge
 
+// halt is enabled when halt request comes in and cpu bus is idle
+reg halt=0;
+always @ (posedge clk) begin
+  //if (!_cpu_reset)
+  //  halt <= #1 1'b0;
+  /*else*/ if (_as && cpu_halt)
+    halt <= #1 1'b1;
+  else if (_as && !cpu_halt)
+    halt <= #1 1'b0;
+end
+
 //CPU speed mode is allowed to change only when there is no bus access
 always @(posedge clk)
 	if (_as)
@@ -1326,26 +1344,26 @@ always @(posedge clk)
 ////	{lr_w,l_as,l_uds,l_lds,l_dtack} <= {r_w,_as,_uds,_lds,_dtack};
 //  {lr_w,l_as,l_dtack} <= ({r_w,_as,_dtack});
 always @ (posedge clk) begin
-  lr_w <= _cpu_reset ? r_w : !host_we;
-  l_as <= _cpu_reset ? _as : !host_cs;
+  lr_w <= !halt ? r_w : !host_we;
+  l_as <= !halt ? _as : !host_cs;
   l_dtack <= _dtack;
 end
 
 always @(posedge clk28m) begin
-  l_uds <= _cpu_reset ? _uds : !(host_bs[1]);
-  l_lds <= _cpu_reset ? _lds : !(host_bs[0]);
+  l_uds <= !halt ? _uds : !(host_bs[1]);
+  l_lds <= !halt ? _lds : !(host_bs[0]);
 end
 
 reg _as28m;
 always @(posedge clk28m)
-  _as28m <= _cpu_reset ? _as : !host_cs;
+  _as28m <= !halt ? _as : !host_cs;
 
 reg l_as28m;
 always @(posedge clk)
   l_as28m <= _as28m;
 
 wire _as_and_cs;
-assign _as_and_cs = _cpu_reset ? _as : !host_cs;
+assign _as_and_cs = !halt ? _as : !host_cs;
 
 // data transfer acknowledge in normal mode
 reg _ta_n;
@@ -1367,12 +1385,12 @@ assign _dtack = (_ta_n );
 assign enable = ((~l_as & ~l_dtack & ~cck & ~turbo) | (~l_as28m & l_dtack & ~(dbr & xbs) & ~nrdy & turbo));
 //assign enable = ((~_as & ~_dtack & ~cck & ~turbo) | (~_as28m & _dtack & ~(dbr & xbs) & ~nrdy & turbo));
 assign rd = (enable & lr_w);
-//assign rd = _cpu_reset ? (enable & r_w) : !host_we;
+//assign rd = !halt ? (enable & r_w) : !host_we;
 // in turbo mode l_uds and l_lds may be delayed by 35 ns
 assign hwr = (enable & ~lr_w & ~l_uds);
 assign lwr = (enable & ~lr_w & ~l_lds);
-//assign hwr = _cpu_reset ? (enable & ~r_w & ~_uds) : host_we && host_bs[1];
-//assign lwr = _cpu_reset ? (enable & ~r_w & ~_lds) : host_we && host_bs[0];
+//assign hwr = !halt ? (enable & ~r_w & ~_uds) : host_we && host_bs[1];
+//assign lwr = !halt ? (enable & ~r_w & ~_lds) : host_we && host_bs[0];
 
 //blitter slow down signalling, asserted whenever CPU is missing bus access to chip ram, slow ram and custom registers 
 assign bls = dbs & ~l_as & l_dtack;
@@ -1386,7 +1404,7 @@ assign doe = r_w & ~_as;
 // data_out multiplexer and latch   
 //always @(data)
 //  data_out <= wrdata;
-assign data_out = _cpu_reset ? cpudatain : host_wdat;
+assign data_out = !halt ? cpudatain : host_wdat;
 
 //always @(clk or data_in)
 //  if (!clk)
@@ -1405,7 +1423,7 @@ assign host_rdat = ldata_in;
 
 //always @(posedge clk)
 //	address_out[23:1] <= address[23:1];
-assign 	address_out[23:1] = _cpu_reset ? address[23:1] : host_adr[23:1];
+assign 	address_out[23:1] = !halt ? address[23:1] : host_adr[23:1];
 
 endmodule
 

@@ -60,6 +60,7 @@ module gary
 	input	cpu_rd,					//cpu read
 	input	cpu_hwr,				//cpu high write
 	input	cpu_lwr,				//cpu low write
+  input cpu_hlt,
 	
 	input	ovl,					//overlay kickstart rom over chipram
 	input	dbr,					//Agns takes the bus
@@ -135,7 +136,7 @@ begin
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
 /* TODO better solution required for loading kickstart - don-t rely on !boot && ovl, address should be 0xf80000, add another signal from osd! (cpu_rd || boot || osd_write) */
-		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && cpu_rd) || (/*cpu_rd &&*/ ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
+		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt)) || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
 	end
 end
 
