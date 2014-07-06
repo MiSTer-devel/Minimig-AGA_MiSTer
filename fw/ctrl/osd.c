@@ -760,7 +760,8 @@ void OsdReset(unsigned char boot)
     EnableOsd();
     //SPI(OSDCMDRST | (boot & 0x01));
     SPI(OSD_CMD_RST);
-    SPI(0x2 | (boot & 0x01));
+    //SPI(0x2 | (boot & 0x01));
+    SPI(0x1);
     DisableOsd();
     EnableOsd();
     SPI(OSD_CMD_RST);
@@ -849,7 +850,7 @@ void ConfigCPU(unsigned char cpu)
     EnableOsd();
     //SPI(OSDCMDCFGCPU | (cpu & 0x03));					//CPU
     SPI(OSD_CMD_CPU);
-    SPI(cpu & 0x03);
+    SPI(cpu & 0x0f);
     DisableOsd();
 
   DEBUG_FUNC_OUT(DEBUG_F_OSD | DEBUG_L1);

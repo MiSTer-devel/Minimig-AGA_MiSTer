@@ -126,8 +126,8 @@ __geta4 void main(void)
   uint32_t spiclk;
   fileTYPE sd_boot_file;
 
-  // enable fast SPI
-  SPI_fast();
+  // enable normal SPI
+  SPI_normal();
 
   // wait for SDRAM controller
   printf("Waiting for SDRAM ... ");
@@ -162,11 +162,12 @@ __geta4 void main(void)
   // boot message
   BootInit();
   BootPrintEx("**** MINIMIG-DE1 by Rok Krajnc (rok.krajnc@gmail.com) ****");
-  BootPrintEx("Minimig by Dennis van Weeren");
+  BootPrintEx(" ");
+  BootPrintEx("Original Minimig by Dennis van Weeren");
   BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
   BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
   BootPrintEx("For support, see http://www.minimig.net");
-  BootPrintEx(" ");
+  //BootPrintEx(" ");
   //sprintf(s, "Build git commit: %s", __BUILD_REV);
   //BootPrintEx(s);
   sprintf(s, "Build git tag: %s", __BUILD_TAG);
@@ -175,8 +176,8 @@ __geta4 void main(void)
   spiclk = 100000 / (20*(read32(REG_SPI_DIV_ADR) + 2));
   sprintf(s, "SPI clock: %u.%uMHz", spiclk/100, spiclk%100);
   BootPrintEx(s);
-  BootPrintEx(" ");
-  TIMER_wait(2000);
+  //BootPrintEx(" ");
+  TIMER_wait(3000);
 
   //eject all disks
   df[0].status = 0;
@@ -188,30 +189,9 @@ __geta4 void main(void)
   config.kickstart.name[0]=0;
   SetConfigurationFilename(0); // Use default config
 
-/*
-  //write32(REG_RST_ADR, 0);
-  EnableOsd();
-  SPI(OSD_CMD_RST);
-  SPI(4);
-  DisableOsd();
-  printf("Waiting for minimig ... ");
-  while ((read32(REG_SYS_STAT_ADR) & 0x2));
-  printf("OK (%1x)\r", read32(REG_SYS_STAT_ADR));
-*/ 
   LoadConfiguration(0);  // Use slot-based config filename
-/**/
-  //int i;
-  //for (i=0; i<16; i++) printf("KICK[%d]=0x%08x\r", i, read32(0xc00000+0x180000+(i<<2)));
-  //for (i=0; i<16; i++) printf("CART[%d]=0x%08x\r", i, read32(0xc00000+0x100000+(i<<2)));
-  //for (i=0; i<32; i++) printf("RAM[%d]=0x%08x\r",  i, read32(0xc00000+0x80000+(i<<2)));
-  //for (i=0; i<32; i++) printf("COP[%d]=0x%08x\r",  i, read32(0xc00000+0x8e680+(i<<2)));
- 
-  // un-reset
-  EnableOsd();
-  //SPI(OSD_CMD_RST);
-  //rstval = 0;
-  //SPI(rstval);
-  //DisableOsd();
+
+  SPI_fast();
 
   // main loop
   while (1) {

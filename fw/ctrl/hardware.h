@@ -90,7 +90,8 @@
 #define DisableDMode()      write32(REG_SPI_CS_ADR, 0x80)
 
 #define SPI_slow()          write32(REG_SPI_DIV_ADR, 0x3f)
-#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x04)
+#define SPI_normal()        write32(REG_SPI_DIV_ADR, 0x04)
+#define SPI_fast()          write32(REG_SPI_DIV_ADR, 0x00)
 #define SPI_write(x)        write32(REG_SPI_DAT_ADR, (x))
 #define SPI_read()          (read32(REG_SPI_DAT_ADR))
 #define SPI(x)              (SPI_write(x), SPI_read())
