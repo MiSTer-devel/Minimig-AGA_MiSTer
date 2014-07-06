@@ -1,0 +1,12 @@
+../../../../lib/altera/altera_mf.v
+../../../../lib/altera/lpm_mult.v
+
+../../../../lib/io/generic_input.v
+../../../../lib/io/generic_output.v
+
+../../../../lib/vga/vga_monitor.v
+
+../../../../lib/models/sd_card.v
+../../../../lib/models/mt48lc16m16a2.v
+../../../../lib/models/IS61LV6416L.v
+

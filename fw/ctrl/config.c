@@ -269,7 +269,7 @@ char UploadActionReplay()
   //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 
   if (RAOpen(&romfile, "HRTMON  ROM")) {
-    BootPrintEx("Uploading HRTmon ROM...");
+    //BootPrintEx("Uploading HRTmon ROM...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
     printf("[");
@@ -502,16 +502,16 @@ void ApplyConfiguration(char reloadkickstart)
 		switch(hdf[0].type) // Customise message for SD card access
 		{
 			case (HDF_FILE | HDF_SYNTHRDB):
-		        sprintf(s, "\nHardfile 1 (with fake RDB): %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
+		        sprintf(s, "Hardfile 1 (with fake RDB): %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
 				break;
 			case HDF_FILE:
-		        sprintf(s, "\nHardfile 0: %.8s.%.3s", hdf[0].file.name, &hdf[0].file.name[8]);
+		        sprintf(s, "Hardfile 0: %.8s.%.3s", hdf[0].file.name, &hdf[0].file.name[8]);
 				break;
 			case HDF_CARD:
-		        sprintf(s, "\nHardfile 0: using entire SD card");
+		        sprintf(s, "Hardfile 0: using entire SD card");
 				break;
 			default:
-		        sprintf(s, "\nHardfile 0: using SD card partition %d",hdf[0].type-HDF_CARD);	// Number from 1
+		        sprintf(s, "Hardfile 0: using SD card partition %d",hdf[0].type-HDF_CARD);	// Number from 1
 				break;
 		}
         BootPrint(s);
@@ -527,16 +527,16 @@ void ApplyConfiguration(char reloadkickstart)
 		switch(hdf[1].type)
 		{
 			case (HDF_FILE | HDF_SYNTHRDB):
-		        sprintf(s, "\nHardfile 1 (with fake RDB): %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
+		        sprintf(s, "Hardfile 1 (with fake RDB): %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
 				break;
 			case HDF_FILE:
-		        sprintf(s, "\nHardfile 1: %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
+		        sprintf(s, "Hardfile 1: %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
 				break;
 			case HDF_CARD:
-		        sprintf(s, "\nHardfile 1: using entire SD card");
+		        sprintf(s, "Hardfile 1: using entire SD card");
 				break;
 			default:
-		        sprintf(s, "\nHardfile 1: using SD card partition %d",hdf[1].type-HDF_CARD);	// Number from 1
+		        sprintf(s, "Hardfile 1: using SD card partition %d",hdf[1].type-HDF_CARD);	// Number from 1
 				break;
 		}
         BootPrint(s);

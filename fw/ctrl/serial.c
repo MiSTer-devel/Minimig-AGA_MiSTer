@@ -37,7 +37,7 @@
 
 
 //// defines ////
-#define TXBUFLEN 128
+#define TXBUFLEN 8
 #define RXBUFLEN 64
 #define STBUFLEN 64
 
@@ -59,9 +59,9 @@
 
 
 //// global variables ////
-static char txbuf[TXBUFLEN] = {0};
-static char rxbuf[RXBUFLEN] = {0};
-static char stbuf[STBUFLEN] = {0};
+static char txbuf[TXBUFLEN];
+static char rxbuf[RXBUFLEN];
+static char stbuf[STBUFLEN];
 static unsigned char txwp = 0, rxwp = 0;
 static unsigned char txrp = 0, rxrp = 0;
 static unsigned char txln = 0, rxln = 0;
@@ -264,10 +264,7 @@ static void mon_decodecmd()
       // help
       if (rxbuf[1]==0 || rxbuf[1]=='\n' || rxbuf[1]=='\r') {
         mon_usage();
-      } else {
-        mon_illcmd();
-        rxwp = 0;
-      }
+      } else mon_illcmd();
       break;
     case 'r':
       // reboot
@@ -293,6 +290,7 @@ static void mon_decodecmd()
         if ( (s = next_word(s)) == NULL ) { mon_illcmd(); break;}
         scani(s, &val);
         write32(adr, val);
+        rxwp = 0;
       } else if (rxbuf[1] == 'r') {
         // read
         if ((s = next_word(rxbuf)) == NULL) { mon_illcmd(); break;}
@@ -301,6 +299,7 @@ static void mon_decodecmd()
         val = read32(adr);
         sprintf(stbuf, "0x%8x = 0x%8x (b%32b)\r\n", adr, val, val);
         txbuf_puts(stbuf);
+        rxwp = 0;
       } else mon_illcmd();
       break;
     case 'a':
@@ -323,16 +322,19 @@ static void mon_decodecmd()
         rstval = rstval & ~SPI_CPU_HLT;
         SPI(rstval);
         DisableOsd();
+        rxwp = 0;
       } else if (rxbuf[1] == 'r') {
         // read
         printf("Amiga mem read currently unimplemented.\r");
+        rxwp = 0;
       } else mon_illcmd();
       break;
     case 'u':
       // file upload
       if ((s = next_word(rxbuf)) == NULL) { mon_illcmd(); break;}
       //scani(s, fname);
-
+      printf("File upload currently unimplemented.\r");
+      rxwp = 0;
       break;
   }
 }
