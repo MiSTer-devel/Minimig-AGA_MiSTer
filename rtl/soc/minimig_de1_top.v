@@ -168,7 +168,7 @@ wire           tg68_ena7WR;
 wire           tg68_enaWR;
 wire [ 16-1:0] tg68_cout;
 wire           tg68_cpuena;
-wire [  2-1:0] cpu_config;
+wire [  4-1:0] cpu_config;
 wire [  6-1:0] memcfg;
 wire           vsync;
 wire [ 32-1:0] tg68_cad;
@@ -532,7 +532,8 @@ TG68K tg68k (
   .enaWRreg     (tg68_enaWR       ),
   .fromram      (tg68_cout        ),
   .ramready     (tg68_cpuena      ),
-  .cpu          (cpu_config       ),
+  .cpu          (cpu_config[1:0]  ),
+//  .fastkick     (cctrl[1]/*cpu_config[3]*/    ),
   .memcfg       (memcfg           ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),

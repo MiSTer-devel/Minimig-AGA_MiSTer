@@ -53,6 +53,7 @@ entity TG68K is
         fromram    	  : in std_logic_vector(15 downto 0);
         ramready      : in std_logic:='0';
         cpu           : in std_logic_vector(1 downto 0);
+--        fastkick      : in std_logic:='0';
         memcfg           : in std_logic_vector(5 downto 0);
         ramaddr    	  : out std_logic_vector(31 downto 0);
         cpustate      : out std_logic_vector(5 downto 0);
@@ -161,7 +162,8 @@ BEGIN
     sel_autoconfig <= '1' when memcfg(5 downto 4)/="00" AND cpuaddr(23 downto 19)="11101" AND autoconfig_out='1' ELSE '0'; --$E80000 - $EFFFFF
 
 --	sel_fast <= '1' when memcfg(5 downto 4)/="00" AND state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
-	sel_fast <= '1' when state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
+--  sel_fast <= '1' when state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100" OR (cpuaddr(23 downto 19)="11111" AND fastkick='1' AND wr='0')) ELSE '0'; --$200000 - $9FFFFF
+    sel_fast <= '1' when state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
 
 --  sel_autoconfig <= '0';
 --  sel_fast <= '0';
@@ -178,6 +180,8 @@ BEGIN
 --	ramaddr(23 downto 0) <= cpuaddr(23 downto 0);
 --	ramaddr(24) <= sel_fast;
 --	ramaddr(31 downto 25) <= cpuaddr(31 downto 25);
+--  ramaddr(23 downto 0) <= "00011" & cpuaddr(18 downto 0) WHEN (cpuaddr(23 downto 19)="11111" AND fastkick='1') ELSE cpuaddr(23) & sel_fast & cpuaddr(21 downto 0);
+--  ramaddr(31 downto 24) <= "00000000" WHEN (cpuaddr(23 downto 19)="11111" AND fastkick='1' AND wr='0') ELSE cpuaddr(31 downto 24);
   ramaddr(23 downto 0) <= cpuaddr(23) & sel_fast & cpuaddr(21 downto 0);
   ramaddr(31 downto 24) <= cpuaddr(31 downto 24);
 

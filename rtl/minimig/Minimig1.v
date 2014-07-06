@@ -224,7 +224,7 @@ module Minimig1
 	output	[14:0]ldata,			//left DAC data
 	output	[14:0]rdata, 			//right DAC data
 	//user i/o
-  output  [1:0] cpu_config,
+  output  [3:0] cpu_config,
   output  [5:0] memcfg,
   output  init_b,       // vertical sync for MCU (sync OSD update)
   output wire fifo_full,

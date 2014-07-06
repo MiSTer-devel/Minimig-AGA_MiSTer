@@ -108,7 +108,7 @@ module userio
 	output	[3:0] floppy_config,
 	output	[1:0] scanline,
 	output	[2:0] ide_config,
-  output  [1:0] cpu_config,
+  output  [3:0] cpu_config,
 	output	usrrst,					//user reset from osd module
   output cpurst,
   output cpuhlt,
@@ -491,7 +491,7 @@ module osd
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
 	output	reg	[2:0] ide_config = 0,		//enable hard disk support
-  output  reg [1:0] cpu_config = 0,
+  output  reg [3:0] cpu_config = 0,
   output  reg [1:0] autofire_config = 0,
 	output	reg usrrst=1'b0,
   output reg cpurst=1'b1,
@@ -524,7 +524,7 @@ reg		vena;
 
 reg 	[5:0] t_memory_config = 6'b000101;
 reg		[2:0] t_ide_config = 0;
-reg   [1:0] t_cpu_config = 0;
+reg   [3:0] t_cpu_config = 0;
 reg   [3:0] t_chipset_config = 0;
 
 //--------------------------------------------------------------------------------------
@@ -793,7 +793,7 @@ end
 // 8'b0_001_1000 | XXXXXXXX || clock control   | unused
 // 8'b0_010_1000 | XXXXXXKE || osd control     | K - disable Amiga keyboard, E - enable OSD
 // 8'b0_000_0100 | XXXXEANT || chipset config  | E - ECS, A - OCS A1000, N - NTSC, T - turbo
-// 8'b0_001_0100 | XXXXXSTT || cpu config      | S - CPU speed, TT - CPU type (00=68k, 01=68k10, 10=68k20)
+// 8'b0_001_0100 | XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
 // 8'b0_010_0100 | XXFFSSCC || memory config   | FF - fast, CC - chip, SS - slow
 // 8'b0_011_0100 | XXHHLLSS || video config    | HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
 // 8'b0_100_0100 | XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
@@ -810,7 +810,7 @@ always @ (posedge clk) begin
 //    if (spi_clock_ctrl_sel)   begin if (dat_cnt == 0) end
     if (spi_osd_ctrl_sel)     begin if (dat_cnt == 0) {key_disable, osd_enable} <= #1 wrdat[1:0]; end
     if (spi_chip_cfg_sel)     begin if (dat_cnt == 0) t_chipset_config <= #1 wrdat[3:0]; end
-    if (spi_cpu_cfg_sel)      begin if (dat_cnt == 0) t_cpu_config <= #1 wrdat[1:0]; end
+    if (spi_cpu_cfg_sel)      begin if (dat_cnt == 0) t_cpu_config <= #1 wrdat[3:0]; end
     if (spi_memory_cfg_sel)   begin if (dat_cnt == 0) t_memory_config <= #1 wrdat[5:0]; end
     if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {hr_filter, lr_filter, scanline} <= #1 wrdat[5:0]; end
     if (spi_floppy_cfg_sel)   begin if (dat_cnt == 0) floppy_config <= #1 wrdat[3:0]; end
