@@ -535,10 +535,6 @@ set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
 
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_de2_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_sram.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_decoder.v
@@ -546,6 +542,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_bus.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_arbiter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_rst.v
+set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/qmem_bridge.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_regs.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_flash.v
 set_global_assignment -name VERILOG_FILE ../../rtl/ctrl/ctrl_clk.v
@@ -560,6 +557,10 @@ set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_Controller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/I2C_AV_Config.v
 set_global_assignment -name VERILOG_FILE ../../rtl/audio/audio_shifter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_be_512x16.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_128x32.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/cpu_cache.v
+set_global_assignment -name VERILOG_FILE ../../rtl/fifo/sync_fifo.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/PS2Keyboard.v
@@ -570,16 +571,14 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gary.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Floppy.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Denise.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Copper.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Clock.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/CIA8520.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/BootRom.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Blitter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Bitplanes.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Beamcounter.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Cart.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_xcv_ram32x8d.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wbmux.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_wb_biu.v
@@ -638,9 +637,12 @@ set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cpu.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_cfgr.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_amultp2_32x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/or1200/or1200_alu.v
-set_global_assignment -name QIP_FILE ../../rtl/ctrl/ctrl_boot.qip
-set_global_assignment -name QIP_FILE amiga_boot.qip
-set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
+set_global_assignment -name VERILOG_FILE ../../fw/ctrl_boot/bin/ctrl_boot.v
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
+
 
 #set_parameter -name ENABLE_RUNTIME_MOD YES -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
 #set_parameter -name INSTANCE_NAME mig -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
