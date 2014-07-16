@@ -171,39 +171,7 @@ set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
-set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_mist_top.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mist/user_io.v
-set_global_assignment -name VERILOG_FILE ../../rtl/mist/amigaclk.v
-set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk.v
-set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk_altera.v
-set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
-set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Paula.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Minimig1.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gayle.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gary.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Floppy.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Denise.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Copper.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Clock.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/CIA8520.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/BootRom.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Blitter.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Bitplanes.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Beamcounter.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/ActionReplay3.v
-set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
 
-set_global_assignment -name SIGNALTAP_FILE stp1.stp
 
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk0"
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk1"
@@ -211,7 +179,6 @@ set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigacl
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to SPI_SCK
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to clk7_cnt[1]
 
-set_global_assignment -name SDC_FILE minimig_mist.sdc
 
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_DQ[0]
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_DQ[1]
@@ -346,5 +313,43 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[2]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[1]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[0]
 
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 
+
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
+set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_mist_top.v
+set_global_assignment -name VERILOG_FILE ../../rtl/mist/user_io.v
+set_global_assignment -name VERILOG_FILE ../../rtl/mist/amigaclk.v
+set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk.v
+set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk_altera.v
+set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
+set_global_assignment -name VERILOG_FILE ../../rtl/fifo/sync_fifo.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_be_512x16.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_128x32.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/cpu_cache.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Cart.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Userio.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Sprites.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Paula.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Minimig1.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gayle.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Gary.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Floppy.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Denise.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Copper.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Clock.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/CIA8520.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/BootRom.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Blitter.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Bitplanes.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Beamcounter.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Audio.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Amber.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/Agnus.v
+set_global_assignment -name VERILOG_FILE ../../fw/amiga_boot/bin/amiga_boot.v
+set_global_assignment -name SIGNALTAP_FILE stp1.stp
+set_global_assignment -name SDC_FILE minimig_mist.sdc
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

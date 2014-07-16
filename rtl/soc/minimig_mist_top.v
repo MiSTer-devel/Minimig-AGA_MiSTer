@@ -96,13 +96,14 @@ wire           tg68_ena7WR;
 wire           tg68_enaWR;
 wire [ 16-1:0] tg68_cout;
 wire           tg68_cpuena;
-wire [  2-1:0] cpu_config;
+wire [  4-1:0] cpu_config;
 wire [  6-1:0] memcfg;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
 wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
+wire [ 32-1:0] tg68_VBR_out;
 
 // minimig
 wire           led;
@@ -213,7 +214,8 @@ TG68K tg68k (
   .enaWRreg     (tg68_enaWR       ),
   .fromram      (tg68_cout        ),
   .ramready     (tg68_cpuena      ),
-  .cpu          (cpu_config       ),
+  .cpu          (cpu_config[1:0]  ),
+//  .fastkick     (cctrl[1]/*cpu_config[3]*/    ),
   .memcfg       (memcfg           ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
@@ -221,50 +223,78 @@ TG68K tg68k (
   .skipFetch    (                 ),
   .cpuDMA       (tg68_cdma        ),
   .ramlds       (tg68_clds        ),
-  .ramuds       (tg68_cuds        )
+  .ramuds       (tg68_cuds        ),
+  .VBR_out      (tg68_VBR_out     )
 );
+
+/*
+//// TG68 main CPU ////
+TG68 tg68 (
+  .clk          (clk_114          ),
+  .reset        (tg68_rst         ),
+  .clkena_in    (1'b1             ),
+  .data_in      (tg68_dat_in      ),
+  .data_out     (tg68_dat_out     ),
+  .IPL          (tg68_IPL         ),
+  .dtack        (tg68_dtack       ),
+  .addr         (tg68_adr         ),
+  .as           (tg68_as          ),
+  .uds          (tg68_uds         ),
+  .lds          (tg68_lds         ),
+  .rw           (tg68_rw          ),
+  .drive_data   (                 ),
+  .enaRDreg     (tg68_ena7RD      ),
+  .enaWRreg     (tg68_ena7WR      )
+);
+*/
 
 
 //// sdram ////
 sdram_ctrl sdram (
-  .cctrl        (3'b111           ),
-  .sdata        (SDRAM_DQ         ),
+  // sys
+  .sysclk       (clk_114          ),
+  .c_7m         (clk_7            ),
+  .reset_in     (sdctl_rst        ),
+  .cache_rst    (tg68_rst         ),
+  .reset_out    (reset_out        ),
+  .cache_ena    (cpu_config[2]    ),
+  // sdram
   .sdaddr       (SDRAM_A[11:0]    ),
-  .dqm          (sdram_dqm        ),
   .sd_cs        (sdram_cs         ),
   .ba           (sdram_ba         ),
   .sd_we        (SDRAM_nWE        ),
   .sd_ras       (SDRAM_nRAS       ),
   .sd_cas       (SDRAM_nCAS       ),
-  .sysclk       (clk_114          ),
-  .reset_in     (sdctl_rst        ),
-  .hostWR       (16'h0            ),
-  .hostAddr     (24'h0            ),
-  .hostState    ({1'b0, 2'b01}    ),
-  .hostL        (1'b1             ),
-  .hostU        (1'b1             ),
-  .cpuWR        (tg68_dat_out     ),
-  .cpuAddr      (tg68_cad[24:1]   ),
-  .cpuU         (tg68_cuds        ),
-  .cpuL         (tg68_clds        ),
-  .cpustate     (tg68_cpustate    ),
-  .cpu_dma      (tg68_cdma        ),
-  .chipWR       (ram_data         ),
+  .dqm          (sdram_dqm        ),
+  .sdata        (SDRAM_DQ         ),
+  // host
+  .host_cs      (1'b0             ),
+  .host_adr     (22'hxxxxxx       ),
+  .host_we      (1'b0             ),
+  .host_bs      (2'bxx            ),
+  .host_wdat    (16'hxxxx         ),
+  .host_rdat    (                 ),
+  .host_ack     (                 ),
+  // chip
   .chipAddr     ({2'b00, ram_address[21:1]}),
-  .chipU        (_ram_bhe         ),
   .chipL        (_ram_ble         ),
+  .chipU        (_ram_bhe         ),
   .chipRW       (_ram_we          ),
   .chip_dma     (_ram_oe          ),
-  .c_7m         (clk_7            ),
-  .hostRD       (                 ),
-  .hostena      (                 ),
-  .cpuRD        (tg68_cout        ),
-  .cpuena       (tg68_cpuena      ),
+  .chipWR       (ram_data         ),
   .chipRD       (ramdata_in       ),
-  .reset_out    (reset_out        ),
+  // cpu
+  .cpuAddr      (tg68_cad[24:1]   ),
+  .cpustate     (tg68_cpustate    ),
+  .cpuL         (tg68_clds        ),
+  .cpuU         (tg68_cuds        ),
+  .cpu_dma      (tg68_cdma        ),
+  .cpuWR        (tg68_dat_out     ),
+  .cpuRD        (tg68_cout        ),
   .enaWRreg     (tg68_enaWR       ),
   .ena7RDreg    (tg68_ena7RD      ),
-  .ena7WRreg    (tg68_ena7WR      )
+  .ena7WRreg    (tg68_ena7WR      ),
+  .cpuena       (tg68_cpuena      )
 );
 
 // multiplex spi_do, drive it from user_io if that's selected, drive
@@ -303,27 +333,29 @@ user_io user_io(
 //// minimig top ////
 Minimig1 minimig (
   //m68k pins
-  .cpu_address  (tg68_adr[23:1]   ),  // M68K address bus
-  .cpu_data     (tg68_dat_in      ),  // M68K data bus
-  .cpudata_in   (tg68_dat_out     ),  // M68K data in
-  ._cpu_ipl     (tg68_IPL         ),  // M68K interrupt request
-  ._cpu_as      (tg68_as          ),  // M68K address strobe
-  ._cpu_uds     (tg68_uds         ),  // M68K upper data strobe
-  ._cpu_lds     (tg68_lds         ),  // M68K lower data strobe
-  .cpu_r_w      (tg68_rw          ),  // M68K read / write
-  ._cpu_dtack   (tg68_dtack       ),  // M68K data acknowledge
-  ._cpu_reset   (tg68_rst         ),  // M68K reset
-  .cpu_clk      (clk_7            ),  // M68K clock
+  .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
+  .cpu_data     (tg68_dat_in      ), // M68K data bus
+  .cpudata_in   (tg68_dat_out     ), // M68K data in
+  ._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
+  ._cpu_as      (tg68_as          ), // M68K address strobe
+  ._cpu_uds     (tg68_uds         ), // M68K upper data strobe
+  ._cpu_lds     (tg68_lds         ), // M68K lower data strobe
+  .cpu_r_w      (tg68_rw          ), // M68K read / write
+  ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
+  ._cpu_reset   (tg68_rst         ), // M68K reset
+  .cpu_clk      (clk_7            ), // M68K clock
+  .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
   //sram pins
-  .ram_data     (ram_data         ),  // SRAM data bus
-  .ramdata_in   (ramdata_in       ),  // SRAM data bus in
-  .ram_address  (ram_address[21:1]),  // SRAM address bus
-  ._ram_ce      (                 ),  // SRAM chip enable
-  ._ram_bhe     (_ram_bhe         ),  // SRAM upper byte select
-  ._ram_ble     (_ram_ble         ),  // SRAM lower byte select
-  ._ram_we      (_ram_we          ),  // SRAM write enable
-  ._ram_oe      (_ram_oe          ),  // SRAM output enable
+  .ram_data     (ram_data         ), // SRAM data bus
+  .ramdata_in   (ramdata_in       ), // SRAM data bus in
+  .ram_address  (ram_address[21:1]), // SRAM address bus
+  ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
+  ._ram_ble     (_ram_ble         ), // SRAM lower byte select
+  ._ram_we      (_ram_we          ), // SRAM write enable
+  ._ram_oe      (_ram_oe          ), // SRAM output enable
   //system  pins
+  .rst_ext      (rst_minimig      ), // reset from ctrl block
+  .rst_out      (                 ), // minimig reset status
   .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
   .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
   .clk7_en      (clk7_en          ), // 7MHz clock enable
@@ -345,9 +377,9 @@ Minimig1 minimig (
   .kbd_mouse_data (kbd_mouse_data ),  // mouse direction data, keycodes
   .kbd_mouse_type (kbd_mouse_type ),  // type of data
   .kbd_mouse_strobe (kbd_mouse_strobe), // kbd/mouse data strobe
-  .joy_emu_en   (joy_emu_en       ),  // enable keyboard joystick emulation
   ._15khz       (_15khz           ),  // scandoubler disable
-  .pwrled       (led              ),  // power led
+/*  .pwrled       (led              ),  // power led */
+// TODO re-add led logic!
   .msdat        (                 ),  // PS2 mouse data
   .msclk        (                 ),  // PS2 mouse clk
   .kbddat       (                 ),  // PS2 keyboard data
@@ -370,11 +402,10 @@ Minimig1 minimig (
   .ldata        (                 ),  // left DAC data
   .rdata        (                 ),  // right DAC data
   //user i/o
-  .gpio         (                 ),  // spare GPIO
-  .cpu_config   (cpu_config       ),  // CPU config
-  .memcfg       (memcfg           ),  // memory config
-  .drv_snd      (                 ),  // drive sound
-  .init_b       (                 ),  // vertical sync for MCU (sync OSD update)
+  .cpu_config   (cpu_config       ), // CPU config
+  .memcfg       (memcfg           ), // memory config
+  .init_b       (                 ), // vertical sync for MCU (sync OSD update)
+  .fifo_full    (                 ),
   // fifo / track display
   .trackdisp    (                 ),  // floppy track number
   .secdisp      (                 ),  // sector
@@ -383,6 +414,7 @@ Minimig1 minimig (
   .hd_fwr       (                 ),  // hd fifo writing
   .hd_frd       (                 )   // hd fifo  ading
 );
+
 
 endmodule
 
