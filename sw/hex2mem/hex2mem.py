@@ -7,7 +7,7 @@
 """Converts ordinary (non-intel format) hex files into Verilog ROMs."""
 
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 import sys
 import os
 import math
@@ -111,7 +111,7 @@ def main():
     fo.write(     "endmodule\n\n")
  
   # done
-  print "File %s written successfully, using %dx%d memory (%d bits), will be probably inferred into %d Altera M4Ks." % (fon, idx+1, mw*4, (idx+1)*mw*4, int(math.ceil((idx+1)*mw*4/4096)))
+  print ("File ", fon, " written successfully, using ", idx+1, "x", mw*4, " memory (", (idx+1)*mw*4," bits), will be probably inferred into ", int(math.ceil((idx+1)*mw*4/4096)), " Altera M4Ks.", sep="")
 
 # END main
 
@@ -120,4 +120,3 @@ def main():
 if __name__ == "__main__":
   main()
 # END start
-
