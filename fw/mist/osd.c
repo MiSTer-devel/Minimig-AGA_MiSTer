@@ -252,7 +252,9 @@ void OsdWriteOffset(unsigned char n, char *s, unsigned char invert, unsigned cha
 //    if (invert)
 //        SPI(OSDCMDWRITE | 0x10 | n);
 //    else
-        SPI(OSDCMDWRITE | n);
+//        SPI(OSDCMDWRITE | n);
+        SPI(OSD_CMD_OSD_WR);
+        SPI(0x00); SPI(0x00); SPI(0x00); SPI(n);
 
 	if(invert)
 		invert=255;
@@ -317,7 +319,9 @@ void OsdWriteOffset(unsigned char n, char *s, unsigned char invert, unsigned cha
 		        // send new line number to OSD
 		        DisableOsd();
 		        EnableOsd();
-		        SPI(OSDCMDWRITE | n);
+		        //SPI(OSDCMDWRITE | n);
+            SPI(OSD_CMD_OSD_WR);
+            SPI(0x00); SPI(0x00); SPI(0x00); SPI(n);
 		    }
 			else if(i<(linelimit-8)) // normal character
 		    {
@@ -368,7 +372,9 @@ void OsdDrawLogo(unsigned char n, char row,char superimpose)
     EnableOsd();
 
     // select buffer and line to write to
-    SPI(OSDCMDWRITE | n);
+    //SPI(OSDCMDWRITE | n);
+    SPI(OSD_CMD_OSD_WR);
+    SPI(0x00); SPI(0x00); SPI(0x00); SPI(n);
 
 	const unsigned char *lp=logodata[row];
 	int bytes=sizeof(logodata[0]);
@@ -452,6 +458,94 @@ void OsdDrawLogo(unsigned char n, char row,char superimpose)
     DisableOsd();
 }
 
+void OsdWriteDoubleSize(unsigned char n, char *s, unsigned char pass)
+{
+    unsigned short i;
+    unsigned char b;
+    const unsigned char *p;
+  int linelimit=OSDLINELEN;
+
+    // select OSD SPI device
+    EnableOsd();
+
+    // select buffer and line to write to
+    //SPI(OSDCMDWRITE | n);
+    SPI(OSD_CMD_OSD_WR);
+    SPI(0x00); SPI(0x00); SPI(0x00); SPI(n);
+
+    i = 0;
+    // send all characters in string to OSD
+    while (1)
+    {
+    if(i==0)  // Render sidestripe
+    {
+          p = &titlebuffer[(7-n)*8];
+      SPI(0xff);
+      SPI(0xff);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+          SPI(255^*p); SPI(255^*p++);
+      SPI(0xff);
+      SPI(0xff);
+      SPI(0x00);
+      SPI(0x00);
+          i += 22;
+    }
+    else
+    {
+        b = *s++;
+
+        if (b == 0) // end of string
+            break;
+
+      else if(i<(linelimit-16)) // normal character
+        {
+        int c;
+            p = &charfont[b][0];
+        if(pass)  // Draw the bottom half..
+        {
+          int j;
+          for(j=0;j<8;++j)
+          {
+            c=*p++;
+            c=(c&0xf0)>>4;
+            c=(c&0x08)<<1 | c;  // ....ABCD => ...AABCD
+            c=(c&0x1c)<<1 | (c & 0x07); // ...AABCD => ..AABBCD
+            c=(c&0x3e)<<1 | (c & 0x03); // ..AABBCD => .AABBCCD
+            c=c<<1 | (c&0x01); // .AABBCCD => AABBCCDD
+            SPI(c); SPI(c);
+          }
+        }
+        else  // Draw the top half...
+        {
+          int j;
+          for(j=0;j<8;++j)
+          {
+            c=*p++;
+            c=c&0xf;
+            c=(c&0x08)<<1 | c;  // ....ABCD => ...AABCD
+            c=(c&0x1c)<<1 | (c & 0x07); // ...AABCD => ..AABBCD
+            c=(c&0x3e)<<1 | (c & 0x03); // ..AABBCD => .AABBCCD
+            c=c<<1 | (c&0x01); // .AABBCCD => AABBCCDD
+            SPI(c); SPI(c);
+          }
+        }       
+            i += 16;
+        }
+    }
+    }
+    for (; i < linelimit; i++) // clear end of line
+       SPI(0);
+
+    // deselect OSD SPI device
+    DisableOsd();
+}
+
 
 // write a null-terminated string <s> to the OSD buffer starting at line <n>
 void OSD_PrintText(unsigned char line, char *text, unsigned long start, unsigned long width, unsigned long offset, unsigned char invert)
@@ -473,7 +567,9 @@ void OSD_PrintText(unsigned char line, char *text, unsigned long start, unsigned
 //    if (invert)
 //       SPI(OSDCMDWRITE | 0x10 | line);
 //    else
-    SPI(OSDCMDWRITE | line);
+    //SPI(OSDCMDWRITE | line);
+    SPI(OSD_CMD_OSD_WR);
+    SPI(0x00); SPI(0x00); SPI(0x00); SPI(line);
 
 	if(invert)
 		invert=0xff;
@@ -540,7 +636,9 @@ void OsdClear(void)
     EnableOsd();
 
     // select buffer to write to
-    SPI(OSDCMDWRITE | 0x18);
+    //SPI(OSDCMDWRITE | 0x18);
+    SPI(OSD_CMD_OSD_WR);
+    SPI(0x00); SPI(0x00); SPI(0x00); SPI(0x18);
 
     // clear buffer
     for (n = 0; n < (OSDLINELEN * OSDNLINE); n++)
@@ -550,13 +648,27 @@ void OsdClear(void)
     DisableOsd();
 }
 
+void OsdWaitVBL(void)
+{
+//    unsigned long pioa_old = 0;
+//    unsigned long pioa = 0;
+//
+//    while ((~pioa ^ pioa_old) & INIT_B)
+//    {
+//        pioa_old = pioa;
+//        pioa = *AT91C_PIOA_PDSR;
+//    }
+}
+
 // enable displaying of OSD
 void OsdEnable(unsigned char mode)
 {
     user_io_osd_key_enable(mode & DISABLE_KEYBOARD);
 
     EnableOsd();
-    SPI(OSDCMDENABLE | (mode & DISABLE_KEYBOARD));
+    //SPI(OSDCMDENABLE | (mode & DISABLE_KEYBOARD));
+    SPI(OSD_CMD_OSD);
+    SPI(0x01 | (mode & DISABLE_KEYBOARD));
     DisableOsd();
 }
 
@@ -566,80 +678,131 @@ void OsdDisable(void)
     user_io_osd_key_enable(0);
 
     EnableOsd();
-    SPI(OSDCMDDISABLE);
+    //SPI(OSDCMDDISABLE);
+    SPI(OSD_CMD_OSD);
+    SPI(0x00);
     DisableOsd();
 }
 
 void OsdReset(unsigned char boot)
 {
     EnableOsd();
-    SPI(OSDCMDRST | (boot & 0x01));
+    //SPI(OSDCMDRST | (boot & 0x01));
+    SPI(OSD_CMD_RST);
+    //SPI(0x2 | (boot & 0x01));
+    SPI(0x1);
+    DisableOsd();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    SPI(0x0);
     DisableOsd();
 }
 
-void ConfigFilter(unsigned char lores, unsigned char hires)
+void OsdReconfig()
+{
+  EnableOsd();
+  //SPI(OSDCMDRECONFIG);
+  SPI(OSD_CMD_RST);
+  SPI(0x02);
+  DisableOsd();
+  EnableOsd();
+  SPI(OSD_CMD_RST);
+  SPI(0x00);
+  DisableOsd();
+}
+
+//void ConfigFilter(unsigned char lores, unsigned char hires, unsigned char scanlines)
+//{
+//    EnableOsd();
+//    //SPI(OSDCMDCFGFLT | ((hires & 0x03) << 2) | (lores & 0x03));
+//    SPI(OSD_CMD_VID);
+//    SPI(((hires & 0x03) << 4) | ((lores & 0x03)<<2) | (scanlines & 0x03));
+//    DisableOsd();
+//}
+//
+//void ConfigScanlines(unsigned char scanlines)
+//{
+//    EnableOsd();
+//    //SPI(OSDCMDCFGSCL | (scanlines & 0x0F)); TODO! same reg as OSD_CMD_VID!
+//    DisableOsd();
+//}
+
+void ConfigVideo(unsigned char hires, unsigned char lores, unsigned char scanlines)
 {
     EnableOsd();
-    SPI(OSDCMDCFGFLT | ((hires & 0x03) << 2) | (lores & 0x03));
+    //SPI(OSDCMDCFGFLT | ((hires & 0x03) << 2) | (lores & 0x03));
+    SPI(OSD_CMD_VID);
+    SPI(((hires & 0x03) << 4) | ((lores & 0x03)<<2) | (scanlines & 0x03));
     DisableOsd();
 }
 
 void ConfigMemory(unsigned char memory)
 {
     EnableOsd();
-    SPI(OSDCMDCFGMEM | (memory & 0x03));				//chip
+    //SPI(OSDCMDCFGMEM | (memory & 0x03));        //chip
+    //DisableOsd();
+    //EnableOsd();
+    //SPI(OSDCMDCFGMEM | 0x04 | ((memory>>2) & 0x03));  //slow
+    //DisableOsd();
+    //EnableOsd();
+    //SPI(OSDCMDCFGMEM | 0x08 | ((memory>>4) & 0x03));  //fast
+    SPI(OSD_CMD_MEM);
+    SPI(memory);
     DisableOsd();
-    EnableOsd();
-    SPI(OSDCMDCFGMEM | 0x04 | ((memory>>2) & 0x03));	//slow
-    DisableOsd();
-    EnableOsd();
-    SPI(OSDCMDCFGMEM | 0x08 | ((memory>>4) & 0x03));	//fast
-    DisableOsd();
-    EnableOsd();
-//    SPI(OSDCMDCFGCPU|  0x00);	//68000  -  Don't want to disable '020 here!  AMR
+    //EnableOsd(); TODO BUG probably!
+//    SPI(OSDCMDCFGCPU|  0x00); //68000  -  Don't want to disable '020 here!  AMR
 //    DisableOsd();
 }
 
 void ConfigCPU(unsigned char cpu)
 {
     EnableOsd();
-    SPI(OSDCMDCFGCPU | (cpu & 0x03));					//CPU
+    //SPI(OSDCMDCFGCPU | (cpu & 0x03));         //CPU
+    SPI(OSD_CMD_CPU);
+    SPI(cpu & 0x0f);
     DisableOsd();
 }
 
 void ConfigChipset(unsigned char chipset)
 {
     EnableOsd();
-    SPI(OSDCMDCFGCHP | (chipset & 0x0F));
-//    SPI(OSDCMDCFGCHP | (chipset & 0x0E));
+    //SPI(OSDCMDCFGCHP | (chipset & 0x0F));
+    SPI(OSD_CMD_CHIP);
+    SPI(chipset & 0x0f);
     DisableOsd();
 }
 
 void ConfigFloppy(unsigned char drives, unsigned char speed)
 {
     EnableOsd();
-    SPI(OSDCMDCFGFLP | ((drives & 0x03) << 2) | (speed & 0x03));
+    //SPI(OSDCMDCFGFLP | ((drives & 0x03) << 2) | (speed & 0x03));
+    SPI(OSD_CMD_FLP);
+    SPI(((drives & 0x03) << 2) | (speed & 0x03));
     DisableOsd();
 }
 
 void ConfigScanlines(unsigned char scanlines)
 {
     EnableOsd();
-    SPI(OSDCMDCFGSCL | (scanlines & 0x0F));
+    //SPI(OSDCMDCFGSCL | (scanlines & 0x0F)); TODO! same reg as OSD_CMD_VID!
     DisableOsd();
 }
 
 void ConfigIDE(unsigned char gayle, unsigned char master, unsigned char slave)
 {
     EnableOsd();
-    SPI(OSDCMDCFGIDE | (slave ? 4 : 0) | (master ? 2 : 0) | (gayle ? 1 : 0));
+    //SPI(OSDCMDCFGIDE | (slave ? 4 : 0) | (master ? 2 : 0) | (gayle ? 1 : 0));
+    SPI(OSD_CMD_HDD);
+    SPI((slave ? 4 : 0) | (master ? 2 : 0) | (gayle ? 1 : 0));
     DisableOsd();
 }
 
 void ConfigAutofire(unsigned char autofire)
 {
     EnableOsd();
-    SPI(OSDCMDAUTOFIRE | (autofire & 0x03));
+    //SPI(OSDCMDAUTOFIRE | (autofire & 0x03));
+    SPI(OSD_CMD_JOY);
+    SPI(autofire & 0x03);
     DisableOsd();
 }
 
@@ -656,7 +819,7 @@ unsigned char OsdGetCtrl(void)
     if(user_io_core_type() == CORE_TYPE_MINIMIG) {
       // send command and get current ctrl status
       EnableOsd();
-      c1 = SPI(OSDCMDREAD);
+      c1 = SPI(OSD_CMD_READ);
       DisableOsd();
     }
 

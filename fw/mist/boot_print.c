@@ -110,6 +110,9 @@ static const char boot_font [96][8] = {
 
 void BootPrintEx(char * str)
 {
+  iprintf(str);
+  return; // TODO
+
   char buf[80];
   unsigned char i,j;
   unsigned char len;

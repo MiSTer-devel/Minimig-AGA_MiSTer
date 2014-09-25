@@ -9,23 +9,40 @@
 #define OSDCTRLRIGHT     0x10        /*OSD right control*/
 #define OSDCTRLLEFT      0x20        /*OSD left control*/
 
+//// some constants
+//#define OSDNLINE         8           // number of lines of OSD
+//#define OSDLINELEN       256         // single line length in bytes
+//#define OSDCMDREAD       0x00        // OSD read controller/key status
+//#define OSDCMDWRITE      0x20        // OSD write video data command
+//#define OSDCMDENABLE     0x41        // OSD enable command
+//#define OSDCMDDISABLE    0x40        // OSD disable command
+//#define OSDCMDRST        0x80        // OSD reset command
+//#define OSDCMDRECONFIG   0x82        // OSD reset command
+//#define OSDCMDAUTOFIRE   0x84        // OSD autofire command
+//#define OSDCMDCFGSCL     0xA0        // OSD settings: scanlines effect
+//#define OSDCMDCFGIDE     0xB0        // OSD enable HDD command
+//#define OSDCMDCFGFLP     0xC0        // OSD settings: floppy config
+//#define OSDCMDCFGCHP     0xD0        // OSD settings: chipset config
+//#define OSDCMDCFGFLT     0xE0        // OSD settings: filter
+//#define OSDCMDCFGMEM     0xF0        // OSD settings: memory config
+//#define OSDCMDCFGCPU     0xFC        // OSD settings: CPU config
+
 // some constants
-#define OSDNLINE         8           // number of lines of OSD
-#define OSDLINELEN       256         // single line length in bytes
-#define OSDCMDREAD       0x00        // OSD read controller/key status
-#define OSDCMDWRITE      0x20        // OSD write video data command
-#define OSDCMDENABLE     0x41        // OSD enable command
-#define OSDCMDDISABLE    0x40        // OSD disable command
-#define OSDCMDRST        0x80        // OSD reset command
-#define OSDCMDRECONFIG   0x82        // OSD reset command
-#define OSDCMDAUTOFIRE   0x84        // OSD autofire command
-#define OSDCMDCFGSCL     0xA0        // OSD settings: scanlines effect
-#define OSDCMDCFGIDE     0xB0        // OSD enable HDD command
-#define OSDCMDCFGFLP     0xC0        // OSD settings: floppy config
-#define OSDCMDCFGCHP     0xD0        // OSD settings: chipset config
-#define OSDCMDCFGFLT     0xE0        // OSD settings: filter
-#define OSDCMDCFGMEM     0xF0        // OSD settings: memory config
-#define OSDCMDCFGCPU     0xFC        // OSD settings: CPU config
+#define OSDNLINE          8           // number of lines of OSD
+#define OSDLINELEN        256         // single line length in bytes
+#define OSD_CMD_READ      0x00
+#define OSD_CMD_RST       0x08
+#define OSD_CMD_CLK       0x18
+#define OSD_CMD_OSD       0x28
+#define OSD_CMD_CHIP      0x04
+#define OSD_CMD_CPU       0x14
+#define OSD_CMD_MEM       0x24
+#define OSD_CMD_VID       0x34
+#define OSD_CMD_FLP       0x44
+#define OSD_CMD_HDD       0x54
+#define OSD_CMD_JOY       0x64
+#define OSD_CMD_OSD_WR    0x0c
+#define OSD_CMD_WR        0x1c
 
 #define DISABLE_KEYBOARD 0x02        // disable keyboard while OSD is active
 
@@ -87,11 +104,14 @@ void OsdDisable(void);
 void OsdWaitVBL(void);
 void OsdReset(unsigned char boot);
 void ConfigFilter(unsigned char lores, unsigned char hires);
+void OsdReconfig(); // Reset to Chameleon core.
+//void ConfigFilter(unsigned char lores, unsigned char hires);
+//void ConfigScanlines(unsigned char scanlines);
+void ConfigVideo(unsigned char hires, unsigned char lores, unsigned char scanlines);
 void ConfigMemory(unsigned char memory);
 void ConfigCPU(unsigned char cpu);
 void ConfigChipset(unsigned char chipset);
 void ConfigFloppy(unsigned char drives, unsigned char speed);
-void ConfigScanlines(unsigned char scanlines);
 void ConfigIDE(unsigned char gayle, unsigned char master, unsigned char slave);
 void ConfigAutofire(unsigned char autofire);
 unsigned char OsdGetCtrl(void);

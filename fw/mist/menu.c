@@ -45,6 +45,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // other constants
 #define DIRSIZE 8 // number of items in directory display window
 
+// TODO!
+#define SPIN() asm volatile ("mov r0, r0");
+
 unsigned char menustate = MENU_NONE1;
 unsigned char parentstate;
 unsigned char menusub = 0;
@@ -2210,14 +2213,16 @@ void HandleUI(void)
                 config.filter.lores++;
                 config.filter.lores &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigFilter(config.filter.lores, config.filter.hires);
+                //ConfigFilter(config.filter.lores, config.filter.hires);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 1)
             {
                 config.filter.hires++;
                 config.filter.hires &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigFilter(config.filter.lores, config.filter.hires);
+                //ConfigFilter(config.filter.lores, config.filter.hires);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 2)
             {
@@ -2287,15 +2292,30 @@ void HandleUI(void)
                 memcpy((void*)config.kickstart.long_name, (void*)file.long_name, sizeof(config.kickstart.long_name));
 
                 OsdDisable();
-                OsdReset(RESET_BOOTLOADER);
-                ConfigChipset(config.chipset | CONFIG_TURBO);
-                ConfigFloppy(config.floppy.drives, CONFIG_FLOPPY2X);
-                if (UploadKickstart(config.kickstart.name))
-                {
-                    BootExit();
-                }
-                ConfigChipset(config.chipset); // restore CPU speed mode
-                ConfigFloppy(config.floppy.drives, config.floppy.speed); // restore floppy speed mode
+                //OsdReset(RESET_BOOTLOADER);
+                //ConfigChipset(config.chipset | CONFIG_TURBO);
+                //ConfigFloppy(config.floppy.drives, CONFIG_FLOPPY2X);
+                EnableOsd();
+                SPI(OSD_CMD_RST);
+                rstval = (SPI_RST_CPU | SPI_CPU_HLT);
+                SPI(rstval);
+                DisableOsd();
+                SPIN(); SPIN(); SPIN(); SPIN();
+                UploadKickstart(config.kickstart.name);
+                EnableOsd();
+                SPI(OSD_CMD_RST);
+                rstval = (SPI_RST_USR | SPI_RST_CPU);
+                SPI(rstval);
+                DisableOsd();
+                SPIN(); SPIN(); SPIN(); SPIN();
+                EnableOsd();
+                SPI(OSD_CMD_RST);
+                rstval = 0;
+                SPI(rstval);
+                DisableOsd();
+                SPIN(); SPIN(); SPIN(); SPIN();
+                //ConfigChipset(config.chipset); // restore CPU speed mode
+                //ConfigFloppy(config.floppy.drives, config.floppy.speed); // restore floppy speed mode
 
                 menustate = MENU_NONE1;
             }

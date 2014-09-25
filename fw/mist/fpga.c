@@ -35,10 +35,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "rafile.h"
 #include "user_io.h"
 #include "config.h"
-
+#include "boot.h"
+#include "osd.h"
 #include "fpga.h"
 
 #define CMD_HDRID 0xAACA
+
+// TODO!
+#define SPIN() asm volatile ("mov r0, r0");
 
 extern fileTYPE file;
 extern char s[40];
@@ -554,6 +558,9 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
 // print message on the boot screen
 char BootPrint(const char *text)
 {
+  iprintf(text);
+  return; // TODO
+
     unsigned char c1, c2, c3, c4;
     unsigned char cmd;
     const char *p;
@@ -800,8 +807,21 @@ void fpga_init(char *name) {
 
   if(user_io_core_type() == CORE_TYPE_MINIMIG) {
     puts("Running minimig setup");
-    
-    draw_boot_logo();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    rstval = (SPI_RST_USR | SPI_RST_CPU | SPI_CPU_HLT);
+    SPI(rstval);
+    DisableOsd();
+    SPIN(); SPIN(); SPIN(); SPIN();
+    EnableOsd();
+    SPI(OSD_CMD_RST);
+    rstval = (SPI_RST_CPU | SPI_CPU_HLT);
+    SPI(rstval);
+    DisableOsd();
+    SPIN(); SPIN(); SPIN(); SPIN();
+    WaitTimer(100);
+    BootInit();
+    WaitTimer(2000);
     BootPrintEx("**** MINIMIG for MiST ****");
     BootPrintEx("Minimig by Dennis van Weeren");
     BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson");
@@ -810,7 +830,8 @@ void fpga_init(char *name) {
     BootPrintEx(" ");
     BootPrintEx("For support, see http://www.minimig.net");
     BootPrint(" ");
-    
+    WaitTimer(1000);
+
     ChangeDirectory(DIRECTORY_ROOT);
     
     //eject all disk
