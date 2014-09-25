@@ -1,0 +1,16 @@
+open /dev/ttyACM0
+version
+info flash
+set
+set ramwriteallow 0x200000 0x10000
+set flashwriteallow 0x100000 0x40000
+set ramwriteallow FFFFFF64 4
+set
+writew FFFFFF64 5A000004
+shell sleep 0.1
+writew FFFFFF64 5A004004
+shell sleep 0.1
+info flash
+flash firmware.hex
+go
+exit
