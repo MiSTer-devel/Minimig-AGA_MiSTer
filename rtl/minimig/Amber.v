@@ -74,11 +74,11 @@ module Amber
   input  wire           _vsync_in,      // vertical synchronisation in
   input  wire           _csync_in,      // composite synchronization in
   // output
-  output reg  [  4-1:0] red_out,        // red componenent video out
-  output reg  [  4-1:0] green_out,      // green component video out
-  output reg  [  4-1:0] blue_out,       // blue component video out
-  output reg            _hsync_out,     // horizontal synchronisation out
-  output reg            _vsync_out      // vertical synchronisation out
+  output reg  [  4-1:0] red_out=0,      // red componenent video out
+  output reg  [  4-1:0] green_out=0,    // green component video out
+  output reg  [  4-1:0] blue_out=0,     // blue component video out
+  output reg            _hsync_out=0,   // horizontal synchronisation out
+  output reg            _vsync_out=0    // vertical synchronisation out
 );
 
 
@@ -89,8 +89,8 @@ localparam [  4-1:0] OSD_B = 4'b1110;
 
 
 //// control ////
-reg            _hsync_in_del;           // delayed horizontal synchronisation input
-reg            hss;                     // horizontal sync start
+reg            _hsync_in_del=0;         // delayed horizontal synchronisation input
+reg            hss=0;                   // horizontal sync start
 
 // horizontal sync start  (falling edge detection)
 always @ (posedge clk) begin
@@ -100,14 +100,14 @@ end
 
 
 //// horizontal interpolation ////
-reg            hi_en;                   // horizontal interpolation enable
-reg  [  4-1:0] r_in_d;                  // pixel data delayed by 70ns for horizontal interpolation
-reg  [  4-1:0] g_in_d;                  // pixel data delayed by 70ns for horizontal interpolation
-reg  [  4-1:0] b_in_d;                  // pixel data delayed by 70ns for horizontal interpolation
+reg            hi_en=0;                 // horizontal interpolation enable
+reg  [  4-1:0] r_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
+reg  [  4-1:0] g_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
+reg  [  4-1:0] b_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
 wire [  5-1:0] hi_r;                    // horizontal interpolation output
 wire [  5-1:0] hi_g;                    // horizontal interpolation output
 wire [  5-1:0] hi_b;                    // horizontal interpolation output
-/*temp */reg  [ 11-1:0] sd_lbuf_wr;              // line buffer write pointer\
+reg  [ 11-1:0] sd_lbuf_wr=0;            // line buffer write pointer
 
 // horizontal interpolation enable
 always @ (posedge clk) begin
@@ -135,10 +135,9 @@ assign hi_b = hi_en ? ({1'b0, blue_in}  + {1'b0, b_in_d}) : {blue_in[3:0] , 1'b0
 
 //// scandoubler ////
 reg  [ 18-1:0] sd_lbuf [0:1024-1];      // line buffer for scan doubling (there are 908/910 hires pixels in every line)
-reg  [ 18-1:0] sd_lbuf_o;               // line buffer output register
-reg  [ 18-1:0] sd_lbuf_o_d;             // compensantion for one clock delay of the second line buffer
-//reg  [ 11-1:0] sd_lbuf_wr;              // line buffer write pointer
-reg  [ 11-1:0] sd_lbuf_rd;              // line buffer read pointer
+reg  [ 18-1:0] sd_lbuf_o=0;             // line buffer output register
+reg  [ 18-1:0] sd_lbuf_o_d=0;           // compensantion for one clock delay of the second line buffer
+reg  [ 11-1:0] sd_lbuf_rd=0;            // line buffer read pointer
 
 // scandoubler line buffer write pointer
 always @ (posedge clk) begin
@@ -170,9 +169,9 @@ end
 
 
 //// vertical interpolation ////
-reg            vi_en;                   // vertical interpolation enable
+reg            vi_en=0;                 // vertical interpolation enable
 reg  [ 18-1:0] vi_lbuf [0:1024-1];      // vertical interpolation line buffer
-reg  [ 18-1:0] vi_lbuf_o;               // vertical interpolation line buffer output register
+reg  [ 18-1:0] vi_lbuf_o=0;             // vertical interpolation line buffer output register
 wire [  6-1:0] vi_r_tmp;                // vertical interpolation temp data
 wire [  6-1:0] vi_g_tmp;                // vertical interpolation temp data
 wire [  6-1:0] vi_b_tmp;                // vertical interpolation temp data
@@ -209,10 +208,10 @@ assign vi_b = vi_b_tmp[6-1:2];
 
 
 //// scanlines ////
-reg            sl_en;                   // scanline enable
-reg  [  4-1:0] sl_r;                    // scanline data output
-reg  [  4-1:0] sl_g;                    // scanline data output
-reg  [  4-1:0] sl_b;                    // scanline data output
+reg            sl_en=0;                 // scanline enable
+reg  [  4-1:0] sl_r=0;                  // scanline data output
+reg  [  4-1:0] sl_g=0;                  // scanline data output
+reg  [  4-1:0] sl_b=0;                  // scanline data output
 
 // scanline enable
 always @ (posedge clk) begin
@@ -228,6 +227,7 @@ always @ (posedge clk) begin
   sl_g <= #1 ((sl_en && scanline[1]) ? 4'h0 : ((sl_en && scanline[0]) ? {1'b0, vi_g[3:1]} : vi_g));
   sl_b <= #1 ((sl_en && scanline[1]) ? 4'h0 : ((sl_en && scanline[0]) ? {1'b0, vi_b[3:1]} : vi_b));
 end
+
 
 //// bypass mux ////
 wire           bm_hsync;
