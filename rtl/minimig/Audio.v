@@ -177,7 +177,7 @@ end
 audiochannel ach0
 (
   .clk(clk),
-  .reset(reset),
+  .reset(rst),
   .cck(cck),
   .aen(aen[0]),
   .dmaena(dmaena[0]),
@@ -196,7 +196,7 @@ audiochannel ach0
 audiochannel ach1
 (
   .clk(clk),
-  .reset(reset),
+  .reset(rst),
   .cck(cck),
   .aen(aen[1]),
   .dmaena(dmaena[1]),
@@ -215,7 +215,7 @@ audiochannel ach1
 audiochannel ach2
 (
   .clk(clk),
-  .reset(reset),
+  .reset(rst),
   .cck(cck),
   .aen(aen[2]),
   .dmaena(dmaena[2]),
@@ -234,7 +234,7 @@ audiochannel ach2
 audiochannel ach3
 (
   .clk(clk),
-  .reset(reset),
+  .reset(rst),
   .cck(cck),
   .aen(aen[3]),
   .dmaena(dmaena[3]),
@@ -252,7 +252,7 @@ audiochannel ach3
 
 // instantiate mixer
 audiomixer mix (
-  .clk      (clk28m),
+  .clk      (clk),
   .sample0  (sample0),
   .sample1  (sample1),
   .sample2  (sample2),
@@ -366,6 +366,7 @@ endmodule
 module sigmadelta
 (
   input   clk,        //bus clock
+  input   clk7_en,
   input  [14:0] ldatasum,      // left channel data
   input  [14:0] rdatasum,      // right channel data
   output  reg left=0,        //left bitstream output
@@ -536,8 +537,9 @@ endmodule
 module audiochannel
 (
   input   clk,          //bus clock
-  input   reset,            //reset
+  input clk7_en,
   input  cck,          //colour clock enable
+  input   reset,            //reset
   input  aen,          //address enable
   input  dmaena,          //dma enable
   input  [3:1] reg_address_in,    //register address input
@@ -692,7 +694,6 @@ always @(posedge clk) begin
         silence_d<=1'b0;
       else
         silence<=1'b0;
-    end
   end
 end
 
