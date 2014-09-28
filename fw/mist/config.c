@@ -14,7 +14,10 @@
 #include <string.h>
 
 // TODO!
-#define SPIN() asm volatile ("mov r0, r0");
+#define SPIN() asm volatile ( "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0")
 
 configTYPE config;
 fileTYPE file;
@@ -59,7 +62,7 @@ char UploadKickstart(char *name)
   {
     int i,j;
     unsigned int adr, size, base=0x180000, offset=0xc00000, data;
-    //BootPrintEx("Uploading 512KB Kickstart ...");
+    puts("Uploading 512KB Kickstart ...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
 
@@ -244,35 +247,30 @@ char UploadActionReplay()
   //while ((read32(REG_SYS_STAT_ADR) & 0x2));
 
   if (RAOpen(&romfile, "HRTMON  ROM")) {
-    //BootPrintEx("Uploading HRTmon ROM...");
+    puts("Uploading HRTmon ROM...");
     size = ((romfile.file.size)+511)>>9;
     printf("File size: %d\r", size);
     printf("[");
     for (i=0; i<size; i++) {
-      //if (!(i&15)) printf("*");
-      //RARead(&romfile,sector_buffer,512);
-      //adr = offset + base + i*512;
-      //for (j=0; j<512; j=j+4) {
-      //  data = ((unsigned int*)sector_buffer)[j>>2];
-      //  write32(adr+j, data);
-      //  if (data != read32(adr+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", adr+j, data, read32(adr+j));
-      //}
+      if (!(i&31)) printf("*");
+      RARead(&romfile,sector_buffer,512);
       EnableOsd();
       adr = 0xa00000 + i*512;
       SPI(OSD_CMD_WR);
+      SPIN(); SPIN(); SPIN(); SPIN();
       SPI(adr&0xff); adr = adr>>8;
       SPI(adr&0xff); adr = adr>>8;
+      SPIN(); SPIN(); SPIN(); SPIN();
       SPI(adr&0xff); adr = adr>>8;
       SPI(adr&0xff); adr = adr>>8;
+      SPIN(); SPIN(); SPIN(); SPIN();
       for (j=0; j<512; j=j+4) {
         SPI(sector_buffer[j+0]);
         SPI(sector_buffer[j+1]);
-        SPIN(); SPIN(); SPIN(); SPIN();
+        SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN();
         SPI(sector_buffer[j+2]);
         SPI(sector_buffer[j+3]);
-        SPIN(); SPIN(); SPIN(); SPIN();
-        //data = ((unsigned int*)sector_buffer)[j>>2];
-        //if (data != read32(offset+base+i*512+j)) printf("Mismatch @ 0x%08x : 0x%08x != 0x%08x\r", offset+base+i*512+j, data, read32(offset+base+i*512+j));
+        SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN(); SPIN();
       }
       DisableOsd();
     }

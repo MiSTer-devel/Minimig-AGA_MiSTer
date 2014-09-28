@@ -12,7 +12,10 @@
 #include "rafile.h"
 
 // TODO!
-#define SPIN() asm volatile ("mov r0, r0");
+#define SPIN() asm volatile ( "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0");
 
 //// boot cursor positions ////
 unsigned short bcurx=0;

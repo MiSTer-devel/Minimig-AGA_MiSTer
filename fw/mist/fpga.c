@@ -42,7 +42,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define CMD_HDRID 0xAACA
 
 // TODO!
-#define SPIN() asm volatile ("mov r0, r0");
+#define SPIN() asm volatile ( "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0");
 
 extern fileTYPE file;
 extern char s[40];

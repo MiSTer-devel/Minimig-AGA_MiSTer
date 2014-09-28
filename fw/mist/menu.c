@@ -46,7 +46,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DIRSIZE 8 // number of items in directory display window
 
 // TODO!
-#define SPIN() asm volatile ("mov r0, r0");
+#define SPIN() asm volatile ( "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0\n\t" \
+                              "mov r0, r0");
+
 
 unsigned char menustate = MENU_NONE1;
 unsigned char parentstate;
@@ -2230,7 +2234,8 @@ void HandleUI(void)
                 if (config.scanlines > 2)
                     config.scanlines = 0;
                 menustate = MENU_SETTINGS_VIDEO1;
-                ConfigScanlines(config.scanlines);
+                //ConfigScanlines(config.scanlines);
+                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
 
             else if (menusub == 3)
