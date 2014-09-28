@@ -78,7 +78,8 @@ reg           active=0;
 //// code ////
 
 // cart is activated by writing to its area during bootloading
-`if 0
+`define ARON_HACK
+`ifndef ARON_HACK
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (cpu_rst && (cpu_address_in[23:19]==5'b1010_0) && cpu_lwr && !aron)
