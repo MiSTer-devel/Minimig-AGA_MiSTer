@@ -212,7 +212,8 @@ assign _rmb = 1'b1;
 assign _joy2 = 6'b11_1111;
 assign joy_emu = 6'b11_1111;
 assign mou_emu = 6'b11_1111;
-assign freeze = 1'b0;
+reg freeze_reg=0;
+assign freeze = freeze_reg;
 assign aflock = 1'b0;
 
 reg [7:0] osd_ctrl_reg;
@@ -238,10 +239,13 @@ always @(posedge clk) begin
   if (reset) begin
     sdr_latch[7:0] <= 8'h00;
     osd_ctrl_reg[7:0] <= 8'd0;
+    freeze_reg <= #1 1'b0;
    end else begin
-    if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled)
+    if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled) begin
       sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
-    else if (wr & sdr)
+      if (kbd_mouse_data == 8'h5f) freeze_reg <= #1 1'b1;
+      else freeze_reg <= #1 1'b0;
+    end else if (wr & sdr)
       sdr_latch[7:0] <= data_in[7:0];
 
     if(keystrobe && ((kbd_mouse_type == 2) || (kbd_mouse_type == 3)))
