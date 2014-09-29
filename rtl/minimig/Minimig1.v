@@ -879,7 +879,8 @@ gayle GAYLE1
 //instantiate system control
 syscontrol CONTROL1 
 (	
-	.clk(clk),
+	.clk(clk28m),
+  .clk7_en (clk7_en),
 	.cnt(sof),
 	.mrst(kbdrst | usrrst | rst_ext),
 	.reset(reset)
@@ -940,6 +941,7 @@ endmodule
 module syscontrol
 (
 	input	clk,			//bus clock
+  input clk7_en,
 	input	cnt,			//pulses for counting
 	input	mrst,			//master/user reset input
 	output	reset			//global synchronous system reset
@@ -952,16 +954,21 @@ wire	_rst;					//local reset signal
 
 //asynchronous mrst input synchronizer
 always @(posedge clk) begin
-  smrst0 <= mrst;
-	smrst1 <= smrst0;
+  if (clk7_en) begin
+    smrst0 <= mrst;
+  	smrst1 <= smrst0;
+  end
 end
 
 //reset timer and mrst control
-always @(posedge clk)
-	if (smrst1)
-		rst_cnt <= 3'd0;
-	else if (!_rst && cnt)
-		rst_cnt <= rst_cnt + 3'd1;
+always @(posedge clk) begin
+  if (clk7_en) begin
+  	if (smrst1)
+  		rst_cnt <= 3'd0;
+  	else if (!_rst && cnt)
+  		rst_cnt <= rst_cnt + 3'd1;
+  end
+end
 
 assign _rst = rst_cnt[2];
 
