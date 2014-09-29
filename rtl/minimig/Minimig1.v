@@ -786,7 +786,6 @@ Cart CART1
 (
   .clk            (clk28m         ),
   .clk7_en        (clk7_en        ),
-  .cpu_clk        (cpu_clk        ),
   .cpu_rst        (!_cpu_reset    ),
   .cpu_address    (cpu_address    ),
   .cpu_address_in (cpu_address_out),

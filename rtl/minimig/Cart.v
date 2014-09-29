@@ -42,7 +42,6 @@ module Cart
 (
   input  wire           clk,
   input  wire           clk7_en,
-  input  wire           cpu_clk,
   input  wire           cpu_rst,
   input  wire [ 24-1:1] cpu_address,
   input  wire [ 24-1:1] cpu_address_in,
@@ -126,7 +125,7 @@ assign int7_ack = &cpu_address && ~_cpu_as;
 
 // level 7 interrupt request logic
 // interrupt request lines are sampled during S4->S5 transition (falling cpu clock edge)
-always @ (posedge cpu_clk) begin
+always @ (posedge clk) begin
   if (clk7_en) begin
     if (cpu_rst)
       int7 <= 1'b0;
