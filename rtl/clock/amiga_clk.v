@@ -91,7 +91,7 @@ amiga_clk_xilinx amiga_clk_i (
 
 // 7MHz
 reg [2-1:0] clk7_cnt = 2'b10;
-reg         clk7_en_reg = 1'b0;
+reg         clk7_en_reg = 1'b1;
 always @ (posedge clk_28, negedge locked) begin
   if (!locked) begin
     clk7_cnt <= 2'b10;
