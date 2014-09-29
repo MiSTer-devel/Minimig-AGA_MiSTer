@@ -177,6 +177,7 @@ end
 audiochannel ach0
 (
   .clk(clk),
+  .clk7_en (clk7_en),
   .reset(rst),
   .cck(cck),
   .aen(aen[0]),
@@ -196,6 +197,7 @@ audiochannel ach0
 audiochannel ach1
 (
   .clk(clk),
+  .clk7_en (clk7_en),
   .reset(rst),
   .cck(cck),
   .aen(aen[1]),
@@ -215,6 +217,7 @@ audiochannel ach1
 audiochannel ach2
 (
   .clk(clk),
+  .clk7_en (clk7_en),
   .reset(rst),
   .cck(cck),
   .aen(aen[2]),
@@ -234,6 +237,7 @@ audiochannel ach2
 audiochannel ach3
 (
   .clk(clk),
+  .clk7_en (clk7_en),
   .reset(rst),
   .cck(cck),
   .aen(aen[3]),
@@ -253,6 +257,7 @@ audiochannel ach3
 // instantiate mixer
 audiomixer mix (
   .clk      (clk),
+  .clk7_en (clk7_en),
   .sample0  (sample0),
   .sample1  (sample1),
   .sample2  (sample2),
@@ -270,6 +275,7 @@ audiomixer mix (
 sigmadelta dac
 (
   .clk(clk),
+  .clk7_en (clk7_en),
   .ldatasum(ldata),
   .rdatasum(rdata),
   .left(left),
@@ -286,6 +292,7 @@ endmodule
 // channel 0&3 --> right
 module audiomixer (
   input   clk,        //bus clock
+  input clk7_en,
   input  [7:0] sample0,    //sample 0 input
   input  [7:0] sample1,    //sample 1 input
   input  [7:0] sample2,    //sample 2 input
