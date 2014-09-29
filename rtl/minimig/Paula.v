@@ -243,7 +243,8 @@ intcontroller pi1
 //instantiate floppy controller / flashdrive host interface
 floppy pf1
 (
-	.clk(clk),
+	.clk(clk28m),
+  .clk7_en (clk7_en),
 	.reset(reset),
   .ntsc(ntsc),
   .sof(sof),
