@@ -64,6 +64,7 @@ wire           clk_sdram;
 wire           pll_locked;
 wire           clk_7;
 wire           clk7_en;
+wire           clk7n_en;
 wire           c1;
 wire           c3;
 wire           cck;
@@ -170,6 +171,7 @@ amiga_clk amiga_clk (
   .clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
   .clk_7        (clk_7            ), // output clock 7  (  7.171875MHz)
   .clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
+  .clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
   .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
   .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   .cck          (cck              ), // colour clock output (3.54 MHz)
@@ -359,6 +361,7 @@ Minimig1 minimig (
   .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
   .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
   .clk7_en      (clk7_en          ), // 7MHz clock enable
+  .clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
   .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
   .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   .cck          (cck              ), // colour clock output (3.54 MHz)

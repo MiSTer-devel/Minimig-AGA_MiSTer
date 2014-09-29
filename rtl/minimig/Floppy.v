@@ -69,6 +69,7 @@ module floppy
 	// system bus interface
 	input 	clk,		    		//bus clock
   input clk7_en,
+  input clk7n_en,
 	input 	reset,			   		//reset 
   input ntsc,         // ntsc mode
   input sof,          // start of frame
@@ -266,7 +267,7 @@ always @(posedge sck or posedge spi_rx_flag_clr)
 
 //always @(negedge clk)
 always @ (posedge clk) begin // TODO negedge / posedge ???
-  if (clk7_en) begin
+  if (clk7n_en) begin
   	rx_flag_sync <= spi_rx_flag;	//double synchronization to avoid metastability
   end
 end
@@ -287,7 +288,7 @@ always @(negedge sck or posedge spi_tx_flag_clr)
 
 //always @(negedge clk)
 always @ (posedge clk) begin
-  if (clk7_en) begin
+  if (clk7n_en) begin
   	tx_flag_sync <= spi_tx_flag;	//double synchronization to avoid metastability
   end
 end

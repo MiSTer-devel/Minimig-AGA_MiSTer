@@ -61,6 +61,7 @@ module Paula
 	// system bus interface
   input clk,         // 28 MHz system clock
   input clk7_en,
+  input clk7n_en,
 	input 	cck,		    		//colour clock enable
 	input 	reset,			   		//reset 
 	input 	[8:1] reg_address_in,	//register address inputs
@@ -250,6 +251,7 @@ floppy pf1
 (
 	.clk(clk),
   .clk7_en (clk7_en),
+  .clk7n_en (clk7n_en),
 	.reset(reset),
   .ntsc(ntsc),
   .sof(sof),
