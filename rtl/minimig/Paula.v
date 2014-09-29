@@ -59,8 +59,7 @@
 module Paula
 (
 	// system bus interface
-	input 	clk,		    		//bus clock
-  input clk28m,         // 28 MHz system clock
+  input clk,         // 28 MHz system clock
   input clk7_en,
 	input 	cck,		    		//colour clock enable
 	input 	reset,			   		//reset 
@@ -163,16 +162,19 @@ assign data_out = uartdata_out | intdata_out | diskdata_out | adkconr;
 //DMACON register write
 //NOTE: this register is also present in the Agnus module,
 //there DMACONR (read) is implemented
-always @(posedge clk)
-	if (reset) begin
-    dmaen <= 0;
-		dmacon <= 5'd0;
-	end else if (reg_address_in[8:1]==DMACON[8:1]) begin
-		if (data_in[15])
-			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} | {data_in[9],data_in[4:0]};
-		else
-			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} & (~{data_in[9],data_in[4:0]});	
-	end
+always @(posedge clk) begin
+  if (clk7_en) begin
+  	if (reset) begin
+      dmaen <= 0;
+  		dmacon <= 5'd0;
+  	end else if (reg_address_in[8:1]==DMACON[8:1]) begin
+  		if (data_in[15])
+  			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} | {data_in[9],data_in[4:0]};
+  		else
+  			{dmaen,dmacon[4:0]} <= {dmaen,dmacon[4:0]} & (~{data_in[9],data_in[4:0]});	
+  	end
+  end
+end
 
 //assign disk and audio dma enable bits
 assign	dsken = dmacon[4] & dmaen;
@@ -184,16 +186,19 @@ assign	auden[0] = dmacon[0] & dmaen;
 //--------------------------------------------------------------------------------------
 
 //ADKCON register write
-always @(posedge clk)
-	if (reset)
-		adkcon <= 15'd0;
-	else if (reg_address_in[8:1]==ADKCON[8:1])
-	begin
-		if (data_in[15])
-			adkcon[14:0] <= adkcon[14:0] | data_in[14:0];
-		else
-			adkcon[14:0] <= adkcon[14:0] & (~data_in[14:0]);	
-	end
+always @(posedge clk) begin
+  if (clk7_en) begin
+  	if (reset)
+  		adkcon <= 15'd0;
+  	else if (reg_address_in[8:1]==ADKCON[8:1])
+  	begin
+  		if (data_in[15])
+  			adkcon[14:0] <= adkcon[14:0] | data_in[14:0];
+  		else
+  			adkcon[14:0] <= adkcon[14:0] & (~data_in[14:0]);	
+  	end
+  end
+end
 
 //ADKCONR register 
 assign adkconr[15:0] = (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000;
@@ -203,7 +208,7 @@ assign adkconr[15:0] = (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]}
 //instantiate uart
 uart pu1
 (
-	.clk(clk28m),
+	.clk(clk),
   .clk7_en (clk7_en),
 	.reset(reset),
 	.rga_i(reg_address_in),
@@ -220,7 +225,7 @@ uart pu1
 //instantiate interrupt controller
 intcontroller pi1
 (
-	.clk(clk28m),
+	.clk(clk),
   .clk7_en (clk7_en),
 	.reset(reset),
 	.reg_address_in(reg_address_in),
@@ -243,7 +248,7 @@ intcontroller pi1
 //instantiate floppy controller / flashdrive host interface
 floppy pf1
 (
-	.clk(clk28m),
+	.clk(clk),
   .clk7_en (clk7_en),
 	.reset(reset),
   .ntsc(ntsc),
@@ -296,7 +301,7 @@ floppy pf1
 //instantiate audio controller
 audio ad1
 (
-	.clk(clk28m),
+	.clk(clk),
   .clk7_en (clk7_en),
 	.cck(cck),
 	.rst(reset),

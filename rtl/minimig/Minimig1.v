@@ -475,8 +475,7 @@ Agnus AGNUS1
 //instantiate paula
 Paula PAULA1
 (
-	.clk(clk),
-  .clk28m(clk28m),
+  .clk(clk28m),
   .clk7_en (clk7_en),
 	.cck(cck),
 	.reset(reset),
