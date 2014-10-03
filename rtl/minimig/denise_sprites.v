@@ -33,9 +33,10 @@
 // 2009-05-24	- clean-up & renaming
 // 2010-06-17	- improved OCS sprite attach mode
 
-module sprites
+module denise_sprites
 (
-	input 	clk,					// bus clock	
+	input 	clk,					// 28MHz clock	
+  input clk7_en,
 	input 	reset,		    		// reset
 	input	[8:1] reg_address_in,	// register address input
 	input	[8:0] hpos,				// horizontal beam counter
@@ -94,9 +95,10 @@ assign selspr7 = selsprx && reg_address_in[5:3]==3'd7    ? 1'b1 : 1'b0;
 //--------------------------------------------------------------------------------------
 
 // instantiate sprite 0
-sprshift sps0
+denise_sprites_shifter sps0
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr0),
 	.address(reg_address_in[2:1]),
@@ -107,9 +109,10 @@ sprshift sps0
 );
 
 // instantiate sprite 1
-sprshift sps1
+denise_sprites_shifter sps1
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr1),
 	.address(reg_address_in[2:1]),
@@ -120,9 +123,10 @@ sprshift sps1
 );
 
 // instantiate sprite 2
-sprshift sps2
+denise_sprites_shifter sps2
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr2),
 	.address(reg_address_in[2:1]),
@@ -133,9 +137,10 @@ sprshift sps2
 );
 
 // instantiate sprite 3
-sprshift sps3
+denise_sprites_shifter sps3
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr3),
 	.address(reg_address_in[2:1]),
@@ -146,9 +151,10 @@ sprshift sps3
 );
 
 // instantiate sprite 4
-sprshift sps4
+denise_sprites_shifter sps4
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr4),
 	.address(reg_address_in[2:1]),
@@ -159,9 +165,10 @@ sprshift sps4
 );
 
 // instantiate sprite 5
-sprshift sps5
+denise_sprites_shifter sps5
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr5),
 	.address(reg_address_in[2:1]),
@@ -172,9 +179,10 @@ sprshift sps5
 );
 
 // instantiate sprite 6
-sprshift sps6
+denise_sprites_shifter sps6
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr6),
 	.address(reg_address_in[2:1]),
@@ -185,9 +193,10 @@ sprshift sps6
 );
 
 // instantiate sprite 7
-sprshift sps7
+denise_sprites_shifter sps7
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.aen(selspr7),
 	.address(reg_address_in[2:1]),
@@ -212,11 +221,7 @@ assign nsprite[7] = (sprena && sprdat7[1:0]!=2'b00) ? 1'b1 : 1'b0;//if any non-z
 //--------------------------------------------------------------------------------------
 
 // sprite video priority logic and color decoder
-always @(attach0 or attach1 or attach2 or attach3 or
-		 attach4 or attach5 or attach6 or attach7 or
-		 sprdat0 or sprdat1 or sprdat2 or sprdat3 or
-		 sprdat4 or sprdat5 or sprdat6 or sprdat7 or
-		 nsprite)
+always @(*)
 begin
 	if (nsprite[1:0]!=2'b00) // sprites 0,1 non transparant ?
 	begin
@@ -264,103 +269,3 @@ end
 
 endmodule
 
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-// this is the sprite parallel to serial converter
-// clk is 7.09379 MHz (low resolution pixel clock)
-// the sprdata assign circuitry is constructed differently from the hardware
-// as described	in the amiga hardware reference manual
-// this is to make sure that the horizontal start position of a sprite
-// aligns with the bitplane/playfield start position
-module sprshift
-(
-	input 	clk,					// bus clock	
-	input 	reset,		    		// reset
-	input	aen,					// address enable
-	input	[1:0] address,		   	// register address input
-	input	[8:0] hpos,				// horizontal beam counter
-	input 	[15:0] data_in, 		// bus data in
-	output	[1:0] sprdata,			// serialized sprite data out
-	output	reg attach				// sprite is attached
-);
-
-// register names and adresses		
-parameter POS  = 2'b00;  		
-parameter CTL  = 2'b01;  		
-parameter DATA = 2'b10;  		
-parameter DATB = 2'b11;  		
-
-// local signals
-reg		[15:0] datla;		// data register A
-reg		[15:0] datlb;		// data register B
-reg		[15:0] shifta;		// shift register A
-reg		[15:0] shiftb;		// shift register B
-reg		[8:0] hstart;		// horizontal start value
-reg		armed;				// sprite "armed" signal
-reg		load;				// load shift register signal
-reg		load_del;
-
-//--------------------------------------------------------------------------------------
-
-// generate armed signal
-always @(posedge clk)
-	if (reset) // reset disables sprite
-		armed <= 0;
-	else if (aen && address==CTL) // writing CTL register disables sprite
-		armed <= 0;
-	else if (aen && address==DATA) // writing data register A arms sprite
-		armed <= 1;
-
-//--------------------------------------------------------------------------------------
-
-// generate load signal
-always @(posedge clk)
-	load <= armed && hpos[8:0]==hstart[8:0] ? 1'b1 : 1'b0;
-
-always @(posedge clk)
-	load_del <= load;
-
-//--------------------------------------------------------------------------------------
-
-// POS register
-always @(posedge clk)
-	if (aen && address==POS)
-		hstart[8:1] <= data_in[7:0];
-
-// CTL register
-always @(posedge clk)
-	if (aen && address==CTL)
-		{attach,hstart[0]} <= {data_in[7],data_in[0]};
-
-// data register A
-always @(posedge clk)
-	if (aen && address==DATA)
-		datla[15:0] <= data_in[15:0];
-
-// data register B
-always @(posedge clk)
-	if (aen && address==DATB)
-		datlb[15:0] <= data_in[15:0];
-
-//--------------------------------------------------------------------------------------
-
-// sprite shift register
-always @(posedge clk)
-	if (load_del) // load new data into shift register
-	begin
-		shifta[15:0] <= datla[15:0];
-		shiftb[15:0] <= datlb[15:0];
-	end
-	else // shift out data
-	begin
-		shifta[15:0] <= {shifta[14:0],1'b0};
-		shiftb[15:0] <= {shiftb[14:0],1'b0};
-	end
-
-// assign serialized output data
-assign sprdata[1:0] = {shiftb[15],shifta[15]};
-
-//--------------------------------------------------------------------------------------
-
-endmodule
