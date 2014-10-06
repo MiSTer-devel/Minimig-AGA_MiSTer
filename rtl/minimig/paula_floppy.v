@@ -64,7 +64,7 @@
 // 2010-04-12 - implemented work-around for dsksync interrupt request
 // 2010-08-14 - set BYTEREADY of DSKBYTR (required by Kick Off 2 loader)
 
-module floppy
+module paula_floppy
 (
 	// system bus interface
 	input 	clk,		    		//bus clock
@@ -884,6 +884,7 @@ always @(posedge clk) begin
 end
 		
 assign full = (equal && (in_ptr[11]!=out_ptr[11])) ? 1'b1 : 1'b0;	
+
 
 endmodule
 

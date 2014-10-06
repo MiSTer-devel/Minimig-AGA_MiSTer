@@ -106,7 +106,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-module audio
+module paula_audio
 (
   input  wire           clk,            // 28MHz clock
   input  wire           clk7_en,        // 7MHz clock enable
