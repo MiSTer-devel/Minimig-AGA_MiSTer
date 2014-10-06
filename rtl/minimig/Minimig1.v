@@ -542,9 +542,9 @@ paula PAULA1
 userio USERIO1 
 (	
 	.clk(clk),
-	.reset(reset),
-	.clk28m(clk28m),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
+	.reset(reset),
 	.c1(c1),
 	.c3(c3),
 	.sol(sol),

@@ -12,6 +12,7 @@ module sync_fifo #(
 )(
   // system
   input  wire           clk,          // clock
+  input  wire           clk7_en,      // 7MHz clock enable
   input  wire           rst,          // reset
   // fifo input / output
   input  wire [ DW-1:0] fifo_in,      // write data
@@ -70,33 +71,36 @@ reg  [ DW-1:0] fifo_mem [0:FD-1];
 ////////////////////////////////////////
 
 // FIFO write pointer
-always @ (posedge clk or posedge rst)
-begin
+always @ (posedge clk or posedge rst) begin
   if (rst)
     fifo_wp <= #1 1'b0;
-  else if (fifo_wr_en && !fifo_full)
-    fifo_wp <= #1 fifo_wp + 1'b1;
+  else if (clk7_en) begin
+    if (fifo_wr_en && !fifo_full)
+      fifo_wp <= #1 fifo_wp + 1'b1;
+  end
 end
 
 
 // FIFO write
-always @ (posedge clk)
-begin
-  if (fifo_wr_en && !fifo_full) fifo_mem[fifo_wp] <= #1 fifo_in;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (fifo_wr_en && !fifo_full) fifo_mem[fifo_wp] <= #1 fifo_in;
+  end
 end
 
 
 // FIFO counter
-always @ (posedge clk or posedge rst)
-begin
+always @ (posedge clk or posedge rst) begin
   if (rst)
     fifo_cnt <= #1 'd0;
   // read & no write
-  else if (fifo_rd_en && !fifo_wr_en && (fifo_cnt != 'd0))
-    fifo_cnt <= #1 fifo_cnt - 'd1;
-  // write & no read
-  else if (fifo_wr_en && !fifo_rd_en && (fifo_cnt != FD))
-    fifo_cnt <= #1 fifo_cnt + 'd1;
+  else if (clk7_en) begin
+    if (fifo_rd_en && !fifo_wr_en && (fifo_cnt != 'd0))
+      fifo_cnt <= #1 fifo_cnt - 'd1;
+    // write & no read
+    else if (fifo_wr_en && !fifo_rd_en && (fifo_cnt != FD))
+      fifo_cnt <= #1 fifo_cnt + 'd1;
+  end
 end
 
 
@@ -106,18 +110,18 @@ assign fifo_empty = (fifo_cnt == 'd0);
 
 
 // FIFO read pointer
-always @ (posedge clk or posedge rst)
-begin
+always @ (posedge clk or posedge rst) begin
   if (rst)
     fifo_rp <= #1 1'b0;
-  else if (fifo_rd_en && !fifo_empty)
-    fifo_rp <= #1 fifo_rp + 1'b1;
+  else if (clk7_en) begin
+    if (fifo_rd_en && !fifo_empty)
+      fifo_rp <= #1 fifo_rp + 1'b1;
+  end
 end
 
 
 // FIFO read
 assign fifo_out = fifo_mem[fifo_rp];
-
 
 
 endmodule
