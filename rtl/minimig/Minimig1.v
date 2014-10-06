@@ -621,7 +621,7 @@ Denise DENISE1
 );
 
 //instantiate Amber
-Amber AMBER1
+amber AMBER1
 (		
 	.clk(clk28m),
 	.dblscan(_15khz),
