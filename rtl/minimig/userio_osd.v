@@ -1,10 +1,11 @@
 //on screen display controller
 
 
-module osd
+module userio_osd
 (
 	input 	clk,		    	// 28MHz clock
 	input	clk7_en,
+  input clk7n_en,
 	input	reset,				//reset
 	input	c1,					//clk28m domain clock enable
 	input	c3,
