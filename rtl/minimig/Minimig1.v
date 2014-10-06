@@ -784,7 +784,7 @@ sram_bridge RAM1
 	.ramdata_in(ramdata_in)	
 );
 
-Cart CART1
+cart CART1
 (
   .clk            (clk28m         ),
   .clk7_en        (clk7_en        ),
