@@ -159,7 +159,6 @@ module minimig
 	input	cpu_r_w,			// m68k read / write
 	output	_cpu_dtack,			// m68k data acknowledge
 	output	_cpu_reset,			// m68k reset
-	input	cpu_clk,			// m68k clock
   input [31:0] cpu_vbr, // m68k VBR
 	//sram pins
 	output	[15:0] ram_data,	//sram data bus
@@ -717,7 +716,6 @@ minimig_m68k_bridge CPU1
 	.c1(c1),
 	.c3(c3),
 	.cck(cck),
-  .cpu_clk(cpu_clk),
 	.eclk(eclk),
 	.vpa(sel_cia),
 	.dbr(dbr),

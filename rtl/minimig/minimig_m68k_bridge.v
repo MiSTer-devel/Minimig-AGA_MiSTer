@@ -35,7 +35,6 @@ module minimig_m68k_bridge
   input blk,
 	input	c1,						// clock enable signal
 	input	c3,						// clock enable signal
-  input cpu_clk,        // cpu clock
 	input	[9:0] eclk,				// ECLK enable signal
 	input	vpa,					// valid peripheral address (CIAs)
 	input	dbr, 					// data bus request, Gary keeps CPU off the bus (custom chips transfer data)
