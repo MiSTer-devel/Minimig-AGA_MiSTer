@@ -599,7 +599,7 @@ userio USERIO1
 assign cpu_speed = 1'b0;
 
 //instantiate Denise
-Denise DENISE1
+denise DENISE1
 (		
   .clk(clk28m),
   .clk7_en(clk7_en),

@@ -68,7 +68,7 @@
 //		- games Archon1, Rotor and Spaceport finally works normal
 
 
-module Denise
+module denise
 (
 	input 	clk,					// 35ns pixel clock
   input   clk7_en,
