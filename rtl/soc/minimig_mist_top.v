@@ -333,7 +333,7 @@ user_io user_io(
 
 
 //// minimig top ////
-Minimig1 minimig (
+minimig minimig (
   //m68k pins
   .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
   .cpu_data     (tg68_dat_in      ), // M68K data bus
@@ -358,8 +358,7 @@ Minimig1 minimig (
   //system  pins
   .rst_ext      (rst_minimig      ), // reset from ctrl block
   .rst_out      (                 ), // minimig reset status
-  .clk28m       (clk_28           ), // output clock c1 ( 28.687500MHz)
-  .clk          (clk_7            ), // output clock 7  (  7.171875MHz)
+  .clk          (clk_28           ), // output clock c1 ( 28.687500MHz)
   .clk7_en      (clk7_en          ), // 7MHz clock enable
   .clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
   .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
