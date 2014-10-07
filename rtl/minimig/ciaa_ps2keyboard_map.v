@@ -2,62 +2,10 @@
 //this module also handles the osd_ctrl signals
 
 
-module ciaa_ps2keyboard_map
-(
-	input 	clk,		    	//clock
-  input clk7_en,
-	input	reset,				//reset
-	input	enable,				//enable
-	input 	[7:0] ps2key,		//ps2 key code input
-	output	valid,				//amiga key code valid (strobed when new valid keycode at output) 
-	output	[7:0] akey,			//amiga key code output
-	output	ctrl,	  			//amiga control key
-	output	aleft, 				//amiga left alt key
-	output	aright,	   			//amiga right alt key
-	output	caps,	   			//amiga capslock key
-	output	reg numlock = 0, 	//ps/2 numlock status
-	output	reg [7:0] osd_ctrl,	//osd menu control
-	output	reg _lmb,			//mouse button emulation
-	output	reg _rmb,			//mouse button emulation
-	output	reg [5:0] _joy2,	//joystick emulation
-	output	reg freeze,			//int7 freeze button
-  output [5:0] mou_emu,
-  output reg [5:0] joy_emu
-);
-
-//local parameters
-//localparam JOY2KEY_UP    = 7'h3E;
-//localparam JOY2KEY_DOWN  = 7'h2E;
-//localparam JOY2KEY_LEFT  = 7'h2D;
-//localparam JOY2KEY_RIGHT = 7'h2F;
-//localparam JOY2KEY_FIRE0 = 7'h0F;
-//localparam JOY2KEY_FIRE1 = 7'h43;
-//localparam JOY1KEY_FIRE0 = 7'h5C;
-//localparam JOY1KEY_FIRE1 = 7'h5D;
-
-localparam JOY2KEY_UP    = 7'h4c;
-localparam JOY2KEY_DOWN  = 7'h4d;
-localparam JOY2KEY_LEFT  = 7'h4f;
-localparam JOY2KEY_RIGHT = 7'h4e;
-localparam JOY2KEY_FIRE0 = 7'h0F;
-localparam JOY2KEY_FIRE1 = 7'h43;
-localparam JOY1KEY_FIRE0 = 7'h5C;
-localparam JOY1KEY_FIRE1 = 7'h5D;
-
-//local signals
-reg		[15:0] keyrom;			//rom output
-reg		enable2;				//enable signal delayed by one clock
-reg		upstroke;				//upstroke key status
-reg		extended;				//extended key status			
-wire  disable_amiga_key;
-
-//generate delayed enable signal (needed because of blockram pipelining)
-always @(posedge clk)
-//ps2 key to amiga key mapper using blockram
-//this module also handles the osd_ctrl signals
 module ps2keyboardmap
 (
   input   clk,          //clock
+  input clk7_en,
   input reset,        //reset
   input enable,       //enable
   input   [7:0] ps2key,   //ps2 key code input
