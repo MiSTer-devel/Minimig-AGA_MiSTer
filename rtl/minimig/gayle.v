@@ -36,6 +36,7 @@
 module gayle
 (
 	input	clk,
+  input clk7_en,
 	input	reset,
 	input	[23:1] address_in,
 	input	[15:0] data_in,
@@ -175,10 +176,12 @@ reg		[7:0] sector_count;	// sector counter
 wire	sector_count_dec;	// decrease sector counter
 
 always @(posedge clk)
-	if (hwr && sel_tfr && address_in[4:2] == 3'b010) // sector count register loaded by the host
-		sector_count <= data_in[15:8];
-	else if (sector_count_dec)
-		sector_count <= sector_count - 8'd1;
+  if (clk7_en) begin
+  	if (hwr && sel_tfr && address_in[4:2] == 3'b010) // sector count register loaded by the host
+  		sector_count <= data_in[15:8];
+  	else if (sector_count_dec)
+  		sector_count <= sector_count - 8'd1;
+  end
 
 assign sector_count_dec = pio_in & fifo_last & sel_fifo & rd;
 		
@@ -192,32 +195,40 @@ assign hdd_data_in = tfr_sel==0 ? fifo_data_out : {8'h00,tfr_out};
 
 // task file registers
 always @(posedge clk)
-	if (tfr_we)
-		tfr[tfr_sel] <= tfr_in;
+  if (clk7_en) begin
+  	if (tfr_we)
+  		tfr[tfr_sel] <= tfr_in;
+  end
 		
 assign tfr_out = tfr[tfr_sel];
 
 // master/slave drive select
 always @(posedge clk)
-	if (reset)
-		dev <= 0;
-	else if (sel_tfr && address_in[4:2]==6 && hwr)
-		dev <= data_in[12];
+  if (clk7_en) begin
+  	if (reset)
+  		dev <= 0;
+  	else if (sel_tfr && address_in[4:2]==6 && hwr)
+  		dev <= data_in[12];
+  end
 		
 // IDE interrupt enable register
 always @(posedge clk)
-	if (reset)
-		intena <= GND;
-	else if (sel_intena && hwr)
-		intena <= data_in[15];
+  if (clk7_en) begin
+  	if (reset)
+  		intena <= GND;
+  	else if (sel_intena && hwr)
+  		intena <= data_in[15];
+  end
 			
 // gayle id register: reads 1->1->0->1 on MSB
 always @(posedge clk)
-	if (sel_gayleid)
-		if (hwr) // a write resets sequence counter
-			gayleid_cnt <= 2'd0;
-		else if (rd)
-			gayleid_cnt <= gayleid_cnt + 2'd1;
+  if (clk7_en) begin
+  	if (sel_gayleid)
+  		if (hwr) // a write resets sequence counter
+  			gayleid_cnt <= 2'd0;
+  		else if (rd)
+  			gayleid_cnt <= gayleid_cnt + 2'd1;
+  end
 
 assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
 
@@ -233,52 +244,62 @@ assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
 
 // command busy status
 always @(posedge clk)
-	if (reset)
-		busy <= GND;
-	else if (hdd_status_wr && hdd_data_out[7] || sector_count_dec && sector_count == 8'h01)	// reset by SPI host (by clearing BSY status bit)
-		busy <= GND;
-	else if (sel_command)	// set when the CPU writes command register
-		busy <= VCC;
+  if (clk7_en) begin
+  	if (reset)
+  		busy <= GND;
+  	else if (hdd_status_wr && hdd_data_out[7] || sector_count_dec && sector_count == 8'h01)	// reset by SPI host (by clearing BSY status bit)
+  		busy <= GND;
+  	else if (sel_command)	// set when the CPU writes command register
+  		busy <= VCC;
+  end
 
 // IDE interrupt request register
 always @(posedge clk)
-	if (reset)
-		intreq <= GND;
-	else if (busy && hdd_status_wr && hdd_data_out[4] && intena) // set by SPI host
-		intreq <= VCC;
-	else if (sel_intreq && hwr && !data_in[15]) // cleared by the CPU
-		intreq <= GND;
+  if (clk7_en) begin
+  	if (reset)
+  		intreq <= GND;
+  	else if (busy && hdd_status_wr && hdd_data_out[4] && intena) // set by SPI host
+  		intreq <= VCC;
+  	else if (sel_intreq && hwr && !data_in[15]) // cleared by the CPU
+  		intreq <= GND;
+  end
 
 assign irq = (~pio_in | drq) & intreq; // interrupt request line (INT2)
 
 // pio in command type
 always @(posedge clk)
-	if (reset)
-		pio_in <= GND;
-	else if (drdy) // reset when processing of the current command ends
-		pio_in <= GND;
-	else if (busy && hdd_status_wr && hdd_data_out[3])	// set by SPI host 
-		pio_in <= VCC;		
+  if (clk7_en) begin
+  	if (reset)
+  		pio_in <= GND;
+  	else if (drdy) // reset when processing of the current command ends
+  		pio_in <= GND;
+  	else if (busy && hdd_status_wr && hdd_data_out[3])	// set by SPI host 
+  		pio_in <= VCC;		
+  end
 
 // pio out command type
 always @(posedge clk)
-	if (reset)
-		pio_out <= GND;
-	else if (busy && hdd_status_wr && hdd_data_out[7]) 	// reset by SPI host when command processing completes
-		pio_out <= GND;
-	else if (busy && hdd_status_wr && hdd_data_out[2])	// set by SPI host
-		pio_out <= VCC;	
+  if (clk7_en) begin
+  	if (reset)
+  		pio_out <= GND;
+  	else if (busy && hdd_status_wr && hdd_data_out[7]) 	// reset by SPI host when command processing completes
+  		pio_out <= GND;
+  	else if (busy && hdd_status_wr && hdd_data_out[2])	// set by SPI host
+  		pio_out <= VCC;	
+  end
 		
 assign drq = (fifo_full & pio_in) | (~fifo_full & pio_out); // HDD data request status bit
 
 // error status
 always @(posedge clk)
-	if (reset)
-		error <= GND;
-	else if (sel_command) // reset by the CPU when command register is written
-		error <= GND;
-	else if (busy && hdd_status_wr && hdd_data_out[0]) // set by SPI host
-		error <= VCC;	
+  if (clk7_en) begin
+  	if (reset)
+  		error <= GND;
+  	else if (sel_command) // reset by the CPU when command register is written
+  		error <= GND;
+  	else if (busy && hdd_status_wr && hdd_data_out[0]) // set by SPI host
+  		error <= VCC;	
+  end
 		
 assign hdd_cmd_req = bsy; // bsy is set when command register is written, tells the SPI host about new command
 assign hdd_dat_req = (fifo_full & pio_out); // the FIFO is full so SPI host may read it
@@ -293,6 +314,7 @@ assign fifo_wr = pio_in ? hdd_data_wr : sel_fifo & hwr & lwr;
 fifo4096x16 SECBUF1
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(fifo_reset),
 	.data_in(fifo_data_in),
 	.data_out(fifo_data_out),
@@ -322,6 +344,7 @@ endmodule
 module fifo4096x16
 (
 	input 	clk,		    		// bus clock
+  input clk7_en,
 	input 	reset,			   		// reset 
 	input	[15:0] data_in,			// data in
 	output	reg [15:0] data_out,	// data out
@@ -341,32 +364,42 @@ reg		empty_wr;					// fifo empty flag (set one clock after writting the empty fi
 
 // main fifo memory (implemented using synchronous block ram)
 always @(posedge clk)
-	if (wr)
-		mem[inptr[11:0]] <= data_in;
+  if (clk7_en) begin
+  	if (wr)
+  		mem[inptr[11:0]] <= data_in;
+  end
 		
 always @(posedge clk)
-	data_out <= mem[outptr[11:0]];
+  if (clk7_en) begin
+  	data_out <= mem[outptr[11:0]];
+  end
 
 // fifo write pointer control
 always @(posedge clk)
-	if (reset)
-		inptr <= 12'd0;
-	else if (wr)
-		inptr <= inptr + 12'd1;
+  if (clk7_en) begin
+  	if (reset)
+  		inptr <= 12'd0;
+  	else if (wr)
+  		inptr <= inptr + 12'd1;
+  end
 
 // fifo read pointer control
 always @(posedge clk)
-	if (reset)
-		outptr <= 0;
-	else if (rd)
-		outptr <= outptr + 13'd1;
+  if (clk7_en) begin
+  	if (reset)
+  		outptr <= 0;
+  	else if (rd)
+  		outptr <= outptr + 13'd1;
+  end
 
 // the empty flag is set immediately after reading the last word from the fifo
 assign empty_rd = inptr==outptr ? 1'b1 : 1'b0;
 
 // after writting empty fifo the empty flag is delayed by one clock to handle ram write delay
 always @(posedge clk)
-	empty_wr <= empty_rd;
+  if (clk7_en) begin
+  	empty_wr <= empty_rd;
+  end
 
 assign empty = empty_rd | empty_wr;
 
@@ -377,4 +410,6 @@ assign full = inptr[12:8]!=outptr[12:8] ? 1'b1 : 1'b0;
 
 assign last = outptr[7:0] == 8'hFF ? 1'b1 : 1'b0;	
 
+
 endmodule
+
