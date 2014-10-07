@@ -649,6 +649,8 @@ amber AMBER1
 ciaa CIAA1
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
 	.aen(sel_cia_a),
 	.rd(cpu_rd),
 	.wr(cpu_lwr|cpu_hwr),
@@ -850,7 +852,8 @@ gary GARY1
 
 gayle GAYLE1
 (
-	.clk(clk),
+	.clk(clk28m),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.address_in(cpu_address_out),
 	.data_in(cpu_data_out),
