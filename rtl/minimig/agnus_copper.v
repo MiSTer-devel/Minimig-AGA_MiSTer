@@ -55,9 +55,10 @@
 //				- modified copper restart
 // 2010-06-16	- ECS/OCS CDANG behaviour implemented
 
-module copper
+module agnus_copper
 (
 	input 	clk,	 					// bus clock
+  input clk7_en,
 	input 	reset,	 					// system reset (synchronous)
 	input	ecs,						// enable ECS chipset features
 	output	reqdma,						// copper requests dma cycle
@@ -136,55 +137,69 @@ assign clk_ena = hpos[0];
 
 //write copper location register 1 high and low word
 always @(posedge clk)
-	if (reset)
-		cop1lch[20:16] <= 0;
-	else if (reg_address_in[8:1]==COP1LCH[8:1])
-		cop1lch[20:16] <= data_in[4:0];
+  if (clk7_en) begin
+  	if (reset)
+  		cop1lch[20:16] <= 0;
+  	else if (reg_address_in[8:1]==COP1LCH[8:1])
+  		cop1lch[20:16] <= data_in[4:0];
+  end
 		
 always @(posedge clk)
-	if (reset)
-		cop1lcl[15:1] <= 0;
-	else if (reg_address_in[8:1]==COP1LCL[8:1])
-		cop1lcl[15:1] <= data_in[15:1];
+  if (clk7_en) begin
+  	if (reset)
+  		cop1lcl[15:1] <= 0;
+  	else if (reg_address_in[8:1]==COP1LCL[8:1])
+  		cop1lcl[15:1] <= data_in[15:1];
+  end
 
 //write copper location register 2 high and low word
 always @(posedge clk)
-	if (reset)
-		cop2lch[20:16]<=0;
-	else if (reg_address_in[8:1]==COP2LCH[8:1])
-		cop2lch[20:16] <= data_in[4:0];
+  if (clk7_en) begin
+  	if (reset)
+  		cop2lch[20:16]<=0;
+  	else if (reg_address_in[8:1]==COP2LCH[8:1])
+  		cop2lch[20:16] <= data_in[4:0];
+  end
 
 always @(posedge clk)
-	if (reset)
-		cop2lcl[15:1] <= 0;
-	else if (reg_address_in[8:1]==COP2LCL[8:1])
-		cop2lcl[15:1] <= data_in[15:1];
+  if (clk7_en) begin
+  	if (reset)
+  		cop2lcl[15:1] <= 0;
+  	else if (reg_address_in[8:1]==COP2LCL[8:1])
+  		cop2lcl[15:1] <= data_in[15:1];
+  end
 
 //write copcon register (copper danger bit)
 always @(posedge clk)
-	if (reset)
-		cdang <= 0;
-	else if (reg_address_in[8:1]==COPCON[8:1])
-		cdang <= data_in[1];
+  if (clk7_en) begin
+  	if (reset)
+  		cdang <= 0;
+  	else if (reg_address_in[8:1]==COPCON[8:1])
+  		cdang <= data_in[1];
+  end
 
 //copper instruction registers ir1 and ir2
 always @(posedge clk)
-	if (reg_address_in[8:1]==COPINS[8:1])
-	begin
-		ir1[15:1] <= ir2[15:1];
-		ir2[15:0] <= data_in[15:0];
-	end
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==COPINS[8:1])
+  	begin
+  		ir1[15:1] <= ir2[15:1];
+  		ir2[15:0] <= data_in[15:0];
+  	end
+  end
 
 //--------------------------------------------------------------------------------------
 
 //chip address pointer (or copper program counter) controller
 always @(posedge clk)
-	if (dma_ack && strobe1 && copper_state==RESET)//load pointer with location register 1
-		address_out[20:1] <= {cop1lch[20:16],cop1lcl[15:1]};
-	else if (dma_ack && strobe2 && copper_state==RESET)//load pointer with location register 2
-		address_out[20:1] <= {cop2lch[20:16],cop2lcl[15:1]};
-	else if (dma_ack && (selins || selreg))//increment address pointer (when not dummy cycle) 
-		address_out[20:1] <= address_out[20:1] + 1'b1;
+  if (clk7_en) begin
+  	if (dma_ack && strobe1 && copper_state==RESET)//load pointer with location register 1
+  		address_out[20:1] <= {cop1lch[20:16],cop1lcl[15:1]};
+  	else if (dma_ack && strobe2 && copper_state==RESET)//load pointer with location register 2
+  		address_out[20:1] <= {cop2lch[20:16],cop2lcl[15:1]};
+  	else if (dma_ack && (selins || selreg))//increment address pointer (when not dummy cycle) 
+  		address_out[20:1] <= address_out[20:1] + 1'b1;
+  end
 
 //--------------------------------------------------------------------------------------
 
@@ -194,7 +209,7 @@ always @(posedge clk)
 // more according to what happens in a real amiga... I think), else the contents of
 // ir2[8:1] is selected 
 // (if you ask yourself: IR2? is this a bug? then check how ir1/ir2 are loaded in this design)
-always @(enable or selins or selreg or ir2)
+always @(*)
 	if (enable & selins) //load our instruction register
 		reg_address_out[8:1] = COPINS[8:1];
 	else if (enable & selreg)//load register in move instruction
@@ -206,7 +221,7 @@ always @(enable or selins or selreg or ir2)
 // CDANG = 0 (OCS/ECS) : $080-$1FE allowed
 // CDANG = 1 (OCS)     : $040-$1FE allowed
 // CDANG = 1 (ECS)     : $000-$1FE allowed
-always @(ir2 or cdang or ecs)
+always @(*)
 	if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access
 		illegalreg = 1'b1;
 	else // $080 -> $1FE always allowed
@@ -215,36 +230,46 @@ always @(ir2 or cdang or ecs)
 //--------------------------------------------------------------------------------------
 
 reg copjmp1, copjmp2;
-	
+
 always @(posedge clk)
-	if (reg_address_in[8:1]==COPJMP1[8:1] || sof)
-		copjmp1 = 1;
-	else if (clk_ena)
-		copjmp1 = 0;
-		
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==COPJMP1[8:1] || sof)
+  		copjmp1 = 1;
+  	else if (clk_ena)
+  		copjmp1 = 0;
+  end
+
 always @(posedge clk)
-	if (reg_address_in[8:1]==COPJMP2[8:1])
-		copjmp2 = 1;
-	else if (clk_ena)
-		copjmp2 = 0;
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==COPJMP2[8:1])
+  		copjmp2 = 1;
+  	else if (clk_ena)
+  		copjmp2 = 0;
+  end
 		
 //strobe1 (also triggered by sof, start of frame)
 always @(posedge clk)
-	if (copjmp1 && clk_ena)
-		strobe1 = 1;
-	else if (copper_state==RESET && dma_ack)
-		strobe1 = 0;
+  if (clk7_en) begin
+  	if (copjmp1 && clk_ena)
+  		strobe1 = 1;
+  	else if (copper_state==RESET && dma_ack)
+  		strobe1 = 0;
+  end
 		
 //strobe2
 always @(posedge clk)
-	if (copjmp2 && clk_ena)
-		strobe2 = 1;
-	else if (copper_state==RESET && dma_ack)
-		strobe2 = 0;
-		
+  if (clk7_en) begin
+  	if (copjmp2 && clk_ena)
+  		strobe2 = 1;
+  	else if (copper_state==RESET && dma_ack)
+  		strobe2 = 0;
+  end
+
 always @(posedge clk)
-	if (clk_ena)
-		strobe = copjmp1 | copjmp2;		
+  if (clk7_en) begin
+  	if (clk_ena)
+  		strobe = copjmp1 | copjmp2;
+  end
 		
 //--------------------------------------------------------------------------------------
 
@@ -278,17 +303,21 @@ assign vercmp[7] = ir1[15];
  
 // actual beam position comparator
 always @(posedge clk)
-	if (clk_ena)
-		if ({vpos[7:0],hpos[8:2]} >= {vercmp[7:0],horcmp[8:2]}) 
-			beam_match <= 1'b1;
-		else
-			beam_match <= 1'b0;
+  if (clk7_en) begin
+  	if (clk_ena)
+  		if ({vpos[7:0],hpos[8:2]} >= {vercmp[7:0],horcmp[8:2]}) 
+  			beam_match <= 1'b1;
+  		else
+  			beam_match <= 1'b0;
+  end
 
 assign beam_match_skip = beam_match & (ir2[15] | ~blit_busy);
 
 always @(posedge clk)
-	if (clk_ena)
-		beam_match_wait <= beam_match_skip;
+  if (clk7_en) begin
+  	if (clk_ena)
+  		beam_match_wait <= beam_match_skip;
+  end
 
 //--------------------------------------------------------------------------------------
 /*
@@ -311,19 +340,23 @@ such a behaviour is caused by dma request pipelining in real Agnus
 //(blocks the blitter and CPU) but actual transfer takes place in the next cycle (DBR still asserted)
 
 always @(posedge clk)
-	if (clk_ena)
-		if (hpos[8:1]==8'h01)
-			bus_blk <= 1; //cycle $E1 is blocked
-		else
-			bus_blk <= 0;
+  if (clk7_en) begin
+  	if (clk_ena)
+  		if (hpos[8:1]==8'h01)
+  			bus_blk <= 1; //cycle $E1 is blocked
+  		else
+  			bus_blk <= 0;
+  end
 
 always @(posedge clk)
-	if (clk_ena)
-		if (bus_blk)
-			bus_ena <= 1; //cycle $E2 is usable
-		else
-			bus_ena <= ~bus_ena;
-						
+  if (clk7_en) begin
+  	if (clk_ena)
+  		if (bus_blk)
+  			bus_ena <= 1; //cycle $E2 is usable
+  		else
+  			bus_ena <= ~bus_ena;
+  end
+
 assign enable = ~bus_blk & bus_ena & clk_ena;
 
 assign reqdma = dma_req & bus_ena & clk_ena; //dma is request also during $E1 but output register address is idle
@@ -335,14 +368,18 @@ assign dma_ena = enadma; //dma slot is empty and can be used by copper
 //there is at least 2 CCK delay between writing COPJMPx register and pointer reload 
 //copper state machine and skip_flag latch
 always @(posedge clk)
-	if (reset || clk_ena && strobe) // on strobe or reset fetch first instruction word
-		copper_state <= RESET;
-	else if (enable) // go to next state
-		copper_state <= copper_next;
+  if (clk7_en) begin
+  	if (reset || clk_ena && strobe) // on strobe or reset fetch first instruction word
+  		copper_state <= RESET;
+  	else if (enable) // go to next state
+  		copper_state <= copper_next;
+  end
 
 always @(posedge clk)
-	if (enable)
-		skip_flag <= skip;
+  if (clk7_en) begin
+  	if (enable)
+  		skip_flag <= skip;
+  end
 	
 always @(*)//(copper_state or ir2 or beam_match_wait or beam_match_skip or illegalreg or skip_flag or dma_ack or dma_ena)
 begin
@@ -513,9 +550,6 @@ end
 
 //--------------------------------------------------------------------------------------
 
-
-
-//--------------------------------------------------------------------------------------
 
 endmodule
 

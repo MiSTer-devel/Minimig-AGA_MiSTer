@@ -76,9 +76,10 @@
 // 2009-12-15	- fixed channel B data flow
 // 2009-12-19	- ECS extensions available only with ECS chipset selected
 
-module blitter
+module agnus_blitter
 (
 	input 	clk,	 					// bus clock
+  input clk7_en,
 	input 	reset,	 					// reset
 	input	ecs,						// enable ECS extensions
 	input	clkena,						// enables blitter operation (used to slow it down)
@@ -216,57 +217,69 @@ wire	dma_ack;
 
 //bltcon0: ASH part
 always @(posedge clk)
-	if (reset)
-		bltcon0[15:12] <= 0;
-	else if (enable && incash) // increment ash (line mode)
-		bltcon0[15:12] <= bltcon0[15:12] + 4'b0001;
-	else if (enable && decash) // decrement ash (line mode)
-		bltcon0[15:12] <= bltcon0[15:12] - 4'b0001;
-	else if (reg_address_in[8:1]==BLTCON0[8:1])
-		bltcon0[15:12] <= data_in[15:12];
+  if (clk7_en) begin
+  	if (reset)
+  		bltcon0[15:12] <= 0;
+  	else if (enable && incash) // increment ash (line mode)
+  		bltcon0[15:12] <= bltcon0[15:12] + 4'b0001;
+  	else if (enable && decash) // decrement ash (line mode)
+  		bltcon0[15:12] <= bltcon0[15:12] - 4'b0001;
+  	else if (reg_address_in[8:1]==BLTCON0[8:1])
+  		bltcon0[15:12] <= data_in[15:12];
+  end
 
 assign ash[3:0] = bltcon0[15:12];
 
 //bltcon0: USE part
 always @(posedge clk)
-	if (reset)
-		bltcon0[11:8] <= 0;
-	else if (reg_address_in[8:1]==BLTCON0[8:1])
-		bltcon0[11:8] <= data_in[11:8];
+  if (clk7_en) begin
+  	if (reset)
+  		bltcon0[11:8] <= 0;
+  	else if (reg_address_in[8:1]==BLTCON0[8:1])
+  		bltcon0[11:8] <= data_in[11:8];
+  end
 
 // writing blitcon0 while a blit is active disables D channel (not always but it's very likely)
 always @(posedge clk)
-	if (init)
-		enad <= 1'b1;
-	else if (reg_address_in[8:1]==BLTCON0[8:1] && busy)
-		enad <= 1'b0;	
-		
+  if (clk7_en) begin
+  	if (init)
+  		enad <= 1'b1;
+  	else if (reg_address_in[8:1]==BLTCON0[8:1] && busy)
+  		enad <= 1'b0;	
+  end
+
 assign {usea, useb, usec, used} = {bltcon0[11:9], bltcon0[8] & enad}; // DMA channels enable		
 
 //bltcon0: LF part
 always @(posedge clk)
-	if (reset)
-		bltcon0[7:0] <= 0;
-	else if (reg_address_in[8:1]==BLTCON0[8:1] || reg_address_in[8:1]==BLTCON0L[8:1] && ecs)
-		bltcon0[7:0] <= data_in[7:0];
-		
+  if (clk7_en) begin
+  	if (reset)
+  		bltcon0[7:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTCON0[8:1] || reg_address_in[8:1]==BLTCON0L[8:1] && ecs)
+  		bltcon0[7:0] <= data_in[7:0];
+  end
+
 //bltcon1: BSH part
 always @(posedge clk)
-	if (reset)
-		bltcon1[15:12] <= 0;
-	else if (enable && decbsh) // decrement bsh (line mode - texturing)
-		bltcon1[15:12] <= bltcon1[15:12] - 4'b0001;
-	else if (reg_address_in[8:1]==BLTCON1[8:1])
-		bltcon1[15:12] <= data_in[15:12];
+  if (clk7_en) begin
+  	if (reset)
+  		bltcon1[15:12] <= 0;
+  	else if (enable && decbsh) // decrement bsh (line mode - texturing)
+  		bltcon1[15:12] <= bltcon1[15:12] - 4'b0001;
+  	else if (reg_address_in[8:1]==BLTCON1[8:1])
+  		bltcon1[15:12] <= data_in[15:12];
+  end
 
 assign bsh[3:0] = bltcon1[15:12];
 
 //bltcon1: the rest
 always @(posedge clk)
-	if (reset)
-		bltcon1[11:0] <= 0;
-	else if (reg_address_in[8:1]==BLTCON1[8:1])
-		bltcon1[11:0] <= data_in[11:0];
+  if (clk7_en) begin
+  	if (reset)
+  		bltcon1[11:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTCON1[8:1])
+  		bltcon1[11:0] <= data_in[11:0];
+  end
 
 assign line = bltcon1[0]; // line mode
 assign desc = ~line & bltcon1[1]; // descending blit mode		
@@ -277,20 +290,24 @@ assign ife = ~line & bltcon1[3]; // inclusive fill mode
 
 //bltafwm register (first word mask for channel A)
 always @(posedge clk)
-	if (reset)
-		bltafwm[15:0] <= 0;
-	else if (reg_address_in[8:1]==BLTAFWM[8:1])
-		bltafwm[15:0] <= data_in[15:0];
+  if (clk7_en) begin
+  	if (reset)
+  		bltafwm[15:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTAFWM[8:1])
+  		bltafwm[15:0] <= data_in[15:0];
+  end
 
 //bltalwm register (last word mask for channel A)
 always @(posedge clk)
-	if (reset)
-		bltalwm[15:0] <= 0;
-	else if (reg_address_in[8:1]==BLTALWM[8:1])
-		bltalwm[15:0] <= data_in[15:0];
+  if (clk7_en) begin
+  	if (reset)
+  		bltalwm[15:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTALWM[8:1])
+  		bltalwm[15:0] <= data_in[15:0];
+  end
 
 //channel A mask select
-always @(bltafwm or bltalwm or first_word or last_word)
+always @(*)
 	if (first_word && last_word)
 		bltamask[15:0] = bltafwm[15:0] & bltalwm[15:0];
 	else if (last_word)
@@ -302,21 +319,25 @@ always @(bltafwm or bltalwm or first_word or last_word)
 		
 //bltadat register
 always @(posedge clk)
-	if (reset)
-		bltadat[15:0] <= 0;
-	else if (reg_address_in[8:1]==BLTADAT[8:1])
-		bltadat[15:0] <= data_in[15:0];
+  if (clk7_en) begin
+  	if (reset)
+  		bltadat[15:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTADAT[8:1])
+  		bltadat[15:0] <= data_in[15:0];
+  end
 
 //channel A 'old' register
 always @(posedge clk)
-	if (enable)
-		if (init)
-			bltaold[15:0] <= 0;
-		else if (next_word && !line) // in line mode this register is equal zero all the time
-			bltaold[15:0] <= bltadat[15:0] & bltamask[15:0];
+  if (clk7_en) begin
+  	if (enable)
+  		if (init)
+  			bltaold[15:0] <= 0;
+  		else if (next_word && !line) // in line mode this register is equal zero all the time
+  			bltaold[15:0] <= bltadat[15:0] & bltamask[15:0];
+  end
 
 //channel A barrel shifter
-barrel_shifter barrel_shifter_A
+agnus_blitter_barrelshifter barrel_shifter_A
 (
 	.desc(desc),
 	.shift(ash),
@@ -327,42 +348,52 @@ barrel_shifter barrel_shifter_A
 
 //channel A holding register
 always @(posedge clk)
-	if (enable)
-		bltahold[15:0] <= shiftaout[15:0];
+  if (clk7_en) begin
+  	if (enable)
+  		bltahold[15:0] <= shiftaout[15:0];
+  end
 
 //--------------------------------------------------------------------------------------
 
 //bltbdat register
 always @(posedge clk)
-	if (reset)
-		bltbdat[15:0] <= 0;
-	else if (reg_address_in[8:1]==BLTBDAT[8:1])
-		bltbdat[15:0] <= data_in[15:0];
+  if (clk7_en) begin
+  	if (reset)
+  		bltbdat[15:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTBDAT[8:1])
+  		bltbdat[15:0] <= data_in[15:0];
+  end
 		
 reg bltbold_init;
 always @(posedge clk)
-	if (reset || done)
-		bltbold_init <= 1'b1;
-	else if (reg_address_in[8:1]==BLTBDAT[8:1])
-		bltbold_init <= 1'b0;
+  if (clk7_en) begin
+  	if (reset || done)
+  		bltbold_init <= 1'b1;
+  	else if (reg_address_in[8:1]==BLTBDAT[8:1])
+  		bltbold_init <= 1'b0;
+  end
 
 //channel B 'old' register
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTBDAT[8:1])
-		if (bltbold_init)
-			bltbold[15:0] <= 0;
-		else
-			bltbold[15:0] <= bltbdat[15:0];
-			
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTBDAT[8:1])
+  		if (bltbold_init)
+  			bltbold[15:0] <= 0;
+  		else
+  			bltbold[15:0] <= bltbdat[15:0];
+  end
+
 reg bltbdat_wrtn;		
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTBDAT[8:1])
-		bltbdat_wrtn <= 1'b1;
-	else
-		bltbdat_wrtn <= 1'b0;
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTBDAT[8:1])
+  		bltbdat_wrtn <= 1'b1;
+  	else
+  		bltbdat_wrtn <= 1'b0;
+  end
 
 //channel B barrel shifter
-barrel_shifter barrel_shifter_B
+agnus_blitter_barrelshifter barrel_shifter_B
 (
 	.desc(desc),
 	.shift(bsh),
@@ -373,33 +404,41 @@ barrel_shifter barrel_shifter_B
 
 //channel B holding register
 always @(posedge clk)
-	if (line)
-		bltbhold[15:0] <= {16{shiftbout[0]}}; // in line mode only one selected bit of BLTBDAT register (LSB) is used for texturing
-	else if (bltbdat_wrtn)
-		bltbhold[15:0] <= shiftbout[15:0];
+  if (clk7_en) begin
+  	if (line)
+  		bltbhold[15:0] <= {16{shiftbout[0]}}; // in line mode only one selected bit of BLTBDAT register (LSB) is used for texturing
+  	else if (bltbdat_wrtn)
+  		bltbhold[15:0] <= shiftbout[15:0];
+  end
 	
 //--------------------------------------------------------------------------------------
 
 //bltcdat register
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTCDAT[8:1])
-		bltcdat[15:0] <= data_in[15:0];
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTCDAT[8:1])
+  		bltcdat[15:0] <= data_in[15:0];
+  end
 		
 //--------------------------------------------------------------------------------------
 
  
 always @(posedge clk)
-	if (next_word && enable)
-		last_word_del <= last_word;
+  if (clk7_en) begin
+  	if (next_word && enable)
+  		last_word_del <= last_word;
+  end
 
 always @(posedge clk)
-	if (next_word && enable)
-		first_word_del <= first_word; // used in fill mode for selecting initial fci state
+  if (clk7_en) begin
+  	if (next_word && enable)
+  		first_word_del <= first_word; // used in fill mode for selecting initial fci state
+  end
 
 //--------------------------------------------------------------------------------------
 
 //minterm generator instantation
-bltminterm bltmt1
+agnus_blitter_minterm bltmt1
 (
 	.lf(bltcon0[7:0]),
 	.ain(bltahold[15:0]),
@@ -410,7 +449,7 @@ bltminterm bltmt1
 
 
 //fill logic instantiation
-bltfill bltfl1
+agnus_blitter_fill bltfl1
 (
 	.ife(ife),
 	.efe(efe),
@@ -425,20 +464,26 @@ assign fci = first_word_del ? bltcon1[2] : fcy;
 
 // carry out latch (updated at the same time as channel D holding register)
 always @(posedge clk)
-	if (store_result)
-		fcy <= fco;
+  if (clk7_en) begin
+  	if (store_result)
+  		fcy <= fco;
+  end
 
 // channel D holding register (updated one cycle later after a write to other holding registers)
 always @(posedge clk)
-	if (store_result)
-		bltdhold[15:0] <= fill_out[15:0];
+  if (clk7_en) begin
+  	if (store_result)
+  		bltdhold[15:0] <= fill_out[15:0];
+  end
 
 // channel D 'zero' flag
 always @(posedge clk)
-	if (enable && init)
-		zero <= 1;
-	else if (store_result && |fill_out[15:0])
-		zero <= 0;
+  if (clk7_en) begin
+  	if (enable && init)
+  		zero <= 1;
+  	else if (store_result && |fill_out[15:0])
+  		zero <= 0;
+  end
 
 //channel D data output
 assign data_out[15:0] = ackdma && chsel[1:0]==CHD ? bltdhold[15:0] : 16'h00_00;
@@ -448,39 +493,47 @@ assign we = ackdma && chsel[1:0]==CHD ? 1'b1 : 1'b0;
 
 // 'busy' flag control
 always @(posedge clk)
-	if (reset)
-		busy <= 0;
-	else if (reg_address_in[8:1]==BLTSIZE[8:1] || reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // set immediately after a write to BLTSIZE or BLTSIZH (ECS)
-		busy <= 1;
-	else if (done) // cleared when the blit is done
-		busy <= 0;
+  if (clk7_en) begin
+  	if (reset)
+  		busy <= 0;
+  	else if (reg_address_in[8:1]==BLTSIZE[8:1] || reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // set immediately after a write to BLTSIZE or BLTSIZH (ECS)
+  		busy <= 1;
+  	else if (done) // cleared when the blit is done
+  		busy <= 0;
+  end
 
 // blitter finish interrupt request
 assign int3 = done;
 
 // FSM start control (one bus clock cycle delay for cycle exact compatibility)
 always @(posedge clk)
-	if (reset || done)
-		start <= 0;
-	else if (clkena && busy)
-		start <= 1;
+  if (clk7_en) begin
+  	if (reset || done)
+  		start <= 0;
+  	else if (clkena && busy)
+  		start <= 1;
+  end
 
 // blit width register (backup)
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTSIZE[8:1]) // OCS
-		width[10:0] <= {4'b0000, ~|data_in[5:0], data_in[5:0]};
-	else if (reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // ECS
-		width[10:0] <= data_in[10:0];
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTSIZE[8:1]) // OCS
+  		width[10:0] <= {4'b0000, ~|data_in[5:0], data_in[5:0]};
+  	else if (reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // ECS
+  		width[10:0] <= data_in[10:0];
+  end
 
 assign width_cnt_dec = enable & next_word;
 assign width_cnt_rld = enable & next_word & last_word | init & enable;
 
 // blit width counter
 always @(posedge clk)
-	if (width_cnt_rld) // reload counter
-		width_cnt[10:0] <= width[10:0];
-	else if (width_cnt_dec) // decrement counter
-		width_cnt[10:0] <= width_cnt[10:0] - 1'b1;
+  if (clk7_en) begin
+  	if (width_cnt_rld) // reload counter
+  		width_cnt[10:0] <= width[10:0];
+  	else if (width_cnt_dec) // decrement counter
+  		width_cnt[10:0] <= width_cnt[10:0] - 1'b1;
+  end
 
 assign last_word = width_cnt[10:0]==1 ? 1'b1 : 1'b0;
 assign first_word = width_cnt[10:0]==width[10:0] ? 1'b1 : 1'b0;
@@ -488,34 +541,41 @@ assign last_line = height_cnt[14:0]==1 ? 1'b1 : 1'b0;
 
 // ECS large blit height holding register 
 always @(posedge clk)
-	if (reset)
-		height[14:0] <= 0;
-	else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register
-		height[14:0] <= data_in[14:0];
-		
+  if (clk7_en) begin
+  	if (reset)
+  		height[14:0] <= 0;
+  	else if (reg_address_in[8:1]==BLTSIZV[8:1]) // ECS BLTSIZV register
+  		height[14:0] <= data_in[14:0];
+  end
+
 // blit height counter
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTSIZE[8:1]) // OCS
-		height_cnt[14:0] <= {4'b0000, ~|data_in[15:6], data_in[15:6]};
-	else if (reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // ECS
-		height_cnt[14:0] <= height[14:0];
-	else if (enable && next_word && last_word) // decrement height counter
-		height_cnt[14:0] <= height_cnt[14:0] - 1'b1;
-		
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTSIZE[8:1]) // OCS
+  		height_cnt[14:0] <= {4'b0000, ~|data_in[15:6], data_in[15:6]};
+  	else if (reg_address_in[8:1]==BLTSIZH[8:1] && ecs) // ECS
+  		height_cnt[14:0] <= height[14:0];
+  	else if (enable && next_word && last_word) // decrement height counter
+  		height_cnt[14:0] <= height_cnt[14:0] - 1'b1;
+  end
+
 // pipeline is full (first set of sources has been fetched)
 always @(posedge clk)
-	if (enable)
-		if (init)
-			pipeline_full <= 0;
-		else if (next_word)
-			pipeline_full <= 1;
+  if (clk7_en) begin
+  	if (enable)
+  		if (init)
+  			pipeline_full <= 0;
+  		else if (next_word)
+  			pipeline_full <= 1;
+  end
 			
 //--------------------------------------------------------------------------------------
 
 // instantiate address generation unit
-address_generator address_generator_1
+agnus_blitter_adrgen address_generator_1
 (
 	.clk(clk),
+  .clk7_en(clk7_en),
 	.reset(reset),
 	.ptrsel(ptrsel),
 	.modsel(modsel),
@@ -531,7 +591,7 @@ address_generator address_generator_1
 );
 
 // custom register address output
-always @(chsel)
+always @(*)
 	case (chsel)
 		CHA : reg_address_out = BLTADAT[8:1]; 
 		CHB : reg_address_out = BLTBDAT[8:1]; 
@@ -547,12 +607,14 @@ assign	dma_ack = ackdma;
 
 // blitter FSM
 always @(posedge clk)
-	if (reset)
-		blt_state <= BLT_IDLE;
-	else
-		blt_state <= blt_next;
+  if (clk7_en) begin
+  	if (reset)
+  		blt_state <= BLT_IDLE;
+  	else
+  		blt_state <= blt_next;
+  end
 
-always @*
+always @(*)
 	case (blt_state)
 	
 		BLT_IDLE:
@@ -826,329 +888,46 @@ assign next_word = blt_state==BLT_C && !used || blt_state==BLT_D || blt_state==B
 
 // stores a new value to D hold register
 always @(posedge clk)
-	if (reset)
-		store_result <= 0;
-	else
-		store_result <= enable && next_word;
-		
+  if (clk7_en) begin
+  	if (reset)
+  		store_result <= 0;
+  	else
+  		store_result <= enable && next_word;
+  end
+
 // blitter busy flag is cleared immediately after last source data is fetched (if D channel is not enabled) or the last but one result is stored
 // signal 'done' is used to clear the 'busy' and 'start' flags
 assign done = (blt_state==BLT_C && !used || blt_state==BLT_D) && last_word && last_line || blt_state==BLT_L4 && last_line ? enable : 1'b0;
 
 always @(posedge clk)
-	if (enable)
-		if (blt_state==BLT_INIT)
-			first_pixel <= 1'b1;
-		else if (blt_state==BLT_L4)
-			first_pixel <= ~sign_del;
+  if (clk7_en) begin
+  	if (enable)
+  		if (blt_state==BLT_INIT)
+  			first_pixel <= 1'b1;
+  		else if (blt_state==BLT_L4)
+  			first_pixel <= ~sign_del;
+  end
 
 always @(posedge clk)
-	if (reg_address_in[8:1]==BLTCON1[8:1])
-		sign <= data_in[6]; // initial sign value
-	else if (enable && blt_state==BLT_L1)
-		sign <= sign_out; // latch sign output from error accumulator
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==BLTCON1[8:1])
+  		sign <= data_in[6]; // initial sign value
+  	else if (enable && blt_state==BLT_L1)
+  		sign <= sign_out; // latch sign output from error accumulator
+  end
 
 always @(posedge clk)
-	if (enable && blt_state==BLT_L1)
-		sign_del <= sign;
-		
+  if (clk7_en) begin
+  	if (enable && blt_state==BLT_L1)
+  		sign_del <= sign;
+  end
+
 assign incash = enable && blt_state==BLT_L4 && (bltcon1[4] && !bltcon1[2] || !bltcon1[4] && !bltcon1[3] && !sign_del) ? 1'b1 : 1'b0;
 assign decash = enable && blt_state==BLT_L4 && (bltcon1[4] &&  bltcon1[2] || !bltcon1[4] &&  bltcon1[3] && !sign_del) ? 1'b1 : 1'b0;
 assign decbsh = enable && blt_state==BLT_L4 ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 
-endmodule
-
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-//Blitter barrel shifter
-//This module can shift 0-15 positions to the right (normal mode) or to the left (descending mode).
-//Multipliers are used to save logic.
-module barrel_shifter
-(
-	input	desc,			// select descending mode (shift to the left)
-	input	[3:0] shift,	// shift value (0 to 15)
-	input 	[15:0] new_val,		// barrel shifter data in
-	input 	[15:0] old_val,		// barrel shifter data in
-	output	[15:0] out		// barrel shifter data out
-);
-
-wire [35:0] shifted_new;	// shifted new data
-wire [35:0] shifted_old;	// shifted old data
-reg  [17:0] shift_onehot;	// one-hot shift value for multipliers
-
-//one-hot shift value encoding
-always @(desc or shift)
-	case ({desc,shift[3:0]})
-		5'h00 : shift_onehot = 18'h10000;
-		5'h01 : shift_onehot = 18'h08000;
-		5'h02 : shift_onehot = 18'h04000;
-		5'h03 : shift_onehot = 18'h02000;
-		5'h04 : shift_onehot = 18'h01000;
-		5'h05 : shift_onehot = 18'h00800;
-		5'h06 : shift_onehot = 18'h00400;
-		5'h07 : shift_onehot = 18'h00200;
-		5'h08 : shift_onehot = 18'h00100;
-		5'h09 : shift_onehot = 18'h00080;
-		5'h0A : shift_onehot = 18'h00040;
-		5'h0B : shift_onehot = 18'h00020;
-		5'h0C : shift_onehot = 18'h00010;
-		5'h0D : shift_onehot = 18'h00008;
-		5'h0E : shift_onehot = 18'h00004;
-		5'h0F : shift_onehot = 18'h00002;
-		5'h10 : shift_onehot = 18'h00001;
-		5'h11 : shift_onehot = 18'h00002;
-		5'h12 : shift_onehot = 18'h00004;
-		5'h13 : shift_onehot = 18'h00008;
-		5'h14 : shift_onehot = 18'h00010;
-		5'h15 : shift_onehot = 18'h00020;
-		5'h16 : shift_onehot = 18'h00040;
-		5'h17 : shift_onehot = 18'h00080;
-		5'h18 : shift_onehot = 18'h00100;
-		5'h19 : shift_onehot = 18'h00200;
-		5'h1A : shift_onehot = 18'h00400;
-		5'h1B : shift_onehot = 18'h00800;
-		5'h1C : shift_onehot = 18'h01000;
-		5'h1D : shift_onehot = 18'h02000;
-		5'h1E : shift_onehot = 18'h04000;
-		5'h1F : shift_onehot = 18'h08000;
- 	endcase
-
-/*
-MULT18X18 multiplier_1
-(
-	.dataa({2'b00,new_val[15:0]}),  // 18-bit multiplier input
-	.datab(shift_onehot),     	// 18-bit multiplier input
-	.result(shifted_new)			// 36-bit multiplier output
-);
-*/
-assign shifted_new = ({2'b00,new_val[15:0]})*shift_onehot;
-
-/*
-MULT18X18 multiplier_2
-(
-	.dataa({2'b00,old_val[15:0]}),	// 18-bit multiplier input
-	.datab(shift_onehot),		// 18-bit multiplier input
-	.result(shifted_old)			// 36-bit multiplier output
-);
-*/
-assign shifted_old = ({2'b00,old_val[15:0]})*shift_onehot;
-
-assign out = desc ? shifted_new[15:0] | shifted_old[31:16] : shifted_new[31:16] | shifted_old[15:0];
 
 endmodule
 
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-//Blitter minterm function generator
-//The minterm function generator takes <ain>,<bin> and <cin> 
-//and checks every logic combination against the LF control byte.
-//If a combination is marked as 1 in the LF byte,the ouput will
-//also be 1,else the output is 0.
-module bltminterm
-(
-	input	[7:0] lf,	//LF control byte
-	input	[15:0] ain,	//A channel in
-	input	[15:0] bin,	//B channel in
-	input	[15:0] cin,	//C channel in
-	output	[15:0] out	//function generator output
-);
-
-reg		[15:0] mt0;		//minterm 0
-reg		[15:0] mt1;		//minterm 1
-reg		[15:0] mt2;		//minterm 2
-reg		[15:0] mt3;		//minterm 3
-reg		[15:0] mt4;		//minterm 4
-reg		[15:0] mt5;		//minterm 5
-reg		[15:0] mt6;		//minterm 6
-reg		[15:0] mt7;		//minterm 7
-
-//Minterm generator for each bit. The code inside the loop 
-//describes one bit. The loop is 'unrolled' by the 
-//synthesizer to cover all 16 bits in the word.
-integer j;
-always @(ain or bin or cin or lf)
-	for (j=15; j>=0; j=j-1)
-	begin
-		mt0[j] = ~ain[j] & ~bin[j] & ~cin[j] & lf[0];
-		mt1[j] = ~ain[j] & ~bin[j] &  cin[j] & lf[1];
-		mt2[j] = ~ain[j] &  bin[j] & ~cin[j] & lf[2];
-		mt3[j] = ~ain[j] &  bin[j] &  cin[j] & lf[3];
-		mt4[j] =  ain[j] & ~bin[j] & ~cin[j] & lf[4];
-		mt5[j] =  ain[j] & ~bin[j] &  cin[j] & lf[5];
-		mt6[j] =  ain[j] &  bin[j] & ~cin[j] & lf[6];
-		mt7[j] =  ain[j] &  bin[j] &  cin[j] & lf[7];
-	end
-
-//Generate function generator output by or-ing all
-//minterms together.
-assign out = mt0 | mt1 | mt2 | mt3 | mt4 | mt5 | mt6 | mt7;
-
-endmodule		
-
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-//Blitter fill logic
-//The fill logic module has 2 modes,inclusive fill and exclusive fill.
-//Both share the same xor operation but in inclusive fill mode,
-//the output of the xor-filler is or-ed with the input data.	
-module bltfill
-(
-	input	ife,					//inclusive fill enable
-	input	efe,					//exclusive fill enable
-	input	fci,					//fill carry input
-	output	fco,					//fill carry output
-	input	[15:0]in,				//data in
-	output	reg [15:0]out			//data out
-);
-
-//local signals
-reg		[15:0]carry;
-
-//generate all fill carry's
-integer j;
-always @(fci or in[0])//least significant bit
-	carry[0] = fci ^ in[0];		
-always @(in or carry)//rest of bits
-	for (j=1;j<=15;j=j+1)
-		carry[j] = carry[j-1] ^ in[j];
-
-//fill carry output
-assign fco = carry[15];
-
-//fill data output
-always @(ife or efe or carry or in)
-	if (efe)//exclusive fill
-		out[15:0] = carry[15:0];
-	else if (ife)//inclusive fill
-		out[15:0] = carry[15:0] | in[15:0];
-	else//bypass,no filling
-		out[15:0] = in[15:0];
-
-endmodule
-
-//--------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-// Blitter address generator
-// It can increment or decrement selected pointer register or add or substract any selected modulo register
-
-module address_generator
-(
-	input	clk,					// bus clock
-	input	reset,					// reset
-	input	[1:0] ptrsel,			// pointer register selection
-	input	[1:0] modsel,			// modulo register selection
-	input	enaptr,					// enable pointer selection and update
-	input	incptr,					// increase selected pointer register
-	input	decptr,					// decrease selected pointer register
-	input	addmod,					// add selected modulo register to selected pointer register
-	input	submod,					// substract selected modulo register from selected pointer register
-	output	sign_out,				// sign output (used for line mode)
-	input	[15:0] data_in,			// bus data in
-	input	[8:1] reg_address_in,	// register address input
-	output	[20:1] address_out		// generated address out
-);
-
-//register names and addresses
-parameter BLTAMOD = 9'h064;
-parameter BLTBMOD = 9'h062;
-parameter BLTCMOD = 9'h060;
-parameter BLTDMOD = 9'h066;
-parameter BLTAPTH = 9'h050;
-parameter BLTAPTL = 9'h052;
-parameter BLTBPTH = 9'h04c;
-parameter BLTBPTL = 9'h04e;
-parameter BLTCPTH = 9'h048;
-parameter BLTCPTL = 9'h04a;
-parameter BLTDPTH = 9'h054;
-parameter BLTDPTL = 9'h056;
-
-//channel select codes
-parameter CHA = 2'b10;			// channel A
-parameter CHB = 2'b01;			// channel B
-parameter CHC = 2'b00;			// channel C
-parameter CHD = 2'b11;			// channel D
-
-//local signals
-wire 	[1:0]	bltptr_sel;		// blitter pointer select
-wire 	[20:1]	bltptr_in;		// blitter pointer registers input
-reg		[20:16] bltpth [3:0];	// blitter pointer register bank (high)
-wire	[20:16] bltpth_out;		// blitter pointer register bank output (high)
-reg		[15:1]  bltptl [3:0];	// blitter pointer register bank (low)
-wire	[15:1]  bltptl_out;		// blitter pointer register bank output (low)
-wire	[20:1]	bltptr_out;		// blitter pointer register bank output
-
-wire 	[1:0]	bltmod_sel;		// blitter modulo register select
-reg		[15:1]  bltmod [3:0];	// blitter modulo register bank
-wire	[15:1]  bltmod_out;		// blitter modulo register bank output
-
-reg		[20:1]  newptr;			// new pointer value
-reg 	[20:1]	t_newptr; 		// temporary pointer value
-
-//--------------------------------------------------------------------------------------
-
-//pointer register bank
-
-assign bltptr_in[20:1] = enaptr ? newptr[20:1] : {data_in[4:0], data_in[15:1]};
-
-assign bltptr_sel = enaptr ? ptrsel : {reg_address_in[4],reg_address_in[2]};
-
-always @(posedge clk)
-	if (enaptr || reg_address_in[8:1]==BLTAPTH[8:1] || reg_address_in[8:1]==BLTBPTH[8:1] || reg_address_in[8:1]==BLTCPTH[8:1] || reg_address_in[8:1]==BLTDPTH[8:1])
-		bltpth[bltptr_sel] <= bltptr_in[20:16];
-
-assign bltpth_out = bltpth[bltptr_sel];		
-		
-always @(posedge clk)
-	if (enaptr || reg_address_in[8:1]==BLTAPTL[8:1] || reg_address_in[8:1]==BLTBPTL[8:1] || reg_address_in[8:1]==BLTCPTL[8:1] || reg_address_in[8:1]==BLTDPTL[8:1])
-		bltptl[bltptr_sel] <= bltptr_in[15:1];
-
-assign bltptl_out = bltptl[bltptr_sel];
-
-assign bltptr_out = {bltpth_out, bltptl_out};	
-	
-assign address_out = bltptr_out;
-    
-//--------------------------------------------------------------------------------------
-
-//modulo register bank
-
-assign bltmod_sel = enaptr ? modsel : reg_address_in[2:1];
-
-always @(posedge clk)
-	if (reg_address_in[8:3]==BLTAMOD[8:3])
-		bltmod[bltmod_sel] <= data_in[15:1];
-		
-assign bltmod_out = bltmod[modsel];
-
-//--------------------------------------------------------------------------------------
-
-// pointer arithmetic unit
-
-// increment or decrement selected pointer
-always @(incptr or decptr or bltptr_out)
-	if (incptr && !decptr)
-		t_newptr = bltptr_out + 20'h1; // increment selected pointer
-	else if (!incptr && decptr)
-		t_newptr = bltptr_out - 20'h1; // decrement selected pointer
-	else
-		t_newptr = bltptr_out;
-
-// add or substract modulo
-always @(addmod or submod or bltmod_out or t_newptr)
-	if (addmod && !submod)
-		newptr = t_newptr + {{5{bltmod_out[15]}},bltmod_out[15:1]}; // add modulo (sign extended)
-	else if (!addmod && submod)
-		newptr = t_newptr - {{5{bltmod_out[15]}},bltmod_out[15:1]}; // substract modulo (sign extended)
-	else
-		newptr = t_newptr;
-
-//sign output
-assign sign_out = newptr[15]; // used in line mode as the sign of Bresenham's error accumulator (channel A pointer acts as an accumulator)
-
-endmodule	

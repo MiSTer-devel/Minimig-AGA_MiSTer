@@ -28,9 +28,10 @@
 // SB:
 // 2011-04-10 - added readable VPOSW and VHPOSW register (fix for RSI slideshow)
 
-module beamcounter
+module agnus_beamcounter
 (
 	input	clk,					// bus clock
+  input clk7_en,
 	input	reset,					// reset
 	input	cck,					// CCK clock
 	input	ntsc,					// NTSC mode switch
@@ -118,7 +119,7 @@ assign	vbstop = pal ? 9'd25 : 9'd20;			// vertical blanking end (PAL 26 lines, N
 //--------------------------------------------------------------------------------------
 
 //beamcounter read registers VPOSR and VHPOSR
-always @(reg_address_in or long_frame or long_line or vpos or hpos or ntsc or ecs)
+always @(*)
 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
 		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,4'b0000,long_line,4'b0000,vpos[10:8]};
 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
@@ -128,24 +129,30 @@ always @(reg_address_in or long_frame or long_line or vpos or hpos or ntsc or ec
 
 //write ERSY bit of bplcon0 register (External ReSYnchronization - genlock)
 always @(posedge clk)
-	if (reset)
-		ersy <= 1'b0;
-	else if (reg_address_in[8:1] == BPLCON0[8:1])
-		ersy <= data_in[1];
+  if (clk7_en) begin
+  	if (reset)
+  		ersy <= 1'b0;
+  	else if (reg_address_in[8:1] == BPLCON0[8:1])
+  		ersy <= data_in[1];
+  end
 		
 //BPLCON0 register
 always @(posedge clk)
-	if (reset)
-		lace <= 1'b0;
-	else if (reg_address_in[8:1]==BPLCON0[8:1])
-		lace <= data_in[2];
+  if (clk7_en) begin
+  	if (reset)
+  		lace <= 1'b0;
+  	else if (reg_address_in[8:1]==BPLCON0[8:1])
+  		lace <= data_in[2];
+  end
 
 //BEAMCON0 register
 always @(posedge clk)
-	if (reset)
-		pal <= ~ntsc;
-	else if (reg_address_in[8:1]==BEAMCON0[8:1] && ecs)
-		pal <= data_in[5];
+  if (clk7_en) begin
+  	if (reset)
+  		pal <= ~ntsc;
+  	else if (reg_address_in[8:1]==BEAMCON0[8:1] && ecs)
+  		pal <= data_in[5];
+  end
 
 //--------------------------------------------------------------------------------------//
 //                                                                                      //
@@ -155,30 +162,36 @@ always @(posedge clk)
 
 //generate start of line signal
 always @(posedge clk)
-	if (hpos[8:0]=={htotal[8:1],1'b0})
-		end_of_line <= 1'b1;
-	else
-		end_of_line <= 1'b0;
+  if (clk7_en) begin
+  	if (hpos[8:0]=={htotal[8:1],1'b0})
+  		end_of_line <= 1'b1;
+  	else
+  		end_of_line <= 1'b0;
+  end
 
 // horizontal beamcounter
 always @(posedge clk)
-	if (reg_address_in[8:1]==VHPOSW[8:1])
-		hpos[8:1] <= data_in[7:0]; 
-	else if (end_of_line)
-		hpos[8:1] <= 0;
-	else if (cck && (~ersy || |hpos[8:1]))
-		hpos[8:1] <= hpos[8:1] + 1'b1;
-		
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==VHPOSW[8:1])
+  		hpos[8:1] <= data_in[7:0]; 
+  	else if (end_of_line)
+  		hpos[8:1] <= 0;
+  	else if (cck && (~ersy || |hpos[8:1]))
+  		hpos[8:1] <= hpos[8:1] + 1'b1;
+  end
+
 always @(cck)
 	hpos[0] = cck;
 
 //long line signal (not used, only for better NTSC compatibility)
 always @(posedge clk)
-	if (end_of_line)
-		if (pal)
-			long_line <= 1'b0;
-		else
-			long_line <= ~long_line;
+  if (clk7_en) begin
+  	if (end_of_line)
+  		if (pal)
+  			long_line <= 1'b0;
+  		else
+  			long_line <= ~long_line;
+  end
 
 //--------------------------------------------------------------------------------------//
 //                                                                                      //
@@ -188,10 +201,12 @@ always @(posedge clk)
 
 //vertical counter increase
 always @(posedge clk)
-	if (hpos==2) //actual chipset works in this way
-		vpos_inc <= 1'b1;
-	else
-		vpos_inc <= 1'b0;
+  if (clk7_en) begin
+  	if (hpos==2) //actual chipset works in this way
+  		vpos_inc <= 1'b1;
+  	else
+  		vpos_inc <= 1'b0;
+  end
 
 //external signals assigment
 assign eol = vpos_inc;
@@ -199,35 +214,41 @@ assign eol = vpos_inc;
 //vertical position counter
 //vpos changes after hpos equals 3
 always @(posedge clk)
-	if (reg_address_in[8:1]==VPOSW[8:1])
-		vpos[10:8] <= data_in[2:0];
-	else if (reg_address_in[8:1]==VHPOSW[8:1])
-		vpos[7:0] <= data_in[15:8];
-	else if (vpos_inc)
-		if (last_line)
-			vpos <= 0;
-		else
-			vpos <= vpos + 1'b1;
+  if (clk7_en) begin
+  	if (reg_address_in[8:1]==VPOSW[8:1])
+  		vpos[10:8] <= data_in[2:0];
+  	else if (reg_address_in[8:1]==VHPOSW[8:1])
+  		vpos[7:0] <= data_in[15:8];
+  	else if (vpos_inc)
+  		if (last_line)
+  			vpos <= 0;
+  		else
+  			vpos <= vpos + 1'b1;
+  end
 
 // long_frame - long frame signal used in interlaced mode
 always @(posedge clk)
-	if (reset)
-		long_frame <= 1'b1;
-	else if (reg_address_in[8:1]==VPOSW[8:1])
-		long_frame <= data_in[15];
-	else if (end_of_frame && lace) // interlace
-		long_frame <= ~long_frame;
+  if (clk7_en) begin
+  	if (reset)
+  		long_frame <= 1'b1;
+  	else if (reg_address_in[8:1]==VPOSW[8:1])
+  		long_frame <= data_in[15];
+  	else if (end_of_frame && lace) // interlace
+  		long_frame <= ~long_frame;
+  end
 
 //maximum position of vertical beam position
 assign vpos_equ_vtotal = vpos==vtotal ? 1'b1 : 1'b0;
 
 //extra line in interlaced mode	
 always @(posedge clk)
-	if (vpos_inc)
-		if (long_frame && vpos_equ_vtotal)
-			extra_line <= 1'b1;
-		else
-			extra_line <= 1'b0;
+  if (clk7_en) begin
+  	if (vpos_inc)
+  		if (long_frame && vpos_equ_vtotal)
+  			extra_line <= 1'b1;
+  		else
+  			extra_line <= 1'b0;
+  end
 
 //in non-interlaced display the last line is equal to vtotal or vtotal+1 (depends on long_frame)
 //in interlaced mode every second frame is vtotal+1 long
@@ -240,7 +261,9 @@ assign end_of_frame = vpos_inc & last_line;
 assign eof = end_of_frame;
 
 always @(posedge clk)
-	vbl_int <= hpos==8 && vpos==(a1k ? 1 : 0) ? 1'b1 : 1'b0; // OCS AGNUS CHIPS 8361/8367 assert vbl int in line #1
+  if (clk7_en) begin
+  	vbl_int <= hpos==8 && vpos==(a1k ? 1 : 0) ? 1'b1 : 1'b0; // OCS AGNUS CHIPS 8361/8367 assert vbl int in line #1
+  end
 
 //--------------------------------------------------------------------------------------//
 //                                                                                      //
@@ -250,25 +273,31 @@ always @(posedge clk)
 
 //horizontal sync
 always @(posedge clk)
-	if (hpos==hsstrt)//start of sync pulse (front porch = 1.69us)
-		_hsync <= 1'b0;
-	else if (hpos==hsstop)//end of sync pulse (sync pulse = 4.65us)
-		_hsync <= 1'b1;
+  if (clk7_en) begin
+  	if (hpos==hsstrt)//start of sync pulse (front porch = 1.69us)
+  		_hsync <= 1'b0;
+  	else if (hpos==hsstop)//end of sync pulse (sync pulse = 4.65us)
+  		_hsync <= 1'b1;
+  end
 
 //vertical sync and vertical blanking
 always @(posedge clk)
-	if ((vpos==vsstrt && hpos==hsstrt && !long_frame) || (vpos==vsstrt && hpos==hcenter && long_frame))
-		_vsync <= 1'b0;
-	else if ((vpos==vsstop && hpos==hcenter && !long_frame) || (vpos==vsstop+1 && hpos==hsstrt && long_frame))
-		_vsync <= 1'b1;		
+  if (clk7_en) begin
+  	if ((vpos==vsstrt && hpos==hsstrt && !long_frame) || (vpos==vsstrt && hpos==hcenter && long_frame))
+  		_vsync <= 1'b0;
+  	else if ((vpos==vsstop && hpos==hcenter && !long_frame) || (vpos==vsstop+1 && hpos==hsstrt && long_frame))
+  		_vsync <= 1'b1;		
+  end
 
 //apparently generating csync from vsync alligned with leading edge of hsync results in malfunction of the AD724 CVBS/S-Video encoder (no colour in interlaced mode)
 //to overcome this limitation semi (only present before horizontal sync pulses) vertical sync serration pulses are inserted into csync
 always @(posedge clk)//sync
-	if (hpos==hsstrt-(hsstop-hsstrt))//start of sync pulse (front porch = 1.69us)
-		vser <= 1'b1;
-	else if (hpos==hsstrt)//end of sync pulse	(sync pulse = 4.65us)
-		vser <= 1'b0;
+  if (clk7_en) begin
+  	if (hpos==hsstrt-(hsstop-hsstrt))//start of sync pulse (front porch = 1.69us)
+  		vser <= 1'b1;
+  	else if (hpos==hsstrt)//end of sync pulse	(sync pulse = 4.65us)
+  		vser <= 1'b0;
+  end
 		
 //composite sync
 assign _csync = _hsync & _vsync | vser; //composite sync with serration pulses
@@ -287,9 +316,13 @@ assign vblend = vpos==vbstop ? 1'b1 : 1'b0;
 
 //composite display blanking		
 always @(posedge clk)
-	if (hpos==hbstrt)//start of blanking (active line=51.88us)
-		blank <= 1'b1;
-	else if (hpos==hbstop)//end of blanking (back porch=5.78us)
-		blank <= vbl;
+  if (clk7_en) begin
+  	if (hpos==hbstrt)//start of blanking (active line=51.88us)
+  		blank <= 1'b1;
+  	else if (hpos==hbstop)//end of blanking (back porch=5.78us)
+  		blank <= vbl;
+  end
+
 
 endmodule
+

@@ -433,10 +433,10 @@ assign init_b = vsync_t;
 //--------------------------------------------------------------------------------------
 
 //instantiate agnus
-Agnus AGNUS1
+agnus AGNUS1
 (
-	.clk(clk),
-	.clk28m(clk28m),
+	.clk(clk28m),
+	.clk7_en(clk7_en),
 	.cck(cck),
 	.reset(reset),
 	.aen(sel_reg),
@@ -541,7 +541,7 @@ paula PAULA1
 //instantiate user IO
 userio USERIO1 
 (	
-	.clk(clk),
+	.clk(clk28m),
   .clk7_en(clk7_en),
   .clk7n_en(clk7n_en),
 	.reset(reset),
@@ -648,7 +648,7 @@ amber AMBER1
 //instantiate cia A
 ciaa CIAA1
 (
-	.clk(clk),
+	.clk(clk28m),
   .clk7_en(clk7_en),
   .clk7n_en(clk7n_en),
 	.aen(sel_cia_a),
@@ -683,7 +683,8 @@ ciaa CIAA1
 //instantiate cia B
 ciab CIAB1 
 (
-	.clk(clk),
+	.clk(clk28m),
+  .clk7_en(clk7_en),
 	.aen(sel_cia_b),
 	.rd(cpu_rd),
 	.wr(cpu_hwr|cpu_lwr),
