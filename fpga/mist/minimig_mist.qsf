@@ -43,6 +43,54 @@ set_global_assignment -name GENERATE_RBF_FILE ON
 set_global_assignment -name FORCE_CONFIGURATION_VCCIO ON
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE BALANCED
+set_global_assignment -name SMART_RECOMPILE ON
+set_global_assignment -name ENABLE_SIGNALTAP OFF
+set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+set_global_assignment -name FMAX_REQUIREMENT "114 MHz"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING OFF
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name TPD_REQUIREMENT "2 ns"
+set_global_assignment -name TSU_REQUIREMENT "2 ns"
+set_global_assignment -name TCO_REQUIREMENT "2 ns"
+set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
+set_global_assignment -name AUTO_RAM_TO_LCELL_CONVERSION OFF
+set_global_assignment -name AUTO_RAM_RECOGNITION ON
+set_global_assignment -name AUTO_ROM_RECOGNITION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
+set_global_assignment -name MISC_FILE minimig_mist.dpf
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+
+set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
+
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY out
+set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
+set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
+set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
+
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+
+
 set_location_assignment PIN_7 -to LED
 set_location_assignment PIN_22 -to CLOCK_50[0]
 set_location_assignment PIN_23 -to CLOCK_50[1]
@@ -121,56 +169,6 @@ set_location_assignment PIN_66 -to SDRAM_nWE
 set_location_assignment PIN_59 -to SDRAM_nCS
 set_location_assignment PIN_33 -to SDRAM_CKE
 set_location_assignment PIN_43 -to SDRAM_CLK
-
-set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE BALANCED
-set_global_assignment -name SMART_RECOMPILE ON
-set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
-set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
-set_global_assignment -name FMAX_REQUIREMENT "114 MHz"
-set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING OFF
-set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
-set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
-set_global_assignment -name USE_CONFIGURATION_DEVICE ON
-set_global_assignment -name TPD_REQUIREMENT "2 ns"
-set_global_assignment -name TSU_REQUIREMENT "2 ns"
-set_global_assignment -name TCO_REQUIREMENT "2 ns"
-set_global_assignment -name ALLOW_POWER_UP_DONT_CARE OFF
-set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS OFF
-set_global_assignment -name AUTO_RAM_TO_LCELL_CONVERSION OFF
-set_global_assignment -name AUTO_RAM_RECOGNITION ON
-set_global_assignment -name AUTO_ROM_RECOGNITION ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
-set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
-set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
-set_global_assignment -name MISC_FILE minimig_mist.dpf
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-
-set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
-set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA OFF
-set_global_assignment -name PHYSICAL_SYNTHESIS_MAP_LOGIC_TO_MEMORY_FOR_AREA OFF
-
-set_global_assignment -name PROJECT_OUTPUT_DIRECTORY out
-set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
-set_global_assignment -name ROUTER_EFFORT_MULTIPLIER 4.0
-set_global_assignment -name CYCLONEII_M4K_COMPATIBILITY OFF
-
-#set_parameter -name ENABLE_RUNTIME_MOD YES -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
-#set_parameter -name INSTANCE_NAME mig -to "Minimig1:minimig|amiga_boot:BOOTROM1|altsyncram:Ram0_rtl_10"
-
-set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
-set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
-set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
-set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
-set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 
 
 set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to "amigaclk:amigaclk|altpll:altpll_component|_clk0"
@@ -314,7 +312,6 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[1]
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[0]
 
 
-
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_mist_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/minimig.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/minimig_syscontrol.v
@@ -343,6 +340,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/cia_timerb.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/cia_timera.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/cia_int.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gayle.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gayle_fifo.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gary.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/amber.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/userio.v
@@ -353,7 +351,12 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_uart.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_intcontroller.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_floppy.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_floppy_fifo.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_audio.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_audio_volume.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_audio_sigmadelta.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_audio_mixer.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_audio_channel.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/cart.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_sprites.v
@@ -365,10 +368,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_colortable.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_collision.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_bitplanes.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_bitplane_shifter.v
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
-set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name VERILOG_FILE ../../rtl/mist/user_io.v
 set_global_assignment -name VERILOG_FILE ../../rtl/mist/amigaclk.v
 set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk.v
@@ -379,6 +378,12 @@ set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_be_512x16.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_128x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/cpu_cache.v
-set_global_assignment -name SIGNALTAP_FILE stp1.stp
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
+set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
+
 set_global_assignment -name SDC_FILE minimig_mist.sdc
+
+
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
