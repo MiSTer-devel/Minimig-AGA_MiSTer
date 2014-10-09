@@ -417,6 +417,7 @@ end
 ////////////////////////////////////////
 
 // clock mangling - TODO
+// this is some weird code - it's a 7MHz clock enable on 118MHz clock, used to 'reset' the sdram state machine, to state ph2 ???
 always @ (negedge sysclk) begin
   c_7md <= c_7m;
 end
