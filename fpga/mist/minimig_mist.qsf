@@ -215,6 +215,26 @@ set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_nRAS
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_nCAS
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_nWE
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_nCS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[5]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[4]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[3]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_R[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[5]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[4]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[3]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_B[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[5]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[4]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[3]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_G[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_VS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to VGA_HS
 
 set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to SDRAM_DQ[0]
 set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to SDRAM_DQ[1]
@@ -290,28 +310,36 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SDRAM_nCS
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SDRAM_CKE
 set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SDRAM_CLK
 
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[5]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[4]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[3]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[2]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[1]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_R[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_R[0]
 
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[5]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[4]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[3]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[2]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[1]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_G[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_G[0]
 
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[5]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[4]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[3]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[2]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[1]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to VGA_B[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_B[0]
+
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_HS
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_VS
 
 
+
+set_global_assignment -name VERILOG_FILE ../../rtl/cache/TwoWayCache.v
+set_global_assignment -name VERILOG_FILE ../../rtl/cache/CacheBlockRAM.v
+set_global_assignment -name VERILOG_FILE ../../rtl/cache/Cache_DataRAM.v
+set_global_assignment -name VHDL_FILE ../../rtl/mist/sdram.vhd
 set_global_assignment -name VERILOG_FILE ../../rtl/soc/minimig_mist_top.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/minimig.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/minimig_syscontrol.v
@@ -365,6 +393,7 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_spritepriority
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_playfields.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_hamgenerator.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_colortable.v
+set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_colortable_ram_mf.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_collision.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_bitplanes.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/denise_bitplane_shifter.v
@@ -382,8 +411,6 @@ set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
-
 set_global_assignment -name SDC_FILE minimig_mist.sdc
-
-
+set_global_assignment -name SIGNALTAP_FILE stp1.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

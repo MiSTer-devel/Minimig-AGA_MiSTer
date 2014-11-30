@@ -77,6 +77,7 @@
 #define CORE_TYPE_PACE      0xa2   // core from pacedev.net (joystick only)
 #define CORE_TYPE_MIST      0xa3   // mist atari st core   
 #define CORE_TYPE_8BIT      0xa4   // atari 800/c64 like core
+#define CORE_TYPE_MINIMIG2  0xa5   // new Minimig with AGA
 
 // user io status bits (currently only used by 8bit)
 #define UIO_STATUS_RESET   0x01
@@ -84,6 +85,8 @@
 void user_io_init();
 void user_io_detect_core_type();
 unsigned char user_io_core_type();
+char minimig_v1();
+char minimig_v2();
 char user_io_is_8bit_with_config_string();
 void user_io_poll();
 char user_io_menu_button();

@@ -41,6 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "tos.h"
 #include "cdc_control.h"
 #include "debug.h"
+#include "boot.h"
 
 // other constants
 #define DIRSIZE 8 // number of items in directory display window
@@ -50,7 +51,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                               "mov r0, r0\n\t" \
                               "mov r0, r0\n\t" \
                               "mov r0, r0");
-
 
 unsigned char menustate = MENU_NONE1;
 unsigned char parentstate;
@@ -86,11 +86,12 @@ const char *config_filter_msg[] =  {"none", "HORIZONTAL", "VERTICAL", "H+V"};
 const char *config_memory_chip_msg[] = {"0.5 MB", "1.0 MB", "1.5 MB", "2.0 MB"};
 const char *config_memory_slow_msg[] = {"none  ", "0.5 MB", "1.0 MB", "1.5 MB"};
 const char *config_scanlines_msg[] = {"off", "dim", "black"};
-const char *config_memory_fast_msg[] = {"none  ", "2.0 MB", "4.0 MB","8.0 MB","24.0 MB"};
-const char *config_cpu_msg[] = {"68000 ", "68010", "-----","020 alpha"};
+const char *config_dither_msg[] = {"off", "SPT", "RND", "S+R"};
+const char *config_memory_fast_msg[] = {"none  ", "2.0 MB", "4.0 MB","24.0 MB","24.0 MB"};
+const char *config_cpu_msg[] = {"68000 ", "68010", "-----","68020"};
 const char *config_hdf_msg[] = {"Disabled", "Hardfile (disk img)", "MMC/SD card", "MMC/SD partition 1", "MMC/SD partition 2", "MMC/SD partition 3", "MMC/SD partition 4"};
 
-const char *config_chipset_msg[] = {"OCS-A500", "OCS-A1000", "ECS", "---"};
+const char *config_chipset_msg[] = {"OCS-A500", "OCS-A1000", "ECS", "---", "---", "---", "AGA", "---"};
 
 char *config_autofire_msg[] = {"        AUTOFIRE OFF", "        AUTOFIRE FAST", "        AUTOFIRE MEDIUM", "        AUTOFIRE SLOW"};
 
@@ -340,7 +341,8 @@ void HandleUI(void)
     case MENU_NONE2 :
         if (menu)
         {
-	  if(user_io_core_type() == CORE_TYPE_MINIMIG)
+	  if((user_io_core_type() == CORE_TYPE_MINIMIG) ||
+	     (user_io_core_type() == CORE_TYPE_MINIMIG2))
 	    menustate = MENU_MAIN1;
 	  else if(user_io_core_type() == CORE_TYPE_MIST)
 	    menustate = MENU_MIST_MAIN1;
@@ -1660,14 +1662,13 @@ void HandleUI(void)
 
         OsdWrite(0, "", 0,0);
         strcpy(s, "         CPU : ");
-//        strcat(s, config.chipset & CONFIG_TURBO ? "turbo" : "normal");
         strcat(s, config_cpu_msg[config.cpu & 0x03]);
         OsdWrite(1, s, menusub == 0,0);
         strcpy(s, "       Video : ");
         strcat(s, config.chipset & CONFIG_NTSC ? "NTSC" : "PAL");
         OsdWrite(2, s, menusub == 1,0);
         strcpy(s, "     Chipset : ");
-        strcat(s, config_chipset_msg[config.chipset >> 2 & 3]);
+	strcat(s, config_chipset_msg[(config.chipset >> 2) & (minimig_v1()?3:7)]);
         OsdWrite(3, s, menusub == 2,0);
         OsdWrite(4, "", 0,0);
         OsdWrite(5, "", 0,0);
@@ -1695,14 +1696,11 @@ void HandleUI(void)
         {
             if (menusub == 0)
             {
-//                config.chipset ^= CONFIG_TURBO;
                 menustate = MENU_SETTINGS_CHIPSET1;
                 config.cpu += 1; 
                 if ((config.cpu & 0x03)==0x02)
 					config.cpu += 1; 
-//                ConfigChipset(config.chipset);
                 ConfigCPU(config.cpu);
-
             }
             else if (menusub == 1)
             {
@@ -1712,10 +1710,30 @@ void HandleUI(void)
             }
             else if (menusub == 2)
             {
-                if (config.chipset & CONFIG_ECS)
-                   config.chipset &= ~(CONFIG_ECS|CONFIG_A1000);
-                else
-                    config.chipset += CONFIG_A1000;
+	        if(minimig_v1()) 
+		{
+		    if (config.chipset & CONFIG_ECS)
+		        config.chipset &= ~(CONFIG_ECS|CONFIG_A1000);
+		    else
+		        config.chipset += CONFIG_A1000;
+		} 
+		else
+		{
+		    switch(config.chipset&0x1c) {
+		    case 0:
+		        config.chipset = (config.chipset&3) | CONFIG_A1000;
+			break;
+		    case CONFIG_A1000:
+		        config.chipset = (config.chipset&3) | CONFIG_ECS;
+			break;
+		    case CONFIG_ECS:
+		        config.chipset = (config.chipset&3) | CONFIG_AGA | CONFIG_ECS;
+			break;
+		    case (CONFIG_AGA|CONFIG_ECS):
+		        config.chipset = (config.chipset&3) | 0;
+			break;
+		    }
+		}
 
                 menustate = MENU_SETTINGS_CHIPSET1;
                 ConfigChipset(config.chipset);
@@ -2186,26 +2204,37 @@ void HandleUI(void)
         /* video settings menu                                            */
         /******************************************************************/
     case MENU_SETTINGS_VIDEO1 :
-		menumask=0x0f;
-		parentstate=menustate;
-		helptext=helptexts[HELPTEXT_VIDEO];
- 
-		OsdSetTitle("Video",OSD_ARROW_LEFT|OSD_ARROW_RIGHT);
-        OsdWrite(0, "", 0,0);
-        strcpy(s, "   Lores Filter : ");
-        strcat(s, config_filter_msg[config.filter.lores & 0x03]);
-        OsdWrite(1, s, menusub == 0,0);
-        strcpy(s, "   Hires Filter : ");
-        strcat(s, config_filter_msg[config.filter.hires & 0x03]);
-        OsdWrite(2, s, menusub == 1,0);
-        strcpy(s, "   Scanlines    : ");
-        strcat(s, config_scanlines_msg[config.scanlines % 3]);
-        OsdWrite(3, s, menusub == 2,0);
-        OsdWrite(4, "", 0,0);
-        OsdWrite(5, "", 0,0);
-        OsdWrite(6, "", 0,0);
-        OsdWrite(7, STD_EXIT, menusub == 3,0);
-
+        menumask=minimig_v1()?0x0f:0x1f;
+        parentstate=menustate;
+	helptext=helptexts[HELPTEXT_VIDEO];
+      
+	OsdSetTitle("Video",OSD_ARROW_LEFT|OSD_ARROW_RIGHT);
+	OsdWrite(0, "", 0,0);
+	strcpy(s, "   Lores Filter : ");
+	strcat(s, config_filter_msg[config.filter.lores & 0x03]);
+	OsdWrite(1, s, menusub == 0,0);
+	strcpy(s, "   Hires Filter : ");
+	strcat(s, config_filter_msg[config.filter.hires & 0x03]);
+	OsdWrite(2, s, menusub == 1,0);
+	strcpy(s, "   Scanlines    : ");
+	if(minimig_v1()) {
+	    strcat(s, config_scanlines_msg[config.scanlines % 3]);
+	    OsdWrite(3, s, menusub == 2,0);
+	    OsdWrite(4, "", 0,0);
+	    OsdWrite(5, "", 0,0);
+	    OsdWrite(6, "", 0,0);
+	    OsdWrite(7, STD_EXIT, menusub == 3,0);
+	} else {
+	    strcat(s, config_scanlines_msg[(config.scanlines&0x3) % 3]);
+	    OsdWrite(3, s, menusub == 2,0);
+	    strcpy(s, "   Dither       : ");
+	    strcat(s, config_dither_msg[(config.scanlines>>2) & 0x03]);
+	    OsdWrite(4, s, menusub == 3,0);
+	    OsdWrite(5, "", 0,0);
+	    OsdWrite(6, "", 0,0);
+	    OsdWrite(7, STD_EXIT, menusub == 4,0);
+	}
+      
         menustate = MENU_SETTINGS_VIDEO2;
         break;
 
@@ -2217,28 +2246,52 @@ void HandleUI(void)
                 config.filter.lores++;
                 config.filter.lores &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                //ConfigFilter(config.filter.lores, config.filter.hires);
-                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
+                MM1_ConfigFilter(config.filter.lores, config.filter.hires);
+		if(minimig_v1())
+		  MM1_ConfigFilter(config.filter.lores, config.filter.hires);
+		else
+		  ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 1)
             {
                 config.filter.hires++;
                 config.filter.hires &= 0x03;
                 menustate = MENU_SETTINGS_VIDEO1;
-                //ConfigFilter(config.filter.lores, config.filter.hires);
-                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
+		if(minimig_v1())
+		  MM1_ConfigFilter(config.filter.lores, config.filter.hires);
+		else
+		  ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
             }
             else if (menusub == 2)
             {
-                config.scanlines++;
-                if (config.scanlines > 2)
-                    config.scanlines = 0;
-                menustate = MENU_SETTINGS_VIDEO1;
-                //ConfigScanlines(config.scanlines);
-                ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
-            }
+	        if(minimig_v1()) {
+		    config.scanlines++;
+		    if (config.scanlines > 2)
+		        config.scanlines = 0;
+		    menustate = MENU_SETTINGS_VIDEO1;
+		    MM1_ConfigScanlines(config.scanlines);
+		} else {
+	            config.scanlines = ((config.scanlines + 1)&0x03) | (config.scanlines&0xfc);
+		    if ((config.scanlines&0x03) > 2)
+		        config.scanlines = config.scanlines&0xfc;
+		    menustate = MENU_SETTINGS_VIDEO1;
+		    ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
+		}
+	    }
 
             else if (menusub == 3)
+            {
+	        if(minimig_v1()) {
+		    menustate = MENU_MAIN2_1;
+		    menusub = 4;
+		} else {
+		    config.scanlines = (config.scanlines + 4)&0x0f;
+		    menustate = MENU_SETTINGS_VIDEO1;
+		    ConfigVideo(config.filter.hires, config.filter.lores, config.scanlines);
+		}
+            }
+
+            else if (menusub == 4)
             {
                 menustate = MENU_MAIN2_1;
                 menusub = 4;
@@ -2296,33 +2349,45 @@ void HandleUI(void)
                 memcpy((void*)config.kickstart.name, (void*)file.name, sizeof(config.kickstart.name));
                 memcpy((void*)config.kickstart.long_name, (void*)file.long_name, sizeof(config.kickstart.long_name));
 
-                OsdDisable();
-                //OsdReset(RESET_BOOTLOADER);
-                //ConfigChipset(config.chipset | CONFIG_TURBO);
-                //ConfigFloppy(config.floppy.drives, CONFIG_FLOPPY2X);
-                EnableOsd();
-                SPI(OSD_CMD_RST);
-                rstval = (SPI_RST_CPU | SPI_CPU_HLT);
-                SPI(rstval);
-                DisableOsd();
-                SPIN(); SPIN(); SPIN(); SPIN();
-                UploadKickstart(config.kickstart.name);
-                EnableOsd();
-                SPI(OSD_CMD_RST);
-                rstval = (SPI_RST_USR | SPI_RST_CPU);
-                SPI(rstval);
-                DisableOsd();
-                SPIN(); SPIN(); SPIN(); SPIN();
-                EnableOsd();
-                SPI(OSD_CMD_RST);
-                rstval = 0;
-                SPI(rstval);
-                DisableOsd();
-                SPIN(); SPIN(); SPIN(); SPIN();
-                //ConfigChipset(config.chipset); // restore CPU speed mode
-                //ConfigFloppy(config.floppy.drives, config.floppy.speed); // restore floppy speed mode
+		if(minimig_v1()) {
+		    OsdDisable();
+		    OsdReset(RESET_BOOTLOADER);
+		    ConfigChipset(config.chipset | CONFIG_TURBO);
+		    ConfigFloppy(config.floppy.drives, CONFIG_FLOPPY2X);
+		    if (UploadKickstart(config.kickstart.name))
+		    {
+			BootExit();
+		    }
+		    ConfigChipset(config.chipset); // restore CPU speed mode
+		    ConfigFloppy(config.floppy.drives, config.floppy.speed); // restore floppy speed mode
+		} 
+		else
+		{
+		    // reset bootscreen cursor position
+		    BootHome();
+		    OsdDisable();
+		    EnableOsd();
+		    SPI(OSD_CMD_RST);
+		    rstval = (SPI_RST_CPU | SPI_CPU_HLT);
+		    SPI(rstval);
+		    DisableOsd();
+		    SPIN(); SPIN(); SPIN(); SPIN();
+		    UploadKickstart(config.kickstart.name);
+		    EnableOsd();
+		    SPI(OSD_CMD_RST);
+		    rstval = (SPI_RST_USR | SPI_RST_CPU);
+		    SPI(rstval);
+		    DisableOsd();
+		    SPIN(); SPIN(); SPIN(); SPIN();
+		    EnableOsd();
+		    SPI(OSD_CMD_RST);
+		    rstval = 0;
+		    SPI(rstval);
+		    DisableOsd();
+		    SPIN(); SPIN(); SPIN(); SPIN();
+		}
 
-                menustate = MENU_NONE1;
+	        menustate = MENU_NONE1;
             }
             else if (menusub == 1)
             {
@@ -2379,6 +2444,7 @@ void HandleUI(void)
       if (menu) {
 	switch(user_io_core_type()) {
 	case CORE_TYPE_MINIMIG:
+	case CORE_TYPE_MINIMIG2:
 	  menusub = 1;
 	  menustate = MENU_MISC1;
 	  break;
@@ -2407,6 +2473,7 @@ void HandleUI(void)
 	else if (menusub == fat_uses_mmc()?2:1) {
 	  switch(user_io_core_type()) {
 	  case CORE_TYPE_MINIMIG:
+	  case CORE_TYPE_MINIMIG2:
 	    menusub = 1;
 	    menustate = MENU_MISC1;
 	    break;

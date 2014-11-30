@@ -99,7 +99,7 @@ const unsigned short usb2ami[] = {
   0x69 | OSD,  // 45: F12 (OSD)
   0x6e | OSD,  // 46: Print Screen (OSD)
   NUM_LOCK_TOGGLE,  // 47: Scroll Lock (OSD)
-  MISS,  // 48: Pause
+  0x6f | OSD,  // 48: Pause
   MISS,  // 49: Insert
   MISS,  // 4a: Home
   0x6c | OSD,  // 4b: Page Up (OSD)

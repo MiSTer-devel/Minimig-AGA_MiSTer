@@ -37,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config.h"
 #include "boot.h"
 #include "osd.h"
+
 #include "fpga.h"
 
 #define CMD_HDRID 0xAACA
@@ -112,7 +113,8 @@ void ShiftFpga(unsigned char data)
 }
 
 // Xilinx FPGA configuration
-unsigned char ConfigureFpga(void)
+// was before unsigned char ConfigureFpga(void)
+RAMFUNC unsigned char ConfigureFpga(char *name)
 {
     unsigned long  t;
     unsigned long  n;
@@ -151,14 +153,18 @@ unsigned char ConfigureFpga(void)
         FatalError(3);
     }
 
+    if(!name)
+    //  name = "CORE    BIN";
+		name = "XESM38  BIN";
+
     // open bitstream file
-    if (FileOpen(&file, "MINIMIG1BIN") == 0)
+    if (FileOpen(&file, name) == 0)
     {
         iprintf("No FPGA configuration file found!\r");
         FatalError(4);
     }
 
-    iprintf("FPGA bitstream file opened\r");
+    iprintf("FPGA bitstream file opened, file size = %d\r", file.size);
     iprintf("[");
 
     // send all bytes to FPGA in loop
@@ -561,8 +567,10 @@ char BootDraw(char *data, unsigned short len, unsigned short offset)
 // print message on the boot screen
 char BootPrint(const char *text)
 {
-  iprintf(text);
-  return; // TODO
+    if(!minimig_v1()) {
+      iprintf("%s\n", text);
+      return; // TODO
+    }
 
     unsigned char c1, c2, c3, c4;
     unsigned char cmd;
@@ -795,6 +803,8 @@ void fpga_init(char *name) {
   unsigned long time = GetTimer(0);
 
   if(!user_io_dip_switch1() || name) {
+    unsigned char ct;
+
     if (ConfigureFpga(name)) {
       time = GetTimer(0) - time;
       iprintf("FPGA configured in %lu ms\r", time >> 20);
@@ -802,38 +812,53 @@ void fpga_init(char *name) {
       iprintf("FPGA configuration failed\r");
       FatalError(8); // 3
     }
-    
-    WaitTimer(100); // let's wait some time till reset is inactive so we can get a valid keycode
+
+    // wait max 100 msec for a valid core type
+    time = GetTimer(100);
+    do {
+      EnableIO();
+      ct = SPI(0xff);
+      DisableIO();
+      SPI(0xff);         // for old minimig core
+    } while( ((ct == 0) || (ct == 0xff)) && !CheckTimer(time));
+
+    iprintf("ident = %x\n", ct);
   }
-  
+
   user_io_detect_core_type();
 
-  if(user_io_core_type() == CORE_TYPE_MINIMIG) {
+  if((user_io_core_type() == CORE_TYPE_MINIMIG)||
+     (user_io_core_type() == CORE_TYPE_MINIMIG2)) {
     puts("Running minimig setup");
-    EnableOsd();
-    SPI(OSD_CMD_RST);
-    rstval = (SPI_RST_USR | SPI_RST_CPU | SPI_CPU_HLT);
-    SPI(rstval);
-    DisableOsd();
-    SPIN(); SPIN(); SPIN(); SPIN();
-    EnableOsd();
-    SPI(OSD_CMD_RST);
-    rstval = (SPI_RST_CPU | SPI_CPU_HLT);
-    SPI(rstval);
-    DisableOsd();
-    SPIN(); SPIN(); SPIN(); SPIN();
-    WaitTimer(100);
-    BootInit();
-    WaitTimer(2000);
-    BootPrintEx("**** MINIMIG for MiST ****");
-    BootPrintEx("Minimig by Dennis van Weeren");
-    BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson");
-    BootPrintEx("DE1 port by Rok Krajnc (rok.krajnc@gmail.com)");
-    BootPrintEx("MiST port by Till Harbaum (till@harbaum.org)");
-    BootPrintEx(" ");
-    BootPrintEx("For support, see http://www.minimig.net");
-    BootPrint(" ");
-    WaitTimer(1000);
+    
+    if(minimig_v2()) {
+      EnableOsd();
+      
+      SPI(OSD_CMD_RST);
+      rstval = (SPI_RST_USR | SPI_RST_CPU | SPI_CPU_HLT);
+      SPI(rstval);
+      DisableOsd();
+      SPIN(); SPIN(); SPIN(); SPIN();
+      EnableOsd();
+      SPI(OSD_CMD_RST);
+      rstval = (SPI_RST_CPU | SPI_CPU_HLT);
+      SPI(rstval);
+      DisableOsd();
+      SPIN(); SPIN(); SPIN(); SPIN();
+      WaitTimer(100);
+      BootInit();
+      WaitTimer(1000);
+      BootPrintEx("**** MINIMIG-AGA for MiST (BETA) ****");
+      BootPrintEx(" ");
+      //BootPrintEx("Original Minimig by Dennis van Weeren");
+      //BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
+      BootPrintEx("MINIMIG-AGA by Rok Krajnc (rok.krajnc@gmail.com)");
+      BootPrintEx("MiST by Till Harbaum (till@harbaum.org)");
+      //BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
+      //BootPrintEx("For support, see http://www.minimig.net");
+      BootPrintEx(" ");
+      WaitTimer(1000);
+    }
 
     ChangeDirectory(DIRECTORY_ROOT);
     
@@ -842,11 +867,10 @@ void fpga_init(char *name) {
     df[1].status = 0;
     df[2].status = 0;
     df[3].status = 0;
-    
-    BootPrint(" ");
-    BootPrintEx("Booting ...");
-    iprintf("Booting ...\r");
-    
+
+    if(minimig_v2())
+      BootPrintEx("Booting ...");
+
     WaitTimer(6000);
     config.kickstart.name[0]=0;
     SetConfigurationFilename(0); // Use default config

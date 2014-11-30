@@ -168,6 +168,7 @@ module minimig
 	output	_ram_ble,			//sram lower byte select
 	output	_ram_we,			//sram write enable
 	output	_ram_oe,			//sram output enable
+  input [48-1:0] chip48,         // big chipram read
 	//system	pins
   input rst_ext,      // reset from ctrl block
   output rst_out,     // minimig reset status
@@ -193,7 +194,8 @@ module minimig
   input [1:0] kbd_mouse_type,
   input [7:0] kbd_mouse_data,
 	input	_15khz,				//scandoubler disable
-	inout	msdat,				//PS2 mouse data
+	output pwrled,				//power led
+  inout	msdat,				//PS2 mouse data
 	inout	msclk,				//PS2 mouse clk
 	inout	kbddat,				//PS2 keyboard data
 	inout	kbdclk,				//PS2 keyboard clk
@@ -214,9 +216,9 @@ module minimig
 	//video
 	output	_hsync,				//horizontal sync
 	output	_vsync,				//vertical sync
-	output	[3:0] red,			//red
-	output	[3:0] green,		//green
-	output	[3:0] blue,			//blue
+	output	[7:0] red,			//red
+	output	[7:0] green,		//green
+	output	[7:0] blue,			//blue
 	//audio
 	output	left,				//audio bitstream left
 	output	right,				//audio bitstream right
@@ -225,6 +227,7 @@ module minimig
 	//user i/o
   output  [3:0] cpu_config,
   output  [5:0] memcfg,
+  output  turbochipram,
   output  init_b,       // vertical sync for MCU (sync OSD update)
   output wire fifo_full,
   // fifo / track display
@@ -318,9 +321,9 @@ wire		sof;					//start of video frame
 wire    vbl_int;        // vertical blanking interrupt
 wire		strhor_denise;			//horizontal strobe for Denise
 wire		strhor_paula;			//horizontal strobe for Paula
-wire		[3:0]red_i;				//denise red (internal)
-wire		[3:0]green_i;			//denise green (internal)
-wire		[3:0]blue_i;			//denise blue (internal)
+wire		[7:0]red_i;				//denise red (internal)
+wire		[7:0]green_i;			//denise green (internal)
+wire		[7:0]blue_i;			//denise blue (internal)
 wire		osd_blank;				//osd blanking 
 wire		osd_pixel;				//osd pixel(video) data
 wire		_hsync_i;				//horizontal sync (internal)
@@ -359,13 +362,14 @@ wire	usrrst;					//user reset from osd interface
 wire	[1:0] lr_filter;		//lowres interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
 wire	[1:0] hr_filter;		//hires interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
 wire	[1:0] scanline;			//scanline effect configuration
+wire  [1:0] dither;   // video output dither
 wire	hires;					//hires signal from Denise for interpolation filter enable in Amber
 wire	aron;					//Action Replay is enabled
 wire	cpu_speed;				//requests CPU to switch speed mode
 wire	turbo;					//CPU is working in turbo mode
 wire	[5:0] memory_config;	//memory configuration
 wire	[3:0] floppy_config;	//floppy drives configuration (drive number and speed)
-wire	[3:0] chipset_config;	//chipset features selection
+wire	[4:0] chipset_config;	//chipset features selection
 wire	[2:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
@@ -407,7 +411,24 @@ wire           host_ack;
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
+// power led control
+reg [3:0] led_cnt;
+reg led_dim;
+
+always @ (posedge clk) begin
+  if (_hsync) begin
+    led_cnt <= led_cnt + 1;
+    led_dim <= |led_cnt;
+  end
+end
+
+assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-state and active turbo mode
+
+
+
 assign memcfg = memory_config;
+
+assign turbochipram = !ovl && chipset_config[4];
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk)
@@ -472,7 +493,8 @@ agnus AGNUS1
 	.bls(bls),
 	.ntsc(ntsc),
   .a1k(chipset_config[2]),
-	.ecs(chipset_config[3]),
+	.ecs(|chipset_config[4:3]),
+  .aga(chipset_config[4]),
 	.floppy_speed(floppy_config[0]),
 	.turbo(turbo)
 );
@@ -584,6 +606,7 @@ userio USERIO1
 	.chipset_config(chipset_config),
 	.floppy_config(floppy_config),
 	.scanline(scanline),
+  .dither(dither),
 	.ide_config(ide_config),
   .cpu_config(cpu_config),
 	.usrrst(usrrst),
@@ -614,13 +637,15 @@ denise DENISE1
 	.strhor(strhor_denise),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
+  .chip48(chip48),
 	.data_out(denise_data_out),
 	.blank(blank),
 	.red(red_i),
 	.green(green_i),
 	.blue(blue_i),
-  .ecs(chipset_config[3]),
   .a1k(chipset_config[2]),
+  .ecs(|chipset_config[4:3]),
+  .aga(chipset_config[4]),
 	.hires(hires)
 );
 
@@ -632,6 +657,7 @@ amber AMBER1
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
 	.scanline(scanline),
+  .dither(dither),
 	.htotal(htotal),
 	.hires(hires),
 	.osd_blank(osd_blank),
@@ -764,7 +790,7 @@ minimig_bankmapper BMAP1
 	.kick(sel_kick),
 	.cart(sel_cart),
 	.aron(aron),
-  .ecs(chipset_config[3]),
+  .ecs(|chipset_config[4:3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
 );
@@ -842,7 +868,7 @@ gary GARY1
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
-  .ecs(chipset_config[3]),
+  .ecs(|chipset_config[4:3]),
   .a1k(chipset_config[2]),
 	.sel_chip(sel_chip),
 	.sel_slow(sel_slow),

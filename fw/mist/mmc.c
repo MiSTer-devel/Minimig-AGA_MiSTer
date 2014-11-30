@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdio.h"
 #include "string.h"
-#include "hardware.h"
+#include "spi.h"
 
 #include "mmc.h"
 #include "fat.h"
@@ -85,7 +85,7 @@ unsigned char MMC_Init(void)
       return(CARDTYPE_NONE);
     }
 
-    SPI_slow();     // set slow clock
+    spi_slow();     // set slow clock
     DisableCard();  // CS = 1
     SPI(0xff);      // DI = 1
     TIMER_wait(20);  // 20ms delay
@@ -126,7 +126,7 @@ unsigned char MMC_Init(void)
                             DisableCard();
 
                             // set appropriate SPI speed
-                            SPI_fast();
+                            spi_fast();
 
                             return(CardType);
                         }
@@ -162,16 +162,9 @@ unsigned char MMC_Init(void)
                             DisableCard();
 
                             // set appropriate SPI speed
-#ifdef ARM_FW
-                            if (GetSPIMode() == SPIMODE_FAST)
-                                AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (2 << 8); // 24 MHz SPI clock (max 25 MHz for SD card)
-                            else
-                                AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (6 << 8); // 8 MHz SPI clock (no SPI mod)
+                            spi_fast();
                             CardType = CARDTYPE_SD;
-#else
-                            SPI_fast();
-                            CardType = CARDTYPE_SD;
-#endif
+
                             return(CardType);
                         }
                     }
@@ -201,14 +194,7 @@ unsigned char MMC_Init(void)
                 DisableCard();
 
                 // set appropriate SPI speed
-#ifdef ARM_FW
-                if (GetSPIMode() == SPIMODE_FAST)
-                    AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (3 << 8); // 16 MHz SPI clock (max 20 MHz for MMC card)
-                else
-                    AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | (6 << 8); // 8 MHz SPI clock (no SPI mod)
-#else
-                SPI_fast_mmc();
-#endif
+                spi_fast_mmc();
                 CardType = CARDTYPE_MMC;
 
                 return(CardType);
@@ -264,25 +250,14 @@ RAMFUNC unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
     if (pReadBuffer == 0)
     {   // in this mode we do not receive data, instead the FPGA captures directly the data stream transmitted by the SD/MMC card
         EnableDMode();
-        SPI_block(511);
+        spi_block(511);
         SPI(0xff); // dummy write for 4096 clocks
         SPI(0xff);
         DisableDMode();
     }
     else
     {
-#ifdef SPI_BLOCK_READ
-                SPI_block_read(pReadBuffer);
-#else
-		p=pReadBuffer;
-		for (i = 0; i < 128; i++)
-		{ 
-			*(p++) = SPI(0xFF);
-			*(p++) = SPI(0xFF);
-			*(p++) = SPI(0xFF);
-			*(p++) = SPI(0xFF);
-		}
-#endif
+                spi_block_read(pReadBuffer);
     }
 
     SPI(0xFF); // read CRC lo byte
@@ -402,27 +377,15 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
         if (pReadBuffer == 0)
         {   // in this mode we do not receive data, instead the FPGA captures directly the data stream transmitted by the SD/MMC card
             EnableDMode();
-            SPI_block(511);
+            spi_block(511);
             SPI(0xff); // dummy write for 4096 clocks
             SPI(0xff);
             DisableDMode();
         }
         else
         {
-#ifdef SPI_BLOCK_READ
-                        SPI_block_read(pReadBuffer);
-#else
-			p=pReadBuffer;
-			for (i = 0; i < 128; i++)
-			{ 
-				*(p++) = SPI(0xFF);
-				*(p++) = SPI(0xFF);
-				*(p++) = SPI(0xFF);
-				*(p++) = SPI(0xFF);
-			}
-#endif
-
-            pReadBuffer += 512; // point to next sector
+	    spi_block_read(pReadBuffer);
+	    pReadBuffer += 512; // point to next sector
         }
 
         SPI(0xFF); // read CRC lo byte

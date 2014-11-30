@@ -22,39 +22,39 @@ module minimig_bankmapper
 always @(*)
 begin
   case ({aron,memory_config})
-    5'b0_0000 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  1'b0,  1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP
-    5'b0_0001 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  1'b0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP
-    5'b0_0010 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick, chip2, chip1, chip0 }; // 1.5M CHIP
-    5'b0_0011 : bank = {  1'b0,  1'b0, chip3,  1'b0,     kick, chip2, chip1, chip0 }; // 2.0M CHIP
-    5'b0_0100 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick, slow0,  1'b0, chip0 | (chip1 & !ecs) | chip2 | (chip3 & !ecs) }; // 0.5M CHIP + 0.5MB SLOW
-    5'b0_0101 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick, slow0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 0.5MB SLOW
-    5'b0_0110 : bank = {  1'b0,  1'b0,  1'b0, slow0,     kick, chip2, chip1, chip0 }; // 1.5M CHIP + 0.5MB SLOW
-    5'b0_0111 : bank = {  1'b0,  1'b0, chip3, slow0,     kick, chip2, chip1, chip0 }; // 2.0M CHIP + 0.5MB SLOW
-    5'b0_1000 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick, slow0, slow1, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.0MB SLOW
-    5'b0_1001 : bank = {  1'b0,  1'b0, slow1,  1'b0,     kick, slow0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.0MB SLOW
-    5'b0_1010 : bank = {  1'b0,  1'b0, slow1, slow0,     kick, chip2, chip1, chip0 }; // 1.5M CHIP + 1.0MB SLOW
-    5'b0_1011 : bank = { slow1,  1'b0, chip3, slow0,     kick, chip2, chip1, chip0 }; // 2.0M CHIP + 1.0MB SLOW
-    5'b0_1100 : bank = {  1'b0,  1'b0,  1'b0, slow2,     kick, slow0, slow1, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.5MB SLOW
-    5'b0_1101 : bank = {  1'b0,  1'b0, slow1, slow2,     kick, slow0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.5MB SLOW
-    5'b0_1110 : bank = {  1'b0, slow2, slow1, slow0,     kick, chip2, chip1, chip0 }; // 1.5M CHIP + 1.5MB SLOW
-    5'b0_1111 : bank = { slow1, slow2, chip3, slow0,     kick, chip2, chip1, chip0 }; // 2.0M CHIP + 1.5MB SLOW
-    
-    5'b1_0000 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  cart,  1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP
-    5'b1_0001 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  cart, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP
-    5'b1_0010 : bank = {  1'b0,  1'b0,  1'b0, chip2,     kick,  cart, chip1, chip0 }; // 1.5M CHIP
-    5'b1_0011 : bank = {  1'b0,  1'b0, chip3, chip2,     kick,  cart, chip1, chip0 }; // 2.0M CHIP
-    5'b1_0100 : bank = {  1'b0,  1'b0,  1'b0,  1'b0,     kick,  cart, slow0, chip0 | (chip1 & !ecs) | chip2 | (chip3 & !ecs) }; // 0.5M CHIP + 0.5MB SLOW
-    5'b1_0101 : bank = {  1'b0,  1'b0,  1'b0, slow0,     kick,  cart, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 0.5MB SLOW
-    5'b1_0110 : bank = {  1'b0,  1'b0, slow0, chip2,     kick,  cart, chip1, chip0 }; // 1.5M CHIP + 0.5MB SLOW
-    5'b1_0111 : bank = {  1'b0, slow0, chip3, chip2,     kick,  cart, chip1, chip0 }; // 2.0M CHIP + 0.5MB SLOW
-    5'b1_1000 : bank = {  1'b0,  1'b0, slow1,  1'b0,     kick,  cart, slow0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.0MB SLOW
-    5'b1_1001 : bank = {  1'b0,  1'b0, slow1, slow0,     kick,  cart, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.0MB SLOW
-    5'b1_1010 : bank = { slow1,  1'b0, slow0, chip2,     kick,  cart, chip1, chip0 }; // 1.5M CHIP + 1.0MB SLOW
-    5'b1_1011 : bank = { slow1, slow0, chip3, chip2,     kick,  cart, chip1, chip0 }; // 2.0M CHIP + 1.0MB SLOW
-    5'b1_1100 : bank = {  1'b0,  1'b0, slow1, slow2,     kick,  cart, slow0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.5MB SLOW
-    5'b1_1101 : bank = {  1'b0, slow2, slow1, slow0,     kick,  cart, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.5MB SLOW
-    5'b1_1110 : bank = { slow1, slow2, slow0, chip2,     kick,  cart, chip1, chip0 }; // 1.5M CHIP + 1.5MB SLOW
-    5'b1_1111 : bank = { slow1, slow0, chip3, chip2,     kick,  cart, chip1, chip0 }; // 2.0M CHIP + 1.5MB SLOW
+    5'b0_0000 : bank = {  kick,  1'b0,  1'b0,  1'b0,   1'b0,  1'b0,          1'b0, chip3 | chip2 | chip1 | chip0 }; // 0.5M CHIP
+    5'b0_0001 : bank = {  kick,  1'b0,  1'b0,  1'b0,   1'b0,  1'b0, chip3 | chip1,                 chip2 | chip0 }; // 1.0M CHIP
+    5'b0_0010 : bank = {  kick,  1'b0,  1'b0,  1'b0,   1'b0, chip2,         chip1,                         chip0 }; // 1.5M CHIP
+    5'b0_0011 : bank = {  kick,  1'b0,  1'b0,  1'b0,  chip3, chip2,         chip1,                         chip0 }; // 2.0M CHIP
+    5'b0_0100 : bank = {  kick,  1'b0,  1'b0, slow0,   1'b0,  1'b0,          1'b0, chip0 | (chip1 & !ecs) | chip2 | (chip3 & !ecs) }; // 0.5M CHIP + 0.5MB SLOW
+    5'b0_0101 : bank = {  kick,  1'b0,  1'b0, slow0,   1'b0,  1'b0, chip3 | chip1,                 chip2 | chip0 }; // 1.0M CHIP + 0.5MB SLOW
+    5'b0_0110 : bank = {  kick,  1'b0,  1'b0, slow0,   1'b0, chip2,         chip1,                         chip0 }; // 1.5M CHIP + 0.5MB SLOW
+    5'b0_0111 : bank = {  kick,  1'b0,  1'b0, slow0,  chip3, chip2,         chip1,                         chip0 }; // 2.0M CHIP + 0.5MB SLOW
+    5'b0_1000 : bank = {  kick,  1'b0, slow1, slow0,   1'b0,  1'b0,          1'b0, chip3 | chip2 | chip1 | chip0 }; // 0.5M CHIP + 1.0MB SLOW
+    5'b0_1001 : bank = {  kick,  1'b0, slow1, slow0,   1'b0,  1'b0, chip3 | chip1,                 chip2 | chip0 }; // 1.0M CHIP + 1.0MB SLOW
+    5'b0_1010 : bank = {  kick,  1'b0, slow1, slow0,   1'b0, chip2,         chip1,                         chip0 }; // 1.5M CHIP + 1.0MB SLOW
+    5'b0_1011 : bank = {  kick,  1'b0, slow1, slow0,  chip3, chip2,         chip1,                         chip0 }; // 2.0M CHIP + 1.0MB SLOW
+    5'b0_1100 : bank = {  kick, slow2, slow1, slow0,   1'b0,  1'b0,          1'b0, chip3 | chip2 | chip1 | chip0 }; // 0.5M CHIP + 1.5MB SLOW
+    5'b0_1101 : bank = {  kick, slow2, slow1, slow0,   1'b0,  1'b0, chip3 | chip1,                 chip2 | chip0 }; // 1.0M CHIP + 1.5MB SLOW
+    5'b0_1110 : bank = {  kick, slow2, slow1, slow0,   1'b0, chip2,         chip1,                         chip0 }; // 1.5M CHIP + 1.5MB SLOW
+    5'b0_1111 : bank = {  kick, slow2, slow1, slow0,  chip3, chip2,         chip1,                         chip0 }; // 2.0M CHIP + 1.5MB SLOW
+   
+    5'b1_0000 : bank = {  kick,  cart,  1'b0,  1'b0,      1'b0,   1'b0,  1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP
+    5'b1_0001 : bank = {  kick,  cart,  1'b0,  1'b0,      1'b0,   1'b0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP
+    5'b1_0010 : bank = {  kick,  cart,  1'b0,  1'b0,      1'b0,  chip2, chip1, chip0 }; // 1.5M CHIP
+    5'b1_0011 : bank = {  kick,  cart,  1'b0,  1'b0,     chip3,  chip2, chip1, chip0 }; // 2.0M CHIP
+    5'b1_0100 : bank = {  kick,  cart,  1'b0, slow0,      1'b0,   1'b0, 1'b0, chip0 | (chip1 & !ecs) | chip2 | (chip3 & !ecs) }; // 0.5M CHIP + 0.5MB SLOW
+    5'b1_0101 : bank = {  kick,  cart,  1'b0, slow0,      1'b0,   1'b0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 0.5MB SLOW
+    5'b1_0110 : bank = {  kick,  cart,  1'b0, slow0,      1'b0,  chip2, chip1, chip0 }; // 1.5M CHIP + 0.5MB SLOW
+    5'b1_0111 : bank = {  kick,  cart,  1'b0, slow0,     chip3,  chip2, chip1, chip0 }; // 2.0M CHIP + 0.5MB SLOW
+    5'b1_1000 : bank = {  kick,  cart, slow1, slow0,      1'b0,   1'b0,  1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.0MB SLOW
+    5'b1_1001 : bank = {  kick,  cart, slow1, slow0,      1'b0,   1'b0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.0MB SLOW
+    5'b1_1010 : bank = {  kick,  cart, slow1, slow0,      1'b0,  chip2, chip1, chip0 }; // 1.5M CHIP + 1.0MB SLOW
+    5'b1_1011 : bank = {  kick,  cart, slow1, slow0,     chip3,  chip2, chip1, chip0 }; // 2.0M CHIP + 1.0MB SLOW
+    5'b1_1100 : bank = {  kick,  cart, slow1, slow0,     slow2,   1'b0, 1'b0, chip0 | chip1 | chip2 | chip3 }; // 0.5M CHIP + 1.5MB SLOW
+    5'b1_1101 : bank = {  kick,  cart, slow1, slow0,     slow2,   1'b0, chip1 | chip3, chip0 | chip2 }; // 1.0M CHIP + 1.5MB SLOW
+    5'b1_1110 : bank = {  kick,  cart, slow1, slow0,     slow2,  chip2, chip1, chip0 }; // 1.5M CHIP + 1.5MB SLOW
+    5'b1_1111 : bank = {  kick,  cart, slow1, slow0,     chip3,  chip2, chip1, chip0 }; // 2.0M CHIP + 1.5MB SLOW
   endcase
 end
 

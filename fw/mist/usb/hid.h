@@ -50,7 +50,9 @@ typedef struct {
   uint16_t report_desc_size;
 
   uint8_t device_type;
-  bool has_boot_mode;     // device supports boot mode
+  bool has_boot_mode: 1;     // device supports boot mode
+  bool is_5200daptor: 1;     // device is a 5200daptor with special key handling
+  uint16_t key_state;        // needed to detect key state changes in 5200daptor
   
   // additional info extracted from the report descriptor
   // (currently only used for joysticks) 

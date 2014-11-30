@@ -34,22 +34,10 @@
 
 #define BLITS           64
 
-#define MEM_UPLOAD_INIT(adr) {typeof(adr) _adr = (adr); \
-                              EnableOsd(); \
-                              SPI(OSD_CMD_WR); \
-                              SPI(_adr&0xff); _adr = _adr>>8; \
-                              SPI(_adr&0xff); _adr = _adr>>8; \
-                              SPI(_adr&0xff); _adr = _adr>>8; \
-                              SPI(_adr&0xff); _adr = _adr>>8; \
-                             }
-#define MEM_UPLOAD_FINI()   {DisableOsd(); SPIN(); SPIN(); SPIN(); SPIN();}
-#define MEM_WRITE16(x)      {SPI((((x)>>8)&0xff)); SPI(((x)&0xff)); SPIN(); SPIN(); SPIN(); SPIN();}
-
-
 //// functions ////
 void BootInit();
 void BootPrintEx(char * str);
-
+void BootHome();
 
 #endif // __BOOT_H__
 

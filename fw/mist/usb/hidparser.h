@@ -14,18 +14,23 @@ typedef struct {
 
   union {
     struct {
-      uint8_t axis_byte_offset[2];   // x and y axis
+      struct {
+	uint8_t byte_offset;
+	uint8_t size;          // 8 or 16 bits supported
+	struct {
+	  uint16_t min;
+	  uint16_t max;
+	} logical;
+      } axis[2];               // x and y axis
+
       struct {
 	uint8_t byte_offset;
 	uint8_t bitmask;
-      } button[4];
+      } button[4];             // 4 buttons
     } joystick;
   };
 } hid_config_t;
 
-#define MAX_CONF 2
-extern hid_config_t hid_conf[MAX_CONF];
-
-bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size);
+bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf);
 
 #endif // HIDPARSER_H

@@ -7,7 +7,7 @@
 #include "hidparser.h"
 #include "debug.h"
 
-#if 0
+#if 1
 #define hidp_extreme_debugf(...) hidp_debugf(__VA_ARGS__)
 #else
 #define hidp_extreme_debugf(...)
@@ -24,8 +24,6 @@ typedef struct {
 #define JOYSTICK_REQ_AXIS_Y  0x02
 #define JOYSTICK_REQ_BTN_0   0x04
 #define JOYSTICK_COMPLETE    (JOYSTICK_REQ_AXIS_X | JOYSTICK_REQ_AXIS_Y | JOYSTICK_REQ_BTN_0)
-
-hid_config_t hid_conf[MAX_CONF];
 
 #define USAGE_PAGE_GENERIC_DESKTOP  1
 #define USAGE_PAGE_SIMULATION       2
@@ -54,7 +52,7 @@ hid_config_t hid_conf[MAX_CONF];
 #define USAGE_Z       50
 #define USAGE_WHEEL   56
 
-bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
+bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf) {
   int8_t app_collection = 0;
   int8_t phys_log_collection = 0;
   uint8_t skip_collection = 0;
@@ -64,8 +62,9 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
   uint8_t i;
 
   // 
-  uint8_t report_size, report_count, config_idx = 0;
+  uint8_t report_size, report_count;
   uint16_t bit_count = 0, usage_count = 0;
+  uint16_t logical_minimum=0, logical_maximum=0;
 
   // mask used to check of all required components have been found, so
   // that e.g. both axes and the button of a joystick are ready to be used
@@ -75,8 +74,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
   int8_t axis[2] = { -1, -1};
   uint8_t btns = 0;
 
-  for(i=0;i<MAX_CONF;i++)
-    hid_conf[i].type = CONFIG_TYPE_NONE;
+  conf->type = CONFIG_TYPE_NONE;
 
   while(rep_size) {
     // extract short item
@@ -139,7 +137,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 	case 8:
 	  // 
 	  if(btns) {
-	    if(hid_conf[config_idx].type == CONFIG_TYPE_JOYSTICK) {
+	    if(conf->type == CONFIG_TYPE_JOYSTICK) {
 	      // scan for up to four buttons
 	      char b;
 	      for(b=0;b<4;b++) {
@@ -149,8 +147,8 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 		  hidp_debugf("BUTTON%d @ %d (byte %d, mask %d)\n", b, 
 			      this_bit, this_bit/8, 1 << (this_bit%8));
 
-		  hid_conf[config_idx].joystick.button[b].byte_offset = this_bit/8;
-		  hid_conf[config_idx].joystick.button[b].bitmask = 1 << (this_bit%8);
+		  conf->joystick.button[b].byte_offset = this_bit/8;
+		  conf->joystick.button[b].bitmask = 1 << (this_bit%8);
 		}
 	      }
 
@@ -168,17 +166,21 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 	      hidp_debugf("  (%c-AXIS @ %d (byte %d))\n", 'X'+c,
 		     cnt, cnt/8);
 
-	      // only 8 bit axes at byte boundaries are supported for
+	      // only 8/16 bit axes at byte boundaries are supported for
 	      // joysticks
-	      if((hid_conf[config_idx].type == CONFIG_TYPE_JOYSTICK) &&
-		 (report_size == 8) && ((cnt&7) == 0)) {
+	      if((conf->type == CONFIG_TYPE_JOYSTICK) &&
+		 ((report_size == 8) || (report_size == 16)) && ((cnt&7) == 0)) {
 		// save in joystick config
-		hid_conf[config_idx].joystick.axis_byte_offset[c] = cnt/8;
+		conf->joystick.axis[c].byte_offset = cnt/8;
+		conf->joystick.axis[c].size = report_size;
+		conf->joystick.axis[c].logical.min = logical_minimum;
+		conf->joystick.axis[c].logical.max = logical_maximum;
+		conf->joystick.axis[c].size = report_size;
 		if(c==0) setup_complete |= JOYSTICK_REQ_AXIS_X;
 		if(c==1) setup_complete |= JOYSTICK_REQ_AXIS_Y;
 	      }
 
-	      if(report_size != 8) 
+	      if((report_size != 8) && (report_size != 16))
 		hidp_debugf("Unsupported report size %d\n", report_size);
 
 	      if((cnt&7) != 0) 
@@ -279,10 +281,12 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 	  
 	case 1:
 	  hidp_extreme_debugf("LOGICAL_MINIMUM(%d/%d)\n", value, (int8_t)value);
+	  logical_minimum = value;
 	  break;
 	  
 	case 2:
 	  hidp_extreme_debugf("LOGICAL_MAXIMUM(%d)\n", value);
+	  logical_maximum = value;
 	  break;
 
 	case 3:
@@ -308,7 +312,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 
 	case 8:
 	  hidp_extreme_debugf("REPORT_ID(%d)\n", value);
-	  hid_conf[config_idx].report_id = value;
+	  conf->report_id = value;
 	  break;
 
 	case 9:
@@ -333,16 +337,16 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 	  if( !collection_depth && (value == USAGE_KEYBOARD)) {
 	    // usage(keyboard) is always allowed
 	    hidp_debugf(" -> Keyboard\n");
-	    hid_conf[config_idx].type = CONFIG_TYPE_KEYBOARD;
+	    conf->type = CONFIG_TYPE_KEYBOARD;
 	  } else if(!collection_depth && (value == USAGE_MOUSE)) {
 	    // usage(mouse) is always allowed
 	    hidp_debugf(" -> Mouse\n");
-	    hid_conf[config_idx].type = CONFIG_TYPE_MOUSE;
+	    conf->type = CONFIG_TYPE_MOUSE;
 	  } else if(!collection_depth && 
 		    ((value == USAGE_GAMEPAD) || (value == USAGE_JOYSTICK))) {
 	    hidp_extreme_debugf(" -> Gamepad/Joystick\n");
 	    hidp_debugf("Gamepad/Joystick usage found\n");
-	    hid_conf[config_idx].type = CONFIG_TYPE_JOYSTICK;
+	    conf->type = CONFIG_TYPE_JOYSTICK;
 	  } else if(value == USAGE_POINTER && app_collection) {
 	    // usage(pointer) is allowed within the application collection
 
@@ -353,7 +357,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 	    hidp_extreme_debugf(" -> axis usage\n");
 
 	    // we support x and y axis on joysticks
-	    if(hid_conf[config_idx].type == CONFIG_TYPE_JOYSTICK) {
+	    if(conf->type == CONFIG_TYPE_JOYSTICK) {
 	      if(value == USAGE_X) {
 		hidp_extreme_debugf("JOYSTICK: found x axis @ %d\n", usage_count);
 		axis[0] = usage_count;
@@ -400,10 +404,10 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
   hidp_debugf("total bit count: %d (%d bytes, %d bits)\n", 
 	 bit_count, bit_count/8, bit_count%8);
 
-  hid_conf[config_idx].report_size = bit_count/8;
+  conf->report_size = bit_count/8;
 
   // check if something useful was detected
-  if(hid_conf[config_idx].type == CONFIG_TYPE_JOYSTICK) {
+  if(conf->type == CONFIG_TYPE_JOYSTICK) {
     if(setup_complete == JOYSTICK_COMPLETE) {
       hidp_debugf("Joystick ok\n");
       return true;
@@ -411,7 +415,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size) {
 
     hidp_debugf("Ignoring incomplete joystick %x\n", setup_complete);
   } else
-    hidp_debugf("No joystick %d\n", config_idx);
+    hidp_debugf("No joystick\n");
 
   return false;
 }

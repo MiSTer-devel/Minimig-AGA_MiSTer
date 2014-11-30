@@ -23,9 +23,10 @@ module userio_osd
 	output	reg [1:0] lr_filter = 0,
 	output	reg [1:0] hr_filter = 0,
 	output	reg [5:0] memory_config = 6'b000101,
-	output	reg [3:0] chipset_config = 0,
+	output	reg [4:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
+  output  reg [1:0] dither = 0,
 	output	reg	[2:0] ide_config = 0,		//enable hard disk support
   output  reg [3:0] cpu_config = 0,
   output  reg [1:0] autofire_config = 0,
@@ -61,7 +62,7 @@ reg		vena;
 reg 	[5:0] t_memory_config = 6'b000101;
 reg		[2:0] t_ide_config = 0;
 reg   [3:0] t_cpu_config = 0;
-reg   [3:0] t_chipset_config = 0;
+reg   [4:0] t_chipset_config = 0;
 
 //--------------------------------------------------------------------------------------
 // memory configuration select signal
@@ -81,7 +82,7 @@ always @(posedge clk)
 
 always @(posedge clk) begin
   if (clk7_en) begin
-    chipset_config[3:2] <= t_chipset_config[3:2];
+    chipset_config[4:2] <= t_chipset_config[4:2];
     chipset_config[0] <= t_chipset_config[0];
   end
 end
@@ -354,10 +355,10 @@ end
 // 8'b0_000_1000 | XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
 // 8'b0_001_1000 | XXXXXXXX || clock control   | unused
 // 8'b0_010_1000 | XXXXXXKE || osd control     | K - disable Amiga keyboard, E - enable OSD
-// 8'b0_000_0100 | XXXXEANT || chipset config  | E - ECS, A - OCS A1000, N - NTSC, T - turbo
+// 8'b0_000_0100 | XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
 // 8'b0_001_0100 | XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
 // 8'b0_010_0100 | XXFFSSCC || memory config   | FF - fast, CC - chip, SS - slow
-// 8'b0_011_0100 | XXHHLLSS || video config    | HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
+// 8'b0_011_0100 | DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
 // 8'b0_100_0100 | XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
 // 8'b0_101_0100 | XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
 // 8'b0_110_0100 | XXXXXXAA || joystick config | AA - autofire rate
@@ -372,10 +373,10 @@ always @ (posedge clk) begin
       if (spi_reset_ctrl_sel)   begin if (dat_cnt == 0) {cpuhlt, cpurst, usrrst} <= #1 wrdat[2:0]; end
   //    if (spi_clock_ctrl_sel)   begin if (dat_cnt == 0) end
       if (spi_osd_ctrl_sel)     begin if (dat_cnt == 0) {key_disable, osd_enable} <= #1 wrdat[1:0]; end
-      if (spi_chip_cfg_sel)     begin if (dat_cnt == 0) t_chipset_config <= #1 wrdat[3:0]; end
+      if (spi_chip_cfg_sel)     begin if (dat_cnt == 0) t_chipset_config <= #1 wrdat[4:0]; end
       if (spi_cpu_cfg_sel)      begin if (dat_cnt == 0) t_cpu_config <= #1 wrdat[3:0]; end
       if (spi_memory_cfg_sel)   begin if (dat_cnt == 0) t_memory_config <= #1 wrdat[5:0]; end
-      if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {hr_filter, lr_filter, scanline} <= #1 wrdat[5:0]; end
+      if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {dither, hr_filter, lr_filter, scanline} <= #1 wrdat[7:0]; end
       if (spi_floppy_cfg_sel)   begin if (dat_cnt == 0) floppy_config <= #1 wrdat[3:0]; end
       if (spi_harddisk_cfg_sel) begin if (dat_cnt == 0) t_ide_config <= #1 wrdat[2:0]; end 
       if (spi_joystick_cfg_sel) begin if (dat_cnt == 0) autofire_config <= #1 wrdat[1:0]; end

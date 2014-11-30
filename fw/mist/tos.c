@@ -300,10 +300,11 @@ static void handle_fdc(unsigned char *buffer) {
       offset += fdc_track * fdd_image[drv_sel-1].sides;
       offset *= fdd_image[drv_sel-1].spt;
       offset += fdc_sector-1;
-      
-      iprintf("FDC req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p\n", scnt, 
-	      'A'+drv_sel-1, drv_side, fdc_track, fdc_sector, offset,
-	      dma_address);
+
+      if(user_io_dip_switch1())
+	iprintf("FDC req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p\n", scnt, 
+		'A'+drv_sel-1, drv_side, fdc_track, fdc_sector, offset,
+		dma_address);
 
 #if 0
       static int nix = 0;

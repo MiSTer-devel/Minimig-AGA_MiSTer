@@ -60,6 +60,7 @@ module amber
   input  wire [  2-1:0] lr_filter,      // interpolation filter settings for low resolution
   input  wire [  2-1:0] hr_filter,      // interpolation filter settings for high resolution
   input  wire [  2-1:0] scanline,       // scanline effect enable
+  input  wire [  2-1:0] dither,         // dither enable (00 = off, 01 = temporal, 10 = random, 11 = temporal + random)
   // control
   input  wire [  9-1:1] htotal,         // video line length
   input  wire           hires,          // display is in hires mode (from bplcon0)
@@ -67,25 +68,25 @@ module amber
   input  wire           osd_blank,      // OSD overlay enable (blank normal video)
   input  wire           osd_pixel,      // OSD pixel(video) data
   // input
-  input  wire [  4-1:0] red_in,         // red componenent video in
-  input  wire [  4-1:0] green_in,       // green component video in
-  input  wire [  4-1:0] blue_in,        // blue component video in
+  input  wire [  8-1:0] red_in,         // red componenent video in
+  input  wire [  8-1:0] green_in,       // green component video in
+  input  wire [  8-1:0] blue_in,        // blue component video in
   input  wire           _hsync_in,      // horizontal synchronisation in
   input  wire           _vsync_in,      // vertical synchronisation in
   input  wire           _csync_in,      // composite synchronization in
   // output
-  output reg  [  4-1:0] red_out=0,      // red componenent video out
-  output reg  [  4-1:0] green_out=0,    // green component video out
-  output reg  [  4-1:0] blue_out=0,     // blue component video out
+  output reg  [  8-1:0] red_out=0,      // red componenent video out
+  output reg  [  8-1:0] green_out=0,    // green component video out
+  output reg  [  8-1:0] blue_out=0,     // blue component video out
   output reg            _hsync_out=0,   // horizontal synchronisation out
   output reg            _vsync_out=0    // vertical synchronisation out
 );
 
 
 //// params ////
-localparam [  4-1:0] OSD_R = 4'b1110;
-localparam [  4-1:0] OSD_G = 4'b1110;
-localparam [  4-1:0] OSD_B = 4'b1110;
+localparam [  8-1:0] OSD_R = 8'b11110000;
+localparam [  8-1:0] OSD_G = 8'b11110000;
+localparam [  8-1:0] OSD_B = 8'b11110000;
 
 
 //// control ////
@@ -101,12 +102,12 @@ end
 
 //// horizontal interpolation ////
 reg            hi_en=0;                 // horizontal interpolation enable
-reg  [  4-1:0] r_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
-reg  [  4-1:0] g_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
-reg  [  4-1:0] b_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
-wire [  5-1:0] hi_r;                    // horizontal interpolation output
-wire [  5-1:0] hi_g;                    // horizontal interpolation output
-wire [  5-1:0] hi_b;                    // horizontal interpolation output
+reg  [  8-1:0] r_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
+reg  [  8-1:0] g_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
+reg  [  8-1:0] b_in_d=0;                // pixel data delayed by 70ns for horizontal interpolation
+wire [  9-1:0] hi_r;                    // horizontal interpolation output
+wire [  9-1:0] hi_g;                    // horizontal interpolation output
+wire [  9-1:0] hi_b;                    // horizontal interpolation output
 reg  [ 11-1:0] sd_lbuf_wr=0;            // line buffer write pointer
 
 // horizontal interpolation enable
@@ -128,15 +129,15 @@ always @ (posedge clk) begin
 end
 
 // interpolate & mux
-assign hi_r = hi_en ? ({1'b0, red_in}   + {1'b0, r_in_d}) : {red_in[3:0]  , 1'b0};
-assign hi_g = hi_en ? ({1'b0, green_in} + {1'b0, g_in_d}) : {green_in[3:0], 1'b0};
-assign hi_b = hi_en ? ({1'b0, blue_in}  + {1'b0, b_in_d}) : {blue_in[3:0] , 1'b0};
+assign hi_r = hi_en ? ({1'b0, red_in}   + {1'b0, r_in_d}) : {red_in[7:0]  , 1'b0};
+assign hi_g = hi_en ? ({1'b0, green_in} + {1'b0, g_in_d}) : {green_in[7:0], 1'b0};
+assign hi_b = hi_en ? ({1'b0, blue_in}  + {1'b0, b_in_d}) : {blue_in[7:0] , 1'b0};
 
 
 //// scandoubler ////
-reg  [ 18-1:0] sd_lbuf [0:1024-1];      // line buffer for scan doubling (there are 908/910 hires pixels in every line)
-reg  [ 18-1:0] sd_lbuf_o=0;             // line buffer output register
-reg  [ 18-1:0] sd_lbuf_o_d=0;           // compensantion for one clock delay of the second line buffer
+reg  [ 30-1:0] sd_lbuf [0:1024-1];      // line buffer for scan doubling (there are 908/910 hires pixels in every line)
+reg  [ 30-1:0] sd_lbuf_o=0;             // line buffer output register
+reg  [ 30-1:0] sd_lbuf_o_d=0;           // compensantion for one clock delay of the second line buffer
 reg  [ 11-1:0] sd_lbuf_rd=0;            // line buffer read pointer
 
 // scandoubler line buffer write pointer
@@ -170,14 +171,14 @@ end
 
 //// vertical interpolation ////
 reg            vi_en=0;                 // vertical interpolation enable
-reg  [ 18-1:0] vi_lbuf [0:1024-1];      // vertical interpolation line buffer
-reg  [ 18-1:0] vi_lbuf_o=0;             // vertical interpolation line buffer output register
-wire [  6-1:0] vi_r_tmp;                // vertical interpolation temp data
-wire [  6-1:0] vi_g_tmp;                // vertical interpolation temp data
-wire [  6-1:0] vi_b_tmp;                // vertical interpolation temp data
-wire [  4-1:0] vi_r;                    // vertical interpolation outputs
-wire [  4-1:0] vi_g;                    // vertical interpolation outputs
-wire [  4-1:0] vi_b;                    // vertical interpolation outputs
+reg  [ 30-1:0] vi_lbuf [0:1024-1];      // vertical interpolation line buffer
+reg  [ 30-1:0] vi_lbuf_o=0;             // vertical interpolation line buffer output register
+wire [ 10-1:0] vi_r_tmp;                // vertical interpolation temp data
+wire [ 10-1:0] vi_g_tmp;                // vertical interpolation temp data
+wire [ 10-1:0] vi_b_tmp;                // vertical interpolation temp data
+wire [  8-1:0] vi_r;                    // vertical interpolation outputs
+wire [  8-1:0] vi_g;                    // vertical interpolation outputs
+wire [  8-1:0] vi_b;                    // vertical interpolation outputs
 
 //vertical interpolation enable
 always @ (posedge clk) begin
@@ -197,21 +198,105 @@ always @ (posedge clk) begin
 end
 
 // interpolate & mux
-assign vi_r_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[14:10]} + {1'b0, vi_lbuf_o[14:10]}) : {sd_lbuf_o_d[14:10], 1'b0};
-assign vi_g_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[ 9: 5]} + {1'b0, vi_lbuf_o[ 9: 5]}) : {sd_lbuf_o_d[ 9: 5], 1'b0};
-assign vi_b_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[ 4: 0]} + {1'b0, vi_lbuf_o[ 4: 0]}) : {sd_lbuf_o_d[ 4: 0], 1'b0};
+assign vi_r_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[26:18]} + {1'b0, vi_lbuf_o[26:18]}) : {sd_lbuf_o_d[26:18], 1'b0};
+assign vi_g_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[17:09]} + {1'b0, vi_lbuf_o[17:09]}) : {sd_lbuf_o_d[17:09], 1'b0};
+assign vi_b_tmp = vi_en ? ({1'b0, sd_lbuf_o_d[ 8: 0]} + {1'b0, vi_lbuf_o[ 8: 0]}) : {sd_lbuf_o_d[ 8: 0], 1'b0};
 
 // cut unneeded bits
-assign vi_r = vi_r_tmp[6-1:2];
-assign vi_g = vi_g_tmp[6-1:2];
-assign vi_b = vi_b_tmp[6-1:2];
+assign vi_r = vi_r_tmp[8+2-1:2];
+assign vi_g = vi_g_tmp[8+2-1:2];
+assign vi_b = vi_b_tmp[8+2-1:2];
+
+
+//// dither ////
+reg  [24-1:0] seed=0;
+reg  [24-1:0] rand=0;
+reg  [24-1:0] seed_old=0;
+wire [26-1:0] hpf_sum;
+reg           f_cnt=0;
+reg           h_cnt=0;
+reg           v_cnt=0;
+wire [ 8-1:0] r_dither_err;
+wire [ 8-1:0] g_dither_err;
+wire [ 8-1:0] b_dither_err;
+reg  [ 8-1:0] r_err=0;
+reg  [ 8-1:0] g_err=0;
+reg  [ 8-1:0] b_err=0;
+wire [ 8-1:0] r_dither_tsp;
+wire [ 8-1:0] g_dither_tsp;
+wire [ 8-1:0] b_dither_tsp;
+wire [ 8-1:0] r_dither_rnd;
+wire [ 8-1:0] g_dither_rnd;
+wire [ 8-1:0] b_dither_rnd;
+wire [ 8-1:0] dither_r;
+wire [ 8-1:0] dither_g;
+wire [ 8-1:0] dither_b;
+
+// pseudo random number generator
+always @ (posedge clk) begin
+  if (hss) begin
+    seed <= #1 24'h654321;
+    seed_old <= #1 24'd0;
+    rand <= #1 24'd0;
+  end else if (|dither) begin
+    seed <= #1 {seed[22:0], ~(seed[23] ^ seed[22] ^ seed[21] ^ seed[16])};
+    seed_old <= #1 seed;
+    rand <= #1 hpf_sum[25:2];
+  end
+end
+
+assign hpf_sum = {2'b00,rand} + {2'b00, seed} - {2'b00, seed_old};
+
+// horizontal / vertical / frame marker
+always @ (posedge clk) begin
+  if (hss) begin
+    f_cnt <= #1 ~f_cnt;
+    v_cnt <= #1 1'b0;
+    h_cnt <= #1 1'b0;
+  end else if (|dither) begin
+    if (sd_lbuf_rd == {htotal[8:1],2'b11}) v_cnt <= #1 ~v_cnt;
+    h_cnt <= #1 ~h_cnt;
+  end
+end
+
+// dither add previous error / 2
+assign r_dither_err = &vi_r[7:2] ? vi_r[7:0] : vi_r[7:0] + {6'b000000, r_err[1:0]};
+assign g_dither_err = &vi_g[7:2] ? vi_g[7:0] : vi_g[7:0] + {6'b000000, g_err[1:0]};
+assign b_dither_err = &vi_b[7:2] ? vi_b[7:0] : vi_b[7:0] + {6'b000000, b_err[1:0]};
+
+// temporal/spatial dithering
+assign r_dither_tsp = &r_dither_err[7:2] ? r_dither_err[7:0] : r_dither_err[7:0] + {6'b000000, (dither[0] & (f_cnt ^ v_cnt ^ h_cnt) & r_dither_err[1]), 1'b0};
+assign g_dither_tsp = &g_dither_err[7:2] ? g_dither_err[7:0] : g_dither_err[7:0] + {6'b000000, (dither[0] & (f_cnt ^ v_cnt ^ h_cnt) & g_dither_err[1]), 1'b0};
+assign b_dither_tsp = &b_dither_err[7:2] ? b_dither_err[7:0] : b_dither_err[7:0] + {6'b000000, (dither[0] & (f_cnt ^ v_cnt ^ h_cnt) & b_dither_err[1]), 1'b0};
+
+// random dithering
+assign r_dither_rnd = &r_dither_tsp[7:2] ? r_dither_tsp[7:0] : r_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
+assign g_dither_rnd = &g_dither_tsp[7:2] ? g_dither_tsp[7:0] : g_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
+assign b_dither_rnd = &b_dither_tsp[7:2] ? b_dither_tsp[7:0] : b_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
+
+// dither error
+always @ (posedge clk) begin
+  if (hss) begin
+    r_err <= #1 8'd0;
+    g_err <= #1 8'd0;
+    b_err <= #1 8'd0;
+  end else if (|dither) begin
+    r_err <= #1 {6'b000000, r_dither_rnd[1:0]};
+    g_err <= #1 {6'b000000, g_dither_rnd[1:0]};
+    b_err <= #1 {6'b000000, b_dither_rnd[1:0]};
+  end
+end
+
+assign dither_r = r_dither_rnd;
+assign dither_g = g_dither_rnd;
+assign dither_b = b_dither_rnd;
 
 
 //// scanlines ////
 reg            sl_en=0;                 // scanline enable
-reg  [  4-1:0] sl_r=0;                  // scanline data output
-reg  [  4-1:0] sl_g=0;                  // scanline data output
-reg  [  4-1:0] sl_b=0;                  // scanline data output
+reg  [  8-1:0] sl_r=0;                  // scanline data output
+reg  [  8-1:0] sl_g=0;                  // scanline data output
+reg  [  8-1:0] sl_b=0;                  // scanline data output
 
 // scanline enable
 always @ (posedge clk) begin
@@ -223,38 +308,38 @@ end
 
 // scanlines
 always @ (posedge clk) begin
-  sl_r <= #1 ((sl_en && scanline[1]) ? 4'h0 : ((sl_en && scanline[0]) ? {1'b0, vi_r[3:1]} : vi_r));
-  sl_g <= #1 ((sl_en && scanline[1]) ? 4'h0 : ((sl_en && scanline[0]) ? {1'b0, vi_g[3:1]} : vi_g));
-  sl_b <= #1 ((sl_en && scanline[1]) ? 4'h0 : ((sl_en && scanline[0]) ? {1'b0, vi_b[3:1]} : vi_b));
+  sl_r <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_r[7:1]} : dither_r));
+  sl_g <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_g[7:1]} : dither_g));
+  sl_b <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_b[7:1]} : dither_b));
 end
 
 
 //// bypass mux ////
 wire           bm_hsync;
 wire           bm_vsync;
-wire [  4-1:0] bm_r;
-wire [  4-1:0] bm_g;
-wire [  4-1:0] bm_b;
+wire [  8-1:0] bm_r;
+wire [  8-1:0] bm_g;
+wire [  8-1:0] bm_b;
 wire           bm_osd_blank;
 wire           bm_osd_pixel;
 
-assign bm_hsync     = dblscan ? sd_lbuf_o_d[17] : _csync_in;
+assign bm_hsync     = dblscan ? sd_lbuf_o_d[29] : _csync_in;
 assign bm_vsync     = dblscan ? _vsync_in : 1'b1;
 assign bm_r         = dblscan ? sl_r : red_in;
 assign bm_g         = dblscan ? sl_g : green_in;
 assign bm_b         = dblscan ? sl_b : blue_in;
-assign bm_osd_blank = dblscan ? sd_lbuf_o_d[16] : osd_blank;
-assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[15] : osd_pixel;
+assign bm_osd_blank = dblscan ? sd_lbuf_o_d[28] : osd_blank;
+assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[27] : osd_pixel;
 
 
 //// osd ////
-wire [  4-1:0] osd_r;
-wire [  4-1:0] osd_g;
-wire [  4-1:0] osd_b;
+wire [  8-1:0] osd_r;
+wire [  8-1:0] osd_g;
+wire [  8-1:0] osd_b;
 
-assign osd_r = (bm_osd_blank ? (bm_osd_pixel ? OSD_R : {2'b00, bm_r[3:2]}) : bm_r);
-assign osd_g = (bm_osd_blank ? (bm_osd_pixel ? OSD_G : {2'b00, bm_g[3:2]}) : bm_g);
-assign osd_b = (bm_osd_blank ? (bm_osd_pixel ? OSD_B : {2'b10, bm_b[3:2]}) : bm_b);
+assign osd_r = (bm_osd_blank ? (bm_osd_pixel ? OSD_R : {2'b00, bm_r[7:2]}) : bm_r);
+assign osd_g = (bm_osd_blank ? (bm_osd_pixel ? OSD_G : {2'b00, bm_g[7:2]}) : bm_g);
+assign osd_b = (bm_osd_blank ? (bm_osd_pixel ? OSD_B : {2'b10, bm_b[7:2]}) : bm_b);
 
 
 //// output registers ////

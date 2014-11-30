@@ -436,7 +436,7 @@ static uint8_t usb_storage_init(usb_device_t *dev) {
       storage_debugf("parse conf failed");
   }
 
-  if(!good_conf) {
+  if(good_conf < 0) {
     storage_debugf("no good configuration");
     return USB_DEV_CONFIG_ERROR_DEVICE_NOT_SUPPORTED;
   }

@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "user_io.h"
-#include "hardware.h"
+#include "spi.h"
 #include "ikbd.h"
 #include "debug.h"
 #include "usb.h"
@@ -275,8 +275,7 @@ void ikbd_handler_time_set(void) {
   // try to set time on rtc if present
   usb_rtc_set_time(ikbd.date);
 
-  EnableIO();
-  SPI(UIO_IKBD_IN);
+  spi_uio_cmd_cont(UIO_IKBD_IN);
 
   ikbd_debugf("Time of day clock set: %u:%02u:%02u %u.%u.%u", 
 	      ikbd.date[3], ikbd.date[4], ikbd.date[5],
@@ -293,9 +292,8 @@ void ikbd_handler_interrogate_time(void) {
   // try to fetch time from rtc if present
   usb_rtc_get_time(ikbd.date);
 
-  EnableIO();
-  SPI(UIO_IKBD_IN);
-    
+  spi_uio_cmd_cont(UIO_IKBD_IN);
+
   ikbd_debugf("Interrogate time of day %u:%02u:%02u %u.%u.%u", 
 	      ikbd.date[3], ikbd.date[4], ikbd.date[5],
 	      ikbd.date[2], ikbd.date[1], 1900 + ikbd.date[0]);
@@ -485,11 +483,10 @@ void ikbd_poll(void) {
     mtimer = GetTimer(10);
     
     // check for incoming ikbd data
-    EnableIO();
-    SPI(UIO_IKBD_IN);
+    spi_uio_cmd_cont(UIO_IKBD_IN);
     
-    while(SPI(0))
-      ikbd_handle_input(SPI(0));
+    while(spi_in())
+      ikbd_handle_input(spi_in());
     
     DisableIO();
   }
@@ -516,9 +513,8 @@ void ikbd_poll(void) {
   }
 
   // transmit data from queue
-  EnableIO();
-  SPI(UIO_IKBD_OUT);
-  SPI(tx_queue[rptr]);
+  spi_uio_cmd_cont(UIO_IKBD_OUT);
+  spi8(tx_queue[rptr]);
   DisableIO();
   
   ikbd.tx_cnt++;

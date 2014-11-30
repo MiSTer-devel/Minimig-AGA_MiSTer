@@ -1,6 +1,7 @@
 #ifndef MMC_H
 #define MMC_H
 
+#include "spi.h"
 #include "hardware.h"
 
 #define CARDTYPE_NONE 0

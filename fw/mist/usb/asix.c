@@ -38,6 +38,10 @@ static const struct {
 } asix_devs[] = {
   // DLink DUB-E100 H/W Ver B1 Alternate
   { 0x2001, 0x3c05, ASIX_TYPE_AX88772 },
+  // DLink DUB-E100 H/W Ver C1
+  { 0x2001, 0x1a02, ASIX_TYPE_AX88772 },
+  // NoName Wii Adapter
+  { 0x0b95, 0x7720, ASIX_TYPE_AX88772 },
   { 0, 0, 0 }
 };
 

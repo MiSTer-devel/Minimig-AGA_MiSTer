@@ -14,7 +14,8 @@ module user_io(
 		output [7:0] KBD_MOUSE_DATA,
 
 		output [1:0] BUTTONS,
-		output [1:0] SWITCHES
+		output [1:0] SWITCHES,
+    output [3:0] CONF
 	   );
 
    reg [6:0]         sbuf;
@@ -22,7 +23,7 @@ module user_io(
    reg [5:0] 	      cnt;
    reg [5:0]         joystick0;
    reg [5:0]         joystick1;
-   reg [3:0] 	      but_sw;
+   reg [7:0] 	      but_sw;
 
 	reg               kbd_mouse_strobe;
    reg [1:0]         kbd_mouse_type;
@@ -37,8 +38,9 @@ module user_io(
 	assign KBD_MOUSE_STROBE = kbd_mouse_strobe; // strobe, data valid on rising edge
 	assign MOUSE_BUTTONS = mouse_buttons; // state of the two mouse buttons
 
-	assign BUTTONS = but_sw[1:0];
+	assign BUTTONS  = but_sw[1:0];
 	assign SWITCHES = but_sw[3:2];
+  assign CONF     = but_sw[7:4];
    
    always@(negedge SPI_CLK) begin
       if(cnt < 8)
@@ -74,7 +76,7 @@ module user_io(
 				// first payload byte
 	      if(cnt == 15) begin
 			   if(cmd == 1) begin
-					 but_sw[3:1] <= sbuf[2:0]; 
+					 but_sw[7:1] <= sbuf[6:0];
 					 but_sw[0] <= SPI_MOSI; 
 				end
 			   if(cmd == 2) begin
@@ -112,5 +114,7 @@ module user_io(
 			end
 		end
 	end
+
       
 endmodule
+

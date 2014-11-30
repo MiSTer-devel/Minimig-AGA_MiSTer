@@ -37,7 +37,7 @@ module sdram_ctrl(
   // temp - cache control
   input wire            cache_ena,
   // sdram
-  output reg  [ 12-1:0] sdaddr,
+  output reg  [ 13-1:0] sdaddr,
   output reg  [  4-1:0] sd_cs,
   output reg  [  2-1:0] ba,
   output reg            sd_we,
@@ -61,6 +61,7 @@ module sdram_ctrl(
   input  wire           chip_dma,
   input  wire [ 16-1:0] chipWR,
   output reg  [ 16-1:0] chipRD,
+  output wire [ 48-1:0] chip48,
   // cpu
   input  wire    [24:1] cpuAddr,
   input  wire [  6-1:0] cpustate,
@@ -227,7 +228,7 @@ cpu_cache cpu_cache (
   // system
   .clk          (sysclk       ),
   .rst          (!(reset && cache_rst)),
-  .cache_ena    (cache_ena    ),
+  .cache_ena    (1'b1         ),
   // cpu if
   .cpu_state    (cpustate     ),
   .cpu_adr      (cpuAddr      ),
@@ -357,7 +358,7 @@ assign cpuRD = cpuRD_reg;
 // chip cache
 ////////////////////////////////////////
 
-reg  [ 16-1:0] chipRDd;
+reg  [ 16-1:0] chipRDd [0:4-1];
 /*
 reg  [ 16-1:0] chip_cache_dat [0:4-1];
 reg  [ 24-1:0] chip_cache_adr;
@@ -399,8 +400,16 @@ end
 
 always @ (posedge sysclk) begin
   if ((sdram_state == ph9) && chipCycle)
-    chipRDd <= sdata_reg;
+    chipRDd[0] <= sdata_reg;
+  else if ((sdram_state == ph10) && chipCycle)
+    chipRDd[1] <= sdata_reg;
+  else if ((sdram_state == ph11) && chipCycle)
+    chipRDd[2] <= sdata_reg;
+  else if ((sdram_state == ph12) && chipCycle)
+    chipRDd[3] <= sdata_reg;
 end
+
+assign chip48 = {chipRDd[1], chipRDd[2], chipRDd[3]};
 
 // chip cache read
 always @ (*) begin
@@ -408,7 +417,7 @@ always @ (*) begin
     chipRD = chip_cache_dat[chip_cache_index];
   else
 */
-    chipRD = chipRDd;
+    chipRD = chipRDd[0];
 end
 
 
@@ -592,7 +601,7 @@ always @ (posedge sysclk) begin
   sd_ras <= 1'b1;
   sd_cas <= 1'b1;
   sd_we  <= 1'b1;
-  sdaddr <= 12'bxxxxxxxxxxxx;
+  sdaddr <= 13'bxxxxxxxxxxxxx;
   ba     <= 2'b00;
   dqm    <= 2'b00;
   if (!init_done) begin
@@ -620,9 +629,9 @@ always @ (posedge sysclk) begin
         sd_ras <= 1'b0;
         sd_cas <= 1'b0;
         sd_we  <= 1'b0;
-        //sdaddr <= 12b001000100010; // BURST=4 LATENCY=2
-        sdaddr <= 12'b001000110010; // BURST=4 LATENCY=3
-        //sdaddr <= 12'b001000110000; // noBURST LATENCY=3
+        //sdaddr <= 13'b0001000100010; // BURST=4 LATENCY=2
+        sdaddr <= 13'b0001000110010; // BURST=4 LATENCY=3
+        //sdaddr <= 13'b0001000110000; // noBURST LATENCY=3
       end
       default : begin
         // NOP
@@ -643,7 +652,7 @@ always @ (posedge sysclk) begin
       if (!chip_dma || !chipRW) begin
         // chip cycle
         chipCycle  <= 1'b1;
-        sdaddr     <= chipAddr[20:9];
+        sdaddr     <= {1'b0, chipAddr[20:9]};
         ba         <= chipAddr[22:21];
         cas_dqm    <= {chipU,chipL};
         sd_cs      <= 4'b1110; // active
@@ -654,7 +663,7 @@ always @ (posedge sysclk) begin
       end else if (!cpustate[2] && !cpustate[5]) begin
         // cpu cycle
         cpuCycle   <= 1'b1;
-        sdaddr     <= cpuAddr[20:9];
+        sdaddr     <= {cpuAddr[24], cpuAddr[20:9]};
         ba         <= cpuAddr[22:21];
         cas_dqm    <= {cpuU,cpuL};
         sd_cs      <= 4'b1110; // active
@@ -665,7 +674,7 @@ always @ (posedge sysclk) begin
       end else if (host_cs && !host_ack) begin
         // host cycle
         hostCycle  <= 1'b1;
-        sdaddr     <= host_adr[20:9];
+        sdaddr     <= {1'b0, host_adr[20:9]};
         ba         <= host_adr[22:21];
         cas_dqm    <= ~host_bs;
         sd_cs      <= 4'b1110; // active
@@ -681,7 +690,7 @@ always @ (posedge sysclk) begin
       end
     end
     if (sdram_state == ph4) begin
-      sdaddr  <= {1'b0,1'b1,1'b0,casaddr[23],casaddr[8:1]}; // auto precharge
+      sdaddr  <= {1'b0,1'b0,1'b1,1'b0,casaddr[23],casaddr[8:1]}; // auto precharge
       ba      <= casaddr[22:21];
       sd_cs   <= cas_sd_cs;
       dqm     <= (!cas_sd_we) ? cas_dqm : 2'b00;

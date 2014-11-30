@@ -7,43 +7,43 @@
 void max3421e_write_u08(uint8_t reg, uint8_t data) {
   //  iprintf("write %x %x\n", reg, data);
 
-  spi_start(0);
-  spi_xmit(reg | MAX3421E_WRITE);
-  spi_xmit(data);
-  spi_end();
+  spi_max_start();
+  spi8(reg | MAX3421E_WRITE);
+  spi8(data);
+  spi_max_end();
 }
 
 uint8_t max3421e_read_u08(uint8_t reg) {
-  spi_start(0);
-  spi_xmit(reg);
-  uint8_t ret = spi_xmit(0);
-  spi_end();
+  spi_max_start();
+  spi8(reg);
+  uint8_t ret = spi_in();
+  spi_max_end();
   return ret;
 }
 
 uint8_t *max3421e_write(uint8_t reg, uint8_t n, uint8_t* data) {
 
-  spi_start(0);
-  spi_xmit(reg | MAX3421E_WRITE);
+  spi_max_start();
+  spi8(reg | MAX3421E_WRITE);
 
-  SPI_write(data, n);
-  spi_end();
+  spi_write(data, n);
+  spi_max_end();
 
   return data+n;
 }
 
 // discard data if NULL ptr was provided
 uint8_t *max3421e_read(uint8_t reg, uint8_t n, uint8_t* data) {
-  spi_start(0);
-  spi_xmit(reg);
+  spi_max_start();
+  spi8(reg);
 
   if(data) 
-    SPI_read(data, n);
+    spi_read(data, n);
   else
-    //    SPI_Write(0, n);  // spi write sends something, but we don't care
-    while(n--) spi_xmit(0);
+    //    spi_write(0, n);  // spi write sends something, but we don't care
+    while(n--) spi8(0);
 
-  spi_end();
+  spi_max_end();
 
   return data+n;
 }
@@ -107,7 +107,6 @@ void max3421e_init() {
   iprintf("max3421e_init()\n");
 
   timer_init();
-  spi_init();
 
   // switch to full duplex mode
   max3421e_write_u08(MAX3421E_PINCTL, MAX3421E_FDUPSPI | MAX3421E_INTLEVEL);

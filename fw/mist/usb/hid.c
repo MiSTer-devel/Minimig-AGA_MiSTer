@@ -16,26 +16,25 @@ uint8_t hid_get_joysticks(void) {
 }
 
 //get HID report descriptor 
-static uint8_t hid_get_report_descr(usb_device_t *dev, uint8_t iface, uint16_t size)  {
+static uint8_t hid_get_report_descr(usb_device_t *dev, uint8_t i, uint16_t size)  {
   //  hid_debugf("%s(%x, if=%d, size=%d)", __FUNCTION__, dev->bAddress, iface, size);
 
   uint8_t buf[size];
   usb_hid_info_t *info = &(dev->hid_info);
   uint8_t rcode = usb_ctrl_req( dev, HID_REQ_HIDREPORT, USB_REQUEST_GET_DESCRIPTOR, 0x00, 
-			      HID_DESCRIPTOR_REPORT, iface, size, buf);
+			      HID_DESCRIPTOR_REPORT, info->iface[i].iface_idx, size, buf);
  
   if(!rcode) {
     hid_debugf("HID report descriptor:");
     hexdump(buf, size, 0);
 
     // we got a report descriptor. Try to parse it
-    if(parse_report_descriptor(buf, size)) {
-      if(hid_conf[0].type == CONFIG_TYPE_JOYSTICK) {
+    if(parse_report_descriptor(buf, size, &(info->iface[i].conf))) {
+      if(info->iface[i].conf.type == CONFIG_TYPE_JOYSTICK) {
 	hid_debugf("Detected USB joystick #%d", joysticks);
 
-	info->iface[iface].device_type = HID_DEVICE_JOYSTICK;
-	info->iface[iface].conf = hid_conf[0];
-	info->iface[iface].jindex = joysticks++;
+	info->iface[i].device_type = HID_DEVICE_JOYSTICK;
+	info->iface[i].jindex = joysticks++;
       }
     }
   }
@@ -101,7 +100,7 @@ static uint8_t usb_hid_parse_conf(usb_device_t *dev, uint8_t conf, uint16_t len)
 
       // only HID interfaces are supported
       if(p->iface_desc.bInterfaceClass == USB_CLASS_HID) {
-	puts("iface is HID");
+	//	puts("iface is HID");
 
 	if(info->bNumIfaces < MAX_IFACES) {
 	  // ok, let's use this interface
@@ -109,6 +108,8 @@ static uint8_t usb_hid_parse_conf(usb_device_t *dev, uint8_t conf, uint16_t len)
 
 	  info->iface[info->bNumIfaces].iface_idx = p->iface_desc.bInterfaceNumber;
 	  info->iface[info->bNumIfaces].has_boot_mode = false;
+	  info->iface[info->bNumIfaces].is_5200daptor = false;
+	  info->iface[info->bNumIfaces].key_state = 0;
 	  info->iface[info->bNumIfaces].device_type = HID_DEVICE_UNKNOWN;
 	  info->iface[info->bNumIfaces].conf.type = CONFIG_TYPE_NONE;
 
@@ -254,25 +255,26 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
   for(i=0; i<info->bNumIfaces; i++) {
     // no boot mode, try to parse HID report descriptor
     if(!info->iface[i].has_boot_mode) {
-      rcode = hid_get_report_descr(dev, 
-	   info->iface[i].iface_idx, info->iface[i].report_desc_size);
-      if (rcode)
-	return rcode;
-      
-      {
+      rcode = hid_get_report_descr(dev, i, info->iface[i].report_desc_size);
+      if(rcode) return rcode;
+
+      if(info->iface[i].device_type == CONFIG_TYPE_JOYSTICK) {
 	char k;
-	
+        
 	iprintf("Report: type = %d, id = %d, size = %d\n", 
 		info->iface[i].conf.type,
 		info->iface[i].conf.report_id,
 		info->iface[i].conf.report_size);
 	
-	iprintf("Axes: %d/%d\n", 
-		info->iface[i].conf.joystick.axis_byte_offset[0],
-		info->iface[i].conf.joystick.axis_byte_offset[1]);
+	for(k=0;k<2;k++)
+	  iprintf("Axis%d: %d@%d %d->%d\n", k, 
+		  info->iface[i].conf.joystick.axis[k].size,
+		  info->iface[i].conf.joystick.axis[k].byte_offset,
+		  info->iface[i].conf.joystick.axis[k].logical.min,
+		  info->iface[i].conf.joystick.axis[k].logical.max);
 	
 	for(k=0;k<4;k++)
-	  iprintf("Button%k: %d/%d\n", 
+	  iprintf("Button%d: @%d/%d\n", k,
 		  info->iface[i].conf.joystick.button[k].byte_offset,
 		  info->iface[i].conf.joystick.button[k].bitmask);
       }
@@ -280,17 +282,28 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       // use fixed setup for known interfaces 
       if((vid == 0x0079) && (pid == 0x0011) && (i==0)) {
-	iprintf("GOTTA HACK THIS\n");
-	
-	// fixed setup for nes gamepad
-	info->iface[0].conf.joystick.button[0].byte_offset = 5;
-	info->iface[0].conf.joystick.button[0].bitmask = 32;
-	info->iface[0].conf.joystick.button[1].byte_offset = 5;
-	info->iface[0].conf.joystick.button[1].bitmask = 64;
-	info->iface[0].conf.joystick.button[2].byte_offset = 6;
-	info->iface[0].conf.joystick.button[2].bitmask = 16;
-	info->iface[0].conf.joystick.button[3].byte_offset = 6;
-	info->iface[0].conf.joystick.button[3].bitmask = 32;
+	iprintf("hacking cheap NES pad\n");
+        
+        // fixed setup for nes gamepad
+        info->iface[0].conf.joystick.button[0].byte_offset = 5;
+        info->iface[0].conf.joystick.button[0].bitmask = 32;
+        info->iface[0].conf.joystick.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick.button[1].bitmask = 64;
+        info->iface[0].conf.joystick.button[2].byte_offset = 6;
+        info->iface[0].conf.joystick.button[2].bitmask = 16;
+        info->iface[0].conf.joystick.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick.button[3].bitmask = 32;
+      }
+
+      if((vid == 0x04d8) && (pid == 0xf6ec) && (i==0)) {
+	iprintf("hacking 5200daptor\n");
+        
+	info->iface[0].conf.joystick.button[2].byte_offset = 4;
+	info->iface[0].conf.joystick.button[2].bitmask = 0x40;    // "Reset"
+	info->iface[0].conf.joystick.button[3].byte_offset = 4;
+	info->iface[0].conf.joystick.button[3].bitmask = 0x10;    // "Start"
+
+	info->iface[0].is_5200daptor = true;
       }
     }
 
@@ -354,6 +367,64 @@ static uint8_t usb_hid_release(usb_device_t *dev) {
   return 0;
 }
 
+// special 5200daptor button processing
+static void handle_5200daptor(usb_hid_iface_info_t *iface, uint8_t *buf) {
+
+  // list of buttons that are reported as keys
+  static const struct {
+    uint8_t byte_offset;   // offset of the byte within the report which the button bit is in
+    uint8_t mask;          // bitmask of the button bit
+    uint8_t key_code[2];   // usb keycodes to be sent for joystick 0 and joystick 1
+  } button_map[] = {
+    { 4, 0x10, 0x3a, 0x3d }, /* START -> f1/f4 */
+    { 4, 0x20, 0x3b, 0x3e }, /* PAUSE -> f2/f5 */
+    { 4, 0x40, 0x3c, 0x3f }, /* RESET -> f3/f6 */
+    { 5, 0x01, 0x1e, 0x21 }, /*     1 ->  1/4  */
+    { 5, 0x02, 0x1f, 0x22 }, /*     2 ->  2/5  */
+    { 5, 0x04, 0x20, 0x23 }, /*     3 ->  3/6  */
+    { 5, 0x08, 0x14, 0x15 }, /*     4 ->  q/r  */
+    { 5, 0x10, 0x1a, 0x17 }, /*     5 ->  w/t  */
+    { 5, 0x20, 0x08, 0x1c }, /*     6 ->  e/y  */
+    { 5, 0x40, 0x04, 0x09 }, /*     7 ->  a/f  */
+    { 5, 0x80, 0x16, 0x0a }, /*     8 ->  s/g  */
+    { 6, 0x01, 0x07, 0x0b }, /*     9 ->  d/h  */
+    { 6, 0x02, 0x1d, 0x19 }, /*     * ->  z/v  */
+    { 6, 0x04, 0x1b, 0x05 }, /*     0 ->  x/b  */
+    { 6, 0x08, 0x06, 0x11 }, /*     # ->  c/n  */
+    { 0, 0x00, 0x00, 0x00 }  /* ----  end ---- */
+  };
+
+  // keyboard events are only generated for the first
+  // two joysticks in the system
+  if(iface->jindex > 1) return;
+
+  // build map of pressed keys
+  uint8_t i;
+  uint16_t keys = 0;
+  for(i=0;button_map[i].mask;i++) 
+    if(buf[button_map[i].byte_offset] & button_map[i].mask)
+      keys |= (1<<i);
+
+  // check if keys have changed
+  if(iface->key_state != keys) {
+    uint8_t buf[6] = { 0,0,0,0,0,0 };
+    uint8_t p = 0;
+
+    // report up to 6 pressed keys
+    for(i=0;(i<16)&&(p<6);i++) 
+      if(keys & (1<<i))
+	buf[p++] = button_map[i].key_code[iface->jindex];
+
+    //    iprintf("5200: %d %d %d %d %d %d\n", buf[0],buf[1],buf[2],buf[3],buf[4],buf[5]);
+
+    // generate key events
+    user_io_kbd(0x00, buf);
+
+    // save current state of keys
+    iface->key_state = keys;
+  }
+}
+
 static uint8_t usb_hid_poll(usb_device_t *dev) {
   usb_hid_info_t *info = &(dev->hid_info);
   int8_t i;
@@ -364,82 +435,103 @@ static uint8_t usb_hid_poll(usb_device_t *dev) {
   for(i=0;i<info->bNumIfaces;i++) {
     usb_hid_iface_info_t *iface = info->iface+i;
     
-    if (iface->qNextPollTime <= timer_get_msec()) {
-      //      hid_debugf("poll %d...", iface->ep.epAddr);
+    if(iface->device_type != HID_DEVICE_UNKNOWN) {
+
+      if (iface->qNextPollTime <= timer_get_msec()) {
+	//      hid_debugf("poll %d...", iface->ep.epAddr);
       
-      uint16_t read = iface->ep.maxPktSize;
-      uint8_t buf[iface->ep.maxPktSize];
-      uint8_t rcode = 
-	usb_in_transfer(dev, &(iface->ep), &read, buf);
-
-      if (rcode) {
-	if (rcode != hrNAK)
-	  hid_debugf("%s() error: %d", __FUNCTION__, rcode);
-      } else {
-
-	// successfully received some bytes
-	if(iface->has_boot_mode) {
-	  if(iface->device_type == HID_DEVICE_MOUSE) {
-	    // boot mouse needs at least three bytes
-	    if(read >= 3) {
-	      // forward all three bytes to the user_io layer
-	      user_io_mouse(buf[0], buf[1], buf[2]);
+	uint16_t read = iface->ep.maxPktSize;
+	uint8_t buf[iface->ep.maxPktSize];
+	uint8_t rcode = 
+	  usb_in_transfer(dev, &(iface->ep), &read, buf);
+	
+	if (rcode) {
+	  if (rcode != hrNAK)
+	    hid_debugf("%s() error: %d", __FUNCTION__, rcode);
+	} else {
+	  
+	  // successfully received some bytes
+	  if(iface->has_boot_mode) {
+	    if(iface->device_type == HID_DEVICE_MOUSE) {
+	      // boot mouse needs at least three bytes
+	      if(read >= 3) {
+		// forward all three bytes to the user_io layer
+		user_io_mouse(buf[0], buf[1], buf[2]);
+	      }
+	    }
+	    
+	    if(iface->device_type == HID_DEVICE_KEYBOARD) {
+	      // boot kbd needs at least eight bytes
+	      if(read >= 8) {
+		user_io_kbd(buf[0], buf+2);
+	      }
 	    }
 	  }
+	  
+	  if(iface->device_type == HID_DEVICE_JOYSTICK) {
+	    hid_config_t *conf = &iface->conf;
+	    if(read >= conf->report_size) {
+	      uint8_t jmap = 0;
+	      uint16_t a[2];
+	      uint8_t idx, i;
+	      
+	      // hid_debugf("Joystick data:"); hexdump(buf, read, 0);
 
-	  if(iface->device_type == HID_DEVICE_KEYBOARD) {
-	    // boot kbd needs at least eight bytes
-	    if(read >= 8) {
-	      user_io_kbd(buf[0], buf+2);
+	      // two axes ...
+	      for(i=0;i<2;i++) {
+		a[i] = buf[conf->joystick.axis[i].byte_offset];
+		if(conf->joystick.axis[i].size == 16)
+		  a[i] += (buf[conf->joystick.axis[i].byte_offset+1])<<8;
+
+		// scale to 0 -> 255 range. 99% of the joysticks already deliver that
+		if((conf->joystick.axis[i].logical.min != 0) ||
+		   (conf->joystick.axis[i].logical.max != 255)) {
+		  a[i] = ((a[i] - conf->joystick.axis[i].logical.min) * 255)/
+		    (conf->joystick.axis[i].logical.max - 
+		     conf->joystick.axis[i].logical.min);
+		}
+	      }
+
+	      if(a[0] <  64) jmap |= JOY_LEFT;
+	      if(a[0] > 192) jmap |= JOY_RIGHT;
+	      if(a[1] <  64) jmap |= JOY_UP;
+	      if(a[1] > 192) jmap |= JOY_DOWN;
+	      
+	      //	      iprintf("JOY X:%d Y:%d\n", a[0], a[1]);
+	      
+	      // ... and four buttons
+	      for(i=0;i<4;i++)
+		if(buf[conf->joystick.button[i].byte_offset] & 
+		   conf->joystick.button[i].bitmask) jmap |= (JOY_BTN1<<i);
+	      
+	      //	      iprintf("JOY D:%d\n", jmap);
+
+	      // swap joystick 0 and 1 since 1 is the one 
+	      // used primarily on most systems
+	      idx = iface->jindex;
+	      if(idx == 0)      idx = 1;
+	      else if(idx == 1) idx = 0;
+	      
+	      // check if joystick state has changed
+	      if(jmap != iface->jmap) {
+		//	      iprintf("jmap %d changed to %x\n", idx, jmap);
+		
+		// and feed into joystick input system
+		user_io_digital_joystick(idx, jmap);
+		iface->jmap = jmap;
+	      }
+	      
+	      // also send analog values
+	      user_io_analog_joystick(idx, a[0]-128, a[1]-128);
+
+	      // do special 5200daptor treatment
+	      if(iface->is_5200daptor)
+		handle_5200daptor(iface, buf);
 	    }
 	  }
 	}
-
-	if(iface->device_type == HID_DEVICE_JOYSTICK) {
-	  hid_config_t *conf = &iface->conf;
-	  if(read >= conf->report_size) {
-	    uint8_t jmap = 0;
-	    uint8_t ax,ay,idx,b;
-
-	    //	    hid_debugf("Joystick data:");
-	    //	    	    hexdump(buf, read, 0);
-
-	    // currently only byte sized axes are allowed
-	    ax = buf[conf->joystick.axis_byte_offset[0]];
-	    if(ax <  64) jmap |= JOY_LEFT;
-	    if(ax > 192) jmap |= JOY_RIGHT;
-	    ay = buf[conf->joystick.axis_byte_offset[1]];
-	    if(ay <  64) jmap |= JOY_UP;
-	    if(ay > 192) jmap |= JOY_DOWN;
-
-	    //	    iprintf("ax = %d ay = %d\n", ax, ay);
-	    
-	    // ... and buttons
-	    for(b=0;b<4;b++)
-	      if(buf[conf->joystick.button[b].byte_offset] & 
-		 conf->joystick.button[b].bitmask) jmap |= (JOY_BTN1<<b);
-
-	    // swap joystick 0 and 1 since 1 is the one 
-	    // used primarily on most systems
-	    idx = iface->jindex;
-	    if(idx == 0)      idx = 1;
-	    else if(idx == 1) idx = 0;
-	    
-	    // check if joystick state has changed
-	    if(jmap != iface->jmap) {
-	      //	      iprintf("jmap %d changed to %x\n", idx, jmap);
-
-	      // and feed into joystick input system
-	      user_io_digital_joystick(idx, jmap);
-	      iface->jmap = jmap;
-	    }
-
-	    // also send analog values
-	    user_io_analog_joystick(idx, ax-128, ay-128);
-	  }
-	}
+	iface->qNextPollTime += iface->interval;   // poll at requested rate
       }
-      iface->qNextPollTime += iface->interval;   // poll at requested rate
     }
   }
 

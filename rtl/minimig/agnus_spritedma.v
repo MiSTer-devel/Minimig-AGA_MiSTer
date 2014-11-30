@@ -60,6 +60,8 @@ module agnus_spritedma
 (
 	input 	clk,		    			// bus clock
   input clk7_en,
+  input reset,
+  input aga,
 	input	ecs,						// enable ECS extension bits
 	output	reg reqdma,					// sprite dma engine requests dma cycle
 	input	ackdma,						// agnus dma priority logic grants dma cycle
@@ -76,6 +78,7 @@ module agnus_spritedma
 //register names and adresses
 parameter SPRPTBASE     = 9'h120;		//sprite pointers base address
 parameter SPRPOSCTLBASE = 9'h140;		//sprite data, position and control register base address
+parameter FMODE         = 9'h1fc;
 
 //local signals
 reg 	[20:16] sprpth [7:0];		//upper 5 bits sprite pointers register bank
@@ -109,6 +112,28 @@ always @(posedge clk)
 
 //--------------------------------------------------------------------------------------
 
+// fmode reg
+reg  [16-1:0] fmode;
+
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      fmode <= #1 16'h0000;
+    else if (aga && (reg_address_in[8:1] == FMODE[8:1]))
+      fmode <= #1 data_in;
+  end
+end
+
+reg  [ 3-1:0] spr_fmode_ptradd;
+
+always @ (*) begin
+  case(fmode[3:2])
+    2'b00   : spr_fmode_ptradd = 3'd1;
+    2'b11   : spr_fmode_ptradd = 3'd4;
+    default : spr_fmode_ptradd = 3'd2;
+  endcase
+end
+
 //register bank address multiplexer
 wire	[2:0] ptsel;			//sprite pointer and state registers select
 wire	[2:0] pcsel;			//sprite position and control registers select
@@ -117,7 +142,7 @@ assign ptsel = (ackdma) ? sprite : reg_address_in[4:2];
 assign pcsel = (ackdma) ? sprite : reg_address_in[5:3];
 
 //sprite pointer arithmetic unit
-assign newptr = address_out[20:1] + 1'b1;
+assign newptr = address_out[20:1] + spr_fmode_ptradd;
 
 //sprite pointer high word register bank (implemented using distributed ram)
 wire [20:16] sprpth_in;

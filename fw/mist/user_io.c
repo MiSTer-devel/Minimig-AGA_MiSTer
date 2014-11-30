@@ -11,26 +11,43 @@
 #include "keycodes.h"
 #include "ikbd.h"
 #include "fat.h"
+#include "spi.h"
 
 #define BREAK  0x8000
 
 extern fileTYPE file;
 extern char s[40];
 
+// mouse and keyboard emulation state
 typedef enum { EMU_NONE, EMU_MOUSE, EMU_JOY0, EMU_JOY1 } emu_mode_t;
 static emu_mode_t emu_mode = EMU_NONE;
 static unsigned char emu_state = 0;
-static long emu_timer;
+static unsigned long emu_timer = 0;
 #define EMU_MOUSE_FREQ 5
 
+// keep state over core type and its capabilities
 static unsigned char core_type = CORE_TYPE_UNKNOWN;
 static char core_type_8bit_with_config_string = 0;
-static unsigned char adc_state = 0;
 
+// permanent state of adc inputs used for dip switches
+static unsigned char adc_state = 0;
 AT91PS_ADC a_pADC = AT91C_BASE_ADC;
 AT91PS_PMC a_pPMC = AT91C_BASE_PMC;
 
+// keep state of caps lock
 static char caps_lock_toggle = 0;
+
+// mouse position storage for ps2 and minimig rate limitation
+#define X 0
+#define Y 1
+#define MOUSE_FREQ 20   // 20 ms -> 50hz
+static int16_t mouse_pos[2] = { 0, 0};
+static uint8_t mouse_flags = 0;
+static unsigned long mouse_timer;
+
+// set by OSD code to suppress forwarding of those keys to the core which
+// may be in use by an active OSD
+static char osd_eats_keys = false;
 
 static void PollOneAdc() {
   static unsigned char adc_cnt = 0xff;
@@ -100,6 +117,14 @@ unsigned char user_io_core_type() {
   return core_type;
 }
 
+char minimig_v1() {
+  return(core_type == CORE_TYPE_MINIMIG);
+}
+
+char minimig_v2() {
+  return(core_type == CORE_TYPE_MINIMIG2);
+}
+
 char user_io_create_config_name(char *s) {
   char *p = user_io_8bit_get_string(0);  // get core name
   if(p && p[0]) {
@@ -123,6 +148,7 @@ void user_io_detect_core_type() {
 
   if((core_type != CORE_TYPE_DUMB) &&
      (core_type != CORE_TYPE_MINIMIG) &&
+     (core_type != CORE_TYPE_MINIMIG2) &&
      (core_type != CORE_TYPE_PACE) &&
      (core_type != CORE_TYPE_MIST) &&
      (core_type != CORE_TYPE_8BIT))
@@ -130,7 +156,7 @@ void user_io_detect_core_type() {
 
   switch(core_type) {
   case CORE_TYPE_UNKNOWN:
-    puts("Unable to identify core!");
+    iprintf("Unable to identify core (%x)!\n", core_type);
     break;
     
   case CORE_TYPE_DUMB:
@@ -138,7 +164,11 @@ void user_io_detect_core_type() {
     break;
     
   case CORE_TYPE_MINIMIG:
-    puts("Identified Minimig core");
+    puts("Identified Minimig V1 core");
+    break;
+
+  case CORE_TYPE_MINIMIG2:
+    puts("Identified Minimig V2 core");
     break;
     
   case CORE_TYPE_PACE:
@@ -185,16 +215,28 @@ void user_io_detect_core_type() {
 
 void user_io_analog_joystick(unsigned char joystick, char valueX, char valueY) {
   if(core_type == CORE_TYPE_8BIT) {
-    EnableIO();
-    SPI(UIO_ASTICK);
-    SPI(joystick);
-    SPI(valueX);
-    SPI(valueY);
+    spi_uio_cmd8_cont(UIO_ASTICK, joystick);
+    spi8(valueX);
+    spi8(valueY);
     DisableIO();
   }
 }
 
 void user_io_digital_joystick(unsigned char joystick, unsigned char map) {
+  // if osd is open control it via joystick
+  if(osd_eats_keys) {
+    static const uint8_t joy2kbd[] = { 
+      OSDCTRLMENU, OSDCTRLMENU, OSDCTRLMENU, OSDCTRLSELECT,
+      OSDCTRLUP, OSDCTRLDOWN, OSDCTRLLEFT, OSDCTRLRIGHT };
+    static uint8_t last_map = 0;
+
+    iprintf("joy to osd\n");
+    
+    //    OsdKeySet(0x80 | usb2ami[pressed[i]]);
+
+    return;
+  }
+
   //  iprintf("j%d: %x\n", joystick, map);
 
   // "only" 6 joysticks are supported
@@ -204,14 +246,12 @@ void user_io_digital_joystick(unsigned char joystick, unsigned char map) {
   // mist cores process joystick events for joystick 0 and 1 via the 
   // ikbd
   if((core_type == CORE_TYPE_MINIMIG) || 
+     (core_type == CORE_TYPE_MINIMIG2)  || 
      (core_type == CORE_TYPE_PACE)  || 
      ((core_type == CORE_TYPE_MIST) && (joystick >= 2))  || 
      (core_type == CORE_TYPE_8BIT)) {
     // joystick 3 and 4 were introduced later
-    EnableIO();
-    SPI((joystick < 2)?(UIO_JOYSTICK0 + joystick):((UIO_JOYSTICK2 + joystick - 2)));
-    SPI(map);
-    DisableIO();
+    spi_uio_cmd8((joystick < 2)?(UIO_JOYSTICK0 + joystick):((UIO_JOYSTICK2 + joystick - 2)), map);
   }
 
   // atari ST handles joystick 0 and 1 through the ikbd emulated by the io controller
@@ -225,8 +265,8 @@ static char dig2ana(char min, char max) {
   return 0;
 }
 
-// digital joysticks also send analog signals
 void user_io_joystick(unsigned char joystick, unsigned char map) {
+  // digital joysticks also send analog signals
   user_io_digital_joystick(joystick, map);
   user_io_analog_joystick(joystick, 
 		       dig2ana(map&JOY_LEFT, map&JOY_RIGHT),
@@ -235,27 +275,22 @@ void user_io_joystick(unsigned char joystick, unsigned char map) {
 
 // transmit serial/rs232 data into core
 void user_io_serial_tx(char *chr, uint16_t cnt) {
-  EnableIO();
-  SPI(UIO_SERIAL_OUT);
-  while(cnt--) SPI(*chr++);
+  spi_uio_cmd_cont(UIO_SERIAL_OUT);
+  while(cnt--) spi8(*chr++);
   DisableIO();
 }
   
 // transmit midi data into core
 void user_io_midi_tx(char chr) {
-  EnableIO();
-  SPI(UIO_MIDI_OUT);
-  SPI(chr);
-  DisableIO();
+  spi_uio_cmd8(UIO_MIDI_OUT, chr);
 }
 
 // send ethernet mac address into FPGA
 void user_io_eth_send_mac(uint8_t *mac) {
   uint8_t i;
 
-  EnableIO();
-  SPI(UIO_ETH_MAC);
-  for(i=0;i<6;i++) SPI(*mac++);
+  spi_uio_cmd_cont(UIO_ETH_MAC);
+  for(i=0;i<6;i++) spi8(*mac++);
   DisableIO();
 }
 
@@ -270,9 +305,8 @@ void user_io_sd_set_config(void) {
   data[32] = MMC_IsSDHC()?1:0;
 
   // and forward it to the FPGA
-  EnableIO();
-  SPI(UIO_SET_SDCONF);
-  SPI_write(data, sizeof(data));
+  spi_uio_cmd_cont(UIO_SET_SDCONF);
+  spi_write(data, sizeof(data));
   DisableIO();
 
   hexdump(data, sizeof(data), 0);
@@ -283,13 +317,12 @@ uint8_t user_io_sd_get_status(uint32_t *lba) {
   uint32_t s;
   uint8_t c; 
 
-  EnableIO();
-  SPI(UIO_GET_SDSTAT);
-  c = SPI(0);
-  s = SPI(0);
-  s = (s<<8) | SPI(0);
-  s = (s<<8) | SPI(0);
-  s = (s<<8) | SPI(0);
+  spi_uio_cmd_cont(UIO_GET_SDSTAT);
+  c = spi_in();
+  s = spi_in();
+  s = (s<<8) | spi_in();
+  s = (s<<8) | spi_in();
+  s = (s<<8) | spi_in();
   DisableIO();
 
   if(lba)
@@ -302,12 +335,11 @@ uint8_t user_io_sd_get_status(uint32_t *lba) {
 uint32_t user_io_eth_get_status(void) {
   uint32_t s;
 
-  EnableIO();
-  SPI(UIO_ETH_STATUS);
-  s = SPI(0);
-  s = (s<<8) | SPI(0);
-  s = (s<<8) | SPI(0);
-  s = (s<<8) | SPI(0);
+  spi_uio_cmd_cont(UIO_ETH_STATUS);
+  s = spi_in();
+  s = (s<<8) | spi_in();
+  s = (s<<8) | spi_in();
+  s = (s<<8) | spi_in();
   DisableIO();
 
   return s;
@@ -315,18 +347,16 @@ uint32_t user_io_eth_get_status(void) {
 
 // read ethernet frame from FPGAs ethernet tx buffer
 void user_io_eth_receive_tx_frame(uint8_t *d, uint16_t len) {
-  EnableIO();
-  SPI(UIO_ETH_FRM_IN);
-  while(len--) *d++=SPI(0);
+  spi_uio_cmd_cont(UIO_ETH_FRM_IN);
+  while(len--) *d++=spi_in();
   DisableIO();
 }
 
 // write ethernet frame to FPGAs rx buffer
 void user_io_eth_send_rx_frame(uint8_t *s, uint16_t len) {
-  EnableIO();
-  SPI(UIO_ETH_FRM_OUT);
-  SPI_write(s, len);
-  SPI(0);     // one additional byte to allow fpga to store the previous one
+  spi_uio_cmd_cont(UIO_ETH_FRM_OUT);
+  spi_write(s, len);
+  spi8(0);     // one additional byte to allow fpga to store the previous one
   DisableIO();
 }
 
@@ -366,12 +396,7 @@ static unsigned char kbd_fifo_r=0, kbd_fifo_w=0;
 static long kbd_timer = 0;
 
 static void kbd_fifo_minimig_send(unsigned short code) {
-  EnableIO();
-  if(code & OSD) SPI(UIO_KBD_OSD);   // code for OSD
-  else           SPI(UIO_KEYBOARD);
-  SPI(code & 0xff);
-  DisableIO();
-
+  spi_uio_cmd8((code&OSD)?UIO_KBD_OSD:UIO_KEYBOARD, code & 0xff);
   kbd_timer = GetTimer(10);  // next key after 10ms earliest
 }
 
@@ -479,10 +504,8 @@ char *user_io_8bit_get_string(char index) {
   // clear buffer
   buffer[0] = 0;
 
-  EnableIO();
-  SPI(UIO_GET_STRING);
-  
-  i = SPI(0);
+  spi_uio_cmd_cont(UIO_GET_STRING);
+  i = spi_in();
   // the first char returned will be 0xff if the core doesn't support
   // config strings. atari 800 returns 0xa4 which is the status byte
   if((i == 0xff) || (i == 0xa4)) {
@@ -502,7 +525,7 @@ char *user_io_8bit_get_string(char index) {
     }
 
     //    iprintf("%c", i);
-    i = SPI(0);
+    i = spi_in();
   }
     
   DisableIO();
@@ -529,18 +552,48 @@ unsigned char user_io_8bit_set_status(unsigned char new_status, unsigned char ma
     status &= ~mask;
     // updated masked bits
     status |= new_status & mask;
-    
-    EnableIO();
-    SPI(UIO_SET_STATUS);
-    SPI(status);
-    DisableIO();
+
+    spi_uio_cmd8(UIO_SET_STATUS, status);
   }
 
   return status;
 }
 
 void user_io_poll() {
+
+  if(user_io_dip_switch1()) {
+    // check of core has changed from a good one to a not supported on
+    // as this likely means that the user is reloading the core via jtag
+    unsigned char ct;
+    static unsigned char ct_cnt = 0;
+    
+    EnableIO();
+    ct = SPI(0xff);
+    DisableIO();
+    SPI(0xff);      // needed for old minimig core
+    
+    if(ct == core_type) 
+      ct_cnt = 0;        // same core type, everything is fine
+    else {
+      // core type has changed
+      if(++ct_cnt == 255) {
+	// wait for a new valid core id to appear
+	while((ct &  0xf0) != 0xa0) {
+	  EnableIO();
+	  ct = SPI(0xff);
+	  DisableIO();
+	  SPI(0xff);      // needed for old minimig core
+	}
+
+	// reset io controller to cope with new core
+	*AT91C_RSTC_RCR = 0xA5 << 24 | AT91C_RSTC_PERRST | AT91C_RSTC_PROCRST; // restart
+	for(;;);
+      }
+    }
+  }
+
   if((core_type != CORE_TYPE_MINIMIG) &&
+     (core_type != CORE_TYPE_MINIMIG2) &&
      (core_type != CORE_TYPE_PACE) &&
      (core_type != CORE_TYPE_MIST) &&
      (core_type != CORE_TYPE_8BIT)) {
@@ -556,41 +609,15 @@ void user_io_poll() {
     USART_Poll();
       
     unsigned char c = 0;
-    unsigned char cntff = 0;
 
     // check for incoming serial data. this is directly forwarded to the
     // arm rs232 and mixes with debug output. Useful for debugging only of
     // e.g. the diagnostic cartridge    
-    EnableIO();
-    SPI(UIO_SERIAL_IN);
-    while(SPI(0)) {
-      c = SPI(0);
+    spi_uio_cmd_cont(UIO_SERIAL_IN);
+    while(spi_in()) {
+      c = spi_in();
       if(c != 0xff) 
 	putchar(c);
-
-      // character 0xff is returned if FPGA isn't configured
-      if(c == 0xff) {
-	if(user_io_dip_switch1()) {
-	  cntff++;
-	  if(cntff = 255) {
-	    // 255 subsequent 0xff bytes likely mean that the core has been restarted
-	    // so we reset the io controller
-	    tos_debugf("Core seems to have reloaded. Waiting for valid core id ...");
-	    DisableIO();
-
-	    /* core type */
-	    do {
-	      EnableIO();
-	      c = SPI(0xff);
-	      DisableIO();
-	    } while((c & 0xf0) != 0xa0);
-	    
-	    *AT91C_RSTC_RCR = 0xA5 << 24 | AT91C_RSTC_PERRST | AT91C_RSTC_PROCRST; // restart
-	    for(;;);
-	  }
-	}
-      } else
-	cntff = 0;
       
       // forward to USB if redirection via USB/CDC enabled
       if(redirect == CDC_REDIRECT_RS232)
@@ -600,12 +627,11 @@ void user_io_poll() {
     
     // check for incoming parallel/midi data
     if((redirect == CDC_REDIRECT_PARALLEL) || (redirect == CDC_REDIRECT_MIDI)) {
-      EnableIO();
-      SPI((redirect == CDC_REDIRECT_PARALLEL)?UIO_PARALLEL_IN:UIO_MIDI_IN);
+      spi_uio_cmd_cont((redirect == CDC_REDIRECT_PARALLEL)?UIO_PARALLEL_IN:UIO_MIDI_IN);
       // character 0xff is returned if FPGA isn't configured
       c = 0;
-      while(SPI(0) && (c!= 0xff)) {
-	c = SPI(0);
+      while(spi_in() && (c!= 0xff)) {
+	c = spi_in();
 	cdc_control_tx(c);
       }
       DisableIO();
@@ -661,11 +687,8 @@ void user_io_poll() {
   
   if(map != key_map) {
     key_map = map;
-    
-    EnableIO();
-    SPI(UIO_BUT_SW);
-    SPI(map);
-    DisableIO();
+
+    spi_uio_cmd8(UIO_BUT_SW, map);
   }
 
   // mouse movement emulation is continous 
@@ -689,8 +712,51 @@ void user_io_poll() {
     }
   }
 
-  if(core_type == CORE_TYPE_MINIMIG) {
+  if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2)) {
     kbd_fifo_poll();
+
+    // frequently check mouse for events
+    if(CheckTimer(mouse_timer)) {
+      mouse_timer = GetTimer(MOUSE_FREQ);
+
+      // has ps2 mouse data been updated in the meantime
+      if(mouse_flags & 0x80) {
+	spi_uio_cmd_cont(UIO_MOUSE);
+
+	// ----- X axis -------
+	if(mouse_pos[X] < -128) {
+	  spi8(-128);
+	  mouse_pos[X] += 128;
+	} else if(mouse_pos[X] > 127) {
+	  spi8(127);
+	  mouse_pos[X] -= 127;
+	} else {
+	  spi8(mouse_pos[X]);
+	  mouse_pos[X] = 0;
+	}
+
+	// ----- Y axis -------
+	if(mouse_pos[Y] < -128) {
+	  spi8(-128);
+	  mouse_pos[Y] += 128;
+	} else if(mouse_pos[Y] > 127) {
+	  spi8(127);
+	  mouse_pos[Y] -= 127;
+	} else {
+	  spi8(mouse_pos[Y]);
+	  mouse_pos[Y] = 0;
+	}
+
+	spi8(mouse_flags & 0x03);
+	DisableIO();
+
+	// reset flags
+	mouse_flags = 0;
+      }
+    }
+
+
   }
 
   if(core_type == CORE_TYPE_MIST) {
@@ -704,21 +770,19 @@ void user_io_poll() {
     // check for serial data to be sent
 
     // check for incoming serial data. this is directly forwarded to the
-    // arm rs232 and mixes with debug output. Useful for debugging only of
-    // e.g. the diagnostic cartridge
-    EnableIO();
-    SPI(UIO_SIO_IN);
+    // arm rs232 and mixes with debug output.
+    spi_uio_cmd_cont(UIO_SIO_IN);
     // status byte is 1000000A with A=1 if data is available
-    if((f = SPI(0xff)) == 0x81) {
+    if((f = spi_in(0)) == 0x81) {
       iprintf("\033[1;36m");
       
       // character 0xff is returned if FPGA isn't configured
       while((f == 0x81) && (c!= 0xff) && (c != 0x00) && (p < 8)) {
-	c = SPI(0xff);
+	c = spi_in();
 	if(c != 0xff && c != 0x00) 
 	  iprintf("%c", c);
 
-	f = SPI(0xff);
+	f = spi_in();
 	p++;
       }
       iprintf("\033[0m");
@@ -755,7 +819,7 @@ void user_io_poll() {
 	  static char using_sdhc = 1;
 
 	  // SD request and 
-	  if(!(c & 0x04)) {
+	  if((c & 0x03) && !(c & 0x04)) {
 	    if(using_sdhc) {
 	      // we have not been using sdhc so far? 
 	      // -> complain!
@@ -776,12 +840,21 @@ void user_io_poll() {
 	  if((!MMC_IsSDHC()) || (c & 0x04)) {  
 	    uint8_t wr_buf[512];
 
+	    if(user_io_dip_switch1())
+	      iprintf("SD WR %d\n", lba);
+
+	    // if we write the sector stored in the read buffer, then
+	    // update the read buffer with the new contents
+	    if(buffer_lba == lba) 
+	      memcpy(buffer, wr_buf, 512);
+
+	      buffer_lba = 0xffffffff;
+
 	    // Fetch sector data from FPGA ...
-	    EnableIO();
-	    SPI(UIO_SECTOR_WR);
-	    SPI_block_read(wr_buf);
+	    spi_uio_cmd_cont(UIO_SECTOR_WR);
+	    spi_block_read(wr_buf);
 	    DisableIO();
-	    
+
 	    // ... and write it to disk
 	    DISKLED_ON;
 	    MMC_Write(lba, wr_buf);
@@ -801,11 +874,13 @@ void user_io_poll() {
 	    DISKLED_OFF;
 	  }
 
+	  if(user_io_dip_switch1())
+	    iprintf("SD RD %d\n", lba);
+	  
 	  if(buffer_lba == lba) {
 	    // data is now stored in buffer. send it to fpga
-	    EnableIO();
-	    SPI(UIO_SECTOR_RD);
-	    SPI_block_write(buffer);
+	    spi_uio_cmd_cont(UIO_SECTOR_RD);
+	    spi_block_write(buffer);
 	    DisableIO();
 
 	    // the end of this transfer acknowledges the FPGA internal
@@ -822,6 +897,67 @@ void user_io_poll() {
 	}
       }
     }
+
+    // frequently check ps2 mouse for events
+    if(CheckTimer(mouse_timer)) {
+      mouse_timer = GetTimer(MOUSE_FREQ);
+
+      // has ps2 mouse data been updated in the meantime
+      if(mouse_flags & 0x08) {
+	unsigned char ps2_mouse[3];
+
+	// PS2 format: 
+	// YOvfl, XOvfl, dy8, dx8, 1, mbtn, rbtn, lbtn
+	// dx[7:0]
+	// dy[7:0]
+	ps2_mouse[0] = mouse_flags;
+
+	// ------ X axis -----------
+	// store sign bit in first byte
+	ps2_mouse[0] |= (mouse_pos[X] < 0)?0x10:0x00;
+	if(mouse_pos[X] < -255) {
+	  // min possible value + overflow flag
+	  ps2_mouse[0] |= 0x40;
+	  ps2_mouse[1] = -128;
+	} else if(mouse_pos[X] > 255) {
+	  // max possible value + overflow flag
+	  ps2_mouse[0] |= 0x40;
+	  ps2_mouse[1] = 255;
+	} else 
+	  ps2_mouse[1] = mouse_pos[X];
+
+	// ------ Y axis -----------
+	// store sign bit in first byte
+	ps2_mouse[0] |= (mouse_pos[Y] < 0)?0x20:0x00;
+	if(mouse_pos[Y] < -255) {
+	  // min possible value + overflow flag
+	  ps2_mouse[0] |= 0x80;
+	  ps2_mouse[2] = -128;
+	} else if(mouse_pos[Y] > 255) {
+	  // max possible value + overflow flag
+	  ps2_mouse[0] |= 0x80;
+	  ps2_mouse[2] = 255;
+	} else 
+	  ps2_mouse[2] = mouse_pos[Y];
+	
+	// collect movement info and send at predefined rate
+	iprintf("PS2 MOUSE: %x %d %d\n", 
+		ps2_mouse[0], ps2_mouse[1], ps2_mouse[2]);
+
+	spi_uio_cmd_cont(UIO_MOUSE);
+	spi8(ps2_mouse[0]);
+	spi8(ps2_mouse[1]);
+	spi8(ps2_mouse[2]);
+	DisableIO();
+
+	// reset counters
+	mouse_flags = 0;
+	mouse_pos[X] = mouse_pos[Y] = 0;
+      }
+    }
+
+    // --------------- THE FOLLOWING IS DEPRECATED AND WILL BE REMOVED ------------
+    // ------------------------ USE SD CARD EMULATION INSTEAD ---------------------
 
     // raw sector io for the atari800 core which include a full
     // file system driver usually implemented using a second cpu
@@ -852,11 +988,13 @@ void user_io_poll() {
 	// extended command with 26 bits (for 32GB SDHC)
 	if((status & 0x3f) == 0x29) sector = (status>>6)&0x3ffffff;
 
+	bit8_debugf("SECIO rd %ld", sector);
+
 	if(MMC_Read(sector, buffer)) {
 	  // data is now stored in buffer. send it to fpga
 	  EnableFpga();
 	  SPI(UIO_SECTOR_SND);     // send sector data IO->FPGA
-	  SPI_block_write(buffer);
+	  spi_block_write(buffer);
 	  DisableFpga();
 	} else
 	  bit8_debugf("rd %ld fail", sector);
@@ -868,10 +1006,12 @@ void user_io_poll() {
 	// extended command with 26 bits (for 32GB SDHC)
 	if((status & 0x3f) == 0x2a) sector = (status>>6)&0x3ffffff;
 
+	bit8_debugf("SECIO wr %ld", sector);
+
 	// read sector from FPGA
 	EnableFpga();
 	SPI(UIO_SECTOR_RCV);     // receive sector data FPGA->IO
-	SPI_block_read(buffer);
+	spi_block_read(buffer);
 	DisableFpga();
 
 	if(!MMC_Write(sector, buffer)) 
@@ -896,7 +1036,8 @@ char user_io_user_button() {
 }
 
 static void send_keycode(unsigned short code) {
-  if(core_type == CORE_TYPE_MINIMIG) {
+  if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2)) {
     // amiga has "break" marker in msb
     if(code & BREAK) code = (code & 0xff) | 0x80;
 
@@ -916,8 +1057,7 @@ static void send_keycode(unsigned short code) {
 
   if(core_type == CORE_TYPE_8BIT) {
     // send ps2 keycodes for those cores that prefer ps2
-    EnableIO();
-    SPI(UIO_KEYBOARD);
+    spi_uio_cmd_cont(UIO_KEYBOARD);
 
     // "pause" has a complex code 
     if((code&0xff) == 0x77) {
@@ -929,26 +1069,26 @@ static void send_keycode(unsigned short code) {
 	static const unsigned char c[] = { 0xe1, 0x14, 0x77, 0xe1, 0xf0, 0x14, 0xf0, 0x77, 0x00 };
 	const unsigned char *p = c;
 	
-	iprintf("TX PS2 ");
+	iprintf("PS2 KBD ");
 	while(*p) {
 	  iprintf("%x ", *p);
-	  SPI(*p++);
+	  spi8(*p++);
 	}
 	iprintf("\n");
       }
     } else {
-      iprintf("TX PS2 ");
+      iprintf("PS2 KBD ");
       if(code & EXT)   iprintf("e0 ");
       if(code & BREAK) iprintf("f0 ");
       iprintf("%x\n", code & 0xff);
       
       if(code & EXT)    // prepend extended code flag if required
-	SPI(0xe0);
+	spi8(0xe0);
       
       if(code & BREAK)  // prepend break code if required
-	SPI(0xf0);
+	spi8(0xf0);
       
-      SPI(code & 0xff);  // send code itself
+      spi8(code & 0xff);  // send code itself
     }
 
     DisableIO();
@@ -959,13 +1099,17 @@ void user_io_mouse(unsigned char b, char x, char y) {
 
   // send mouse data as minimig expects it
   if((core_type == CORE_TYPE_MINIMIG) || 
-     (core_type == CORE_TYPE_8BIT)) {
-    EnableIO();
-    SPI(UIO_MOUSE);
-    SPI(x);
-    SPI(y);
-    SPI(b);
-    DisableIO();
+     (core_type == CORE_TYPE_MINIMIG2)) {
+    mouse_pos[X] += x;
+    mouse_pos[Y] += y;
+    mouse_flags |= 0x80 | (b&3); 
+  }
+
+  // 8 bit core expects ps2 like data
+  if(core_type == CORE_TYPE_8BIT) {
+    mouse_pos[X] += x;
+    mouse_pos[Y] -= y;  // ps2 y axis is reversed over usb
+    mouse_flags |= 0x08 | (b&3); 
   }
 
   // send mouse data as mist expects it
@@ -998,9 +1142,10 @@ static unsigned char is_emu_key(unsigned char c) {
 #define EMU_BTN4  3  // left gui (usually windows key)
 
 unsigned short keycode(unsigned char in) {
-  if(core_type == CORE_TYPE_MINIMIG) 
+  if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2)) 
     return usb2ami[in];
-
+  
   // atari st and the 8 bit core (currently only used for atari 800)
   // use the same key codes
   if(core_type == CORE_TYPE_MIST)
@@ -1013,8 +1158,9 @@ unsigned short keycode(unsigned char in) {
 }
 
 void check_reset(unsigned char modifiers) {
-  if(core_type==CORE_TYPE_MINIMIG) {
-    if(modifiers==0x45) // ctrl - alt - alt
+  if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2)) {
+    if(modifiers == 0x45) // ctrl - alt - alt
       OsdReset(RESET_NORMAL);
   }
 }
@@ -1025,7 +1171,8 @@ unsigned short modifier_keycode(unsigned char index) {
       LCTRL LSHIFT LALT LGUI RCTRL RSHIFT RALT RGUI
   */
 
-  if(core_type == CORE_TYPE_MINIMIG) {
+  if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2)) {
     static const unsigned short amiga_modifier[] = 
       { 0x63, 0x60, 0x64, 0x66, 0x63, 0x61, 0x65, 0x67 };
     return amiga_modifier[index];
@@ -1044,10 +1191,6 @@ unsigned short modifier_keycode(unsigned char index) {
 
   return MISS;
 }
-
-// set by OSD code to suppress forwarding of those keys to the core which
-// may be in use by an active OSD
-static char osd_eats_keys = false;
 
 void user_io_osd_key_enable(char on) {
   osd_eats_keys = on;
@@ -1069,6 +1212,7 @@ static char key_used_by_osd(unsigned short s) {
 
 void user_io_kbd(unsigned char m, unsigned char *k) {
   if((core_type == CORE_TYPE_MINIMIG) ||
+     (core_type == CORE_TYPE_MINIMIG2) ||
      (core_type == CORE_TYPE_MIST) ||
      (core_type == CORE_TYPE_8BIT)) {
 

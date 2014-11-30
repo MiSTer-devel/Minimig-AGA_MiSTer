@@ -51,17 +51,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "firmware.h"
 #include "menu.h"
 #include "user_io.h"
-#include "boot_logo.h"
 #include "tos.h"
-#include "debug.h"
-
 #include "cdc_control.h"
-
-// #include "xmenu.h"
-
-#ifdef MIST
 #include "usb.h"
-#endif
+#include "debug.h"
 
 const char version[] = {"$VER:ATH" VDATE};
 
@@ -129,10 +122,10 @@ int main(void)
     iprintf("\rARM Controller by Jakub Bednarski\r\r");
     iprintf("Version %s\r\r", version+5);
 
-    SPI_Init();
+    spi_init();
 
     if(MMC_Init()) mmc_ok = 1;
-    else           SPI_fast();
+    else           spi_fast();
 
     // TODO: If MMC fails try to wait for USB storage
 
@@ -188,7 +181,8 @@ int main(void)
       }
 
       // call original minimig handlers if minimig core is found
-      if(user_io_core_type() == CORE_TYPE_MINIMIG) {
+      if((user_io_core_type() == CORE_TYPE_MINIMIG) ||
+	 (user_io_core_type() == CORE_TYPE_MINIMIG2)) {
 	if(!fat_medium_present()) 
 	  EjectAllFloppies();
 

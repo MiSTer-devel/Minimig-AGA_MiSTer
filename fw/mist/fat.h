@@ -1,7 +1,7 @@
 #ifndef _FAT16_H_INCLUDED
 #define _FAT16_H_INCLUDED
 
-#include "hardware.h"
+#include "spi.h"
 
 #define MAXDIRENTRIES 8
 

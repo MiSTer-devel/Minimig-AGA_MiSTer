@@ -35,6 +35,7 @@ module agnus_beamcounter
 	input	reset,					// reset
 	input	cck,					// CCK clock
 	input	ntsc,					// NTSC mode switch
+  input aga,
 	input	ecs,					// ECS enable switch
 	input	a1k,					// enable A1000 VBL interrupt timing
 	input	[15:0] data_in,			// bus data in
@@ -121,7 +122,7 @@ assign	vbstop = pal ? 9'd25 : 9'd20;			// vertical blanking end (PAL 26 lines, N
 //beamcounter read registers VPOSR and VHPOSR
 always @(*)
 	if (reg_address_in[8:1]==VPOSR[8:1] || reg_address_in[8:1]==VPOSW[8:1])
-		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,4'b0000,long_line,4'b0000,vpos[10:8]};
+		data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
 	else if (reg_address_in[8:1]==VHPOSR[8:1] || reg_address_in[8:1]==VHPOSW[8:1])
 		data_out[15:0] = {vpos[7:0],hpos[8:1]};
 	else

@@ -888,16 +888,16 @@ unsigned char OpenHardfile(unsigned char unit)
 				{
 				    GetHardfileGeometry(&hdf[unit]);
 
-				    hdd_debugf("HARDFILE %d:\r", unit);
-				    hdd_debugf("file: \"%.8s.%.3s\"\r", hdf[unit].file.name, &hdf[unit].file.name[8]);
-				    hdd_debugf("size: %lu (%lu MB)\r", hdf[unit].file.size, hdf[unit].file.size >> 20);
+				    hdd_debugf("HARDFILE %d:", unit);
+				    hdd_debugf("file: \"%.8s.%.3s\"", hdf[unit].file.name, &hdf[unit].file.name[8]);
+				    hdd_debugf("size: %lu (%lu MB)", hdf[unit].file.size, hdf[unit].file.size >> 20);
 				    hdd_debugf("CHS: %u.%u.%u", hdf[unit].cylinders, hdf[unit].heads, hdf[unit].sectors);
-				    hdd_debugf(" (%lu MB)\r", ((((unsigned long) hdf[unit].cylinders) * hdf[unit].heads * hdf[unit].sectors) >> 11));
+				    hdd_debugf(" (%lu MB)", ((((unsigned long) hdf[unit].cylinders) * hdf[unit].heads * hdf[unit].sectors) >> 11));
 
 				    time = GetTimer(0);
 				    BuildHardfileIndex(&hdf[unit]);
 				    time = GetTimer(0) - time;
-				    hdd_debugf("Hardfile indexed in %lu ms\r", time >> 16);
+				    hdd_debugf("Hardfile indexed in %lu ms", time >> 16);
 
 					if(config.hardfile[unit].enabled & HDF_SYNTHRDB)
 						hdf[unit].offset=-(hdf[unit].heads*hdf[unit].sectors);
