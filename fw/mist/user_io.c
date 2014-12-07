@@ -195,7 +195,7 @@ void user_io_detect_core_type() {
     // try to load config
     user_io_create_config_name(s);
     if(strlen(s) > 0) {
-      iprintf("Loading config %s\n", s);
+      iprintf("Loading config %.11s\n", s);
 
       if (FileOpen(&file, s))  {
 	iprintf("Found config\n");
@@ -430,7 +430,7 @@ void user_io_file_tx(fileTYPE *file) {
 
   /* transmit the entire file using one transfer */
 
-  iprintf("Selected file %s with %lu bytes to send\n", file->name, bytes2send);
+  iprintf("Selected file %.11s with %lu bytes to send\n", file->name, bytes2send);
 
   // prepare transmission of new file
   EnableFpga();
@@ -755,8 +755,6 @@ void user_io_poll() {
 	mouse_flags = 0;
       }
     }
-
-
   }
 
   if(core_type == CORE_TYPE_MIST) {
@@ -767,6 +765,9 @@ void user_io_poll() {
   if(core_type == CORE_TYPE_8BIT) {
     unsigned char c = 1, f, p=0;
 
+    // check for input data on usart
+    USART_Poll();
+      
     // check for serial data to be sent
 
     // check for incoming serial data. this is directly forwarded to the

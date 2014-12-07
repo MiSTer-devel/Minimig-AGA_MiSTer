@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "stdio.h"
 #include "hardware.h"
 #include "user_io.h"
+#include "xmodem.h"
 
 uint8_t rstval = 0;
 
@@ -167,16 +168,24 @@ void Usart0IrqHandler(void) {
 
 // check usart rx buffer for data
 void USART_Poll(void) {
+  if(user_io_dip_switch1()) 
+    xmodem_poll();
+
   while(rx_wptr != rx_rptr) {
     // this can a little be optimized by sending whole buffer parts 
     // at once and not just single bytes. But that's probably not
     // worth the effort.
     char chr = rx_buf[rx_rptr++];
 
-    iprintf("USART RX %d (%c)\n", rx_buf[rx_rptr], rx_buf[rx_rptr]);
+    if(user_io_dip_switch1()) {
+      // if in debug mode use xmodem for file reception
+      xmodem_rx_byte(chr);
+    } else {
+      iprintf("USART RX %d (%c)\n", chr, chr);
 
-    // data available -> send via user_io to core
-    user_io_serial_tx(&chr, 1);
+      // data available -> send via user_io to core
+      user_io_serial_tx(&chr, 1);
+    }
   }
 }
 

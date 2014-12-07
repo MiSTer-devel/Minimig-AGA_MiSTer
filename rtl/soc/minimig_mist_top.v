@@ -145,12 +145,24 @@ wire [  2-1:0] sdram_ba;
 // mist
 wire           user_io_sdo;
 wire           minimig_sdo;
+wire [  6-1:0] JOYA;
+wire [  6-1:0] JOYB;
+reg  [  6-1:0] JOYA_0;
+reg  [  6-1:0] JOYB_0;
+reg  [  6-1:0] JOYA_1;
+reg  [  6-1:0] JOYB_1;
 wire [  6-1:0] joya;
 wire [  6-1:0] joyb;
 wire [  8-1:0] kbd_mouse_data;
 wire           kbd_mouse_strobe;
 wire [  2-1:0] kbd_mouse_type;
+wire [  3-1:0] MOUSE_BUTTONS;
+reg  [  3-1:0] MOUSE_BUTTONS_0;
+reg  [  3-1:0] MOUSE_BUTTONS_1;
 wire [  3-1:0] mouse_buttons;
+wire [  4-1:0] CORE_CONFIG;
+reg  [  4-1:0] CORE_CONFIG_0;
+reg  [  4-1:0] CORE_CONFIG_1;
 wire [  4-1:0] core_config;
 
 
@@ -173,6 +185,23 @@ assign pll_in_clk       = CLOCK_27[0];
 // reset
 assign pll_rst          = 1'b0;
 assign sdctl_rst        = pll_locked;
+
+// mist
+always @ (posedge clk_28) begin
+  CORE_CONFIG_0   <= #1 CORE_CONFIG;
+  CORE_CONFIG_1   <= #1 CORE_CONFIG_0;
+  JOYA_0          <= #1 JOYA;
+  JOYB_0          <= #1 JOYB;
+  JOYA_1          <= #1 JOYA_0;
+  JOYB_1          <= #1 JOYB_0;
+  MOUSE_BUTTONS_0 <= #1 MOUSE_BUTTONS;
+  MOUSE_BUTTONS_1 <= #1 MOUSE_BUTTONS_0;
+end
+
+assign core_config      = CORE_CONFIG_1;
+assign joya             = JOYA_1;
+assign joyb             = JOYB_1;
+assign mouse_buttons    = MOUSE_BUTTONS_1;
 
 // minimig
 assign _15khz           = ~core_config[0];
@@ -381,14 +410,14 @@ user_io user_io(
      .SPI_SS_IO(CONF_DATA0),
      .SPI_MISO(user_io_sdo),
      .SPI_MOSI(SPI_DI),
-     .JOY0(joya),
-     .JOY1(joyb),
-     .MOUSE_BUTTONS(mouse_buttons),
+     .JOY0(JOYA),
+     .JOY1(JOYB),
+     .MOUSE_BUTTONS(MOUSE_BUTTONS),
      .KBD_MOUSE_DATA(kbd_mouse_data),
      .KBD_MOUSE_TYPE(kbd_mouse_type),
      .KBD_MOUSE_STROBE(kbd_mouse_strobe),
      .CORE_TYPE(8'ha5),    // minimig core id (a1 - old minimig id, a5 - new aga minimig id)
-     .CONF(core_config)
+     .CONF(CORE_CONFIG)
   );
 
 

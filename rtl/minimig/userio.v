@@ -370,9 +370,15 @@ userio_ps2mouse pm1
 
 reg [7:0] xcount;
 reg [7:0] ycount;
+reg [15:0] mouse0dat_0;
+reg [15:0] mouse0dat_1;
 
-assign mouse0dat[7:0]  = xcount;
-assign mouse0dat[15:8] = ycount;
+always @ (posedge clk) begin
+  mouse0dat_0 <= #1 {ycount, xcount};
+  mouse0dat_1 <= #1 mouse0dat_0;
+end
+
+assign mouse0dat[15:0] = mouse0dat_1;
 
 assign _mleft  = ~mouse_btn[0];
 assign _mright = ~mouse_btn[1];
