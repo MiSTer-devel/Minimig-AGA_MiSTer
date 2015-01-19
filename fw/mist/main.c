@@ -55,6 +55,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cdc_control.h"
 #include "usb.h"
 #include "debug.h"
+#include "mist_cfg.h"
+
 
 const char version[] = {"$VER:ATH" VDATE};
 
@@ -164,6 +166,9 @@ int main(void)
     cdc_control_open();
 
     usb_cdc_open();
+
+    // parse mist.ini
+    mist_ini_parse();
 
     while (1) {
       cdc_control_poll();

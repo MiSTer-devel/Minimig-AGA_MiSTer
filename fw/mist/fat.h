@@ -21,6 +21,7 @@ typedef struct
     unsigned long cluster;         /* current cluster */
     unsigned long start_cluster;   /* first cluster of file */
     unsigned char device;          /* device index (0=sd, 1=usb) */
+    long          cluster_change;  /* counter to keep track of file length changes */
     char          long_name[261];
 }  fileTYPE;
 
@@ -76,6 +77,18 @@ typedef union {
     unsigned long  fat32[128];
 } FATBUFFER;
 
+struct InfoSector {
+  unsigned long  magic;		/* Magic for info sector ('RRaA') */
+  unsigned char  junk[0x1dc];
+  unsigned long  reserved1;	/* Nothing as far as I can tell */
+  unsigned long  signature;	/* 0x61417272 ('rrAa') */
+  unsigned long  free_clusters;	/* Free cluster count.  -1 if unknown */
+  unsigned long  next_cluster;	/* Most recently allocated cluster. */
+  unsigned long  reserved2[3];
+  unsigned short reserved3;
+  unsigned short boot_sign;
+} __attribute__ ((packed));
+
 #define FILETIME(h,m,s) (((h<<11)&0xF800)|((m<<5)&0x7E0)|((s/2)&0x1F))
 #define FILEDATE(y,m,d) ((((y-1980)<<9)&0xFE00)|((m<<5)&0x1E0)|(d&0x1F))
 
@@ -113,11 +126,13 @@ extern unsigned char fat32;
 unsigned char FindDrive(void);
 unsigned long GetFATLink(unsigned long cluster);
 unsigned char FileNextSector(fileTYPE *file) RAMFUNC;
+unsigned char FileNextSectorExpand(fileTYPE *file);
 unsigned char FileOpen(fileTYPE *file, const char *name);
 unsigned char FileSeek(fileTYPE *file, unsigned long offset, unsigned long origin);
 unsigned char FileRead(fileTYPE *file, unsigned char *pBuffer) RAMFUNC;
-unsigned char FileWrite(fileTYPE *file, unsigned char *pBuffer);
 unsigned char FileReadEx(fileTYPE *file, unsigned char *pBuffer, unsigned long nSize);
+unsigned char FileWrite(fileTYPE *file, unsigned char *pBuffer);
+unsigned char FileWriteEnd(fileTYPE *file);
 
 unsigned char FileCreate(unsigned long iDirectory, fileTYPE *file);
 unsigned char UpdateEntry(fileTYPE *file);

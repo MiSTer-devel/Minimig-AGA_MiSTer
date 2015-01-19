@@ -14,3 +14,6 @@
 *\.o
 *\.d
 
+#ignore dropbox files
+.dropbox.attr
+

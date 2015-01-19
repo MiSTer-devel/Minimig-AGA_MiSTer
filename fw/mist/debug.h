@@ -85,4 +85,11 @@
 #define usbrtc_debugf(...)
 #endif
 
+#if 1
+// ini_parser debug output
+#define ini_parser_debugf(a, ...) iprintf("INI_PARSER : " a "\n",## __VA_ARGS__)
+#else
+#define ini_parser_debugf(...)
+#endif
+
 #endif // DEBUG_H

@@ -70,7 +70,7 @@ static uint8_t asix_write_gpio(usb_device_t *dev, uint16_t value, uint16_t sleep
   asix_debugf("%s() value=0x%04x sleep=%d", __FUNCTION__, value, sleep);
 
   rcode = asix_write_cmd(dev, AX_CMD_WRITE_GPIOS, value, 0, 0, NULL);
-  if(rcode) asix_debugf("Failed to write GPIO value 0x%04x: %02x\n", value, rcode);
+  if(rcode) asix_debugf("Failed to write GPIO value 0x%04x: %02x", value, rcode);
 
   if (sleep) timer_delay_msec(sleep);
   
@@ -311,7 +311,7 @@ static uint8_t asix_parse_conf(usb_device_t *dev, uint8_t conf, uint16_t len) {
   }
   
   if(len != 0) {
-    asix_debugf("Config underrun: %d\n", len);
+    asix_debugf("Config underrun: %d", len);
     return USB_ERROR_CONFIGURAION_SIZE_MISMATCH;
   }
 
@@ -467,7 +467,7 @@ static uint8_t usb_asix_init(usb_device_t *dev) {
   mii_nway_restart(dev);
 
   if ((rcode = asix_write_medium_mode(dev, AX88772_MEDIUM_DEFAULT)) != 0) {
-    asix_debugf("asix_write_medium_mode(AX88772_MEDIUM_DEFAULT) failed\n");
+    asix_debugf("asix_write_medium_mode(AX88772_MEDIUM_DEFAULT) failed");
     return rcode;
   }
 
@@ -483,10 +483,10 @@ static uint8_t usb_asix_init(usb_device_t *dev) {
     return rcode;
 
   rx_ctl = asix_read_rx_ctl(dev);
-  asix_debugf("RX_CTL is 0x%04x after all initializations\n", rx_ctl);
+  asix_debugf("RX_CTL is 0x%04x after all initializations", rx_ctl);
 
   rx_ctl = asix_read_medium_status(dev);
-  asix_debugf("Medium Status is 0x%04x after all initializations\n", rx_ctl);
+  asix_debugf("Medium Status is 0x%04x after all initializations", rx_ctl);
 
   info->bPollEnable = true;
 
@@ -576,13 +576,13 @@ static uint8_t usb_asix_poll(usb_device_t *dev) {
 	uint16_t len = status & 0xffff;
 	
 	if(len <= MAX_FRAMELEN) {
-	  //	  iprintf("TX %d\n", len);
+	  // iprintf("TX %d\n", len);
 	  
 	  // read frame into local tx buffer, leave 4 bytes space for
 	  // axis packet header marker
 	  user_io_eth_receive_tx_frame(tx_buf+4, len);
 	  
-	  //	  hexdump(tx_buf+4, len, 0);
+	  // hexdump(tx_buf+4, len, 0);
 	  
 	  // schedule packet for transmissoin
 	  usb_asix_xmit(len);
@@ -614,7 +614,7 @@ static uint8_t usb_asix_poll(usb_device_t *dev) {
       // than the USB FIFO size. If the last packet is exaclty if FIFO size, then an
       // additional 0 byte packet is appended
       uint16_t read = info->ep[1].maxPktSize;
-      
+
       // the rx buffer size (1536+64) can hold an additional maxPktSize (64),
       // so a transfer still fits into the buffer or there's already 
       // a full frame present. If it's full we drop all data. This will leave 
@@ -630,11 +630,11 @@ static uint8_t usb_asix_poll(usb_device_t *dev) {
 	rx_cnt += read;
 
 	// check if packet has a valid header
-	uint16_t len0 = *(uint16_t*)rx_buf;
-	uint16_t len1 = ~(*(uint16_t*)(rx_buf+2));
+	uint16_t len0 = (*(uint16_t*)rx_buf) & 0x7ff;
+	uint16_t len1 = (~(*(uint16_t*)(rx_buf+2))) & 0x7ff;
 
 	if(len0 != len1) {
-	  asix_debugf("dropping malformed packet (len %d:%d)\n", len0, len1);
+	  asix_debugf("dropping malformed packet (len %d:%d)", len0, len1);
 	  rx_cnt = 0;
 	} else if(rx_cnt-4 >= len0) {
 	  bool ok2fwd = 0;
@@ -672,8 +672,8 @@ static uint8_t usb_asix_poll(usb_device_t *dev) {
 	  // forward frame to FPGA
 	  if(ok2fwd)
 	    user_io_eth_send_rx_frame(rx_buf+4, frame_size);
-	  else
-	    iprintf("ASIX: frame dropped\n");
+	  //	  else
+	  //	    iprintf("ASIX: frame dropped\n");
 
 	  if((rx_cnt-4 > len0) && (rx_cnt < MAX_FRAMELEN+64)) {
 	    // packets are 16 bit padded
@@ -683,7 +683,7 @@ static uint8_t usb_asix_poll(usb_device_t *dev) {
 	    memcpy(rx_buf, rx_buf + len0 + 4, MAX_FRAMELEN + 64 - len0 - 4);
 	    rx_cnt -= len0 + 4;
 	    
-	    //	    asix_debugf("bytes left in buffer: %d", rx_cnt);
+	    // asix_debugf("bytes left in buffer: %d", rx_cnt);
 	  } else
 	    rx_cnt = 0;
 	}
