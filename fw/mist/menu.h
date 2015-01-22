@@ -85,7 +85,12 @@ enum MENU
     MENU_MIST_VIDEO_ADJUST1,
     MENU_MIST_VIDEO_ADJUST2,
 
-    // Dummy menu entries
+    // archimedes menu entries
+    MENU_ARCHIE_MAIN1,
+    MENU_ARCHIE_MAIN2,
+    MENU_ARCHIE_MAIN_FILE_SELECTED,
+
+    // 8bit menu entries
     MENU_8BIT_MAIN1,
     MENU_8BIT_MAIN2,
     MENU_8BIT_MAIN_FILE_SELECTED,

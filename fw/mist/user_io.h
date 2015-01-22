@@ -80,6 +80,7 @@
 #define CORE_TYPE_MIST      0xa3   // mist atari st core   
 #define CORE_TYPE_8BIT      0xa4   // atari 800/c64 like core
 #define CORE_TYPE_MINIMIG2  0xa5   // new Minimig with AGA
+#define CORE_TYPE_ARCHIE    0xa6   // Acorn Archimedes
 
 // user io status bits (currently only used by 8bit)
 #define UIO_STATUS_RESET   0x01

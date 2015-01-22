@@ -18,6 +18,7 @@ typedef struct {
   char acsi_img[2][12];
   char video_adjust[2];
   char cdc_control_redirect;
+  char sd_direct;
 } tos_config_t;
 
 static tos_config_t config;
@@ -38,6 +39,7 @@ static struct {
 
 // one harddisk
 fileTYPE hdd_image[2];
+unsigned long hdd_direct = 0;
 
 static unsigned char dma_buffer[512];
 
@@ -75,6 +77,23 @@ void tos_set_cdc_control_redirect(char mode) {
   }
 }
 
+static void mist_dma_print() {
+  static unsigned char scnt = 0;
+  unsigned char buffer[16];
+  
+  EnableFpga();
+  SPI(MIST_GET_DMASTATE);
+  spi_read(buffer, 16);
+  DisableFpga();
+
+  if(buffer[3] != scnt) {
+    iprintf("DMA addr = %x, dir=%s, scnt=%d\n",
+	    256*256*buffer[0]+256*buffer[1]+(buffer[2]&0xfe),
+	    (buffer[2]&1)?"write":"read", buffer[3]);
+    scnt = buffer[3];
+  }
+}
+
 void tos_set_video_adjust(char axis, char value) {
   config.video_adjust[axis] += value;
 
@@ -89,18 +108,20 @@ char tos_get_video_adjust(char axis) {
   return config.video_adjust[axis];
 }
 
-static void mist_memory_set_address(unsigned long a) {
-  a >>= 1;   // make word address
+static void mist_memory_set_address(unsigned long a, unsigned char s, char rw) {
+  //  iprintf("set addr = %x, %d, %d\n", a, s, rw);
+
+  a |= rw?0x1000000:0;
+  a >>= 1;
 
   EnableFpga();
   SPI(MIST_SET_ADDRESS);
-  SPI((a >> 24) & 0xff);
+  SPI(s);
   SPI((a >> 16) & 0xff);
   SPI((a >>  8) & 0xff);
   SPI((a >>  0) & 0xff);
   DisableFpga();
 }
-
 
 static void mist_set_control(unsigned long ctrl) {
   EnableFpga();
@@ -112,15 +133,16 @@ static void mist_set_control(unsigned long ctrl) {
   DisableFpga();
 }
 
-static void mist_bus_request(char req) {
+// grab/give bus from/to cpu
+static void mist_request_bus(char req) {
+#if 0
   EnableFpga();
   SPI(req?MIST_BUS_REQ:MIST_BUS_REL);
   DisableFpga();
+#endif
 }
 
 static void mist_memory_read(char *data, unsigned long words) {
-  mist_bus_request(1);
-
   EnableFpga();
   SPI(MIST_READ_MEMORY);
 
@@ -131,13 +153,9 @@ static void mist_memory_read(char *data, unsigned long words) {
   }
 
   DisableFpga();
-
-  mist_bus_request(0);
 }
 
 static void mist_memory_write(char *data, unsigned long words) {
-  mist_bus_request(1);
-
   EnableFpga();
   SPI(MIST_WRITE_MEMORY);
 
@@ -147,108 +165,236 @@ static void mist_memory_write(char *data, unsigned long words) {
   }
 
   DisableFpga();
-
-  mist_bus_request(0);
 }
 
 static void mist_memory_read_block(char *data) {
-  mist_bus_request(1);
-
   EnableFpga();
   SPI(MIST_READ_MEMORY);
 
-  SPI_block_read(data);
+  spi_block_read(data);
 
   DisableFpga();
-
-  mist_bus_request(0);
 }
 
 static void mist_memory_write_block(char *data) {
-  mist_bus_request(1);
-
   EnableFpga();
   SPI(MIST_WRITE_MEMORY);
 
-  SPI_block_write(data);
+  spi_block_write(data);
 
   DisableFpga();
-
-  mist_bus_request(0);
 }
 
 void mist_memory_set(char data, unsigned long words) {
-  mist_bus_request(1);
-
   EnableFpga();
   SPI(MIST_WRITE_MEMORY);
 
   while(words--) {
     SPI_WRITE(data);
     SPI_WRITE(data);
- }
+  }
 
   DisableFpga();
+}
 
-  mist_bus_request(0);
+// enable direct sd card access on acsi0
+void tos_set_direct_hdd(char on) {
+  config.sd_direct = on;
+
+  if(on) {
+    tos_debugf("ACSI: enable direct sd access");
+    hdd_direct = MMC_GetCapacity();
+
+    // hddrivers auto detection doesn't cope with the full 1gb
+    if(hdd_direct >= 0x1fffffl)
+      hdd_direct = 0x1ffff0l;
+    
+    tos_debugf("ACSI: Direct capacity = %ld (%ld Bytes)", hdd_direct, hdd_direct*512);
+    config.system_ctrl |= TOS_ACSI0_ENABLE;
+  } else {
+    tos_debugf("ACSI: disable direct sd access");
+    config.system_ctrl &= ~TOS_ACSI0_ENABLE;
+    hdd_direct = 0;
+
+    // check if image access should be enabled instead
+    if(hdd_image[0].size) {
+      tos_debugf("ACSI: re-enabling image on ACSI0");
+      config.system_ctrl |= TOS_ACSI0_ENABLE;
+    }
+  }
+
+  mist_set_control(config.system_ctrl);
+}
+
+char tos_get_direct_hdd() {
+  return config.sd_direct;
+}
+
+static void dma_ack(unsigned char status) {
+  EnableFpga();
+  SPI(MIST_ACK_DMA);
+  SPI(status);
+  DisableFpga(); 
+}
+
+static void dma_nak(void) {
+  EnableFpga();
+  SPI(MIST_NAK_DMA);
+  DisableFpga(); 
 }
 
 static void handle_acsi(unsigned char *buffer) {
+  static unsigned char asc[2] = { 0,0 };
   unsigned char target = buffer[9] >> 5;
+  unsigned char device = buffer[10] >> 5;
   unsigned char cmd = buffer[9] & 0x1f;
   unsigned int dma_address = 256 * 256 * buffer[0] + 
-    256 * buffer[1] + buffer[2];
+    256 * buffer[1] + (buffer[2]&0xfe);
   unsigned char scnt = buffer[3];
   unsigned long lba = 256 * 256 * (buffer[10] & 0x1f) +
     256 * buffer[11] + buffer[12];
   unsigned short length = buffer[13];
   if(length == 0) length = 256;
 
-  tos_debugf("ACSI: target %d, \"%s\"", target, acsi_cmd_name(cmd));
-  tos_debugf("ACSI: lba %lu, length %u", lba, length);
-  tos_debugf("DMA: scnt %u, addr %p", scnt, dma_address);
+  mist_request_bus(1);
 
-  // only a harddisk on ACSI 0 is supported
-  // ACSI 0 is only supported if a image is loaded
-  if((target < 2) && (hdd_image[target].size != 0)) {
-    mist_memory_set_address(dma_address);
-  
+  if(user_io_dip_switch1()) {
+    tos_debugf("ACSI: target %d.%d, \"%s\"", target, device, acsi_cmd_name(cmd));
+    tos_debugf("ACSI: lba %lu (%lx), length %u", lba, lba, length);
+    tos_debugf("DMA: scnt %u, addr %p", scnt, dma_address);
+    
+    if(buffer[16] == 0xa5) {
+      tos_debugf("DMA: fifo %d/%d %x %s", 
+		 (buffer[17]>>4)&0x0f, buffer[17]&0x0f, 
+		 buffer[18], (buffer[2]&1)?"OUT":"IN");
+      tos_debugf("DMA stat=%x, mode=%x, fdc_irq=%d, acsi_irq=%d",
+		 buffer[19], buffer[20], buffer[21], buffer[22]);
+    }
+  }
+
+  //  mist_memory_set_address(dma_address, scnt, 0);
+
+  // only a harddisk on ACSI 0/1 is supported
+  // ACSI 0/1 is only supported if a image is loaded
+  // ACSI 0 is only supported for direct IO
+  if( ((target < 2) && (hdd_image[target].size != 0)) ||
+      ((target == 0) && hdd_direct)) {
+    unsigned long blocks = hdd_image[target].size / 512;
+
+    // if in hdd direct mode then hdd_direct contains device sizee
+    if(hdd_direct && target==0) blocks = hdd_direct;
+
+    // only lun0 is fully supported
     switch(cmd) {
-    case 0x08: // read sector
-      DISKLED_ON;
-      while(length) {
-	FileSeek(&hdd_image[target], lba++, SEEK_SET);
-	FileRead(&hdd_image[target], dma_buffer);	  
-	mist_memory_write(dma_buffer, 256);
-	length--;
+    case 0x00: // test drive ready
+    case 0x04: // format
+      if(device == 0) {
+	asc[target] = 0x00;	
+	dma_ack(0x00);
+      } else {
+	asc[target] = 0x25;	
+	dma_ack(0x02);
       }
-      DISKLED_OFF;
+      break;
+      
+    case 0x03: // request sense
+      if(device != 0)
+	asc[target] = 0x25;
+
+      bzero(dma_buffer, 512);
+      dma_buffer[7] = 0x0b;
+      if(asc[target] != 0) {
+	dma_buffer[2] = 0x05;
+	dma_buffer[12] = asc[target];
+      }
+      mist_memory_write(dma_buffer, 9); // 18 bytes      
+      dma_ack(0x00);
+      asc[target] = 0x00;
+      break;
+      
+    case 0x08: // read sector
+      if(device == 0) {
+	if(lba+length <= blocks) {
+	  DISKLED_ON;
+	  while(length) {
+	    if(hdd_direct && target == 0) {
+	      if(user_io_dip_switch1()) 
+		tos_debugf("ACSI: direct read %ld", lba);
+	      MMC_Read(lba++, dma_buffer);
+	    } else {
+	      FileSeek(&hdd_image[target], lba++, SEEK_SET);
+	      FileRead(&hdd_image[target], dma_buffer);
+	    }
+	    //	    hexdump(dma_buffer, 32, 0);
+	    mist_memory_write_block(dma_buffer);
+	    length--;
+	  }
+	  DISKLED_OFF;
+	  dma_ack(0x00);
+	  asc[target] = 0x00;
+	} else {
+	  tos_debugf("ACSI: read (%d+%d) exceeds device limits (%d)", 
+		     lba, length, blocks);
+	  dma_ack(0x02);
+	  asc[target] = 0x21;
+	}
+      } else {
+	dma_ack(0x02);
+	asc[target] = 0x25;
+      }
       break;
       
     case 0x0a: // write sector
-      DISKLED_ON;
-      while(length) {
-	mist_memory_read(dma_buffer, 256);
-	FileSeek(&hdd_image[target], lba++, SEEK_SET);
-	FileWrite(&hdd_image[target], dma_buffer);	  
-	length--;
+      if(device == 0) {
+	if(lba+length <= blocks) {
+	  DISKLED_ON;
+	  while(length) {
+	    mist_memory_read_block(dma_buffer);
+	    if(hdd_direct && target == 0) {
+	      if(user_io_dip_switch1()) 
+		tos_debugf("ACSI: direct write %ld", lba);
+	      MMC_Write(lba++, dma_buffer);
+	    } else {
+	      FileSeek(&hdd_image[target], lba++, SEEK_SET);
+	      FileWrite(&hdd_image[target], dma_buffer);
+	    }
+	    length--;
+	  }
+	  DISKLED_OFF;
+	  dma_ack(0x00);
+	  asc[target] = 0x00;
+	} else {
+	  tos_debugf("ACSI: write (%d+%d) exceeds device limits (%d)", 
+		     lba, length, blocks);
+	  dma_ack(0x02);
+	  asc[target] = 0x21;
+	}
+      } else {
+	dma_ack(0x02);
+	asc[target] = 0x25;
       }
-      DISKLED_OFF;
       break;
-
+      
     case 0x12: // inquiry
-      tos_debugf("ACSI: Inquiry %11s", hdd_image[target].name);
+      if(hdd_direct && target == 0) tos_debugf("ACSI: Inquiry DIRECT");
+      else                          tos_debugf("ACSI: Inquiry %.11s", hdd_image[target].name);
       bzero(dma_buffer, 512);
       dma_buffer[2] = 1;                                   // ANSI version
-      dma_buffer[4] = length-8;                            // len
+      dma_buffer[4] = length-5;                            // len
       memcpy(dma_buffer+8,  "MIST    ", 8);                // Vendor
       memcpy(dma_buffer+16, "                ", 16);       // Clear device entry
-      memcpy(dma_buffer+16, hdd_image[target].name, 11);   // Device
+      if(hdd_direct && target == 0) memcpy(dma_buffer+16, "SD DIRECT", 9);// Device 
+      else                          memcpy(dma_buffer+16, hdd_image[target].name, 11);
+      memcpy(dma_buffer+32, "ATH ", 4);                    // Product revision
+      memcpy(dma_buffer+36, VDATE "  ", 8);                // Serial number
+      if(device != 0) dma_buffer[0] = 0x7f;
       mist_memory_write(dma_buffer, length/2);      
+      dma_ack(0x00);
+      asc[target] = 0x00;
       break;
       
     case 0x1a: // mode sense
-      { unsigned int blocks = hdd_image[target].size / 512;
+      if(device == 0) {
 	tos_debugf("ACSI: mode sense, blocks = %u", blocks);
 	bzero(dma_buffer, 512);
 	dma_buffer[3] = 8;            // size of extent descriptor list
@@ -257,25 +403,42 @@ static void handle_acsi(unsigned char *buffer) {
 	dma_buffer[7] = blocks;
 	dma_buffer[10] = 2;           // byte 1 of block size in bytes (512)
 	mist_memory_write(dma_buffer, length/2);      
+	dma_ack(0x00);
+	asc[target] = 0x00;	
+      } else {
+	asc[target] = 0x25;	
+	dma_ack(0x02);
       }
       break;
       
+    case 0x1f: // ICD command?
+      tos_debugf("ACSI: ICD command %s ($%02x)",
+		 acsi_cmd_name(buffer[10] & 0x1f), buffer[10] & 0x1f);
+      asc[target] = 0x05;	
+      dma_ack(0x02);
+      break;
+      
     default:
-      tos_debugf("ACSI: Unsupported command");
+      tos_debugf("ACSI: >>>>>>>>>>>> Unsupported command <<<<<<<<<<<<<<<<");
+      asc[target] = 0x05;	
+      dma_ack(0x02);
       break;
     }
-  } else
+  } else {
     tos_debugf("ACSI: Request for unsupported target");
 
-  EnableFpga();
-  SPI(MIST_ACK_DMA);
-  DisableFpga(); 
+    // tell acsi state machine that io controller is done 
+    // but don't generate a acsi irq
+    dma_nak();
+  }
+
+  mist_request_bus(0);
 }
 
 static void handle_fdc(unsigned char *buffer) {
   // extract contents
   unsigned int dma_address = 256 * 256 * buffer[0] + 
-    256 * buffer[1] + buffer[2];
+    256 * buffer[1] + (buffer[2]&0xfe);
   unsigned char scnt = buffer[3];
   unsigned char fdc_cmd = buffer[4];
   unsigned char fdc_track = buffer[5];
@@ -284,7 +447,9 @@ static void handle_fdc(unsigned char *buffer) {
   unsigned char drv_sel = 3-((buffer[8]>>2)&3); 
   unsigned char drv_side = 1-((buffer[8]>>1)&1); 
 
-  //  iprintf("FDC: sel %d, cmd %d\n", drv_sel, fdc_cmd);
+  //  mist_request_bus(1);
+
+  //  tos_debugf("FDC: sel %d, cmd %x", drv_sel, fdc_cmd);
   
   // check if a matching disk image has been inserted
   if(drv_sel && fdd_image[drv_sel-1].file.size) {
@@ -302,7 +467,7 @@ static void handle_fdc(unsigned char *buffer) {
       offset += fdc_sector-1;
 
       if(user_io_dip_switch1())
-	iprintf("FDC req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p\n", scnt, 
+	tos_debugf("FDC req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p", scnt, 
 		'A'+drv_sel-1, drv_side, fdc_track, fdc_sector, offset,
 		dma_address);
 
@@ -322,20 +487,21 @@ static void handle_fdc(unsigned char *buffer) {
 	DISKLED_ON;
 	
 	FileSeek(&fdd_image[drv_sel-1].file, offset, SEEK_SET);
-	mist_memory_set_address(dma_address);
 
 	if((fdc_cmd & 0xe0) == 0x80) { 
 	  // read from disk ...
 	  FileRead(&fdd_image[drv_sel-1].file, dma_buffer);	  
 	  // ... and copy to ram
-	  mist_memory_write(dma_buffer, 256);
+	  mist_memory_write_block(dma_buffer);
 	} else {
 	  // read from ram ...
-	  mist_memory_read(dma_buffer, 256);
+	  mist_memory_read_block(dma_buffer);
 	  // ... and write to disk
 	  FileWrite(&(fdd_image[drv_sel-1].file), dma_buffer);
 	}
 	
+	//	mist_dma_print();
+
 	DISKLED_OFF;
 	
 	scnt--;
@@ -345,10 +511,8 @@ static void handle_fdc(unsigned char *buffer) {
 	// tell DMA that one sector has been read
 	// ...
       }
-      EnableFpga();
-      SPI(MIST_ACK_DMA);
-      DisableFpga(); 
 
+      dma_ack(0x00);
       //      iprintf("done\n");
 
     } else if((fdc_cmd & 0xc0) == 0xc0) {
@@ -370,26 +534,24 @@ static void handle_fdc(unsigned char *buffer) {
 
       iprintf("scnt = %d\n", scnt);
 
-
-      EnableFpga();
-      SPI(MIST_ACK_DMA);
-      DisableFpga(); 
+      dma_ack(0x00);
     }
   }
+  //  mist_request_bus(0);
 }  
 
 static void mist_get_dmastate() {
-  static unsigned char buffer[16];
-  int i;
+  unsigned char buffer[32];
   
   EnableFpga();
   SPI(MIST_GET_DMASTATE);
-  for(i=0;i<16;i++)
-    buffer[i] = SPI(0);
+  spi_read(buffer, 32);
   DisableFpga();
 
-  // check if acsi is busy
-  if(buffer[8] & 0x10) 
+  //  hexdump(buffer, 16, 0);
+
+  //  check if acsi is busy
+  if(buffer[15] & 0x01) 
     handle_acsi(buffer);
 
   // check if fdc is busy
@@ -401,7 +563,7 @@ static void mist_get_dmastate() {
 #define COLORS   20
 #define PLANES   4
 
-  static void tos_write(char *str);
+static void tos_write(char *str);
 static void tos_color_test() {
   unsigned short buffer[COLORS][PLANES];
 
@@ -413,19 +575,19 @@ static void tos_color_test() {
 	buffer[i][j] = ((y+i) & (1<<j))?0xffff:0x0000;
 
     for(i=0;i<16;i++) {
-      mist_memory_set_address(VIDEO_BASE_ADDRESS + (16*y+i)*160);
+      mist_memory_set_address(VIDEO_BASE_ADDRESS + (16*y+i)*160, 1, 0);
       mist_memory_write((char*)buffer, COLORS*PLANES);
     }
   }
 
 #if 1
-  mist_memory_set_address(VIDEO_BASE_ADDRESS);
+  mist_memory_set_address(VIDEO_BASE_ADDRESS, 1, 0);
   mist_memory_set(0xf0, 40);
 
-  mist_memory_set_address(VIDEO_BASE_ADDRESS+80);
+  mist_memory_set_address(VIDEO_BASE_ADDRESS+80, 1, 0);
   mist_memory_set(0x55, 40);
 
-  mist_memory_set_address(VIDEO_BASE_ADDRESS+160);
+  mist_memory_set_address(VIDEO_BASE_ADDRESS+160, 1, 0);
   mist_memory_set(0x0f, 40);
 
 #if 1
@@ -442,23 +604,25 @@ static void tos_write(char *str) {
   static int y = 0;
   int l;
 
+  // empty string is "cursor home"
   if(!str) {
     y = 0;
     return;
   }
 
-  int c = strlen(str);
-
+  // get next higher multiple of 16 for string length 
+  // as dma works in 16 bytes chunks only
+  int c = (strlen(str)+15) & ~15;
   {
     char buffer[c];
 
     // 16 pixel lines
     for(l=0;l<16;l++) {
       char *p = str, *f=buffer;
-      while(*p)
-	*f++ = font[16 * *p++ + l];
-      
-      mist_memory_set_address(VIDEO_BASE_ADDRESS + 80*(y+l));
+      while(*p)	*f++ = font[16 * *p++ + l];
+      while(f < buffer+c) *f++ = font[16 * ' ' + l];
+
+      mist_memory_set_address(VIDEO_BASE_ADDRESS + 80*(y+l), 1, 0);
       mist_memory_write(buffer, c/2);
     }
   }
@@ -466,7 +630,7 @@ static void tos_write(char *str) {
 }
 
 static void tos_clr() {
-  mist_memory_set_address(VIDEO_BASE_ADDRESS);
+  mist_memory_set_address(VIDEO_BASE_ADDRESS, (32000+511)/512, 0);
   mist_memory_set(0, 16000);
 
   tos_write(NULL);
@@ -524,12 +688,15 @@ void tos_load_cartridge(char *name) {
     int blocks = file.size / 512;
     tos_debugf("  blocks = %d", blocks);
 
-    mist_memory_set_address(CART_BASE_ADDRESS);
     
     DISKLED_ON;
     for(i=0;i<blocks;i++) {
       FileRead(&file, buffer);
-      mist_memory_write(buffer, 256);
+
+      if(!(i&0x7f))
+	mist_memory_set_address(CART_BASE_ADDRESS+512*i, 128, 0);
+      
+      mist_memory_write_block(buffer);
       
       if(i != blocks-1)
 	FileNextSector(&file);
@@ -543,8 +710,10 @@ void tos_load_cartridge(char *name) {
   // erase that ram area to remove any previously uploaded
   // image
   tos_debugf("Erasing cart memory");
-  mist_memory_set_address(CART_BASE_ADDRESS);
-  mist_memory_set(0, 128*1024/2);
+  mist_memory_set_address(CART_BASE_ADDRESS, 128, 0);
+  mist_memory_set(0, 64*1024/2);
+  mist_memory_set_address(CART_BASE_ADDRESS+128*512, 128, 0);
+  mist_memory_set(0, 64*1024/2);
 }
 
 char tos_cartridge_is_inserted() {
@@ -570,6 +739,7 @@ void tos_upload(char *name) {
   // do the MiST core handling
   tos_write("\x0e\x0f MIST core \x0e\x0f ");
   tos_write("Uploading TOS ... ");
+
   tos_debugf("Uploading TOS ...");
 
   DISKLED_ON;
@@ -594,14 +764,15 @@ void tos_upload(char *name) {
     tos_debugf("  address = $%08x", tos_base);
 
     // clear first 16k
-    mist_memory_set_address(0);
+    mist_memory_set_address(0, 16384/512, 0);
     mist_memory_set(0x00, 8192);
 
 #if 0  // spi transfer tests
     iprintf("SPI transfer test\n");
 
-    // draw some max power pattern on screen
-    mist_memory_set_address(VIDEO_BASE_ADDRESS);
+    // draw some max power pattern on screen, round to next sector
+    // size
+    mist_memory_set_address(VIDEO_BASE_ADDRESS, (32000+511)/512, 0);
     mist_memory_set(0x55, 16000);
 
     FileRead(&file, buffer);
@@ -616,14 +787,14 @@ void tos_upload(char *name) {
 	b2[j] = 0xa5;
       }
 
-      mist_memory_set_address(0);
+      mist_memory_set_address(0, 1, 0);
       mist_memory_set(0xaa, 256);
 
-      mist_memory_set_address(0);
+      mist_memory_set_address(0, 1, 0);
       //      mist_memory_write_block(buffer);
       mist_memory_write(buffer, 256);
 
-      mist_memory_set_address(0);
+      mist_memory_set_address(0, 1, 1);
       //      mist_memory_read_block(b2);
       mist_memory_read(b2, 256);
 
@@ -640,8 +811,8 @@ void tos_upload(char *name) {
 	hexdump(b2, 512, 0);
 
 	// re-read to check whether reading fails
-	mist_memory_set_address(0);
-	mist_memory_read(b2, 256);
+	mist_memory_set_address(0, 1, 1);
+	mist_memory_read_block(b2);
 	hexdump(b2, 512, 0);
 
 	for(;;);
@@ -652,34 +823,30 @@ void tos_upload(char *name) {
     }
 #endif
 
-#if 0
-    tos_debugf("Erasing:   ");
-    
-    // clear memory to increase chances of catching write problems
-    mist_memory_set_address(tos_base);
-    mist_memory_set(0x00, file.size/2);
-    tos_debugf("done\n");
-#endif
-
     time = GetTimer(0);
     tos_debugf("Uploading ...");
-    
+
     for(i=0;i<blocks;i++) {
       FileRead(&file, buffer);
 
       // copy first 8 bytes to address 0 as well
       if(i == 0) {
-	mist_memory_set_address(0);
-
+	mist_memory_set_address(0, 1, 0);
+	
 	// write first 4 words
-	mist_memory_write(buffer, 4);
-
-	// set real tos base address
-	mist_memory_set_address(tos_base);
+	// (actually 8 words/16 bytes as the dma cannot transfer less)
+	mist_memory_write(buffer, 8);
       }
-      
-      mist_memory_write(buffer, 256);
-      
+
+      // send address every 64k (128 sectors) as dma can max transfer
+      // 255 sectors at once
+
+      // set real tos base address
+      if((i & 0x7f) == 0)
+	mist_memory_set_address(tos_base+i*512, 128, 0);
+
+      mist_memory_write_block(buffer);
+
       if(i != blocks-1)
 	FileNextSector(&file);
     }
@@ -691,16 +858,14 @@ void tos_upload(char *name) {
       int j, ok;
 	  
       FileSeek(&file, 0, SEEK_SET);    
-      mist_memory_set_address(tos_base);
       for(i=0;i<blocks;i++) {
-	FileRead(&file, b2);
-	mist_memory_read(buffer, 256);
 
-	// toggle reset for trigger
-	//	config.system_ctrl &= ~TOS_CONTROL_CPU_RESET;
-	//	mist_set_control(config.system_ctrl & ~TOS_CONTROL_CPU_RESET);
-	//	mist_set_control(config.system_ctrl |  TOS_CONTROL_CPU_RESET);
-	
+	if(!(i&0x7f))
+	  mist_memory_set_address(tos_base+i*512, 128, 1);
+
+	FileRead(&file, b2);
+	mist_memory_read_block(buffer);
+
 	ok = -1;
 	for(j=0;j<512;j++)
 	  if(buffer[j] != b2[j])
@@ -716,8 +881,8 @@ void tos_upload(char *name) {
 
 	  // re-read to check whether read or write failed
 	  bzero(buffer, 512);
-	  mist_memory_set_address(tos_base + i*512);
-	  mist_memory_read(buffer, 256);
+	  mist_memory_set_address(tos_base+i*512, 1, 1);
+	  mist_memory_read_block(buffer);
 
 	  ok = -1;
 	  for(j=0;j<512;j++)
@@ -774,19 +939,27 @@ void tos_upload(char *name) {
 	tos_insert_disk(i, &file);
       }
     }
-    
-    // try to open harddisk image
-    for(i=0;i<2;i++) {
-      if(FileOpen(&file, config.acsi_img[i])) {
-	char msg[] = "Found hard disk image for ACSIX";
-	msg[30] = '0'+i;
-	tos_write(msg);
-	tos_select_hdd_image(i, &file);
+
+    if(config.sd_direct) {
+      tos_set_direct_hdd(1);
+      tos_write("Enabling direct SD card access via ACSI0");
+    } else {
+      // try to open harddisk image
+      for(i=0;i<2;i++) {
+	if(FileOpen(&file, config.acsi_img[i])) {
+	  char msg[] = "Found hard disk image for ACSIX";
+	  msg[30] = '0'+i;
+	  tos_write(msg);
+	  tos_select_hdd_image(i, &file);
+	}
       }
     }
   }
 
   tos_write("Booting ... ");
+
+  // clear sector count register -> stop DMA
+  mist_memory_set_address(0,0,0);
 
   ikbd_reset();
 
@@ -974,8 +1147,11 @@ void tos_eject_all() {
 
   // ejecting an SD card while a hdd image is mounted may be a bad idea
   for(i=0;i<2;i++) {
+    if(hdd_direct)
+      hdd_direct = 0;
+
     if(hdd_image[i].size) {
-      InfoMessage("Card removed: Disabling Harddisk!");
+      InfoMessage("Card removed:\nDisabling Harddisk!");
       hdd_image[i].size = 0;
     }
   }
@@ -1017,7 +1193,8 @@ void tos_config_init(void) {
 
   // try to load config
   if (FileOpen(&file, CONFIG_FILENAME))  {
-    tos_debugf("Configuration file size: %lu (should be %lu)", file.size, sizeof(tos_config_t));
+    tos_debugf("Configuration file size: %lu (should be %lu)", 
+	       file.size, sizeof(tos_config_t));
     if(file.size == sizeof(tos_config_t)) {
       FileRead(&file, sector_buffer);
       memcpy(&config, sector_buffer, sizeof(tos_config_t));

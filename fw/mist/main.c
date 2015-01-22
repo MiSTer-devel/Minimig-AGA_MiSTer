@@ -199,6 +199,10 @@ int main(void)
       if((user_io_core_type() == CORE_TYPE_8BIT) && 
 	 user_io_is_8bit_with_config_string())
 	HandleUI();
+
+      // Archie core will get its own treatment one day ...
+      if(user_io_core_type() == CORE_TYPE_ARCHIE)
+	HandleUI();
     }
     return 0;
 }

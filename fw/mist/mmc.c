@@ -256,9 +256,7 @@ RAMFUNC unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer)
         DisableDMode();
     }
     else
-    {
-                spi_block_read(pReadBuffer);
-    }
+      spi_block_read(pReadBuffer);
 
     SPI(0xFF); // read CRC lo byte
     SPI(0xFF); // read CRC hi byte
@@ -422,8 +420,13 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
     SPI(0xFE); // send Data Token
 
     // send sector bytes
+#if 0
     for (i = 0; i < 512; i++)
-         SPI(*(pWriteBuffer++));
+      SPI(*(pWriteBuffer++));
+#else
+    spi_block_write(pWriteBuffer);
+    spi_wait4xfer_end();
+#endif
 
     SPI(0xFF); // send CRC lo byte
     SPI(0xFF); // send CRC hi byte
@@ -441,8 +444,10 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
         return(0);
     }
 
+    // TODO: Move this to the beginning of MMC_Command to interleave Core and SD card better
+
     timeout = 0;
-    while ((SPI(0xFF)) == 0x00) // wait until the card is not busy
+    while (spi_in() == 0x00) // wait until the card is not busy
     {
         if (timeout++ >= 1000000)
         {
@@ -451,6 +456,9 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
             return(0);
         }
     }
+
+    // real life values here are ~500 until card becomes not busy again
+    //    iprintf("W:%d\n", timeout);
 
     DisableCard();
     return(1);
