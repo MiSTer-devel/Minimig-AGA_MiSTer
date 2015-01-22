@@ -70,6 +70,8 @@
 #define SWITCH1         0x04
 #define SWITCH2         0x08
 
+#define CONF_SCANDOUBLER 0x10
+
 // core type value should be unlikely to be returned by broken cores
 #define CORE_TYPE_UNKNOWN   0x55
 #define CORE_TYPE_DUMB      0xa0   // core without any io controller interaction

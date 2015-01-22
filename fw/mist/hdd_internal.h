@@ -35,14 +35,14 @@ struct RigidDiskBlock {
     unsigned long   rdb_AutoParkSeconds; // zero
     unsigned long   rdb_HighRDSKBlock;	// 1
     unsigned long   rdb_Reserved4;
-    char    rdb_DiskVendor[8];	// "Don't"
+    char    rdb_DiskVendor[8];	        // "Don't"
     char    rdb_DiskProduct[16];	// " repartition!"
     char    rdb_DiskRevision[4];
     char    rdb_ControllerVendor[8];
     char    rdb_ControllerProduct[16];
     char    rdb_ControllerRevision[4];
     unsigned long   rdb_Reserved5[10];
-};
+} __attribute__ ((packed));
 
 struct DosEnvec {
     unsigned long de_TableSize;	     // Size of Environment vector - 0x10
@@ -66,7 +66,7 @@ struct DosEnvec {
     unsigned long de_Baud;
     unsigned long de_Control;
     unsigned long de_BootBlocks;
-};
+} __attribute__ ((packed));
 
 
 struct PartitionBlock {
@@ -82,7 +82,7 @@ struct PartitionBlock {
     unsigned long   pb_Reserved2[15];
     struct DosEnvec pb_Environment;
     unsigned long   pb_EReserved[12];	/* reserved for future environment vector */
-};
+} __attribute__ ((packed));
 
 #endif /* HDD_INTERNAL_H */
 

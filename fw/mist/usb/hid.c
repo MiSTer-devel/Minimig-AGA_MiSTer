@@ -288,7 +288,7 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
         info->iface[0].conf.joystick.button[0].byte_offset = 5;
         info->iface[0].conf.joystick.button[0].bitmask = 32;
         info->iface[0].conf.joystick.button[1].byte_offset = 5;
-        info->iface[0].conf.joystick.button[1].bitmask = 64;
+        info->iface[0].conf.joystick.button[1].bitmask = 64 | 16;
         info->iface[0].conf.joystick.button[2].byte_offset = 6;
         info->iface[0].conf.joystick.button[2].bitmask = 16;
         info->iface[0].conf.joystick.button[3].byte_offset = 6;

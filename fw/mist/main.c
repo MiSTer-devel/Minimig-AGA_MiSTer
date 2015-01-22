@@ -55,6 +55,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cdc_control.h"
 #include "usb.h"
 #include "debug.h"
+#include "mist_cfg.h"
+
 
 const char version[] = {"$VER:ATH" VDATE};
 
@@ -158,6 +160,9 @@ int main(void)
 
     // tos config also contains cdc redirect settings used by minimig
     tos_config_init();
+
+    // parse mist.ini
+    mist_ini_parse();
 
     fpga_init(NULL);
 
