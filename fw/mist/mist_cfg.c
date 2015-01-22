@@ -30,7 +30,7 @@ const ini_var_t mist_ini_vars[] = {
 
 // mist ini config
 const ini_cfg_t mist_ini_cfg = {
-  "mist.ini",
+  "MIST    INI",
   mist_ini_sections,
   mist_ini_vars,
   (int)(sizeof(mist_ini_sections) / sizeof(ini_section_t)),
