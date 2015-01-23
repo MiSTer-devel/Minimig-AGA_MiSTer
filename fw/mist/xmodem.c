@@ -109,7 +109,7 @@ void xmodem_rx_byte(unsigned char byte) {
 	}
       } else {
 	if(user_io_core_type() != CORE_TYPE_8BIT) 
-	  iprintf("UPLOAD: Only suppotred by 8 bit cores\n");
+	  iprintf("UPLOAD: Only supported by 8 bit cores\n");
 	else {
 	  char *p = user_io_8bit_get_string(0);
 	  if(!filename[0] || !p || strncmp(p, filename+8, 3) != 0)

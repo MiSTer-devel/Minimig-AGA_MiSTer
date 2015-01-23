@@ -16,6 +16,7 @@
 #define MIST_BUS_REQ      0x07   // request bus
 #define MIST_BUS_REL      0x08   // release bus
 #define MIST_SET_VADJ     0x09
+#define MIST_NAK_DMA      0x0a   // reject a dma command
 
 // tos sysconfig bits:
 // 0     - RESET
@@ -89,6 +90,8 @@ char tos_disk_is_inserted(char index);
 void tos_insert_disk(char i, fileTYPE *file);
 void tos_eject_all();
 void tos_select_hdd_image(char i, fileTYPE *file);
+void tos_set_direct_hdd(char on);
+char tos_get_direct_hdd();
 void tos_reset(char cold);
 char *tos_get_image_name();
 char *tos_get_cartridge_name();

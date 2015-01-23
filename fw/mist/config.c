@@ -476,7 +476,7 @@ void ApplyConfiguration(char reloadkickstart) {
 		switch(hdf[0].type) // Customise message for SD card access
 		{
 			case (HDF_FILE | HDF_SYNTHRDB):
-		        siprintf(s, "\nHardfile 1 (with fake RDB): %.8s.%.3s", hdf[1].file.name, &hdf[1].file.name[8]);
+		        siprintf(s, "\nHardfile 0 (with fake RDB): %.8s.%.3s", hdf[0].file.name, &hdf[0].file.name[8]);
 				break;
 			case HDF_FILE:
 		        siprintf(s, "\nHardfile 0: %.8s.%.3s", hdf[0].file.name, &hdf[0].file.name[8]);

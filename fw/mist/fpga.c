@@ -885,4 +885,8 @@ void fpga_init(char *name) {
     
     // end of mist setup
   }
+
+  if(user_io_core_type() == CORE_TYPE_ARCHIE) {
+    puts("Running archimedes setup");
+  } // end of archimedes setup
 }

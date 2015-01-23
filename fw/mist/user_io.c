@@ -5,6 +5,7 @@
 #include "osd.h"
 
 #include "user_io.h"
+#include "archie.h"
 #include "cdc_control.h"
 #include "usb.h"
 #include "debug.h"
@@ -49,7 +50,7 @@ static unsigned long mouse_timer;
 
 // set by OSD code to suppress forwarding of those keys to the core which
 // may be in use by an active OSD
-static char osd_eats_keys = false;
+static char osd_is_visible = false;
 
 static void PollOneAdc() {
   static unsigned char adc_cnt = 0xff;
@@ -153,6 +154,7 @@ void user_io_detect_core_type() {
      (core_type != CORE_TYPE_MINIMIG2) &&
      (core_type != CORE_TYPE_PACE) &&
      (core_type != CORE_TYPE_MIST) &&
+     (core_type != CORE_TYPE_ARCHIE) &&
      (core_type != CORE_TYPE_8BIT))
     core_type = CORE_TYPE_UNKNOWN;
 
@@ -179,6 +181,11 @@ void user_io_detect_core_type() {
     
   case CORE_TYPE_MIST:
     puts("Identified MiST core");
+    break;
+
+  case CORE_TYPE_ARCHIE:
+    puts("Identified Archimedes core");
+    archie_init();
     break;
 
   case CORE_TYPE_8BIT: {
@@ -226,7 +233,7 @@ void user_io_analog_joystick(unsigned char joystick, char valueX, char valueY) {
 
 void user_io_digital_joystick(unsigned char joystick, unsigned char map) {
   // if osd is open control it via joystick
-  if(osd_eats_keys) {
+  if(osd_is_visible) {
     static const uint8_t joy2kbd[] = { 
       OSDCTRLMENU, OSDCTRLMENU, OSDCTRLMENU, OSDCTRLSELECT,
       OSDCTRLUP, OSDCTRLDOWN, OSDCTRLLEFT, OSDCTRLRIGHT };
@@ -250,6 +257,7 @@ void user_io_digital_joystick(unsigned char joystick, unsigned char map) {
   if((core_type == CORE_TYPE_MINIMIG) || 
      (core_type == CORE_TYPE_MINIMIG2)  || 
      (core_type == CORE_TYPE_PACE)  || 
+     (core_type == CORE_TYPE_ARCHIE)  || 
      ((core_type == CORE_TYPE_MIST) && (joystick >= 2))  || 
      (core_type == CORE_TYPE_8BIT)) {
     // joystick 3 and 4 were introduced later
@@ -440,7 +448,6 @@ void user_io_file_tx(fileTYPE *file) {
   SPI(0xff);
   DisableFpga();
 
-#if 1
   while(bytes2send) {
     iprintf(".");
 
@@ -463,30 +470,6 @@ void user_io_file_tx(fileTYPE *file) {
     if(bytes2send)
       FileNextSector(file);
   }
-#else
-  {
-    int i, j;
-    EnableFpga();
-    SPI(UIO_FILE_TX_DAT);
-
-    // zx spectrum video:
-    // 256*192 pixels = 6144 bytes
-    // _"_ = 768 attribute bytes
-
-    for(j=0;j<8;j++) 
-      for(i=0;i<32*8;i++) SPI(0xf0);
-
-    for(j=0;j<8;j++) 
-      for(i=0;i<32*8;i++) SPI(0xcc);
-
-    for(j=0;j<8;j++) 
-      for(i=0;i<32*8;i++) SPI(0x55);
-
-    for(i=0;i<768;i++) SPI(i/3);
-
-    DisableFpga();
-  }
-#endif
 
   // signal end of transmission
   EnableFpga();
@@ -563,7 +546,7 @@ unsigned char user_io_8bit_set_status(unsigned char new_status, unsigned char ma
 
 void user_io_poll() {
 
-  if(user_io_dip_switch1()) {
+  if(user_io_dip_switch1() && (core_type != CORE_TYPE_ARCHIE)) {
     // check of core has changed from a good one to a not supported on
     // as this likely means that the user is reloading the core via jtag
     unsigned char ct;
@@ -598,6 +581,7 @@ void user_io_poll() {
      (core_type != CORE_TYPE_MINIMIG2) &&
      (core_type != CORE_TYPE_PACE) &&
      (core_type != CORE_TYPE_MIST) &&
+     (core_type != CORE_TYPE_ARCHIE) &&
      (core_type != CORE_TYPE_8BIT)) {
     return;  // no user io for the installed core
   }
@@ -1027,6 +1011,9 @@ void user_io_poll() {
       DISKLED_OFF;
     }
   }
+
+  if(core_type == CORE_TYPE_ARCHIE) 
+    archie_poll();
 }
 
 char user_io_dip_switch1() {
@@ -1072,7 +1059,8 @@ static void send_keycode(unsigned short code) {
       if(!(code & BREAK)) {
 
 	// Pause key sends E11477E1F014E077
-	static const unsigned char c[] = { 0xe1, 0x14, 0x77, 0xe1, 0xf0, 0x14, 0xf0, 0x77, 0x00 };
+	static const unsigned char c[] = { 
+	  0xe1, 0x14, 0x77, 0xe1, 0xf0, 0x14, 0xf0, 0x77, 0x00 };
 	const unsigned char *p = c;
 	
 	iprintf("PS2 KBD ");
@@ -1099,6 +1087,9 @@ static void send_keycode(unsigned short code) {
 
     DisableIO();
   }
+
+  if(core_type == CORE_TYPE_ARCHIE) 
+    archie_kbd(code);
 }
 
 void user_io_mouse(unsigned char b, char x, char y) {
@@ -1121,6 +1112,9 @@ void user_io_mouse(unsigned char b, char x, char y) {
   // send mouse data as mist expects it
   if(core_type == CORE_TYPE_MIST)
     ikbd_mouse(b, x, y);
+
+  if(core_type == CORE_TYPE_ARCHIE) 
+    archie_mouse(b, x, y);
 }
 
 // check if this is a key that's supposed to be suppressed
@@ -1157,6 +1151,9 @@ unsigned short keycode(unsigned char in) {
   if(core_type == CORE_TYPE_MIST)
     return usb2atari[in];
 
+  if(core_type == CORE_TYPE_ARCHIE)
+    return usb2archie[in];
+
   if(core_type == CORE_TYPE_8BIT)
     return usb2ps2[in];
 
@@ -1183,6 +1180,7 @@ unsigned short modifier_keycode(unsigned char index) {
       { 0x63, 0x60, 0x64, 0x66, 0x63, 0x61, 0x65, 0x67 };
     return amiga_modifier[index];
   }
+
   if(core_type == CORE_TYPE_MIST) {
     static const unsigned short atari_modifier[] = 
       { 0x1d, 0x2a, 0x38, MISS, 0x1d, 0x36, 0x38, MISS };
@@ -1195,24 +1193,32 @@ unsigned short modifier_keycode(unsigned char index) {
     return ps2_modifier[index];
   } 
 
+  if(core_type == CORE_TYPE_ARCHIE) {
+    static const unsigned short archie_modifier[] = 
+      { 0x36, 0x4c, 0x5e, MISS, 0x61, 0x58, 0x60, MISS };
+    return archie_modifier[index];
+  } 
+
   return MISS;
 }
 
 void user_io_osd_key_enable(char on) {
-  osd_eats_keys = on;
+  iprintf("OSD is now %s\n", on?"visible":"invisible");
+  osd_is_visible = on;
 }
 
 static char key_used_by_osd(unsigned short s) {
-  // this key is only used in OSD and has no keycode
-  if((s & OSD_LOC) && !(s & 0xff))  return true; 
+  // this key is only used to open the OSD and has no keycode
+  if((s & OSD_OPEN) && !(s & 0xff))  return true; 
 
   // no keys are suppressed if the OSD is inactive
-  if(!osd_eats_keys) return false;
+  if(!osd_is_visible) return false;
 
   // in atari mode eat all keys if the OSD is online,
   // else none as it's up to the core to forward keys
   // to the OSD
   return((core_type == CORE_TYPE_MIST) ||
+	 (core_type == CORE_TYPE_ARCHIE) ||
 	 (core_type == CORE_TYPE_8BIT));
 }
 
@@ -1220,7 +1226,11 @@ void user_io_kbd(unsigned char m, unsigned char *k) {
   if((core_type == CORE_TYPE_MINIMIG) ||
      (core_type == CORE_TYPE_MINIMIG2) ||
      (core_type == CORE_TYPE_MIST) ||
+     (core_type == CORE_TYPE_ARCHIE) ||
      (core_type == CORE_TYPE_8BIT)) {
+
+//    iprintf("KBD: %d\n", m);
+//    hexdump(k, 6, 0);
 
     static unsigned char modifier = 0, pressed[6] = { 0,0,0,0,0,0 };
     int i, j;
@@ -1293,10 +1303,22 @@ void user_io_kbd(unsigned char m, unsigned char *k) {
 	
 	// don't send break for caps lock
 	if(j == 6) {
-	  // special OSD key handled internally 
-	  OsdKeySet(0x80 | usb2ami[pressed[i]]);
+	  // If OSD is visible, then all keys are sent into the OSD
+	  // using Amiga key codes since the OSD itself uses Amiga key codes
+	  // for historical reasons. If the OSD is invisble then only
+	  // those keys marked for OSD in the core specific table are
+	  // sent for OSD handling.
+	  if(code & OSD_OPEN) 
+	    OsdKeySet(0x80 | KEY_MENU);
+	  else {
+	    // special OSD key handled internally 
+	    if(osd_is_visible)
+	      OsdKeySet(0x80 | usb2ami[pressed[i]]);
+	  }
 
 	  if(!key_used_by_osd(code)) {
+	    iprintf("Key is not used by OSD\n");
+
 	    if(is_emu_key(pressed[i])) {
 	      emu_state &= ~is_emu_key(pressed[i]);
 	    
@@ -1322,12 +1344,24 @@ void user_io_kbd(unsigned char m, unsigned char *k) {
 	for(j=0;j<6 && k[i] != pressed[j];j++);
 
 	if(j == 6) {
-	  // special OSD key handled internally 
-	  OsdKeySet(usb2ami[k[i]]); 
+	  // If OSD is visible, then all keys are sent into the OSD
+	  // using Amiga key codes since the OSD itself uses Amiga key codes
+	  // for historical reasons. If the OSD is invisble then only
+	  // those keys marked for OSD in the core specific table are
+	  // sent for OSD handling.
+	  if(code & OSD_OPEN) 
+	    OsdKeySet(KEY_MENU);
+	  else {
+	    // special OSD key handled internally 
+	    if(osd_is_visible)
+	      OsdKeySet(usb2ami[k[i]]);
+	  }
 
 	  // no further processing of any key that is currently 
 	  // redirected to the OSD
 	  if(!key_used_by_osd(code)) {
+	    iprintf("Key is not used by OSD\n");
+
 	    if (is_emu_key(k[i])) {
 	      emu_state |= is_emu_key(k[i]);
 

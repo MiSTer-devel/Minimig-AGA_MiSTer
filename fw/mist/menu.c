@@ -42,6 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cdc_control.h"
 #include "debug.h"
 #include "boot.h"
+#include "archie.h"
 
 // other constants
 #define DIRSIZE 8 // number of items in directory display window
@@ -346,6 +347,8 @@ void HandleUI(void)
 	    menustate = MENU_MAIN1;
 	  else if(user_io_core_type() == CORE_TYPE_MIST)
 	    menustate = MENU_MIST_MAIN1;
+	  else if(user_io_core_type() == CORE_TYPE_ARCHIE)
+	    menustate = MENU_ARCHIE_MAIN1;
 	  else
 	    menustate = MENU_8BIT_MAIN1;
 	  
@@ -354,6 +357,66 @@ void HandleUI(void)
             OsdEnable(DISABLE_KEYBOARD);
         }
         break;
+
+        /******************************************************************/
+        /* archimedes main menu                                           */
+        /******************************************************************/
+
+    case MENU_ARCHIE_MAIN1: {
+	menumask=0x0f;
+	OsdSetTitle("ARCHIE", 0);
+
+	OsdWrite(0, "", 0,0);
+
+	strcpy(s, " OS ROM: ");
+	strcat(s, archie_get_rom_name());
+	OsdWrite(1, s, menusub == 0, 0);
+	
+	OsdWrite(2, "", 0,0);
+	OsdWrite(3, "", 0,0);
+
+	// the following is exactly like the atatri st core
+        OsdWrite(4, " Firmware & Core           \x16", menusub == 1,0);
+        OsdWrite(5, " Save config                ", menusub == 2,0);
+	OsdWrite(6, "", 0,0);
+        OsdWrite(7, STD_EXIT, menusub == 3,0);
+
+        menustate = MENU_ARCHIE_MAIN2;
+	parentstate=MENU_ARCHIE_MAIN1;
+    } break;
+
+    case MENU_ARCHIE_MAIN2 :
+        // menu key closes menu
+        if (menu)
+	  menustate = MENU_NONE1;
+	if(select) {
+	  switch(menusub) {
+	  case 0:  // Load ROM
+	    SelectFile("ROM", SCAN_LFN, MENU_ARCHIE_MAIN_FILE_SELECTED, MENU_ARCHIE_MAIN1, 1);
+	    break;
+
+	  case 1:  // Firmware submenu
+	    menustate = MENU_FIRMWARE1;
+	    menusub = 1;
+	    break;
+
+	  case 2:  // Save config
+	    menustate = MENU_NONE1;
+	    archie_save_config();
+	    break;
+
+	  case 3:  // Exit
+	    menustate = MENU_NONE1;
+	    break;
+	  }
+        }
+        break;
+	
+    case MENU_ARCHIE_MAIN_FILE_SELECTED : // file successfully selected
+        archie_set_rom(&file);
+	// close menu afterwards
+	menustate = MENU_NONE1;
+	break;
 
         /******************************************************************/
         /* 8 bit main menu                                                */
@@ -620,7 +683,7 @@ void HandleUI(void)
 	break;
 	
     case MENU_MIST_STORAGE1 :
-	menumask=0x3f;
+        menumask = tos_get_direct_hdd()?0x3f:0x7f;
 	OsdSetTitle("Storage", 0);
 
 	// entries for both floppies
@@ -640,17 +703,20 @@ void HandleUI(void)
 
         OsdWrite(3, "", 0, 0);
 
+	strcpy(s, " ACSI0 direct SD: ");
+	strcat(s, tos_get_direct_hdd()?"on":"off");
+        OsdWrite(4, s, menusub == 3, 0);
+
 	for(i=0;i<2;i++) {
 	  strcpy(s, " ACSI0: ");
 	  s[5] = '0'+i;
 	  
 	  strcat(s, tos_get_disk_name(2+i));
-	  OsdWrite(4+i, s, menusub == 3+i, 0);
+	  OsdWrite(5+i, s, ((i==1) || !tos_get_direct_hdd())?(menusub == (!tos_get_direct_hdd()?4:3)+i):0, 
+		   (i==0) && tos_get_direct_hdd());
 	}
 
-        OsdWrite(6, "", 0, 0);
-
-        OsdWrite(7, STD_EXIT, menusub == 5,0);
+        OsdWrite(7, STD_EXIT, !tos_get_direct_hdd()?(menusub == 6):(menusub == 5),0);
 
 	parentstate = menustate;
         menustate = MENU_MIST_STORAGE2;
@@ -677,13 +743,23 @@ void HandleUI(void)
 			     | (((((tos_system_ctrl() >> 6)&3) + 1)&3)<<6) );
 	  menustate = MENU_MIST_STORAGE1;
 	
-	} else if((menusub == 3) || (menusub == 4)) {
-	  if(tos_disk_is_inserted(menusub-1)) {
-	    tos_insert_disk(menusub-1, NULL);
+	} else if(menusub == 3) {
+	  tos_set_direct_hdd(!tos_get_direct_hdd());
+	  menustate = MENU_MIST_STORAGE1;
+
+	  // no direct hhd emulation: Both ACSI entries are enabled
+	  // or direct hhd emulation for ACSI0: Only second ACSI entry is enabled
+	} else if((menusub == 4) || (!tos_get_direct_hdd() && (menusub == 5))) {
+	  char disk_idx = menusub - (tos_get_direct_hdd()?1:2);
+	  iprintf("Select image for disk %d\n", disk_idx);
+
+	  if(tos_disk_is_inserted(disk_idx)) {
+	    tos_insert_disk(disk_idx, NULL);
 	    menustate = MENU_MIST_STORAGE1;
 	  } else
 	    SelectFile("HD ", SCAN_LFN, MENU_MIST_STORAGE_FILE_SELECTED, MENU_MIST_STORAGE1, 0);
-	} else if (menusub == 5) {
+
+	} else if (tos_get_direct_hdd()?(menusub == 5):(menusub == 6)) {
 	  menustate = MENU_MIST_MAIN1;
 	  menusub = 2;
 	}
@@ -694,8 +770,11 @@ void HandleUI(void)
       // floppy/hdd      
       if(menusub < 2)
 	tos_insert_disk(menusub, &file);
-      else
-	tos_insert_disk(menusub-1, &file);
+      else {
+	char disk_idx = menusub - (tos_get_direct_hdd()?1:2);
+	iprintf("Insert image for disk %d\n", disk_idx);
+	tos_insert_disk(disk_idx, &file);
+      }
 
       menustate = MENU_MIST_STORAGE1;
       break;
@@ -2452,6 +2531,10 @@ void HandleUI(void)
 	  menusub = 5;
 	  menustate = MENU_MIST_MAIN1;
 	  break;
+	case CORE_TYPE_ARCHIE:
+	  menusub = 1;
+	  menustate = MENU_ARCHIE_MAIN1;
+	  break;
 	case CORE_TYPE_8BIT:
 	  menusub = 0;
 	  menustate = MENU_8BIT_SYSTEM1;
@@ -2480,6 +2563,10 @@ void HandleUI(void)
 	  case CORE_TYPE_MIST:
 	    menusub = 5;
 	    menustate = MENU_MIST_MAIN1;
+	    break;
+	  case CORE_TYPE_ARCHIE:
+	    menusub = 1;
+	    menustate = MENU_ARCHIE_MAIN1;
 	    break;
 	  case CORE_TYPE_8BIT:
 	    menusub = 0;
