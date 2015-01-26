@@ -204,7 +204,7 @@ assign joyb             = JOYB_1;
 assign mouse_buttons    = MOUSE_BUTTONS_1;
 
 // minimig
-assign _15khz           = core_config[0];
+assign _15khz           = ~core_config[0];
 assign joy_emu_en       = 1'b1;
 
 assign LED              = ~led;
