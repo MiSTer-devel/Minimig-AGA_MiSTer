@@ -170,11 +170,13 @@ void* ini_get_var(const ini_cfg_t* cfg, int cur_section, char* buf)
         if (*(int32_t*)(cfg->vars[var_id].var) > cfg->vars[var_id].max) *(int32_t*)(cfg->vars[var_id].var) = cfg->vars[var_id].max;
         if (*(int32_t*)(cfg->vars[var_id].var) < cfg->vars[var_id].min) *(int32_t*)(cfg->vars[var_id].var) = cfg->vars[var_id].min;
         break;
+#ifdef INI_ENABLE_FLOAT
       case FLOAT:
         *(float*)(cfg->vars[var_id].var) = strtof(&(buf[i]), NULL);
         if (*(float*)(cfg->vars[var_id].var) > cfg->vars[var_id].max) *(float*)(cfg->vars[var_id].var) = cfg->vars[var_id].max;
         if (*(float*)(cfg->vars[var_id].var) < cfg->vars[var_id].min) *(float*)(cfg->vars[var_id].var) = cfg->vars[var_id].min;
         break;
+#endif
       case STRING:
         strncpy((char*)(cfg->vars[var_id].var), &(buf[i]), cfg->vars[var_id].max);
         break;

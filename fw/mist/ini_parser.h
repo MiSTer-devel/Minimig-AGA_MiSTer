@@ -4,6 +4,8 @@
 #ifndef __INI_PARSER_H__
 #define __INI_PARSER_H__
 
+// float support adds over 20kBytes to the firmware size
+// #define INI_ENABLE_FLOAT
 
 //// includes ////
 #include <inttypes.h>
@@ -15,7 +17,11 @@ typedef struct {
   char* name;
 } ini_section_t;
 
-typedef enum {UINT8=0, INT8, UINT16, INT16, UINT32, INT32, FLOAT, STRING} ini_vartypes_t;
+typedef enum {UINT8=0, INT8, UINT16, INT16, UINT32, INT32, 
+#ifdef INI_ENABLE_FLOAT
+	      FLOAT, 
+#endif
+	      STRING} ini_vartypes_t;
 
 typedef struct {
   char* name;

@@ -16,7 +16,7 @@ void mist_ini_parse()
 
 //// vars ////
 // config data
-mist_cfg_t mist_cfg = {.scandoubler = 1};
+mist_cfg_t mist_cfg = {.scandoubler_disable = 0};
 
 // mist ini sections
 const ini_section_t mist_ini_sections[] = {
@@ -25,7 +25,7 @@ const ini_section_t mist_ini_sections[] = {
 
 // mist ini vars
 const ini_var_t mist_ini_vars[] = {
-  {"SCANDOUBLER", (void*)(&(mist_cfg.scandoubler)), UINT8, 0, 1, 1}
+  {"SCANDOUBLER_DISABLE", (void*)(&(mist_cfg.scandoubler_disable)), UINT8, 0, 1, 1}
 }; 
 
 // mist ini config

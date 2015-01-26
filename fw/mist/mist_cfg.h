@@ -13,7 +13,7 @@
 
 //// type definitions ////
 typedef struct {
-  uint8_t scandoubler;
+  uint8_t scandoubler_disable;
 } mist_cfg_t;
 
 

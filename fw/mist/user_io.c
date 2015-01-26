@@ -672,7 +672,7 @@ void user_io_poll() {
   if(adc_state & 8) map |= BUTTON2;
 
   // TODO adding conf here
-  if (mist_cfg.scandoubler) map |= CONF_SCANDOUBLER;
+  if (mist_cfg.scandoubler_disable) map |= CONF_SCANDOUBLER_DISABLE;
 
   if(map != key_map) {
     key_map = map;
