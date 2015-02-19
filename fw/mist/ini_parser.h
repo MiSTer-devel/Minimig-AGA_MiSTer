@@ -43,7 +43,7 @@ typedef struct {
 
 //// functions ////
 void ini_parse(const ini_cfg_t* cfg);
-
+void ini_save(const ini_cfg_t* cfg);
 
 #endif // __INI_PARSER_H__
 
