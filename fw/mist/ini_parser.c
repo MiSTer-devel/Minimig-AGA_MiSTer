@@ -85,6 +85,26 @@ char ini_getch()
 }
 
 
+//// ini_putch() ////
+int ini_putch(char c)
+{
+  static int ini_pt = 0;
+
+  sector_buffer[ini_pt++] = c;
+
+  if ((ini_pt%0x3ff) == 0x200) {
+    // write buffer
+    ini_pt = 0;
+    #ifdef INI_PARSER_TEST
+    fwrite(sector_buffer, sizeof(char), INI_BUF_SIZE, ini_fp);
+    #else
+    #error
+    #endif
+  }
+  return ini_pt;
+}
+
+
 //// ini_findch() ////
 char ini_findch(char c)
 {
@@ -114,6 +134,19 @@ int ini_getline(char* line)
   }
   line[i] = '\0';
   return c==0 ? INI_EOT : literal ? 1 : 0;
+}
+
+
+//// ini_putline() ////
+int ini_putline(char* line)
+{
+  int ini_pt, i=0;
+
+  while(i<(INI_LINE_SIZE-1)) {
+    if (!line[i]) break;
+    ini_pt = ini_putch(line[i++]);
+  }
+  return ini_pt;
 }
 
 
@@ -301,6 +334,61 @@ void ini_parse(const ini_cfg_t* cfg)
 //// ini_save() ////
 void ini_save(const ini_cfg_t* cfg)
 {
-  // TODO
+  int section, var, ini_pt;
+  char line[INI_LINE_SIZE] = {0};
+
+  // open ini file
+  #ifdef INI_PARSER_TEST
+  //if ((ini_fp = fopen(cfg->filename, "wb")) == NULL) {
+  if ((ini_fp = fopen("test.ini", "wb")) == NULL) {
+  #else
+  #error
+  #endif
+    ini_parser_debugf("Can't open file %s !", cfg->filename);
+    return;
+  }
+
+  // loop over sections
+  for (section=0; section<cfg->nsections; section++) {
+    ini_parser_debugf("writing section %s ...", cfg->sections[section].name);
+    sprintf(line, "[%s]\n", cfg->sections[section].name);
+    ini_pt = ini_putline(line);
+    // loop over vars
+    for (var=0; var<cfg->nvars; var++) {
+      if (cfg->vars[var].section_id == cfg->sections[section].id) {
+        ini_parser_debugf("writing var %s", cfg->vars[var].name);
+        switch (cfg->vars[var].type) {
+          case UINT8:
+          case UINT16:
+          case UINT32:
+            sprintf(line, "%s=%u\n", cfg->vars[var].name, *(uint32_t*)(cfg->vars[var].var));
+            break;
+          case INT8:
+          case INT16:
+          case INT32:
+            sprintf(line, "%s=%d\n", cfg->vars[var].name, *(int32_t*)(cfg->vars[var].var));
+            break;
+          #ifdef INI_ENABLE_FLOAT
+          case FLOAT:
+            sprintf(line, "%s=%f\n", cfg->vars[var].name, *(float*)(cfg->vars[var].var));
+            break;
+          #endif
+          case STRING:
+            sprintf(line, "%s=\"%s\"\n", cfg->vars[var].name, (char*)(cfg->vars[var].var));
+            break;
+        }
+        ini_pt = ini_putline(line);
+      }
+    }
+  }
+
+  // in case the buffer is not written yet, write it now
+  if (ini_pt) {
+    #ifdef INI_PARSER_TEST
+    fwrite(sector_buffer, sizeof(char), ini_pt, ini_fp);
+    #else
+    #error
+    #endif
+  }
 }
 
