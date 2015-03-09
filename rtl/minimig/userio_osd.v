@@ -507,19 +507,19 @@ always @ (posedge clk) begin
 end
 
 
-reg  [16-1:0] mem_page;
-reg  [16-1:0] mem_cnt;
+reg  [ 8-1:0] mem_page;
+reg  [14-1:0] mem_cnt;
 wire [32-1:0] mem_adr;
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (rx && !cmd && spi_mem_write_sel) begin
       case (dat_cnt)
-        0 : mem_cnt [ 7:0] <= #1 wrdat[7:0];
-        1 : mem_cnt [15:8] <= #1 wrdat[7:0];
-        2 : mem_page[ 7:0] <= #1 wrdat[7:0];
-        3 : mem_page[15:8] <= #1 wrdat[7:0];
+        0 : mem_cnt [ 7: 0] <= #1 wrdat[7:0];
+        1 : mem_cnt [15: 8] <= #1 wrdat[7:0];
+        2 : mem_page[23:16] <= #1 wrdat[7:0];
+        3 : mem_page[ 7: 0] <= #1 wrdat[7:0];
       endcase
-    end else if (wr_fifo_rd_en) mem_cnt [15:0] <= #1 mem_cnt + 16'd2;
+    end else if (wr_fifo_rd_en) mem_cnt [23:0] <= #1 mem_cnt + 24'd2;
   end
 end
 
