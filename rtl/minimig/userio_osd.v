@@ -508,7 +508,7 @@ end
 
 
 reg  [ 8-1:0] mem_page;
-reg  [14-1:0] mem_cnt;
+reg  [24-1:0] mem_cnt;
 wire [32-1:0] mem_adr;
 always @ (posedge clk) begin
   if (clk7_en) begin
@@ -516,7 +516,7 @@ always @ (posedge clk) begin
       case (dat_cnt)
         0 : mem_cnt [ 7: 0] <= #1 wrdat[7:0];
         1 : mem_cnt [15: 8] <= #1 wrdat[7:0];
-        2 : mem_page[23:16] <= #1 wrdat[7:0];
+        2 : mem_cnt [23:16] <= #1 wrdat[7:0];
         3 : mem_page[ 7: 0] <= #1 wrdat[7:0];
       endcase
     end else if (wr_fifo_rd_en) mem_cnt [23:0] <= #1 mem_cnt + 24'd2;
