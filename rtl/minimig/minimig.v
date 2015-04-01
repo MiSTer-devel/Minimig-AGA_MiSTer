@@ -625,6 +625,16 @@ userio USERIO1
 //assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
 assign cpu_speed = 1'b0;
 
+/*
+// debug module
+debug DEBUG1 (
+  .clk        (clk),
+  .clk7_en    (clk7_en),
+  .adr        (reg_address),
+  .dat        (custom_data_in)
+);
+*/
+
 //instantiate Denise
 denise DENISE1
 (		
