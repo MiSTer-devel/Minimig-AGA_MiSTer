@@ -6,10 +6,8 @@
 
 
 //// includes ////
-#ifdef INI_PARSER_TEST
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 #include <string.h>
 #include <inttypes.h>
 #include "ini_parser.h"
@@ -98,7 +96,7 @@ int ini_putch(char c)
     #ifdef INI_PARSER_TEST
     fwrite(sector_buffer, sizeof(char), INI_BUF_SIZE, ini_fp);
     #else
-    #error
+    //#error
     #endif
   }
   return ini_pt;
@@ -339,10 +337,9 @@ void ini_save(const ini_cfg_t* cfg)
 
   // open ini file
   #ifdef INI_PARSER_TEST
-  //if ((ini_fp = fopen(cfg->filename, "wb")) == NULL) {
-  if ((ini_fp = fopen("test.ini", "wb")) == NULL) {
+  if ((ini_fp = fopen(cfg->filename, "wb")) == NULL) {
   #else
-  #error
+  { //#error
   #endif
     ini_parser_debugf("Can't open file %s !", cfg->filename);
     return;
@@ -387,7 +384,7 @@ void ini_save(const ini_cfg_t* cfg)
     #ifdef INI_PARSER_TEST
     fwrite(sector_buffer, sizeof(char), ini_pt, ini_fp);
     #else
-    #error
+    //#error
     #endif
   }
 }
