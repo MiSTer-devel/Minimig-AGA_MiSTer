@@ -329,6 +329,7 @@ unsigned char FileOpen(fileTYPE *file, const char *name) {
       if (pEntry->Name[0] != SLOT_EMPTY && pEntry->Name[0] != SLOT_DELETED) { // valid entry??
 	if (!(pEntry->Attributes & (ATTR_VOLUME | ATTR_DIRECTORY))) // not a volume nor directory
 	  {
+	    //	    iprintf("check %.11s %.11s\n", pEntry->Name, name);
                     if (strncmp((const char*)pEntry->Name, name, sizeof(file->name)) == 0)
                     {
                         strncpy(file->name, (const char*)pEntry->Name, sizeof(file->name));

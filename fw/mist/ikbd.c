@@ -13,10 +13,10 @@
   Absolute mouse mode          Addicataball/A_050           X     X
   disable mouse                ?                            X
   disable joystick             ?                            X
-  Joysticks also generate      Goldrunner                   X     X
+  Joysticks also generate      Goldrunner                   X    -X
   mouse button events!
   Pause/Resume                 PACMANIA_STE/Gembench        X
-  mouse keycode mode           
+  mouse keycode mode           Goldrunner                   X     X
 
   Games that have ikbd problems:
   PowerMonger/PP_106           fixed
@@ -417,11 +417,12 @@ void ikbd_poll(void) {
 	for(i=0;i<2;i++) {
 	  unsigned char state = ikbd.joy[i].state;
 	  
-	  // mouse button 0 is also joystick 0 fire button
-	  // mouse button 1 is also joystick 1 fire button
-	  if(ikbd.mouse.but & (1<<i)) state |= 0x80; 
+	  // left mouse button 1 is also joystick 0 fire button
+	  // right mouse button 0 is also joystick 1 fire button
+	  if(ikbd.mouse.but & (2>>i)) state |= 0x80; 
 	  
 	  if(state != ikbd.joy[i].prev) {
+	    //	    iprintf("JOY%d: %x\n", i, state);
 	    enqueue(0xfe + i);
 	    enqueue(state);
 	    ikbd.joy[i].prev = state;
@@ -435,8 +436,8 @@ void ikbd_poll(void) {
 	unsigned char b = ikbd.mouse.but;
 	
 	// include joystick buttons into mouse state
-	if(ikbd.joy[0].state & 0x80) b |= 1;
-	if(ikbd.joy[1].state & 0x80) b |= 2;
+	if(ikbd.joy[0].state & 0x80) b |= 2;
+	if(ikbd.joy[1].state & 0x80) b |= 1;
 
 	if(ikbd.mouse.x || ikbd.mouse.y || (b != ikbd.mouse.but_prev)) {
 	  do {
@@ -449,6 +450,7 @@ void ikbd_poll(void) {
 	    else if(ikbd.mouse.y >  127) y =  127;
 	    else                         y =  ikbd.mouse.y;
 	    
+	    //	    iprintf("RMOUSE: %x %x %x\n", b, x&0xff, y&0xff);
 	    enqueue(0xf8|b);
 	    enqueue(x & 0xff);
 	    enqueue(y & 0xff);
@@ -466,9 +468,9 @@ void ikbd_poll(void) {
 	      // Mouse buttons act like keys (LEFT=0x74 & RIGHT=0x75)
 	      
 	      // handle left mouse button
-	      if((b ^ ikbd.mouse.but_prev) & 1) ikbd_keyboard(0x74 | ((b&1)?0x00:0x80));
+	      if((b ^ ikbd.mouse.but_prev) & 2) ikbd_keyboard(0x74 | ((b&2)?0x00:0x80));
 	      // handle right mouse button
-	      if((b ^ ikbd.mouse.but_prev) & 2) ikbd_keyboard(0x75 | ((b&2)?0x00:0x80));
+	      if((b ^ ikbd.mouse.but_prev) & 1) ikbd_keyboard(0x75 | ((b&1)?0x00:0x80));
 	    }
 	  }
 
@@ -549,8 +551,8 @@ void ikbd_mouse(unsigned char b, char x, char y) {
 
   if(ikbd.state & IKBD_STATE_MOUSE_ABSOLUTE) {
     // include joystick buttons into mouse state
-    if(ikbd.joy[0].state & 0x80) b |= 1;
-    if(ikbd.joy[1].state & 0x80) b |= 2;
+    if(ikbd.joy[0].state & 0x80) b |= 2;
+    if(ikbd.joy[1].state & 0x80) b |= 1;
 
     if(b & 2) ikbd.mouse.abs.buttons |= 1;
     else      ikbd.mouse.abs.buttons |= 2;

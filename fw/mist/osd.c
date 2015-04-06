@@ -608,15 +608,6 @@ unsigned char OsdGetCtrl(void)
        (user_io_core_type() == CORE_TYPE_8BIT))
       c1 = OsdKeyGet();
 
-    // add front menu button
-    if (!CheckButton())
-        delay = GetTimer(BUTTONDELAY);
-    else if (CheckTimer(delay))
-    {
-        c1 = KEY_MENU;
-        delay = GetTimer(-1);
-    }
-
     // generate normal "key-pressed" event
     c = 0;
     if (c1 != c2)
@@ -641,6 +632,15 @@ unsigned char OsdGetCtrl(void)
             if (c1 == KEY_PGUP || c1 == KEY_PGDN || GetASCIIKey(c1))
                 c = c1;
         }
+    }
+
+    // currently no key pressed
+    if(!c) {
+      static unsigned char last_but = 0;
+      unsigned char but = CheckButton();
+      if(but && !last_but) c = KEY_MENU;
+      if(!but && last_but) c = KEY_MENU | KEY_UPSTROKE;
+      last_but = but;
     }
 
     return(c);
@@ -708,8 +708,7 @@ void ScrollReset()
 static unsigned char osd_key;
 
 void OsdKeySet(unsigned char c) {
-  iprintf("OSD enqueue: %x\n", c);
-
+  //  iprintf("OSD enqueue: %x\n", c);
   osd_key = c;
 }
 

@@ -420,18 +420,14 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
     SPI(0xFE); // send Data Token
 
     // send sector bytes
-#if 0
-    for (i = 0; i < 512; i++)
-      SPI(*(pWriteBuffer++));
-#else
     spi_block_write(pWriteBuffer);
     spi_wait4xfer_end();
-#endif
 
     SPI(0xFF); // send CRC lo byte
     SPI(0xFF); // send CRC hi byte
 
     response = SPI(0xFF); // read packet response
+
     // Status codes
     // 010 = Data accepted
     // 101 = Data rejected due to CRC error
@@ -468,14 +464,26 @@ unsigned char MMC_Write(unsigned long lba, unsigned char *pWriteBuffer)
 // MMC command
 static RAMFUNC unsigned char MMC_Command(unsigned char cmd, unsigned long arg)
 {
-    unsigned char c;
+  unsigned char c,b;
 
     crc = 0;
-    SPI(0xFF); // flush SPI-bus
+
+    // flush spi, give card a moment to wake up (needed for old 2GB Panasonic card)
+    //    spi_n(0xff, 8);  // this is not flash save if not in ram
+    for(b=0;b<8;b++) SPI(0xff);
 
     SPI(cmd);
     MMC_CRC(cmd);
 
+#if 1
+    // code 100 bytes smaller than below
+    for(b=0;b<4;b++) {
+      c = ((unsigned char*)&arg)[3];
+      SPI(c);
+      MMC_CRC(c);
+      arg <<= 8;
+    }
+#else
     c = (unsigned char)(arg >> 24);
     SPI(c);
     MMC_CRC(c);
@@ -483,15 +491,16 @@ static RAMFUNC unsigned char MMC_Command(unsigned char cmd, unsigned long arg)
     c = (unsigned char)(arg >> 16);
     SPI(c);
     MMC_CRC(c);
-
+    
     c = (unsigned char)(arg >> 8);
     SPI(c);
     MMC_CRC(c);
-
+    
     c = (unsigned char)(arg);
     SPI(c);
     MMC_CRC(c);
-
+#endif
+    
     crc <<= 1;
     crc++;
     SPI(crc);
@@ -527,7 +536,7 @@ static unsigned char MMC_CMD12(void)
     {   // RS232('+');
         if (timeout++ >= 1000000)
         {
-            iprintf("CMD12 (STOP_TRANSMISSION): busy wait timeout!\r");
+	  //            iprintf("CMD12 (STOP_TRANSMISSION): busy wait timeout!\r");
             DisableCard();
             return(0);
         }

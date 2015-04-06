@@ -449,6 +449,17 @@ void HandleUI(void)
 	  p = user_io_8bit_get_string(i);
 	  //	  iprintf("Option %d: %s\n", i-1, p);
 
+	  // check for 'F'ile strings
+	  if(p && (p[0] == 'F')) {
+	    strcpy(s, " Load *.");
+	    substrcpy(s+8, p, 1);
+	    OsdWrite(entry, s, menusub==entry, 0);
+
+	    // add bit in menu mask
+	    menumask = (menumask << 1) | 1;
+	    entry++;
+	  }
+
 	  // check for 'T'oggle strings
 	  if(p && (p[0] == 'T')) {
 	    // p[1] is the digit after the O, so O1 is status bit 1
@@ -518,20 +529,27 @@ void HandleUI(void)
 	  } else {
 	    p = user_io_8bit_get_string(menusub + (fs_present?1:2));
 
-	    // determine which status bit is affected
-	    unsigned char mask = 1<<(p[1]-'0');
-	    unsigned char status = user_io_8bit_set_status(0,0);  // 0,0 gets status
+	    if(p[0] == 'F') {
+	      static char ext[4];
+	      substrcpy(ext, p, 1);
+	      while(strlen(ext) < 3) strcat(ext, " ");
+	      SelectFile(ext, SCAN_DIR | SCAN_LFN, MENU_8BIT_MAIN_FILE_SELECTED, MENU_8BIT_MAIN1, 1);
+	    } else {
+	      // determine which status bit is affected
+	      unsigned char mask = 1<<(p[1]-'0');
+	      unsigned char status = user_io_8bit_set_status(0,0);  // 0,0 gets status
 
-	    //	    iprintf("Option %s %x\n", p, status ^ mask);
+	      //	    iprintf("Option %s %x\n", p, status ^ mask);
 
-	    // change bit
-	    user_io_8bit_set_status(status ^ mask, mask);
+	      // change bit
+	      user_io_8bit_set_status(status ^ mask, mask);
 
-	    // ... and change it again in case of a toggle bit
-	    if(p[0] == 'T')
-	      user_io_8bit_set_status(status, mask);
+	      // ... and change it again in case of a toggle bit
+	      if(p[0] == 'T')
+		user_io_8bit_set_status(status, mask);
 
-	    menustate = MENU_8BIT_MAIN1;
+	      menustate = MENU_8BIT_MAIN1;
+	    }
 	  }
 	}
         else if (right)
@@ -542,7 +560,8 @@ void HandleUI(void)
         break;
 	
     case MENU_8BIT_MAIN_FILE_SELECTED : // file successfully selected
-	user_io_file_tx(&file);
+        // this assumes that further file entries only exist if the first one also exists
+        user_io_file_tx(&file, menusub+1);
 	// close menu afterwards
 	menustate = MENU_NONE1;
 	break;

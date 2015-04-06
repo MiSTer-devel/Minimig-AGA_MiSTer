@@ -118,7 +118,7 @@ void xmodem_rx_byte(unsigned char byte) {
 	    if(!FileOpen(&file, filename))
 	      iprintf("UPLOAD: File open failed\n");
 	    else 
-	      user_io_file_tx(&file);
+	      user_io_file_tx(&file, 1);
 	  }
 	}
 	state = IDLE;
