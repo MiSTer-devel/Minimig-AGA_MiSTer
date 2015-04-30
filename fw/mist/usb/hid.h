@@ -50,6 +50,7 @@ typedef struct {
   uint16_t report_desc_size;
 
   uint8_t device_type;
+  bool ignore_boot_mode: 1;  // don't use boot mode even if device supports it
   bool has_boot_mode: 1;     // device supports boot mode
   bool is_5200daptor: 1;     // device is a 5200daptor with special key handling
   uint16_t key_state;        // needed to detect key state changes in 5200daptor
@@ -58,7 +59,7 @@ typedef struct {
   // (currently only used for joysticks) 
   uint8_t jmap;           // last reported joystick state
   uint8_t jindex;         // joystick index
-  hid_config_t conf;
+  hid_report_t conf;
 
   uint8_t interval;
   uint32_t qNextPollTime;     // next poll time
@@ -88,5 +89,6 @@ extern const usb_device_class_config_t usb_hid_class;
 
 void hid_set_kbd_led(unsigned char led, bool on);
 uint8_t hid_get_joysticks(void);
+void hid_joystick_axis_remap(char *);
 
 #endif // HID_H

@@ -6,21 +6,24 @@
 #include "archie.h"
 #include "debug.h"
 
+#define MAX_FLOPPY  4
+
 #define CONFIG_FILENAME  "ARCHIE  CFG"
 
 typedef struct {
-  unsigned long system_ctrl;  // system control word
-  char rom_img[12];           // rom image file name
+  unsigned long system_ctrl;     // system control word
+  char rom_img[12];              // rom image file name
 } archie_config_t;
 
 static archie_config_t config;
 
-fileTYPE floppy;
+fileTYPE floppy[MAX_FLOPPY];
 
 #define ARCHIE_FILE_TX         0x53
 #define ARCHIE_FILE_TX_DAT     0x54
 #define ARCHIE_FDC_GET_STATUS  0x55
 #define ARCHIE_FDC_TX_DATA     0x56
+#define ARCHIE_FDC_SET_STATUS  0x57
 
 #define archie_debugf(a, ...) iprintf("\033[1;31mARCHIE: " a "\033[0m\n", ##__VA_ARGS__)
 // #define archie_debugf(a, ...)
@@ -29,6 +32,7 @@ fileTYPE floppy;
 enum state { STATE_HRST, STATE_RAK1, STATE_RAK2, STATE_IDLE, 
 	     STATE_WAIT4ACK1, STATE_WAIT4ACK2, STATE_HOLD_OFF } kbd_state;
 
+// archie keyboard controller commands
 #define HRST    0xff
 #define RAK1    0xfe
 #define RAK2    0xfd
@@ -84,6 +88,15 @@ char *archie_get_rom_name(void) {
   return buffer;
 }
 
+char *archie_get_floppy_name(char i) {
+  if(!floppy[i].size) 
+    strcpy(buffer, "* no disk *");
+  else
+    nice_name(buffer, floppy[i].name);
+
+  return buffer;
+}
+
 void archie_save_config(void) {
   fileTYPE file;
 
@@ -128,7 +141,9 @@ void archie_send_file(unsigned char id, fileTYPE *file) {
   for(i=0;i<blocks;i++) {
     if(!(i & 127)) iprintf("*");
 
+    DISKLED_ON;
     FileRead(file, sector_buffer);
+    DISKLED_OFF;
 
     EnableFpga();
     SPI(ARCHIE_FILE_TX_DAT);
@@ -152,10 +167,41 @@ void archie_send_file(unsigned char id, fileTYPE *file) {
   DisableFpga();
 }
 
+void archie_fdc_set_status(void) {
+  int i;
+
+  // send status bytes for all four possible floppies
+  EnableFpga();
+  SPI(ARCHIE_FDC_SET_STATUS);
+  for(i=0;i<MAX_FLOPPY;i++) {
+    unsigned char floppy_status = 0x00;
+    if(floppy[i].size) floppy_status |= 1;
+    SPI(floppy_status);
+  }
+  DisableFpga();
+}
+
+void archie_set_floppy(char i, fileTYPE *file) {
+  if(!file) {
+    archie_debugf("Floppy %d eject", i);
+    floppy[i].size = 0;
+  } else {
+    archie_debugf("Floppy %d insert %.11s", i, file->name);
+    floppy[i] = *file;
+  }
+  
+  // update floppy status in fpga
+  archie_fdc_set_status();
+}
+
+char archie_floppy_is_inserted(char i) {
+  return(floppy[i].size != 0);
+}
+
 void archie_set_rom(fileTYPE *file) {
   if(!file) return;
 
-  archie_debugf("Selected file %.11s with %lu bytes to send", 
+  archie_debugf("ROM file %.11s with %lu bytes to send", 
 		file->name, file->size);
 
   // save file name
@@ -204,6 +250,8 @@ static void archie_kbd_reset(void) {
 
 void archie_init(void) {
   fileTYPE file;
+  char i;
+
   archie_debugf("init");
 
   // set config defaults
@@ -234,9 +282,17 @@ void archie_init(void) {
   } else 
     archie_debugf("RISCOS.EXT no found");
 
-  if (FileOpen(&floppy, "FLOPPY0 ADF"))  {
-    archie_debugf("Inserted floppy0 with %d bytes", floppy.size);
+  // try to open default floppies
+  for(i=0;i<MAX_FLOPPY;i++) {
+    char fdc_name[] = "FLOPPY0 ADF";
+    fdc_name[6] = '0'+i;
+    if (FileOpen(&floppy[i], fdc_name))  
+      archie_debugf("Inserted floppy %d with %d bytes", i, floppy[i].size);
+    else
+      floppy[i].size = 0;
   }
+  // update floppy status in fpga
+  archie_fdc_set_status();
 
   archie_kbd_send(STATE_RAK1, HRST);
   ack_timeout = GetTimer(20);  // give archie 20ms to reply
@@ -294,22 +350,19 @@ void archie_mouse(unsigned char b, char x, char y) {
 
   // ignore mouse buttons if key scanning is disabled
   if(flags & FLAG_SCAN_ENABLED) {
+    static const uint8_t remap[] = { 0, 2, 1 };
     static unsigned char buts = 0;
-    
-    // state of button 1 has changed
-    if((b&1) != (buts&1)) {
-      unsigned char prefix = (b&1)?KDDA:KUDA;
-      archie_kbd_send(STATE_WAIT4ACK1, prefix | 0x07); 
-      archie_kbd_send(STATE_WAIT4ACK2, prefix | 0x00);
-    }
+    uint8_t s;
 
-    // state of button 2 has changed
-    if((b&2) != (buts&2)) {
-      unsigned char prefix = (b&2)?KDDA:KUDA;
-      archie_kbd_send(STATE_WAIT4ACK1, prefix | 0x07); 
-      archie_kbd_send(STATE_WAIT4ACK2, prefix | 0x01);
+    // map all three buttons
+    for(s=0;s<3;s++) {
+      uint8_t mask = (1<<s);
+      if((b&mask) != (buts&mask)) {
+	unsigned char prefix = (b&mask)?KDDA:KUDA;
+	archie_kbd_send(STATE_WAIT4ACK1, prefix | 0x07); 
+	archie_kbd_send(STATE_WAIT4ACK2, prefix | remap[s]);
+      }
     }
-
     buts = b;
   }
 }
@@ -481,26 +534,38 @@ void archie_handle_fdc(void) {
 	  int track = status[2] & 0x7f;
 	  int sector = status[3] & 0x0f;
 	  unsigned long lba = 2 * (10*track + 5*side + sector);
+	  int floppy_index = -1;
+	  
+	  // allow only single floppy drives to be selected
+	  int i;
+	  for(i=0;i<MAX_FLOPPY;i++) 
+	    if(floppy_map == (0x0f^(1<<i)))
+	      floppy_index = i;
 
-	  // floppy 0 is expected to be used
-	  if(floppy_map != 0x0e) 
-	    archie_x_debugf("DIO: unexpected floppy %x", floppy_map); 
+	  if(floppy_index < 0)
+	    archie_x_debugf("DIO: unexpected floppy_map %x", floppy_map); 
 	  else {
-	    archie_x_debugf("DIO: sector read SD%d T%d S%d -> %ld", 
-			    side, track, sector, lba);
+	    fileTYPE *f = &floppy[floppy_index];
 
-	    // read two consecutive sectors 
-	    FileSeek(&floppy, lba, SEEK_SET);
-	    FileRead(&floppy, fdc_buffer);
-	    FileNextSector(&floppy);
-	    FileRead(&floppy, fdc_buffer+512);
+	    archie_x_debugf("DIO: floppy %d sector read SD%d T%d S%d -> %ld", 
+			    floppy_index, side, track, sector, lba);
 	    
-	    EnableFpga();
-	    SPI(ARCHIE_FDC_TX_DATA);
-	    spi_write(fdc_buffer, 1024);
-	    DisableFpga();
-
-	    hexdump(fdc_buffer, 1024, 0);
+	    if(!f->size)
+	      archie_x_debugf("DIO: floppy not inserted. Core should not do this!!"); 
+	    else {
+	      DISKLED_ON;
+	      // read two consecutive sectors 
+	      FileSeek(f, lba, SEEK_SET);
+	      FileRead(f, fdc_buffer);
+	      FileNextSector(f);
+	      FileRead(f, fdc_buffer+512);
+	      DISKLED_OFF;
+	      
+	      EnableFpga();
+	      SPI(ARCHIE_FDC_TX_DATA);
+	      spi_write(fdc_buffer, 1024);
+	      DisableFpga();
+	    }
 	  }
 	}
       }

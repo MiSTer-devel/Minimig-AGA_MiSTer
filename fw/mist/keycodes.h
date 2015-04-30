@@ -196,11 +196,11 @@ const unsigned short usb2atari[] = {
   0x0d,  // 2e: =
   0x1a,  // 2f: [
   0x1b,  // 30: ]
-  0x2b,  // 31: backslash
-  0x29,  // 32: Europe 1  -> same atari key code as 35
+  0x29,  // 31: backslash, only on us keyboard
+  0x29,  // 32: Europe 1, only on int. keyboard
   0x27,  // 33: ; 
   0x28,  // 34: '
-  0x29,  // 35: `
+  0x2b,  // 35: `
   0x33,  // 36: ,
   0x34,  // 37: .
   0x35,  // 38: /
@@ -437,8 +437,8 @@ const unsigned short usb2archie[] = {
   0x1c, // 2e: =
   0x31, // 2f: [
   0x32, // 30: ]
-  0x33, // 31: backslash
-  MISS, // 32: Europe 1
+  0x33, // 31: backslash (only on us keyboards)
+  0x33, // 32: Europe 1 (only on international kbds)
   0x45, // 33: ;
   0x46, // 34: '
   0x10, // 35: `

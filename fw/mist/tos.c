@@ -463,58 +463,58 @@ static void handle_fdc(unsigned char *buffer) {
   unsigned char fdc_data = buffer[7];
   unsigned char drv_sel = 3-((buffer[8]>>2)&3); 
   unsigned char drv_side = 1-((buffer[8]>>1)&1); 
-
+  
   //  tos_debugf("FDC: sel %d, cmd %x", drv_sel, fdc_cmd);
   
   // check if a matching disk image has been inserted
   if(drv_sel && fdd_image[drv_sel-1].file.size) {
-    
     // if the fdc has been asked to write protect the disks, then
     // write sector commands should never reach the oi controller
     
     // read/write sector command
     if((fdc_cmd & 0xc0) == 0x80) {
-
       // convert track/sector/side into disk offset
       unsigned int offset = drv_side; 
       offset += fdc_track * fdd_image[drv_sel-1].sides;
       offset *= fdd_image[drv_sel-1].spt;
       offset += fdc_sector-1;
-
-      if(user_io_dip_switch1())
-	tos_debugf("FDC req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p", scnt, 
-		'A'+drv_sel-1, drv_side, fdc_track, fdc_sector, offset,
-		dma_address);
-
+      
+      if(user_io_dip_switch1()) {
+	tos_debugf("FDC %s req %d sec (%c, SD:%d, T:%d, S:%d = %d) -> %p", 
+		   (fdc_cmd & 0x10)?"multi":"single", scnt, 
+		   'A'+drv_sel-1, drv_side, fdc_track, fdc_sector, offset,
+                   dma_address);
+      }
+      
       while(scnt) {
-	DISKLED_ON;
-	
-	FileSeek(&fdd_image[drv_sel-1].file, offset, SEEK_SET);
-
-	if((fdc_cmd & 0xe0) == 0x80) { 
-	  // read from disk ...
-	  FileRead(&fdd_image[drv_sel-1].file, dma_buffer);	  
-	  // ... and copy to ram
-	  mist_memory_write_block(dma_buffer);
-	} else {
-	  // read from ram ...
-	  mist_memory_read_block(dma_buffer);
-	  // ... and write to disk
-	  FileWrite(&(fdd_image[drv_sel-1].file), dma_buffer);
-	}
-	
-	DISKLED_OFF;
-	
+	// check if requested sector is in range
+	if((fdc_sector > 0) && (fdc_sector <= fdd_image[drv_sel-1].spt)) {
+	  
+	  DISKLED_ON;
+	  
+	  FileSeek(&fdd_image[drv_sel-1].file, offset, SEEK_SET);
+	  
+	  if((fdc_cmd & 0xe0) == 0x80) { 
+	    // read from disk ...
+	    FileRead(&fdd_image[drv_sel-1].file, dma_buffer);	  
+	    // ... and copy to ram
+	    mist_memory_write_block(dma_buffer);
+	  } else {
+	    // read from ram ...
+	    mist_memory_read_block(dma_buffer);
+	    // ... and write to disk
+	    FileWrite(&(fdd_image[drv_sel-1].file), dma_buffer);
+	  }
+	  
+	  DISKLED_OFF;
+	} else 
+	  tos_debugf("sector out of range");
+	  
 	scnt--;
 	dma_address += 512;
-	offset += 1;
-
-	// tell DMA that one sector has been read
-	// ...
+	offset += 1;	
       }
-
       dma_ack(0x00);
-
     } else if((fdc_cmd & 0xc0) == 0xc0) {
       char msg[32];
 
@@ -546,8 +546,6 @@ static void mist_get_dmastate() {
   SPI(MIST_GET_DMASTATE);
   spi_read(buffer, 32);
   DisableFpga();
-
-  //  hexdump(buffer, 16, 0);
 
   //  check if acsi is busy
   if(buffer[19] & 0x01) 
@@ -1110,16 +1108,18 @@ void tos_insert_disk(char i, fileTYPE *file) {
   // check image size and parameters
     
   // check if image size suggests it's a two sided disk
-  if(fdd_image[i].file.size > 80*9*512)
+  if(fdd_image[i].file.size > 85*11*512)
     fdd_image[i].sides = 2;
     
   // try common sector/track values
   int m, s, t;
   for(m=0;m<=2;m++)  // multiplier for hd/ed disks
     for(s=9;s<=12;s++)
-      for(t=80;t<=85;t++)
+      for(t=78;t<=85;t++)
 	if(512*(1<<m)*s*t*fdd_image[i].sides == fdd_image[i].file.size)
 	  fdd_image[i].spt = s*(1<<m);
+
+  
   
   if(!fdd_image[i].spt) {
     // read first sector from disk

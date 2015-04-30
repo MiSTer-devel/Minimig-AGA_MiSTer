@@ -493,8 +493,13 @@ void ikbd_poll(void) {
     DisableIO();
   }
 
-  // send data from queue if present
-  if(rptr == wptr) return;
+  // everything below must not happen faster than 1khz
+  static unsigned long rtimer = 0;
+  if(!CheckTimer(rtimer))
+    return;
+
+  // next event 1 ms later
+  rtimer = GetTimer(1);
 
   // timer active?
   if(ikbd_timer) {
@@ -504,23 +509,25 @@ void ikbd_poll(void) {
     ikbd_timer = 0;
   }
 
-  if(tx_queue[rptr] & 0x8000) {
+  if(rptr == wptr) return;
 
+  if(tx_queue[rptr] & 0x8000) {
+    
     // request to start timer?
     if(tx_queue[rptr] & 0x8000) 
       ikbd_timer = GetTimer(tx_queue[rptr] & 0x3fff);
-
+    
     rptr = (rptr+1)&(QUEUE_LEN-1);
     return;
   }
-
+  
   // transmit data from queue
   spi_uio_cmd_cont(UIO_IKBD_OUT);
   spi8(tx_queue[rptr]);
   DisableIO();
   
   ikbd.tx_cnt++;
-
+  
   rptr = (rptr+1)&(QUEUE_LEN-1);  
 }
 

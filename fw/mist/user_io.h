@@ -61,6 +61,7 @@
 #define JOY_LEFT        0x02
 #define JOY_DOWN        0x04
 #define JOY_UP          0x08
+#define JOY_BTN_SHIFT   4
 #define JOY_BTN1        0x10
 #define JOY_BTN2        0x20
 #define JOY_BTN3        0x40
@@ -118,5 +119,7 @@ void user_io_kbd(unsigned char m, unsigned char *k);
 char user_io_create_config_name(char *s);
 void user_io_digital_joystick(unsigned char, unsigned char);
 void user_io_analog_joystick(unsigned char, char, char);
+
+void user_io_key_remap(char *);
 
 #endif // USER_IO_H

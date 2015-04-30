@@ -20,10 +20,12 @@ typedef struct {
 } __attribute__((packed)) item_t;
 
 // flags for joystick components required
-#define JOYSTICK_REQ_AXIS_X  0x01
-#define JOYSTICK_REQ_AXIS_Y  0x02
-#define JOYSTICK_REQ_BTN_0   0x04
-#define JOYSTICK_COMPLETE    (JOYSTICK_REQ_AXIS_X | JOYSTICK_REQ_AXIS_Y | JOYSTICK_REQ_BTN_0)
+#define JOY_MOUSE_REQ_AXIS_X  0x01
+#define JOY_MOUSE_REQ_AXIS_Y  0x02
+#define JOY_MOUSE_REQ_BTN_0   0x04
+#define JOY_MOUSE_REQ_BTN_1   0x08
+#define JOYSTICK_COMPLETE     (JOY_MOUSE_REQ_AXIS_X | JOY_MOUSE_REQ_AXIS_Y | JOY_MOUSE_REQ_BTN_0)
+#define MOUSE_COMPLETE        (JOY_MOUSE_REQ_AXIS_X | JOY_MOUSE_REQ_AXIS_Y | JOY_MOUSE_REQ_BTN_0 | JOY_MOUSE_REQ_BTN_1)
 
 #define USAGE_PAGE_GENERIC_DESKTOP  1
 #define USAGE_PAGE_SIMULATION       2
@@ -52,7 +54,25 @@ typedef struct {
 #define USAGE_Z       50
 #define USAGE_WHEEL   56
 
-bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf) {
+// check if the current report 
+bool report_is_usable(uint16_t bit_count, uint8_t report_complete, hid_report_t *conf) {
+  hidp_debugf("  - total bit count: %d (%d bytes, %d bits)", 
+	      bit_count, bit_count/8, bit_count%8);
+  
+  conf->report_size = bit_count/8;
+
+  // check if something useful was detected
+  if( ((conf->type == REPORT_TYPE_JOYSTICK) && ((report_complete & JOYSTICK_COMPLETE) == JOYSTICK_COMPLETE)) ||
+      ((conf->type == REPORT_TYPE_MOUSE)    && ((report_complete & MOUSE_COMPLETE) == MOUSE_COMPLETE))) {
+    hidp_debugf("  - report %d is usable", conf->report_id);
+    return true;
+  }
+
+  hidp_debugf("  - unusable report %d", conf->report_id);
+  return false;
+}
+
+bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf) {
   int8_t app_collection = 0;
   int8_t phys_log_collection = 0;
   uint8_t skip_collection = 0;
@@ -68,13 +88,13 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 
   // mask used to check of all required components have been found, so
   // that e.g. both axes and the button of a joystick are ready to be used
-  uint8_t setup_complete = 0;
+  uint8_t report_complete = 0;
 
   // joystick/mouse components
   int8_t axis[2] = { -1, -1};
   uint8_t btns = 0;
 
-  conf->type = CONFIG_TYPE_NONE;
+  conf->type = REPORT_TYPE_NONE;
 
   while(rep_size) {
     // extract short item
@@ -127,7 +147,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 
       
     } else {
-      //      hidp_extreme_debugf("-> Item tag=%d type=%d size=%d\n", tag, type, size);
+      //      hidp_extreme_debugf("-> Item tag=%d type=%d size=%d", tag, type, size);
 
       switch(type) {
       case 0:
@@ -137,24 +157,26 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	case 8:
 	  // 
 	  if(btns) {
-	    if(conf->type == CONFIG_TYPE_JOYSTICK) {
+	    if((conf->type == REPORT_TYPE_JOYSTICK) ||
+	       (conf->type == REPORT_TYPE_MOUSE)) {
 	      // scan for up to four buttons
 	      char b;
 	      for(b=0;b<4;b++) {
 		if(report_count > b) {
 		  uint16_t this_bit = bit_count+b;
 
-		  hidp_debugf("BUTTON%d @ %d (byte %d, mask %d)\n", b, 
+		  hidp_debugf("BUTTON%d @ %d (byte %d, mask %d)", b, 
 			      this_bit, this_bit/8, 1 << (this_bit%8));
 
-		  conf->joystick.button[b].byte_offset = this_bit/8;
-		  conf->joystick.button[b].bitmask = 1 << (this_bit%8);
+		  conf->joystick_mouse.button[b].byte_offset = this_bit/8;
+		  conf->joystick_mouse.button[b].bitmask = 1 << (this_bit%8);
 		}
 	      }
 
 	      // we found at least one button which is all we want to accept this as a valid 
 	      // joystick
-	      setup_complete |= JOYSTICK_REQ_BTN_0;
+	      report_complete |= JOY_MOUSE_REQ_BTN_0;
+	      if(report_count > 1) report_complete |= JOY_MOUSE_REQ_BTN_1;
 	    }
 	  }
 
@@ -163,32 +185,23 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	  for(c=0;c<2;c++) {
 	    if(axis[c] >= 0) {
 	      uint16_t cnt = bit_count + report_size * axis[c];
-	      hidp_debugf("  (%c-AXIS @ %d (byte %d))\n", 'X'+c,
-		     cnt, cnt/8);
+	      hidp_debugf("  (%c-AXIS @ %d (byte %d, bit %d))", 'X'+c,
+			  cnt, cnt/8, cnt&7);
 
-	      // only 8/16 bit axes at byte boundaries are supported for
-	      // joysticks
-	      if((conf->type == CONFIG_TYPE_JOYSTICK) &&
-		 ((report_size == 8) || (report_size == 16)) && ((cnt&7) == 0)) {
-		// save in joystick config
-		conf->joystick.axis[c].byte_offset = cnt/8;
-		conf->joystick.axis[c].size = report_size;
-		conf->joystick.axis[c].logical.min = logical_minimum;
-		conf->joystick.axis[c].logical.max = logical_maximum;
-		conf->joystick.axis[c].size = report_size;
-		if(c==0) setup_complete |= JOYSTICK_REQ_AXIS_X;
-		if(c==1) setup_complete |= JOYSTICK_REQ_AXIS_Y;
+	      if((conf->type == REPORT_TYPE_JOYSTICK) || (conf->type == REPORT_TYPE_MOUSE)) {
+		// save in joystick report
+		conf->joystick_mouse.axis[c].offset = cnt;
+		conf->joystick_mouse.axis[c].size = report_size;
+		conf->joystick_mouse.axis[c].logical.min = logical_minimum;
+		conf->joystick_mouse.axis[c].logical.max = logical_maximum;
+		conf->joystick_mouse.axis[c].size = report_size;
+		if(c==0) report_complete |= JOY_MOUSE_REQ_AXIS_X;
+		if(c==1) report_complete |= JOY_MOUSE_REQ_AXIS_Y;
 	      }
-
-	      if((report_size != 8) && (report_size != 16))
-		hidp_debugf("Unsupported report size %d\n", report_size);
-
-	      if((cnt&7) != 0) 
-		hidp_debugf("Unsupported bit offset %d\n", cnt&7);
 	    }
 	  }
 	  
-	  hidp_extreme_debugf("INPUT(%d)\n", value);
+	  hidp_extreme_debugf("INPUT(%d)", value);
 
 	  // reset for next inputs
 	  bit_count += report_count * report_size;
@@ -198,35 +211,35 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	  break;
 
 	case 9:
-	  hidp_extreme_debugf("OUTPUT(%d)\n", value);
+	  hidp_extreme_debugf("OUTPUT(%d)", value);
 	  break;
 
 	case 11:
-	  hidp_extreme_debugf("FEATURE(%d)\n", value);
+	  hidp_extreme_debugf("FEATURE(%d)", value);
 	  break;
 
 	case 10:
-	  hidp_extreme_debugf("COLLECTION(%d)\n", value);
+	  hidp_extreme_debugf("COLLECTION(%d)", value);
 	  collection_depth++;
 	  usage_count = 0;
 
 	  if(value == 1) {	   // app collection
-	    hidp_extreme_debugf("  -> application\n");
+	    hidp_extreme_debugf("  -> application");
 	    app_collection++;
 	  } else if(value == 0) {  // physical collection
-	    hidp_extreme_debugf("  -> physical\n");
+	    hidp_extreme_debugf("  -> physical");
 	    phys_log_collection++;
 	  } else if(value == 2) {  // logical collection
-	    hidp_extreme_debugf("  -> logical\n");
+	    hidp_extreme_debugf("  -> logical");
 	    phys_log_collection++;
 	  } else {
-	    hidp_extreme_debugf("skipping unsupported collection\n");
+	    hidp_extreme_debugf("skipping unsupported collection");
 	    skip_collection++;
 	  }
 	  break;
 	  
 	case 12:
-	  hidp_extreme_debugf("END_COLLECTION(%d)\n", value);
+	  hidp_extreme_debugf("END_COLLECTION(%d)", value);
 	  collection_depth--;
 
 	  // leaving the depth the generic desktop was valid for
@@ -234,19 +247,29 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	    generic_desktop = -1;
 
 	  if(phys_log_collection) {
-	    hidp_extreme_debugf("  -> phys/log end\n");
+	    hidp_extreme_debugf("  -> phys/log end");
 	    phys_log_collection--;
 	  } else if(app_collection) {
-	    hidp_extreme_debugf("  -> app end\n");
+	    hidp_extreme_debugf("  -> app end");
 	    app_collection--;
+
+	    // check if report is usable and stop parsing if it is
+	    if(report_is_usable(bit_count, report_complete, conf))
+	      return true;
+	    else {
+	      // retry with next report
+	      bit_count = 0;
+	      report_complete = 0;
+	    }
+
 	  } else {
-	    hidp_debugf(" -> unexpected\n");
+	    hidp_debugf(" -> unexpected");
 	    return false;
 	  }
 	  break;
 
 	default:
-	  hidp_debugf("unexpected main item %d\n", tag);
+	  hidp_debugf("unexpected main item %d", tag);
 	  return false;
 	  break;
 	}
@@ -256,72 +279,72 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	// global item
 	switch(tag) {
 	case 0:
-	  hidp_extreme_debugf("USAGE_PAGE(%d/0x%x)\n", value, value);
+	  hidp_extreme_debugf("USAGE_PAGE(%d/0x%x)", value, value);
 
 	  if(value == USAGE_PAGE_KEYBOARD) {
-	    hidp_extreme_debugf(" -> Keyboard\n");
+	    hidp_extreme_debugf(" -> Keyboard");
 	  } else if(value == USAGE_PAGE_GAMING) {
-	    hidp_extreme_debugf(" -> Game device\n");
+	    hidp_extreme_debugf(" -> Game device");
 	  } else if(value == USAGE_PAGE_LEDS) {
-	    hidp_extreme_debugf(" -> LEDs\n");
+	    hidp_extreme_debugf(" -> LEDs");
 	  } else if(value == USAGE_PAGE_CONSUMER) {
-	    hidp_extreme_debugf(" -> Consumer\n");
+	    hidp_extreme_debugf(" -> Consumer");
 	  } else if(value == USAGE_PAGE_BUTTON) {
-	    hidp_extreme_debugf(" -> Buttons\n");
+	    hidp_extreme_debugf(" -> Buttons");
 	    btns = 1;
 	  } else if(value == USAGE_PAGE_GENERIC_DESKTOP) {
-	    hidp_extreme_debugf(" -> Generic Desktop\n");
+	    hidp_extreme_debugf(" -> Generic Desktop");
 
 	    if(generic_desktop < 0)
 	      generic_desktop = collection_depth;
 	  } else
-	    hidp_extreme_debugf(" -> UNSUPPORTED USAGE_PAGE\n");
+	    hidp_extreme_debugf(" -> UNSUPPORTED USAGE_PAGE");
 
 	  break;
 	  
 	case 1:
-	  hidp_extreme_debugf("LOGICAL_MINIMUM(%d/%d)\n", value, (int8_t)value);
+	  hidp_extreme_debugf("LOGICAL_MINIMUM(%d/%d)", value, (int16_t)value);
 	  logical_minimum = value;
 	  break;
 	  
 	case 2:
-	  hidp_extreme_debugf("LOGICAL_MAXIMUM(%d)\n", value);
+	  hidp_extreme_debugf("LOGICAL_MAXIMUM(%d)", value);
 	  logical_maximum = value;
 	  break;
 
 	case 3:
-	  hidp_extreme_debugf("PHYSICAL_MINIMUM(%d/%d)\n", value, (int8_t)value);
+	  hidp_extreme_debugf("PHYSICAL_MINIMUM(%d/%d)", value, (int16_t)value);
 	  break;
 	  
 	case 4:
-	  hidp_extreme_debugf("PHYSICAL_MAXIMUM(%d)\n", value);
+	  hidp_extreme_debugf("PHYSICAL_MAXIMUM(%d)", value);
 	  break;
 
 	case 5:
-	  hidp_extreme_debugf("UNIT_EXPONENT(%d)\n", value);
+	  hidp_extreme_debugf("UNIT_EXPONENT(%d)", value);
 	  break;
 
 	case 6:
-	  hidp_extreme_debugf("UNIT(%d)\n", value);
+	  hidp_extreme_debugf("UNIT(%d)", value);
 	  break;
 
 	case 7:
-	  hidp_extreme_debugf("REPORT_SIZE(%d)\n", value);
+	  hidp_extreme_debugf("REPORT_SIZE(%d)", value);
 	  report_size = value;
 	  break;
 
 	case 8:
-	  hidp_extreme_debugf("REPORT_ID(%d)\n", value);
+	  hidp_extreme_debugf("REPORT_ID(%d)", value);
 	  conf->report_id = value;
 	  break;
 
 	case 9:
-	  hidp_extreme_debugf("REPORT_COUNT(%d)\n", value);
+	  hidp_extreme_debugf("REPORT_COUNT(%d)", value);
 	  report_count = value;
 	  break;
 	  
 	default:
-	  hidp_debugf("unexpected global item %d\n", tag);
+	  hidp_debugf("unexpected global item %d", tag);
 	  return false;
 	  break;
 	}
@@ -332,43 +355,43 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	switch(tag) {
 	case 0:
 	  // we only support mice, keyboards and joysticks
-	  hidp_extreme_debugf("USAGE(%d/0x%x)\n", value, value);
+	  hidp_extreme_debugf("USAGE(%d/0x%x)", value, value);
 
 	  if( !collection_depth && (value == USAGE_KEYBOARD)) {
 	    // usage(keyboard) is always allowed
-	    hidp_debugf(" -> Keyboard\n");
-	    conf->type = CONFIG_TYPE_KEYBOARD;
+	    hidp_debugf(" -> Keyboard");
+	    conf->type = REPORT_TYPE_KEYBOARD;
 	  } else if(!collection_depth && (value == USAGE_MOUSE)) {
 	    // usage(mouse) is always allowed
-	    hidp_debugf(" -> Mouse\n");
-	    conf->type = CONFIG_TYPE_MOUSE;
+	    hidp_debugf(" -> Mouse");
+	    conf->type = REPORT_TYPE_MOUSE;
 	  } else if(!collection_depth && 
 		    ((value == USAGE_GAMEPAD) || (value == USAGE_JOYSTICK))) {
-	    hidp_extreme_debugf(" -> Gamepad/Joystick\n");
-	    hidp_debugf("Gamepad/Joystick usage found\n");
-	    conf->type = CONFIG_TYPE_JOYSTICK;
+	    hidp_extreme_debugf(" -> Gamepad/Joystick");
+	    hidp_debugf("Gamepad/Joystick usage found");
+	    conf->type = REPORT_TYPE_JOYSTICK;
 	  } else if(value == USAGE_POINTER && app_collection) {
 	    // usage(pointer) is allowed within the application collection
 
-	    hidp_debugf(" -> Pointer\n");
+	    hidp_debugf(" -> Pointer");
 
 	  } else if((value == USAGE_X || value == USAGE_Y) && app_collection) {
 	    // usage(x) and usage(y) are allowed within the app collection
-	    hidp_extreme_debugf(" -> axis usage\n");
+	    hidp_extreme_debugf(" -> axis usage");
 
-	    // we support x and y axis on joysticks
-	    if(conf->type == CONFIG_TYPE_JOYSTICK) {
+	    // we support x and y axis on mice and joysticks
+	    if((conf->type == REPORT_TYPE_JOYSTICK) || (conf->type == REPORT_TYPE_MOUSE)) {
 	      if(value == USAGE_X) {
-		hidp_extreme_debugf("JOYSTICK: found x axis @ %d\n", usage_count);
+		hidp_extreme_debugf("JOYSTICK/MOUSE: found x axis @ %d", usage_count);
 		axis[0] = usage_count;
 	      }
 	      if(value == USAGE_Y) {
-		hidp_extreme_debugf("JOYSTICK: found y axis @ %d\n", usage_count);
+		hidp_extreme_debugf("JOYSTICK/MOUSE: found y axis @ %d", usage_count);
 		axis[1] = usage_count;
 	      }
 	    }
 	  } else {
-	    hidp_extreme_debugf(" -> UNSUPPORTED USAGE\n");
+	    hidp_extreme_debugf(" -> UNSUPPORTED USAGE");
 	    //	    return false;
 	  }
 
@@ -376,17 +399,17 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	  break;
 	  
 	case 1:
-	  hidp_extreme_debugf("USAGE_MINIMUM(%d)\n", value);
+	  hidp_extreme_debugf("USAGE_MINIMUM(%d)", value);
 	  usage_count -= (value-1);
 	  break;
 	  
 	case 2:
-	  hidp_extreme_debugf("USAGE_MAXIMUM(%d)\n", value);
+	  hidp_extreme_debugf("USAGE_MAXIMUM(%d)", value);
 	  usage_count += value;
 	  break;
 	  
 	default:
-	  hidp_extreme_debugf("unexpected local item %d\n", tag);
+	  hidp_extreme_debugf("unexpected local item %d", tag);
 	  //	  return false;
 	  break;
 	}
@@ -394,28 +417,13 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_config_t *conf
 	
       default:
 	// reserved
-	hidp_extreme_debugf("unexpected resreved item %d\n", tag);
+	hidp_extreme_debugf("unexpected reserved item %d", tag);
 	//	return false;
 	break;
       }
     }
   }
 
-  hidp_debugf("total bit count: %d (%d bytes, %d bits)\n", 
-	 bit_count, bit_count/8, bit_count%8);
-
-  conf->report_size = bit_count/8;
-
-  // check if something useful was detected
-  if(conf->type == CONFIG_TYPE_JOYSTICK) {
-    if(setup_complete == JOYSTICK_COMPLETE) {
-      hidp_debugf("Joystick ok\n");
-      return true;
-    }
-
-    hidp_debugf("Ignoring incomplete joystick %x\n", setup_complete);
-  } else
-    hidp_debugf("No joystick\n");
-
+  // if we get here then no usable setup was found
   return false;
 }

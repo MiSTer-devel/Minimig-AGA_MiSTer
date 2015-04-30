@@ -21,7 +21,9 @@ typedef enum {UINT8=0, INT8, UINT16, INT16, UINT32, INT32,
 #ifdef INI_ENABLE_FLOAT
 	      FLOAT, 
 #endif
-	      STRING} ini_vartypes_t;
+	      STRING, CUSTOM_HANDLER} ini_vartypes_t;
+
+typedef void custom_handler_t(char*);
 
 typedef struct {
   char* name;

@@ -15,6 +15,9 @@
 #include "spi.h"
 #include "mist_cfg.h"
 
+// up to 16 key can be remapped
+#define MAX_REMAP  16
+unsigned char key_remap_table[MAX_REMAP][2];
 
 #define BREAK  0x8000
 
@@ -115,6 +118,10 @@ static void PollAdc() {
 }
 
 void user_io_init() {
+
+  // mark remap table as unused
+  memset(key_remap_table, 0, sizeof(key_remap_table));
+
   InitADC();
 
   ikbd_init();
@@ -569,7 +576,7 @@ unsigned char user_io_8bit_set_status(unsigned char new_status, unsigned char ma
 
 void user_io_poll() {
 
-  if(user_io_dip_switch1() && (core_type != CORE_TYPE_ARCHIE)) {
+  if(user_io_dip_switch1()) {
     // check of core has changed from a good one to a not supported on
     // as this likely means that the user is reloading the core via jtag
     unsigned char ct;
@@ -1256,7 +1263,17 @@ void user_io_kbd(unsigned char m, unsigned char *k) {
 //    hexdump(k, 6, 0);
 
     static unsigned char modifier = 0, pressed[6] = { 0,0,0,0,0,0 };
-    int i, j;
+    char i, j;
+    
+    // remap keycodes if requested
+    for(i=0;(i<6) && k[i];i++) {
+      for(j=0;j<MAX_REMAP;j++) {
+	if(key_remap_table[j][0] == k[i]) {
+	  k[i] = key_remap_table[j][1];
+	  break;
+	}
+      }
+    }
     
     // modifier keys are used as buttons in emu mode
     if(emu_mode != EMU_NONE) {
@@ -1439,3 +1456,22 @@ void user_io_kbd(unsigned char m, unsigned char *k) {
   }
 }
 
+void user_io_key_remap(char *s) {
+  // s is a string containing two comma serperated hex numbers
+  if((strlen(s) != 5) && (s[2]!=',')) {
+    ini_parser_debugf("malformed entry %s", s);
+    return;
+  }
+
+  char i;
+  for(i=0;i<MAX_REMAP;i++) {
+    if(!key_remap_table[i][0]) {
+      key_remap_table[i][0] = strtol(s, NULL, 16);
+      key_remap_table[i][1] = strtol(s+3, NULL, 16);
+      
+      ini_parser_debugf("key remap entry %d = %02x,%02x", 
+			i, key_remap_table[i][0], key_remap_table[i][1]);
+      return;
+    }
+  }
+}
