@@ -107,6 +107,7 @@ wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
 wire [ 32-1:0] tg68_VBR_out;
+wire           tg68_ovr;
 
 // minimig
 wire           led;
@@ -270,6 +271,7 @@ TG68K tg68k (
   .cpu          (cpu_config[1:0]  ),
   .turbochipram (1'b1/*turbochipram*/     ),
   .fastramcfg   ({memcfg[5],memcfg[5:4]}),
+  .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
   .nResetOut    (                 ),
@@ -435,6 +437,7 @@ minimig minimig (
   ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
   ._cpu_reset   (tg68_rst         ), // M68K reset
   .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
+  .ovr          (tg68_ovr         ), // NMI override address decoding
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in

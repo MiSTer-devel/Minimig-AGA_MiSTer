@@ -160,6 +160,7 @@ module minimig
 	output	_cpu_dtack,			// m68k data acknowledge
 	output	_cpu_reset,			// m68k reset
   input [31:0] cpu_vbr, // m68k VBR
+  output wire ovr,      // NMI address decoding override
 	//sram pins
 	output	[15:0] ram_data,	//sram data bus
 	input	[15:0] ramdata_in,		//sram data bus in
@@ -355,7 +356,7 @@ wire cpuhlt;
 wire	int7;					//int7 interrupt request from Action Replay
 wire	[2:0] _iplx;			//interrupt request lines from Paula
 wire	sel_cart;				//Action Replay RAM select
-wire	ovr;					//overide chip memmory decoding
+//wire	ovr;					//overide chip memmory decoding
 wire  [16-1:0] cart_data_out;
 
 wire	usrrst;					//user reset from osd interface
@@ -831,6 +832,7 @@ cart CART1
 (
   .clk            (clk            ),
   .clk7_en        (clk7_en        ),
+  .clk7n_en       (clk7n_en       ),
   .cpu_rst        (!_cpu_reset    ),
   .cpu_address    (cpu_address    ),
   .cpu_address_in (cpu_address_out),
@@ -839,6 +841,8 @@ cart CART1
   .cpu_hwr        (cpu_hwr        ),
   .cpu_lwr        (cpu_lwr        ),
   .cpu_vbr        (cpu_vbr        ),
+  .reg_address_in (reg_address    ),
+  .reg_data_in    (custom_data_in ),
   .dbr            (dbr            ),
   .ovl            (ovl            ),
   .freeze         (freeze         ),

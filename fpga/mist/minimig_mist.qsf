@@ -46,7 +46,7 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE BALANCED
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
+set_global_assignment -name USE_SIGNALTAP_FILE cart_debug.stp
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
@@ -415,6 +415,5 @@ set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name SDC_FILE minimig_mist.sdc
-set_global_assignment -name SIGNALTAP_FILE stp1.stp
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_be_1024x16.qip
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_256x32.qip

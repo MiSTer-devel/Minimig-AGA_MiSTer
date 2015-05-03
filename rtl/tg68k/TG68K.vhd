@@ -55,6 +55,7 @@ entity TG68K is
         cpu           : in std_logic_vector(1 downto 0);
         fastramcfg           : in std_logic_vector(2 downto 0);
 		  turbochipram : in std_logic;
+        ovr           : in std_logic;
         ramaddr    	  : out std_logic_vector(31 downto 0);
         cpustate      : out std_logic_vector(5 downto 0);
 		nResetOut	  : out std_logic;
@@ -95,7 +96,7 @@ COMPONENT TG68KdotC_Kernel
 		busstate	  	  	: out std_logic_vector(1 downto 0);	-- 00-> fetch code 10->read data 11->write data 01->no memaccess
 		skipFetch	  		: out std_logic;
         regin          		: buffer std_logic_vector(31 downto 0);
-        VBR_out           : out std_logic_vector(31 downto 0)
+        VBR_out           : buffer std_logic_vector(31 downto 0)
         );
 	END COMPONENT;
 
@@ -157,14 +158,21 @@ COMPONENT TG68KdotC_Kernel
    SIGNAL datatg68      : std_logic_vector(15 downto 0);
    SIGNAL ramcs	      : std_logic;
 
+  SIGNAL NMI_vector : std_logic_vector(15 downto 0);
+
 BEGIN  
+  NMI_vector <= X"000c" when cpuaddr(1)='1' else X"00a0"; -- 16-bit bus!
+  -- TODO change outgoing address to 0x7c when NMi vector is requested (VBR+0x7c), so that the response comes from cart.v
+  -- also disable selecting fast ram in this case!
+
 --	n_clk <= NOT clk;
 --	wrd <= data_akt_e OR data_akt_s;
 	wrd <= wr;
 	addr <= cpuaddr;-- WHEN addr_akt_e='1' ELSE t_addr WHEN addr_akt_s='1' ELSE "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
 --	data <= data_write WHEN data_akt_e='1' ELSE t_data WHEN data_akt_s='1' ELSE "ZZZZZZZZZZZZZZZZ";
 --	datatg68 <= fromram WHEN sel_fast='1' ELSE r_data; 
-	datatg68 <= fromram WHEN sel_fast='1'
+	datatg68 <= --NMI_vector when ovr='1' ELSE
+    fromram WHEN sel_fast='1'
 		ELSE autoconfig_data&r_data(11 downto 0) when sel_autoconfig='1' and autoconfig_out="01" -- Zorro II autoconfig
 		ELSE autoconfig_data2&r_data(11 downto 0) when sel_autoconfig='1' and autoconfig_out="10" -- Zorro III autoconfig
 		ELSE r_data;

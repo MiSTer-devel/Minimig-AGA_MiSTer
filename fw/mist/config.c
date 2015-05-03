@@ -282,7 +282,7 @@ char UploadActionReplay()
 	if (!(i&31)) iprintf("*");
 	RARead(&romfile,sector_buffer,512);
 	EnableOsd();
-	adr = 0xa00000 + i*512;
+	adr = 0xa10000 + i*512;
 	SPI(OSD_CMD_WR);
 	SPIN(); SPIN(); SPIN(); SPIN();
 	SPI(adr&0xff); adr = adr>>8;

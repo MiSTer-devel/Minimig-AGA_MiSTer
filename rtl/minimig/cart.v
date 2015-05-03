@@ -34,6 +34,7 @@
 // RK:                                                                        //
 // 2013-11-27  - initial version                                              //
 // 2014-09-27  - cleanup, clock enable added                                  //
+// 2015-05-03  - added custom registers mirror                                //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -42,6 +43,7 @@ module cart
 (
   input  wire           clk,
   input  wire           clk7_en,
+  input  wire           clk7n_en,
   input  wire           cpu_rst,
   input  wire [ 24-1:1] cpu_address,
   input  wire [ 24-1:1] cpu_address_in,
@@ -50,6 +52,8 @@ module cart
   input  wire           cpu_hwr,
   input  wire           cpu_lwr,
   input  wire [ 32-1:0] cpu_vbr,
+  input  wire [  9-1:1] reg_address_in,
+  input  wire [ 16-1:0] reg_data_in,
   input  wire           dbr,
   input  wire           ovl,
   input  wire           freeze,
@@ -72,6 +76,11 @@ reg           l_int7_req=0;
 reg           l_int7_ack=0;
 reg           l_int7=0;
 reg           active=0;
+wire          sel_custom_mirror;
+wire [16-1:0] nmi_adr_out;
+reg  [16-1:0] custom_mirror_q;
+wire [16-1:0] custom_mirror_out;
+reg  [16-1:0] custom_mirror [0:256-1];
 
 
 //// code ////
@@ -91,12 +100,12 @@ assign aron = 1'b1;
 `endif
 
 // cart selected
-assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0);
+assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0); // $A00000
 
 // latch VBR + NMI vector offset
 always @ (posedge clk) begin
   if (clk7_en) begin
-    nmi_vec_adr <= #1 cpu_vbr + 32'h0000007c;
+    nmi_vec_adr <= #1 cpu_vbr + 32'h0000007c; // $7C = NMI vector offset
   end
 end
 
@@ -105,7 +114,7 @@ end
 assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2] == nmi_vec_adr[23:2]);
 
 // custom NMI vector address output
-assign cart_data_out = ovr ? (!cpu_address_in[1] ? 16'h00a0 : 16'h000c) : 16'h0000;
+assign nmi_adr_out = ovr ? (!cpu_address_in[1] ? 16'h00a1 : 16'h000c) : 16'h0000;
 
 // freeze button
 always @ (posedge clk) begin
@@ -136,6 +145,7 @@ always @ (posedge clk) begin
   end
 end
 
+// latches
 always @ (posedge clk) begin
   if (clk7_en) begin
     l_int7_req <= int7_req;
@@ -165,6 +175,20 @@ always @ (posedge clk) begin
       active <= #1 1'b0;
   end
 end
+
+// custom registers mirror memory
+assign sel_custom_mirror = ~dbr && cpu_rd && (cpu_address_in[23:12]==12'b1010_1001_1111); // $A9F000
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    custom_mirror[reg_address_in] <= #1 reg_data_in;
+  end
+  custom_mirror_q <= #1 custom_mirror[cpu_address_in[8:1]];
+end
+
+assign custom_mirror_out = sel_custom_mirror ? custom_mirror_q : 16'h0000;
+
+// cart data output
+assign cart_data_out = custom_mirror_out | nmi_adr_out;
 
 
 endmodule
