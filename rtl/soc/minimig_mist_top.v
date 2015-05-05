@@ -355,7 +355,8 @@ sdram_ctrl sdram (
 );
 */
 
-sdram sdram (
+//sdram sdram (
+sdram_ctrl sdram (
   .cache_rst    (tg68_rst         ),
   .sdata        (SDRAM_DQ         ),
   .sdaddr       (SDRAM_A[12:0]    ),
