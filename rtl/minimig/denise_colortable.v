@@ -22,12 +22,15 @@ module denise_colortable
 // register names and adresses
 parameter COLORBASE = 9'h180;         // colour table base address
 
+// select xor
+wire [ 8-1:0] select_xored = select ^ bplxor;
+
 // color ram
 wire [ 8-1:0] wr_adr = {bank[2:0], reg_address_in[5:1]};
 wire          wr_en  = (reg_address_in[8:6] == COLORBASE[8:6]) && clk7_en;
 wire [32-1:0] wr_dat = {4'b0, data_in[11:0], 4'b0, data_in[11:0]};
 wire [ 4-1:0] wr_bs  = loct ? 4'b0011 : 4'b1111;
-wire [ 8-1:0] rd_adr = (ehb_en ? {3'b000, select[4:0]} : select) ^ bplxor;
+wire [ 8-1:0] rd_adr = ehb_en ? {3'b000, select_xored[4:0]} : select_xored;
 wire [32-1:0] rd_dat;
 reg           ehb_sel;
 
@@ -46,7 +49,7 @@ denise_colortable_ram_mf clut
 
 // register half-brite bit
 always @ (posedge clk) begin
-  ehb_sel <= #1 select[5];
+  ehb_sel <= #1 select_xored[5];
 end
 
 // pack color values

@@ -351,7 +351,7 @@ denise_spritepriority spm0
 wire  [24-1:0] clut_rgb;    // colour table rgb data out
 wire           ehb_en;      // ehb enable
 
-assign ehb_en = !killehb && !a1k && !ham && !dpf && ((l_bpu == 4'd6) || (ecs && (l_bpu == 4'd7)));
+assign ehb_en = !killehb && !a1k && !ham && !dpf && (l_bpu == 4'd6);
 
 denise_colortable clut0
 (
