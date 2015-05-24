@@ -39,6 +39,8 @@ module denise_bitplanes
   input  [8:0] hpos,        // horizontal position (70ns resolution)
   output   [8:1] bpldata      // bitplane data out
 );
+
+
 //register names and adresses
 parameter BPLCON1 = 9'h102;      
 parameter BPL1DAT = 9'h110;
@@ -53,7 +55,7 @@ parameter FMODE   = 9'h1fc;
 
 //local signals
 reg   [15:0] bplcon1;    // bplcon1 register
-reg   [15:0] fmode;     // fmod reg
+reg   [15:0] fmode /* synthesis syn_noprune */;     // fmod reg
 reg    [63:0] bpl1dat;    // buffer register for bit plane 2
 reg    [63:0] bpl2dat;    // buffer register for bit plane 2
 reg    [63:0] bpl3dat;    // buffer register for bit plane 3
@@ -63,13 +65,13 @@ reg    [63:0] bpl6dat;    // buffer register for bit plane 6
 reg    [63:0] bpl7dat;    // buffer register for bit plane 5
 reg    [63:0] bpl8dat;    // buffer register for bit plane 6
 reg    load;        // bpl1dat written => load shif registers
-reg   [7:0]  fmode_mask;
 
 reg    [7:0] extra_delay;  // extra delay when not alligned ddfstart
-reg    [7:0] pf1h;      // playfield 1 horizontal scroll
-reg    [7:0] pf2h;      // playfield 2 horizontal scroll
-reg    [7:0] pf1h_del;    // delayed playfield 1 horizontal scroll
-reg    [7:0] pf2h_del;    // delayed playfield 2 horizontal scroll
+reg    [7:0] extra_delay_r /* synthesis syn_noprune */;
+reg    [7:0] pf1h /* synthesis syn_noprune */;      // playfield 1 horizontal scroll
+reg    [7:0] pf2h /* synthesis syn_noprune */;      // playfield 2 horizontal scroll
+reg    [7:0] pf1h_del /* synthesis syn_noprune */;    // delayed playfield 1 horizontal scroll
+reg    [7:0] pf2h_del /* synthesis syn_noprune */;    // delayed playfield 2 horizontal scroll
 
 //--------------------------------------------------------------------------------------
 
@@ -85,28 +87,35 @@ always @(hpos)
     2'b11 : extra_delay = 8'b00_0100_00;
   endcase
 
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (load) extra_delay_r <= #1 extra_delay;
+    //if (load) extra_delay_r <= #1 (fmode[1:0] == 2'b00) ? extra_delay[7:0] : (fmode[1:0] == 2'b11) ? {2'b00, extra_delay[7:2]} : {1'b0, extra_delay[7:1]};
+  end
+end
+
 //playfield 1 effective horizontal scroll
 always @(posedge clk)
   if (clk7_en) begin
     if (load)
-      pf1h <= {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} + extra_delay;
+      pf1h <= {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} /*+ extra_delay*/;
   end
 
 always @(posedge clk)
   if (clk7_en) begin
-    pf1h_del <= pf1h /*& fmode_mask*/;
+    pf1h_del <= pf1h + extra_delay_r;
   end
     
 //playfield 2 effective horizontal scroll
 always @(posedge clk)
   if (clk7_en) begin
     if (load)
-      pf2h <= {bplcon1[15:14],bplcon1[7:4],bplcon1[13:12]} + extra_delay;
+      pf2h <= {bplcon1[15:14],bplcon1[7:4],bplcon1[13:12]} /*+ extra_delay*/;
   end
 
 always @(posedge clk)
   if (clk7_en) begin
-    pf2h_del <= pf2h /*& fmode_mask*/;
+    pf2h_del <= pf2h + extra_delay_r;
   end
   
 //writing bplcon1 register : horizontal scroll codes for even and odd bitplanes
@@ -119,10 +128,6 @@ always @(posedge clk)
   end
 
 // fmode
-wire bp_fmode0;
-wire bp_fmode12;
-wire bp_fmode3;
-
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (reset)
@@ -132,21 +137,7 @@ always @ (posedge clk) begin
   end
 end
 
-always @ (*) begin
-  case(fmode[1:0])
-    2'b00 : fmode_mask = 8'b0011_1111;
-    2'b01,
-    2'b10 : fmode_mask = 8'b0111_1111;
-    2'b11 : fmode_mask = 8'b1111_1111;
-  endcase
-end
-
-assign bp_fmode0  = (fmode[1:0] == 2'b00);
-assign bp_fmode12 = (fmode[1:0] == 2'b01) || (fmode[1:0] == 2'b10);
-assign bp_fmode3  = (fmode[1:0] == 2'b11);
-
 reg [47:0] chip48_fmode=0;
-
 always @ (*) begin
   case (fmode[1:0])
     2'b11   : chip48_fmode[47:0] = chip48[47:0];

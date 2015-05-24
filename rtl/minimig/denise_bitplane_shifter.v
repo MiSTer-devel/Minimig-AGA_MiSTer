@@ -19,34 +19,34 @@ module denise_bitplane_shifter
 
 //local signals
 reg    [63:0] shifter;      //main shifter
-reg    [63:0] scroller;    //scroller shifter
+reg    [255:0] scroller;    //scroller shifter
 reg    shift;          //shifter enable
-reg     [5:0] select;      //delayed pixel select
+reg     [7:0] select;      //delayed pixel select
 wire  scroller_out;
 reg    [3:0] delay;
-reg   [5:0] fmode_mask;
+reg   [7:0] fmode_mask;
 
 always @ (*) begin
   case(fmode[1:0])
-    2'b00 : fmode_mask = 6'b00_1111;
+    2'b00 : fmode_mask = 8'b00_1111_11;
     2'b01,
-    2'b10 : fmode_mask = 6'b01_1111;
-    2'b11 : fmode_mask = 6'b11_1111;
+    2'b10 : fmode_mask = 8'b01_1111_11;
+    2'b11 : fmode_mask = 8'b11_1111_11;
   endcase
 end
 
 //main shifter
 always @(posedge clk)
   if (load && !c1 && !c3) //load new data into shifter
-    shifter[63:0] <= data_in[63:0]; // TODO fmode!!!
+    shifter[63:0] <= data_in[63:0];
   else if (shift) //shift already loaded data
     shifter[63:0] <= {shifter[62:0],1'b0};
 
 always @(posedge clk)
-  if (shift) //shift scroller data
-    scroller[63:0] <= {scroller[62:0],shifter[63]};
+//  if (shift) //shift scroller data TODO fix aga signal
+    scroller[255:0] <= {scroller[254:0],shifter[63]};
 
-assign scroller_out = scroller[select[5:0]];
+assign scroller_out = scroller[select[7:0]];
 //assign scroller_out = scroller[scroll];
 
 //--------------------------------------------------------------------------------------
@@ -59,6 +59,8 @@ always @(posedge clk)
 assign out = delay[3];
 
 //--------------------------------------------------------------------------------------
+reg [7:0] select_r /* synthesis syn_noprune */;
+always @ (posedge clk) select_r <= #1 select;
 
 // main shifter and scroller control
 always @(*)
@@ -66,19 +68,19 @@ always @(*)
   begin
     shift = 1'b1; // shifter always enabled
     //select[3:0] = {scroll[1:0],2'b11}; // scroll in 4 pixel steps
-    select[5:0] = {scroll[5:0]} & fmode_mask; // scroll in 4 pixel steps
+    select[7:0] = scroll[5:0] & fmode_mask[7:2]; // scroll in 4 pixel steps
   end
   else if (hires) // hires mode
   begin
     shift = ~c1 ^ c3; // shifter enabled every other clock cycle
     //select[3:0] = {scroll[2:0],1'b1}; // scroll in 2 pixel steps
-    select[5:0] = {scroll[6:1]} & fmode_mask; // scroll in 2 pixel steps
+    select[7:0] = scroll[6:0] & fmode_mask[7:1]; // scroll in 2 pixel steps
   end
   else // lowres mode
   begin
     shift = ~c1 & ~c3; // shifter enabled once every 4 clock cycles
     //select[3:0] = scroll[3:0]; // scroll in 1 pixel steps
-    select[5:0] = scroll[7:2] & fmode_mask; // scroll in 1 pixel steps
+    select[7:0] = scroll[7:0] & fmode_mask; // scroll in 1 pixel steps
   end
       
 endmodule
