@@ -270,7 +270,7 @@ TG68K tg68k (
   .ramready     (tg68_cpuena      ),
   .cpu          (cpu_config[1:0]  ),
   .turbochipram (1'b1/*turbochipram*/     ),
-  .fastramcfg   ({memcfg[5],memcfg[5:4]}),
+  .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
   .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
