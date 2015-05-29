@@ -103,7 +103,7 @@ always @(posedge clk)
 // sprite display enable signal - sprites are visible after the first write to the BPL1DAT register in a scanline
 always @(posedge clk)
   if (clk7_en) begin
-    if (reset || hpos[8:0]==8)
+    if (reset || blank)
       display_ena <= 0;
     else if (reg_address_in[8:1]==BPL1DAT[8:1])
       display_ena <= 1;
@@ -369,7 +369,7 @@ denise_colortable clut0
 
 // instantiate HAM (hold and modify) module
 wire ham8 = ham && (l_bpu == 4'd8);
-wire ham_sel = ham && ((l_bpu == 4'd6) || (l_bpu == 4'd7) || (l_bpu == 4'd8));
+wire ham_sel = ham && ((l_bpu == 4'd6) || (l_bpu == 4'd8));
 
 denise_hamgenerator ham0
 (
