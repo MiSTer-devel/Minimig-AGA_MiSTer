@@ -104,6 +104,9 @@ extern const char *config_memory_chip_msg[];
 extern const char *config_memory_slow_msg[];
 extern const char *config_memory_fast_msg[];
 extern const char *config_scanline_msg[];
+extern const char *config_cpu_msg[];
+extern const char *config_hdf_msg[];
+extern const char *config_chipset_msg[];
 
 
 void InsertFloppy(adfTYPE *drive);
