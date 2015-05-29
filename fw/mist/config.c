@@ -473,6 +473,15 @@ unsigned char LoadConfiguration(char *filename)
     BootPrint("Defaults set\n");
   }
 
+  // print config to boot screen
+  if (minimig_v2()) {
+    char cfg_str[41];
+    sprintf(cfg_str, "CPU:     %s", config_cpu_msg[config.cpu]); BootPrintEx(cfg_str);
+    sprintf(cfg_str, "Chipset: %s", config_chipset_msg [(config.chipset >> 2) & (minimig_v1()?3:7)]); BootPrintEx(cfg_str);
+    sprintf(cfg_str, "Memory:  CHIP: %s  FAST: %s  SLOW: %s", config_memory_fast_msg[config.memory >> 4 & 0x03], config_memory_chip_msg[config.memory & 0x03], config_memory_slow_msg[config.memory >> 2 & 0x03]); BootPrintEx(cfg_str);
+  }
+  WaitTimer(6000);
+
   key = OsdGetCtrl();
   if (key == KEY_F1) {
     // force NTSC mode if F1 pressed
