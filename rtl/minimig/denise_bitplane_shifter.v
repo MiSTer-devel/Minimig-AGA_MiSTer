@@ -1,87 +1,130 @@
-//this is the bitplane parallel to serial converter
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Copyright 2006, 2007 Dennis van Weeren                                     //
+//                                                                            //
+// This file is part of Minimig                                               //
+//                                                                            //
+// Minimig is free software; you can redistribute it and/or modify            //
+// it under the terms of the GNU General Public License as published by       //
+// the Free Software Foundation; either version 3 of the License, or          //
+// (at your option) any later version.                                        //
+//                                                                            //
+// Minimig is distributed in the hope that it will be useful,                 //
+// but WITHOUT ANY WARRANTY; without even the implied warranty of             //
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              //
+// GNU General Public License for more details.                               //
+//                                                                            //
+// You should have received a copy of the GNU General Public License          //
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.      //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// This is the bitplane parallel to serial converter & scroller               //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
 
 
 module denise_bitplane_shifter
 (
-  input   clk,           //35ns pixel clock
-  input clk7_en,
-  input  c1,
-  input  c3,
-  input  load,        //load shift register
-  input  hires,        //high resolution select
-  input  shres,        //super high resolution select (takes priority over hires)
-  input [1:0] fmode,
-  input  [63:0] data_in,    //parallel load data input
-  input  [7:0] scroll,    //scrolling value
-  output  out          //shift register out
+  input  wire           clk,      // 35ns pixel clock
+  input  wire           clk7_en,  // 7MHz clock enable
+  input  wire           c1,       // clock phase signals
+  input  wire           c3,       // clock phase signals
+  input  wire           load,     // load shift register signal
+  input  wire           hires,    // high resolution select
+  input  wire           shres,    // super high resolution select (takes priority over hires)
+  input  wire [  2-1:0] fmode,    // AGA fetch mode
+  input  wire [ 64-1:0] data_in,  // parallel load data input
+  input  wire [  8-1:0] scroll,   // scrolling value
+  output wire           out       // shift register output
 );
 
 
-//local signals
-reg    [63:0] shifter;      //main shifter
-reg    [255:0] scroller;    //scroller shifter
-reg    shift;          //shifter enable
-reg     [7:0] select;      //delayed pixel select
-wire  scroller_out;
-reg    [3:0] delay;
-reg   [7:0] fmode_mask;
+// local signals
+reg  [64-1:0] shifter;        // main shifter
+reg  [64-1:0] scroller;       // scroller shifter
+reg           shift;          // shifter enable
+reg  [ 6-1:0] select;         // shifter pixel select
+wire          scroller_out;   // scroller output
+reg  [ 4-1:0] sh_scroller;    // superhires scroller
+reg  [ 2-1:0] sh_select;      // superhires scroller pixel select
+reg  [ 6-1:0] fmode_mask;     // fetchmode mask
 
+
+// fetchmode mask
 always @ (*) begin
   case(fmode[1:0])
-    2'b00 : fmode_mask = 8'b00_1111_11;
+    2'b00 : fmode_mask = 6'b00_1111;
     2'b01,
-    2'b10 : fmode_mask = 8'b01_1111_11;
-    2'b11 : fmode_mask = 8'b11_1111_11;
+    2'b10 : fmode_mask = 6'b01_1111;
+    2'b11 : fmode_mask = 6'b11_1111;
   endcase
 end
 
-//main shifter
-always @(posedge clk)
-  if (load && !c1 && !c3) //load new data into shifter
-    shifter[63:0] <= data_in[63:0];
-  else if (shift) //shift already loaded data
-    shifter[63:0] <= {shifter[62:0],1'b0};
-
-always @(posedge clk)
-//  if (shift) //shift scroller data TODO fix aga signal
-    scroller[255:0] <= {scroller[254:0],shifter[63]};
-
-assign scroller_out = scroller[select[7:0]];
-//assign scroller_out = scroller[scroll];
-
-//--------------------------------------------------------------------------------------
-
-//delay by one low resolution pixel
-always @(posedge clk)
-  delay[3:0] <= {delay[2:0], scroller_out};
-  
-// select output pixel
-assign out = delay[3];
-
-//--------------------------------------------------------------------------------------
-reg [7:0] select_r /* synthesis syn_noprune */;
-always @ (posedge clk) select_r <= #1 select;
 
 // main shifter and scroller control
-always @(*)
-  if (shres) // super hires mode
-  begin
+always @ (*) begin
+  if (shres) begin
+    // super hires mode
     shift = 1'b1; // shifter always enabled
-    //select[3:0] = {scroll[1:0],2'b11}; // scroll in 4 pixel steps
-    select[7:0] = scroll[5:0] & fmode_mask[7:2]; // scroll in 4 pixel steps
-  end
-  else if (hires) // hires mode
-  begin
+    select[5:0] = scroll[5:0] & fmode_mask;
+  end else if (hires) begin
+    // hires mode
     shift = ~c1 ^ c3; // shifter enabled every other clock cycle
-    //select[3:0] = {scroll[2:0],1'b1}; // scroll in 2 pixel steps
-    select[7:0] = scroll[6:0] & fmode_mask[7:1]; // scroll in 2 pixel steps
-  end
-  else // lowres mode
-  begin
+    select[5:0] = scroll[6:1] & fmode_mask;
+  end else begin
+    // lowres mode
     shift = ~c1 & ~c3; // shifter enabled once every 4 clock cycles
-    //select[3:0] = scroll[3:0]; // scroll in 1 pixel steps
-    select[7:0] = scroll[7:0] & fmode_mask; // scroll in 1 pixel steps
+    select[5:0] = scroll[7:2] & fmode_mask;
   end
-      
+end
+
+
+// main shifter
+always @ (posedge clk) begin
+  if (load && !c1 && !c3) begin
+    // load new data into shifter
+    shifter[63:0] <= data_in[63:0];
+  end else if (shift) begin
+    // shift already loaded data
+    shifter[63:0] <= {shifter[62:0],1'b0};
+end
+
+
+// main scroller
+always @ (posedge clk) begin
+  if (shift) begin
+    // shift scroller data
+    scroller[63:0] <= {scroller[62:0],shifter[63]};
+  end
+end
+
+
+// main scroller output
+assign scroller_out = scroller[select[5:0]];
+
+
+// superhires scroller control
+always @ (*) begin
+  if (shres) begin
+    sh_select = 2'd3;
+  end else if (hires) begin
+    sh_select = {scroll[0], 1'b1};
+  end else begin
+    sh_select = scroll[1:0];
+  end
+end
+
+
+// superhires scroller
+always @ (posedge clk) begin
+  sh_scroller[3:0] <= {sh_scroller[2:0], scroller_out};
+end
+
+
+// superhires scroller output
+assign out = sh_scroller[sh_select];
+
+
 endmodule
 
