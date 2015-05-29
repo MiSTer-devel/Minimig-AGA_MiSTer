@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "../user_io.h"
 #include "../hardware.h"
+#include "../mist_cfg.h"
 
 static unsigned char kbd_led_state = 0;  // default: all leds off
 static unsigned char joysticks = 0;      // number of detected usb joysticks
@@ -138,8 +139,10 @@ static uint8_t usb_hid_parse_conf(usb_device_t *dev, uint8_t conf, uint16_t len)
 	    
 	  case HID_PROTOCOL_MOUSE:
 	    hid_debugf("HID protocol is MOUSE");
-	    // don't use boot mode for mice
-	    info->iface[info->bNumIfaces].ignore_boot_mode = true;
+	    // don't use boot mode for mice unless it's explicitey requested in mist.ini
+	    if(!mist_cfg.mouse_boot_mode)
+	      info->iface[info->bNumIfaces].ignore_boot_mode = true;
+
 	    info->iface[info->bNumIfaces].device_type = HID_DEVICE_MOUSE;
 	    break;
 	    
@@ -455,21 +458,29 @@ static uint16_t collect_bits(uint8_t *p, uint16_t offset, uint8_t size, bool is_
   uint8_t bits = size;
   uint8_t shift = offset&7;
   
-  // iprintf("%c0 m:%x by:%d bi=%d sh=%d ->", 'X'+i, mask, byte, bits, shift);
+  //  iprintf("0 m:%x by:%d bi=%d sh=%d ->", mask, byte, bits, shift);
   uint16_t rval = (p[byte++] & mask) >> shift;
-  // iprintf("%d\n", (int16_t)a[i]);
+  //  iprintf("%d\n", (int16_t)rval);
   mask = 0xff;
   shift = 8-shift;
   bits -= shift;
 
-  // further bytes if required
-  while(bits) {
-    mask = (bits<8)?(0xff>>(8-bits)):0xff;
-    // iprintf("%c+ m:%x by:%d bi=%d sh=%d ->", 'X'+i, mask, byte, bits, shift);
-    rval += (p[byte++] & mask) << shift;
-    // iprintf("%d\n", (int16_t)a[i]);
-    shift += 8;
-    bits -= (bits>8)?8:bits;
+  // first byte already contained more bits than we need
+  if(shift > size) {
+    //    iprintf("  too many bits, masked %x ->", (1<<size)-1);
+    // mask unused bits
+    rval &= (1<<size)-1;
+    //    iprintf("%d\n", (int16_t)rval);
+  } else {
+    // further bytes if required
+    while(bits) {
+      mask = (bits<8)?(0xff>>(8-bits)):0xff;
+      //      iprintf("+ m:%x by:%d bi=%d sh=%d ->", mask, byte, bits, shift);
+      rval += (p[byte++] & mask) << shift;
+      //      iprintf("%d\n", (int16_t)rval);
+      shift += 8;
+      bits -= (bits>8)?8:bits;
+    }
   }
 
   if(is_signed) {
@@ -480,7 +491,7 @@ static uint16_t collect_bits(uint8_t *p, uint16_t offset, uint8_t size, bool is_
 	rval |= sign_bit;
 	sign_bit <<= 1;
       }
-      // iprintf("%c is negative -> sign expand to %d\n", 'X'+i, (int16_t)a[i]);
+      //      iprintf(" is negative -> sign expand to %d\n", (int16_t)rval);
     }
   }
 
@@ -579,6 +590,7 @@ static uint8_t usb_hid_poll(usb_device_t *dev) {
 
 	      // ---------- process joystick -------------
 	      if(iface->device_type == HID_DEVICE_JOYSTICK) {
+
 	        for(i=0;i<2;i++) {
 	          // scale to 0 -> 255 range. 99% of the joysticks already deliver that
 	          if((conf->joystick_mouse.axis[i].logical.min != 0) ||
@@ -589,7 +601,29 @@ static uint8_t usb_hid_poll(usb_device_t *dev) {
 		  }
 		}
 
-		// iprintf("JOY X:%d Y:%d\n", a[0], a[1]);
+		// handle hat if present and overwrite any axis value
+		if(conf->joystick_mouse.hat.size && !mist_cfg.joystick_ignore_hat) {
+		  uint8_t hat = collect_bits(p, conf->joystick_mouse.hat.offset, 
+					     conf->joystick_mouse.hat.size, 0);
+
+		  // we don't want more than 4 bits
+		  uint8_t size = conf->joystick_mouse.hat.size;
+		  while(size-- > 4) 
+		    hat >>= 1;
+		  
+		  // TODO: Deal with 3 bit (4 direction/no diagonal) hats 
+		  static const uint8_t hat2x[] = { 128,255,255,255,128,  0,  0,  0 };
+		  static const uint8_t hat2y[] = {   0,  0,128,255,255,255,128,  0 };
+
+		  if(hat&8) 
+		    a[0] = a[1] = 128;
+		  else {
+		    a[0] = hat2x[hat];
+		    a[1] = hat2y[hat];
+		  }
+		}
+
+		//		iprintf("JOY X:%d Y:%d\n", a[0], a[1]);
 		
 		if(a[0] <  64) jmap |= JOY_LEFT;
 		if(a[0] > 192) jmap |= JOY_RIGHT;

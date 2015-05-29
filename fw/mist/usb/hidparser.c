@@ -53,6 +53,7 @@ typedef struct {
 #define USAGE_Y       49
 #define USAGE_Z       50
 #define USAGE_WHEEL   56
+#define USAGE_HAT     57
 
 // check if the current report 
 bool report_is_usable(uint16_t bit_count, uint8_t report_complete, hid_report_t *conf) {
@@ -93,6 +94,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
   // joystick/mouse components
   int8_t axis[2] = { -1, -1};
   uint8_t btns = 0;
+  int8_t hat = -1;
 
   conf->type = REPORT_TYPE_NONE;
 
@@ -155,7 +157,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 	
 	switch(tag) {
 	case 8:
-	  // 
+	  // handle found buttons 
 	  if(btns) {
 	    if((conf->type == REPORT_TYPE_JOYSTICK) ||
 	       (conf->type == REPORT_TYPE_MOUSE)) {
@@ -180,7 +182,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 	    }
 	  }
 
-	  // 
+	  // handle found axes
 	  char c;
 	  for(c=0;c<2;c++) {
 	    if(axis[c] >= 0) {
@@ -201,6 +203,17 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 	    }
 	  }
 	  
+	  // handle found hat
+	  if(hat >= 0) {
+	    uint16_t cnt = bit_count + report_size * hat;
+	    hidp_debugf("  (HAT @ %d (byte %d, bit %d), size %d)",
+			cnt, cnt/8, cnt&7, report_size);
+	    if(conf->type == REPORT_TYPE_JOYSTICK) {
+	      conf->joystick_mouse.hat.offset = cnt;
+	      conf->joystick_mouse.hat.size = report_size;
+	    }
+	  }
+
 	  hidp_extreme_debugf("INPUT(%d)", value);
 
 	  // reset for next inputs
@@ -208,6 +221,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 	  usage_count = 0;
 	  btns = 0;
 	  axis[0] = axis[1] = -1;
+	  hat = -1;
 	  break;
 
 	case 9:
@@ -389,6 +403,15 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 		hidp_extreme_debugf("JOYSTICK/MOUSE: found y axis @ %d", usage_count);
 		axis[1] = usage_count;
 	      }
+	    }
+	  } else if((value == USAGE_HAT) && app_collection) {
+	    // usage(hat) is allowed within the app collection
+	    hidp_extreme_debugf(" -> hat usage");
+
+	    // we support hat on joysticks only
+	    if(conf->type == REPORT_TYPE_JOYSTICK) {
+	      hidp_extreme_debugf("JOYSTICK: found hat @ %d", usage_count);
+	      hat = usage_count;
 	    }
 	  } else {
 	    hidp_extreme_debugf(" -> UNSUPPORTED USAGE");

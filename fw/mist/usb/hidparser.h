@@ -27,6 +27,12 @@ typedef struct {
 	uint8_t byte_offset;
 	uint8_t bitmask;
       } button[4];             // 4 buttons
+
+      struct {
+	uint16_t offset;
+	uint8_t size;
+      } hat;                   // 1 hat (joystick only)
+
     } joystick_mouse;
   };
 } hid_report_t;

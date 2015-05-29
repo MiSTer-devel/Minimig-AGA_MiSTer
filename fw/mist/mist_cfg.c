@@ -17,7 +17,11 @@ void mist_ini_parse()
 
 //// vars ////
 // config data
-mist_cfg_t mist_cfg = {.scandoubler_disable = 0};
+mist_cfg_t mist_cfg = { 
+  .scandoubler_disable = 0,
+  .mouse_boot_mode = 0, 
+  .joystick_ignore_hat = 0 
+};
 
 // mist ini sections
 const ini_section_t mist_ini_sections[] = {
@@ -27,6 +31,8 @@ const ini_section_t mist_ini_sections[] = {
 // mist ini vars
 const ini_var_t mist_ini_vars[] = {
   {"SCANDOUBLER_DISABLE", (void*)(&(mist_cfg.scandoubler_disable)), UINT8, 0, 1, 1},
+  {"MOUSE_BOOT_MODE", (void*)(&(mist_cfg.mouse_boot_mode)), UINT8, 0, 1, 1},
+  {"JOYSTICK_IGNORE_HAT", (void*)(&(mist_cfg.joystick_ignore_hat)), UINT8, 0, 1, 1},
   {"KEY_REMAP", (void*)user_io_key_remap, CUSTOM_HANDLER, 0, 0, 1},
   //  {"JOYSTICK_AXIS_REMAP", (void*)user_io_joystick_axis_remap, CUSTOM_HANDLER, 0, 0, 1},
   {"JOYSTICK_BUTTON_REMAP", (void*)hid_joystick_axis_remap, CUSTOM_HANDLER, 0, 0, 1}
