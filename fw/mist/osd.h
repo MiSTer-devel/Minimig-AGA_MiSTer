@@ -42,6 +42,7 @@
 #define OSD_CMD_JOY       0x64
 #define OSD_CMD_OSD_WR    0x0c
 #define OSD_CMD_WR        0x1c
+#define OSD_CMD_VERSION   0x88
 
 #define DISABLE_KEYBOARD 0x02        // disable keyboard while OSD is active
 
