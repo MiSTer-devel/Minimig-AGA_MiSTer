@@ -42,10 +42,10 @@ static void mem_write16(unsigned short x) {
 unsigned short bcurx=0;
 unsigned short bcury=96;
 
-static int bootscreen_adr = 0x80000 + 120*640/8;
+static int bootscreen_adr = 0x80000 + /*120*/112*640/8;
 
 void BootHome() {
-  bootscreen_adr = 0x80000 + 120*640/8;
+  bootscreen_adr = 0x80000 + /*120*/112*640/8;
 }
 
 //// boot font ////
