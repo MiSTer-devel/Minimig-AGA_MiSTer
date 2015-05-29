@@ -2612,9 +2612,12 @@ void HandleUI(void)
       break;
 	
     case MENU_FIRMWARE_CORE_FILE_SELECTED :
+      // close OSD now as the new core may not even have one
       OsdDisable();
 
-      // close OSD now as the new core may not even have one
+      // reset minimig boot text position
+      BootHome();
+
       fpga_init(file.name);
 
       menustate = MENU_NONE1;
