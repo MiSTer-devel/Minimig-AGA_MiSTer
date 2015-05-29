@@ -833,7 +833,12 @@ void fpga_init(char *name) {
     
     if(minimig_v2()) {
       EnableOsd();
-      
+      SPI(OSD_CMD_VERSION);
+      char ver_beta  = SPI(0xff);
+      char ver_major = SPI(0xff);
+      char ver_minor = SPI(0xff);
+      DisableOsd();
+      SPIN(); SPIN(); SPIN(); SPIN();
       SPI(OSD_CMD_RST);
       rstval = (SPI_RST_USR | SPI_RST_CPU | SPI_CPU_HLT);
       SPI(rstval);
@@ -847,15 +852,16 @@ void fpga_init(char *name) {
       SPIN(); SPIN(); SPIN(); SPIN();
       WaitTimer(100);
       BootInit();
-      WaitTimer(1000);
-      BootPrintEx("**** MINIMIG-AGA for MiST (BETA) ****");
+      WaitTimer(500);
+      char rtl_ver[45];
+      sprintf(rtl_ver, "**** MINIMIG-AGA v%d.%d%s for MiST ****", ver_major, ver_minor, ver_beta ? " BETA" : "");
+      BootPrintEx(rtl_ver);
       BootPrintEx(" ");
-      //BootPrintEx("Original Minimig by Dennis van Weeren");
-      //BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
-      BootPrintEx("MINIMIG-AGA by Rok Krajnc (rok.krajnc@gmail.com)");
+      BootPrintEx("MINIMIG-AGA for MiST by Rok Krajnc (rok.krajnc@gmail.com)");
+      BootPrintEx("Original Minimig by Dennis van Weeren");
+      BootPrintEx("Updates by Jakub Bednarski, Tobias Gubener, Sascha Boing, A.M. Robinson & others");
       BootPrintEx("MiST by Till Harbaum (till@harbaum.org)");
-      //BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-de1");
-      //BootPrintEx("For support, see http://www.minimig.net");
+      BootPrintEx("For updates & code see https://github.com/rkrajnc/minimig-mist");
       BootPrintEx(" ");
       WaitTimer(1000);
     }
@@ -868,10 +874,6 @@ void fpga_init(char *name) {
     df[2].status = 0;
     df[3].status = 0;
 
-    if(minimig_v2())
-      BootPrintEx("Booting ...");
-
-    WaitTimer(6000);
     config.kickstart.name[0]=0;
     SetConfigurationFilename(0); // Use default config
     LoadConfiguration(0);  // Use slot-based config filename
