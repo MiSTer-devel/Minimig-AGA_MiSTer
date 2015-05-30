@@ -40,6 +40,9 @@ wire [8:2] ddfdiff;
 wire [8:2] ddfdiff_masked;
 reg  [15:1] bpl1mod;        // modulo for odd bitplanes
 reg  [15:1] bpl2mod;        // modulo for even bitplanes
+wire [15:1] bpl1mod_bscan;  // modulo for odd bitplanes, adjusted for bitplane scandoubling
+wire [15:1] bpl2mod_bscan;  // modulo for even bitplanes, adjusted for bitplane scandoubling
+
 reg  [5:0] bplcon0;        // bitplane control (SHRES, HIRES and BPU bits)
 reg  [5:0] bplcon0_delayed;    // delayed bplcon0 (compatibility)
 reg  [5:0] bplcon0_delay [1:0];
@@ -165,6 +168,23 @@ always @(posedge clk)
   end
 
 assign address_out[15:1] = bplptl[plane[2:0]];
+
+
+/**/
+reg [20:1] bplpt_0 /* synthesis syn_noprune */;
+reg [20:1] bplpt_1 /* synthesis syn_noprune */;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (dma && (vpos == 11'd120)) begin
+      if (bplptr_sel == 0) bplpt_0[15:1] <= #1 bplptl_in;
+      if (bplptr_sel == 1) bplpt_1[15:1] <= #1 bplptl_in;
+    end else if (dma && (vpos == 11'd120)) begin
+      if (bplptr_sel == 0) bplpt_0[20:16] <= #1 bplpth_in;
+      if (bplptr_sel == 1) bplpt_1[20:16] <= #1 bplpth_in;
+    end
+  end
+end
+/**/
 
 wire ddfstrt_sel;
 
@@ -389,14 +409,20 @@ always @(*)
 // for a dma to happen plane must be less than BPU, dma must be enabled and data fetch must be true
 assign dma = (ddfrun) && dmaena_delayed[1] && hpos[0] && (plane[4:0] < {1'b0,bpu[3:0]}) ? 1'b1 : 1'b0;
 
+
+// adjust BPLxMOD for scandoubling
+assign bpl1mod_bscan = fmode[14] ? ((vdiwstrt[0] ^ vpos[0]) ? bpl2mod : bpl1mod) : bpl1mod;
+assign bpl2mod_bscan = fmode[14] ? ((vdiwstrt[0] ^ vpos[0]) ? bpl2mod : bpl1mod) : bpl2mod;
+
+
 // dma pointer arithmetic unit
 always @(*)
   if (mod)
   begin
     if (plane[0]) // even plane modulo
-      newpt[20:1] = address_out[20:1] + {{5{bpl2mod[15]}},bpl2mod[15:1]} + (fmode[1:0] == 2'b11 ? 3'd4 : fmode[1:0] == 2'b00 ? 3'd1 : 3'd2);
+      newpt[20:1] = address_out[20:1] + {{5{bpl2mod_bscan[15]}},bpl2mod_bscan[15:1]} + (fmode[1:0] == 2'b11 ? 3'd4 : fmode[1:0] == 2'b00 ? 3'd1 : 3'd2);
     else // odd plane modulo
-      newpt[20:1] = address_out[20:1] + {{5{bpl1mod[15]}},bpl1mod[15:1]} + (fmode[1:0] == 2'b11 ? 3'd4 : fmode[1:0] == 2'b00 ? 3'd1 : 3'd2);
+      newpt[20:1] = address_out[20:1] + {{5{bpl1mod_bscan[15]}},bpl1mod_bscan[15:1]} + (fmode[1:0] == 2'b11 ? 3'd4 : fmode[1:0] == 2'b00 ? 3'd1 : 3'd2);
   end
   else
     newpt[20:1] = address_out[20:1] + (fmode[1:0] == 2'b11 ? 3'd4 : fmode[1:0] == 2'b00 ? 3'd1 : 3'd2);
