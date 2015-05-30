@@ -66,7 +66,9 @@ reg    [63:0] bpl7dat;    // buffer register for bit plane 5
 reg    [63:0] bpl8dat;    // buffer register for bit plane 6
 reg    load;        // bpl1dat written => load shif registers
 
-reg    [7:0] extra_delay;  // extra delay when not alligned ddfstart
+reg    [7:0] extra_delay_f0;  // extra delay when not alligned ddfstart
+reg    [7:0] extra_delay_f12;
+reg    [7:0] extra_delay_f3;
 reg    [7:0] extra_delay_r /* synthesis syn_noprune */;
 reg    [7:0] pf1h /* synthesis syn_noprune */;      // playfield 1 horizontal scroll
 reg    [7:0] pf2h /* synthesis syn_noprune */;      // playfield 2 horizontal scroll
@@ -81,15 +83,31 @@ reg    [7:0] pf2h_del /* synthesis syn_noprune */;    // delayed playfield 2 hor
 
 always @(hpos)
   case (hpos[3:2])
-    2'b00 : extra_delay = 8'b00_0000_00;
-    2'b01 : extra_delay = 8'b00_1100_00;
-    2'b10 : extra_delay = 8'b00_1000_00;
-    2'b11 : extra_delay = 8'b00_0100_00;
+    2'b00 : extra_delay_f0 = 8'b00_0000_00;
+    2'b01 : extra_delay_f0 = 8'b00_1100_00;
+    2'b10 : extra_delay_f0 = 8'b00_1000_00;
+    2'b11 : extra_delay_f0 = 8'b00_0100_00;
+  endcase
+
+always @(hpos)
+  case (hpos[4:3])
+    2'b00 : extra_delay_f12 = 8'b00_0000_00;
+    2'b01 : extra_delay_f12 = 8'b01_1000_00;
+    2'b10 : extra_delay_f12 = 8'b01_0000_00;
+    2'b11 : extra_delay_f12 = 8'b00_1000_00;
+  endcase
+
+always @(hpos)
+  case (hpos[5:4])
+    2'b00 : extra_delay_f3 = 8'b00_0000_00;
+    2'b01 : extra_delay_f3 = 8'b11_0000_00;
+    2'b10 : extra_delay_f3 = 8'b10_0000_00;
+    2'b11 : extra_delay_f3 = 8'b01_0000_00;
   endcase
 
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (load) extra_delay_r <= #1 extra_delay;
+    if (load) extra_delay_r <= #1 (fmode[1:0] == 2'b00) ? extra_delay_f0 : (fmode[1:0] == 2'b11) ? extra_delay_f3 : extra_delay_f12;
     //if (load) extra_delay_r <= #1 (fmode[1:0] == 2'b00) ? extra_delay[7:0] : (fmode[1:0] == 2'b11) ? {2'b00, extra_delay[7:2]} : {1'b0, extra_delay[7:1]};
   end
 end
