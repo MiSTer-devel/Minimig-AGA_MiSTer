@@ -41,14 +41,14 @@ module denise_bitplane_shifter
 
 
 // local signals
-reg  [64-1:0] shifter;        // main shifter
-reg  [64-1:0] scroller;       // scroller shifter
-reg           shift;          // shifter enable
-reg  [ 6-1:0] select;         // shifter pixel select
-wire          scroller_out;   // scroller output
-reg  [ 4-1:0] sh_scroller;    // superhires scroller
-reg  [ 2-1:0] sh_select;      // superhires scroller pixel select
-reg  [ 6-1:0] fmode_mask;     // fetchmode mask
+reg  [ 6-1:0] fmode_mask;         // fetchmode mask
+reg  [64-1:0] shifter;            // main shifter
+reg  [64-1:0] scroller;           // scroller shifter
+reg           shift;              // shifter enable
+reg  [ 6-1:0] select;             // shifter pixel select
+wire          scroller_out;       // scroller output
+reg  [ 8-1:0] sh_scroller;        // superhires scroller
+reg  [ 3-1:0] sh_select;          // superhires scroller pixel select
 
 
 // fetchmode mask
@@ -88,6 +88,7 @@ always @ (posedge clk) begin
   end else if (shift) begin
     // shift already loaded data
     shifter[63:0] <= {shifter[62:0],1'b0};
+  end
 end
 
 
@@ -101,24 +102,24 @@ end
 
 
 // main scroller output
-assign scroller_out = scroller[select[5:0]];
+assign scroller_out = scroller[select];
 
 
-// superhires scroller control
+// superhires scroller control // TODO test if this is correct
 always @ (*) begin
   if (shres) begin
-    sh_select = 2'd3;
+    sh_select = 3'b011;
   end else if (hires) begin
-    sh_select = {scroll[0], 1'b1};
+    sh_select = {1'b1, scroll[0], 1'b1}; // MSB bit should probably be 0, this is a hack for kickstart screen ...
   end else begin
-    sh_select = scroll[1:0];
+    sh_select = {1'b0, scroll[1:0]};
   end
 end
 
 
 // superhires scroller
 always @ (posedge clk) begin
-  sh_scroller[3:0] <= {sh_scroller[2:0], scroller_out};
+  sh_scroller[7:0] <= {sh_scroller[6:0], scroller_out};
 end
 
 
