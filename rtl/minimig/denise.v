@@ -317,6 +317,7 @@ assign bpldata[8] = l_bpu > 7 ? bpldata_out[8] : 1'b0;
 // instantiate playfield module
 denise_playfields plfm0
 (
+  .aga (aga),
   .bpldata(bpldata),
   .dblpf(dpf),
   .pf2of(pf2of),

@@ -7,6 +7,7 @@
 
 module denise_playfields
 (
+  input  aga,
   input   [8:1] bpldata,         //raw bitplane data in
   input   dblpf,             //double playfield select
   input [2:0] pf2of,        // playfield 2 offset into color table
@@ -80,14 +81,14 @@ begin
       if (nplayfield[1])
         plfdata[7:0] = {4'b0000,bpldata[7],bpldata[5],bpldata[3],bpldata[1]};
       else if (nplayfield[2])
-        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val;
+        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]}; // TODO pf2of_val needed here too?
       else //both planes transparent, select background color
         plfdata[7:0] = 8'b00000000;
     end
   end
   else //normal single playfield (playfield 2 only)
   //OCS/ECS undocumented feature when bpu=5 and pf2pri>5 (Swiv score display)
-    if (pf2p>5 && bpldata[5])
+    if ((pf2p>5) && bpldata[5] && !aga)
       plfdata[7:0] = {8'b00010000};
     else
       plfdata[7:0] = bpldata[8:1];
