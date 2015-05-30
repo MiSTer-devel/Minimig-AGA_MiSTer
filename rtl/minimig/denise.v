@@ -204,9 +204,9 @@ assign extblken = bplcon3[0] & ecsena;
 
 // BPLCON4 register
 reg  [16-1:0] bplcon4;    // bplcon3 register
-wire [ 8-1:0] bplxor;     // color select xor value
-wire [ 4-1:0] esprm;      // even sprites 4 MSB color table address
-wire [ 4-1:0] osprm;      // odd sprites 4 MSB color table address
+reg  [ 8-1:0] bplxor;     // color select xor value
+reg  [ 4-1:0] esprm;      // even sprites 4 MSB color table address
+reg  [ 4-1:0] osprm;      // odd sprites 4 MSB color table address
 
 always @(posedge clk) begin
   if (clk7_en) begin
@@ -217,9 +217,21 @@ always @(posedge clk) begin
   end
 end
 
-assign bplxor   = bplcon4[15:8];
-assign esprm    = bplcon4[7:4];
-assign osprm    = bplcon4[3:0];
+// BPLCON4 values are supposedly delayed for 1 lores pixel TODO check this!
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset) begin
+      bplxor   <= 8'd0;
+      esprm    <= 4'd1;
+      osprm    <= 4'd1;
+    end else begin
+      bplxor   <= bplcon4[15:8];
+      esprm    <= bplcon4[7:4];
+      osprm    <= bplcon4[3:0];
+    end
+  end
+end
+
 
 // DIWSTART and DIWSTOP registers (vertical and horizontal limits of display window)
 
