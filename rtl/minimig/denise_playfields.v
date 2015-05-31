@@ -81,7 +81,7 @@ begin
       if (nplayfield[1])
         plfdata[7:0] = {4'b0000,bpldata[7],bpldata[5],bpldata[3],bpldata[1]};
       else if (nplayfield[2])
-        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]}; // TODO pf2of_val needed here too?
+        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val; // TODO pf2of_val needed here too?
       else //both planes transparent, select background color
         plfdata[7:0] = 8'b00000000;
     end
