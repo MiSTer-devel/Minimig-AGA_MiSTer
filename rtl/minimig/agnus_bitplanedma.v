@@ -148,6 +148,7 @@ wire [20:16] bplpth_in;
 
 assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];
 
+// TODO high bitplane pointer probably needs a delay (writing to pointer doesn't seem to take effect next cycle ...)
 always @(posedge clk)
   if (clk7_en) begin
     if (dma || ((reg_address_in[8:5]==BPLPTBASE[8:5]) && !reg_address_in[1])) // if bitplane dma cycle or bus write
