@@ -591,7 +591,7 @@ PROCESS (OP2out, reg_QB, exe_opcode, exe_datatype, execOPC, exec, use_direct_dat
 			IF exe_opcode(6)='0' OR exe_opcode(8)='1' THEN      --ext.w
 				OP2out(15 downto 8) <= (OTHERS => OP2out(7));
 			END IF;
-		ELSIF use_direct_data='1' OR (exec(exg)='1' AND execOPC='1') OR exec(get_bfoffset)='1' THEN
+ 		ELSIF (use_direct_data='1' AND exec(opcPACK)='0') OR (exec(exg)='1' AND execOPC='1') OR exec(get_bfoffset)='1' THEN	
 			OP2out <= data_write_tmp;
 		ELSIF (exec(ea_data_OP1)='0' AND store_in_tmp='1') OR exec(ea_data_OP2)='1' THEN
 			OP2out <= ea_data;
@@ -2263,7 +2263,22 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 						build_bcd <= '1';
 						set_exec(opcADD) <= '1';
 						set_exec(opcSBCD) <= '1';
-					ELSE                                                                        --pack, unpack
+ 					ELSIF opcode(7 downto 6)="01" OR opcode(7 downto 6)="10" THEN	--pack, unpack
+ 						datatype <= "01";		--Word
+ 						set_exec(opcPACK) <= '1';
+                                                 set_exec(Regwrena) <= '1';
+                                                 dest_hbits <='1';
+                                                 source_lowbits <= '1';
+                                                 set_exec(ea_data_OP1) <= '1';
+                                                 set(no_Flags) <= '1';
+   
+ 						IF decodeOPC='1' THEN
+ 							next_micro_state <= andi;
+ 							set(ea_build) <= '1';
+ 							set_direct_data <= '1';
+                                                 END IF;
+                                             -- xyz
+ 					ELSE
 						trap_illegal <= '1';
 						trapmake <= '1';
 					END IF;

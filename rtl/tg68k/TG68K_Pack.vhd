@@ -109,13 +109,17 @@ package TG68K_Pack is
 	constant opcBF          : integer := 75; --
 	constant opcBFwb        : integer := 76; --
 	constant s2nd_hbits     : integer := 77; --
+  constant opcPACK        : integer := 77; --
+-- constant s2nd_hbits     : integer := 77; --
+
+
 --      constant    : integer := 75; --
 --      constant         : integer := 76; --
 --      constant         : integer := 7; --
 --      constant         : integer := 7; --
 --      constant         : integer := 7; --
 
-	constant lastOpcBit     : integer := 77;
+	constant lastOpcBit     : integer := 78;
 
 	type rTG68K_opc is record
 	   opcMOVE        : bit;
