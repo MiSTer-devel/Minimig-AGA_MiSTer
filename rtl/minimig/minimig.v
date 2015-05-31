@@ -429,7 +429,8 @@ assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-sta
 
 assign memcfg = memory_config;
 
-assign turbochipram = !ovl && chipset_config[4];
+// only when no overlay is active, AGA is selected, chipRAM=2MB and full fastRAM
+assign turbochipram = !ovl && chipset_config[4] && (&memory_config[5:4]) && (&memory_config[1:0]);
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk)
