@@ -151,6 +151,7 @@ COMPONENT TG68KdotC_Kernel
 	signal ziii_base : std_logic_vector(7 downto 0);
 	signal ziiiram_ena : std_logic;
 	signal sel_ziiiram : std_logic;
+	signal sel_kickram : std_logic;
 
 	type sync_states is (sync0, sync1, sync2, sync3, sync4, sync5, sync6, sync7, sync8, sync9);
 	signal sync_state		: sync_states;
@@ -184,11 +185,11 @@ BEGIN
 
 	sel_chipram <= '1' when state/="01" AND (cpuaddr(23 downto 21)="000") ELSE '0'; --$000000 - $1FFFFF
 
-	-- FIXME - prevent TurboChip toggling while a transaction's in progress!
+  sel_kickram <= '1' when cpuaddr(23 downto 19)="11111" else '0'; -- $f8xxxx
+
 	sel_fast <= '1' when state/="01" AND
 		(
---			(turbochip_ena='1' and turbochip_d='1' AND cpuaddr(23 downto 21)="000" )
-			(turbochip_ena='1' and turbochip_d='1' AND cpuaddr(23 downto 19)="1111" )
+			(turbochip_ena='1' and turbochip_d='1' AND sel_kickram='1' )
 			OR cpuaddr(23 downto 21)="001"
 			OR cpuaddr(23 downto 21)="010"
 			OR cpuaddr(23 downto 21)="011"
@@ -211,14 +212,17 @@ BEGIN
 --	ramaddr(23 downto 0) <= cpuaddr(23 downto 0);
 --	ramaddr(24) <= sel_fast;
 --	ramaddr(31 downto 25) <= cpuaddr(31 downto 25);
-	ramaddr(20 downto 0) <= cpuaddr(20 downto 0);
 	ramaddr(31 downto 25) <= "0000000";
 	ramaddr(24) <= sel_ziiiram;	-- Remap the Zorro III RAM to 0x1000000
 	ramaddr(23 downto 21) <= "100" when sel_ziiiram&cpuaddr(23 downto 21)="0001" -- 2 -> 8
 		else "101" when sel_ziiiram&cpuaddr(23 downto 21)="0010" -- 4 -> A
 		else "110" when sel_ziiiram&cpuaddr(23 downto 21)="0011" -- 6 -> C
 		else "111" when sel_ziiiram&cpuaddr(23 downto 21)="0100" -- 8 -> E
+    else "001" when sel_kickram='1'
 		else cpuaddr(23 downto 21);	-- pass through others
+  ramaddr(20 downto 19) <= "11" when sel_kickram='1'
+    else cpuaddr(20 downto 19);
+	ramaddr(18 downto 0) <= cpuaddr(18 downto 0);
 
 
 pf68K_Kernel_inst: TG68KdotC_Kernel 
