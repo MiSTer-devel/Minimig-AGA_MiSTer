@@ -1,57 +1,64 @@
-# MINIMIG-DE1
+# MINIMIG-MIST
 # top makefile
-# 2012, rok.krajnc@gmail.com
+# 2015, rok.krajnc@gmail.com
 
 
 ### board ###
-BOARD?=de1
+BOARD?=mist
 
+
+### release ###
+RELEASE?=minimig-mist-test
 
 ### paths ###
-REL_DIR=rel
-CTRL_FW_DIR=fw/ctrl
-CTRL_BOOT_DIR=fw/ctrl_boot
-FPGA_DIR=fpga/$(BOARD)
+REL_DIR      = rel
+FW_DIR       = fw
+FPGA_DIR     = fpga
+FW_SRC_DIR   = $(FW_DIR)/$(BOARD)
+FPGA_SRC_DIR = $(FPGA_DIR)/$(BOARD)
+FW_REL_DIR   = $(REL_DIR)/$(RELEASE)
+FPGA_REL_DIR = $(REL_DIR)/$(RELEASE)
 
 
 ### files ###
-CTRL_FW=$(CTRL_FW_DIR)/bin/de1_boot.bin
-CTRL_BOOT=$(CTRL_BOOT_DIR)/bin/de1_boot.bin
-FPGA=$(FPGA_DIR)/out/minimig_de1.sof $(FPGA_DIR)/out/minimig_de1.pof
+FW_BIN_FILES   = $(FW_SRC_DIR)/firmware.bin $(FW_SRC_DIR)/firmware.hex $(FW_SRC_DIR)/firmware.upg
+FPGA_BIN_FILES = $(FPGA_SRC_DIR)/out/minimig_mist.rbf
 
 
 ### build rules ###
 BUILD_OPT=clean all
 
 # all
-all:
+all: dirs fw fpga
 	@echo Building all ...
+#	@make fw
+#	@make fpga
+
+# directories
+dirs: Makefile
+	@echo Creating release dirs $(REL_DIR)/$(RELEASE) ...
 	@mkdir -p $(REL_DIR)
-	@make ctrl_fw
-	@make ctrl_boot
-	@make fpga
+	@mkdir -p $(REL_DIR)/$(RELEASE)
+	@mkdir -p $(FW_REL_DIR)
+	@mkdir -p $(FPGA_REL_DIR)
 
+# fw
+fw: Makefile dirs
+	@echo Building firmware in $(FW_SRC_DIR) ...
+	@$(MAKE) -C $(FW_SRC_DIR) $(BUILD_OPT)
+	@cp $(FW_BIN_FILES) $(FW_REL_DIR)/
 
-ctrl_fw: Makefile 
-	@echo Building ctrl firmware in $(CTRL_FW_DIR) ...
-	@$(MAKE) -C $(CTRL_FW_DIR) $(BUILD_OPT)
-	@cp $(CTRL_FW) $(REL_DIR)/
-
-ctrl_boot: Makefile 
-	@echo Building ctrl boot firmware in $(CTRL_BOOT_DIR) ...
-	@$(MAKE) -C $(CTRL_BOOT_DIR) $(BUILD_OPT)
-
-fpga: Makefile 
-	@echo Building FPGA in $(FPGA_DIR) ...
-	@$(MAKE) -C $(FPGA_DIR) $(BUILD_OPT)
-	@cp $(FPGA) $(REL_DIR)/
-
+# fpga
+fpga: Makefile dirs
+	@echo Building FPGA in $(FPGA_SRC_DIR) ...
+	@$(MAKE) -C $(FPGA_SRC_DIR) $(BUILD_OPT)
+	@cp $(FPGA_BIN_FILES) $(FPGA_REL_DIR)/
 
 # clean
 clean:
 	@echo Clearing release dir ...
-#	@rm -rf $(REL_DIR)
-	@$(MAKE) -C $(CTRL_FW_DIR) clean
-	@$(MAKE) -C $(CTRL_BOOT_DIR) clean
-	@$(MAKE) -C $(FPGA_DIR) clean
+	@rm -rf $(FW_REL_DIR)
+	@rm -rf $(FPGA_REL_DIR)
+	@$(MAKE) -C $(FW_SRC_DIR) clean
+	@$(MAKE) -C $(FPGA_SRC_DIR) clean
 
