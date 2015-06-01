@@ -46,7 +46,7 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE BALANCED
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name ENABLE_SIGNALTAP OFF
-set_global_assignment -name USE_SIGNALTAP_FILE cart_debug.stp
+set_global_assignment -name USE_SIGNALTAP_FILE scroller.stp
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
@@ -404,11 +404,11 @@ set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk.v
 set_global_assignment -name VERILOG_FILE ../../rtl/clock/amiga_clk_altera.v
 set_global_assignment -name VERILOG_FILE ../../rtl/io/i_sync.v
 set_global_assignment -name VERILOG_FILE ../../rtl/fifo/sync_fifo.v
-set_global_assignment -name VHDL_FILE ../../rtl/mist/sdram.vhd
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/sdram_ctrl.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_be_512x16.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/tpram_128x32.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/cpu_cache.v
+set_global_assignment -name VHDL_FILE ../../rtl/mist/sdram.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68KdotC_Kernel.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K_ALU.vhd
@@ -416,4 +416,6 @@ set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name SDC_FILE minimig_mist.sdc
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_be_1024x16.qip
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_256x32.qip
+
+set_global_assignment -name SIGNALTAP_FILE scroller.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
