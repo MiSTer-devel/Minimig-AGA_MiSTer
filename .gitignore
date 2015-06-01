@@ -14,6 +14,13 @@
 *\.o
 *\.d
 
-#ignore dropbox files
+# ignore dropbox files
 .dropbox.attr
+
+# ignore directories
+bin/
+rel/
+fpga/*/out/
+fpga/*/db/
+fpga/*/incremental_db/
 
