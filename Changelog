@@ -6,10 +6,44 @@ DW - Dennis van Weeren
 JB - Jakub Bednarski
 SB - Sascha Boing
 AR - A.M. Robinson
+TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-06-01 - RK - MIST         - updated global makefile
+2015-06-01 - RK - DENISE       - fixed a bug in sprite scandoubler (should fix Fantastic Dizzy CD32)
+2015-05-31 - RK - DENISE       - another fix for playfield CLUT offsets
+2015-05-31 - RK - TG68         - enabled & fixed ROM cache; proper turbochipram enable signal
+2015-05-30 - TH - TG68         - partial fix for UNPK instruction (needed by Slam Tilt)
+2015-05-30 - RK - DENISE       - added (theoretical) delay to BPLCON4 values; fixed (big!) bug with extra_delay values when fetchmode > 0; added another fix for AGA quarter pixel scrolling (probably not completely correct!); more color fixes (wrong implementation of SWIV special feature); even more colortable fixes
+2015-05-30 - RK - AGNUS        - added bitplane scandoubling support
+2015-05-29 - RK - USERIO       - implemented proper RTL version register
+2015-05-29 - RK - DENISE       - implemented proper AGA bitplane scroller; fixed erroneous enabling of ham & ehb modes; fixed color problems; sprite enable/disable signal fix (Coppermaster demo & More Lemmings game)
+2015-05-29 - RK - FIRMWARE     - fixed boot display text position; fixed resetting boot text position when loading another core (which could be another minimig core); added proper reading of RTL version from core; added minimig core config display on boot screen; updated firmware for HRTmon, removed old ActionReplay code
+2015-05-28 - RK - MINIMIG      - fixed fastRAM config
+2015-05-24 - RK - DENISE       - more work on the bitplane display
+2015-05-24 - RK - SPRITES      - added sprite attach for both odd and even attach bit (ECS feature); added sprite scandoubling support, to be tested
+2015-05-24 - RK - DENISE       - fixed AGA colortable, bplxor implementation; fixed wrong detection of HAM & EHB modes
+2015-05-06 - RK - SDRAM        - rewritten sdram controller in Verilog
+2015-05-03 - RK - CART         - added custom registers mirror support for cart (HRTmon); updated firmware to better handle HRTmon, HRTmon loads to new location (as used in WinUAE - can use same HRTmon rom!)
+2015-04-29 - RK - CIA          - CIA TOD bug fixed
+2015-03-18 - RK - MINIMIG      - added new RGA bus address decoder logic (centralized)
+2015-03-09 - RK - USERIO       - OSD SPI memory write access page size updated to 24bits, this is to allow a (incompatible with previous RTL versions) simplification of the firmware sometime later
+2015-02-20 - RK - MIST         - initial support for writing in ini parser
+2015-02-19 - RK - MIST         - ini parser updated to handle comments, quotes, and last line without line end
+2015-01-26 - RK - MIST         - fixed scandoubler config
+2015-01-23 - RK                - minimig-mist AGA BETA 3
+2015-01-22 - RK - MIST         - added ini parser to firmware; added scandoubler enable/disable switch from mist.ini file
+
+2014-12-08 - RK - MIST         - fixed clock-domain-crossing signals for joysticks, mouse, keyboard
+2014-11-30 - RK                - minimig-mist AGA BETA 2
+                                - 
+                                - 
+2014-10-08 - RK - CORE         - all source files split into seperate modules
+2014-10-07 - RK - CORE         - whole minimig design upgraded to use a single clock - ~28MHz
 2014-09-27 - RK - CART         - cleanup, clock enable added
+2014-09-25 - RK - FIRMWARE     - OSD SPI protocol updated with new addressing & more bits available; for now, this change makes 'our' firmware incompatible with any other core on the MiST board
+2014-09-25 - RK - MIST         - ported latest version of minimig-de1 to the MiST board
 2014-06-22 - RK - USERIO       - added real mouse support from Chameleon minimig port
 2014-06-21 - RK - USERIO       - added PS/2 mouse intellimouse support
 2014-04-12 - SB - DENISE       - implemented sprite collision detection fix, developed by Yaqube. thanks a lot!, games Archon1, Rotor and Spaceport finally works normal
