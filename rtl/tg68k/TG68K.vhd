@@ -258,7 +258,9 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
  process(clk,turbochipram)
 begin
 	if rising_edge(clk) then
-		if state="01" then -- No mem access, so safe to switch chipram access mode
+    if reset='0' then
+      turbochip_d <= '0';
+		elsif state="01" then -- No mem access, so safe to switch chipram access mode
 			turbochip_d<=turbochipram;
 		end if;
 	end if;
