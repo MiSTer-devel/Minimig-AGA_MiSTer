@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers -->
+<html lang="en" dir="ltr" class="client-js ve-not-available" hola_ext_inject="disabled"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+<title>Aros/Developer/AHIDrivers - Wikibooks, open books for an open world</title>
+<meta name="generator" content="MediaWiki 1.26wmf7">
+<link rel="alternate" type="application/x-wiki" title="Edit" href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit">
+<link rel="edit" title="Edit" href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit">
+<link rel="shortcut icon" href="http://en.wikibooks.org/static/favicon/wikibooks.ico">
+<link rel="search" type="application/opensearchdescription+xml" href="http://en.wikibooks.org/w/opensearch_desc.php" title="Wikibooks (en)">
+<link rel="EditURI" type="application/rsd+xml" href="http://en.wikibooks.org/w/api.php?action=rsd">
+<link rel="alternate" hreflang="x-default" href="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/Aros_Developer_AHIDrivers - Wikibooks, open books for an open world.html">
+<link rel="copyright" href="http://creativecommons.org/licenses/by-sa/3.0/">
+<link rel="alternate" type="application/atom+xml" title="Wikibooks Atom feed" href="http://en.wikibooks.org/w/index.php?title=Special:RecentChanges&feed=atom">
+<link rel="canonical" href="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/Aros_Developer_AHIDrivers - Wikibooks, open books for an open world.html">
+<link rel="stylesheet" href="http://en.wikibooks.org/w/load.php?debug=false&lang=en&modules=ext.flaggedRevs.basic%7Cext.gadget.extlinks%7Cext.geshi.language.c%7Cext.geshi.local%7Cext.uls.nojs%7Cext.visualEditor.viewPageTarget.noscript%7Cext.wikihiero%2CwikimediaBadges%7Cmediawiki.legacy.commonPrint%2Cshared%7Cmediawiki.sectionAnchor%7Cmediawiki.skinning.interface%7Cmediawiki.ui.button%7Cskins.vector.styles%7Cwikibase.client.init&only=styles&skin=vector&*">
+<style>
+.tipsy{padding:5px;position:absolute;z-index:100000;cursor:default}.tipsy-inner{padding:5px 8px 4px 8px; background-color:#ffffff;border:solid 1px #a7d7f9;color:black;max-width:15em;border-radius:4px; }.tipsy-arrow{position:absolute;background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALAgMAAADUwp+1AAAACVBMVEX5+fmn1/n///9s6BFKAAAAAXRSTlMAQObYZgAAACpJREFUCB1jZBD4wMiQMoeRcUU4I9uSaYxSE54xZjn8AtMgPkgcJA9UBwAeDw1Qrb3pVAAAAABJRU5ErkJggg==) no-repeat top left;background:url(//en.wikibooks.org/static/1.26wmf7/resources/src/jquery.tipsy/images/tipsy.png?2015-05-20T18:40:00Z) no-repeat top left!ie;width:11px;height:6px} .tipsy-n .tipsy-arrow{top:0px;left:50%;margin-left:-5px} .tipsy-nw .tipsy-arrow{top:1px;left:10px} .tipsy-ne .tipsy-arrow{top:1px;right:10px} .tipsy-s .tipsy-arrow{bottom:0px;left:50%;margin-left:-5px;background-position:bottom left} .tipsy-sw .tipsy-arrow{bottom:0px;left:10px;background-position:bottom left} .tipsy-se .tipsy-arrow{bottom:0px;right:10px;background-position:bottom left} .tipsy-e .tipsy-arrow{top:50%;margin-top:-5px;right:1px;width:5px;height:11px;background-position:top right} .tipsy-w .tipsy-arrow{top:50%;margin-top:-5px;left:0px;width:6px;height:11px} .tipsy{font-size:0.8em}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:63af40285297947605e19be16bd69696 */
+@media print{#centralNotice{display:none}}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:ddb0c98a055632ae8e349c9cf48ac703 */
+.uls-menu a{cursor:pointer}.uls-menu.callout .caret-before{border-top:20px solid transparent;border-right:20px solid #C9C9C9;border-bottom:20px solid transparent;display:inline-block;left:-21px;top:30px;position:absolute}.uls-menu.callout .caret-after{border-top:20px solid transparent;border-right:20px solid #FCFCFC;border-bottom:20px solid transparent;display:inline-block;left:-20px;top:30px;position:absolute}.uls-ui-languages button{width:23%;text-overflow:ellipsis;margin-right:4%}button.uls-more-languages{width:auto}.settings-title{font-size:11pt}.settings-text{color:#555555;font-size:9pt}div.display-settings-block:hover .settings-text{color:#252525}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:22d1681fa868b4ff4fbcb1ec1e58a9ea */
+@-webkit-keyframes centralAuthPPersonalAnimation{0%{opacity:0;-webkit-transform:translateY(-20px)}100%{opacity:1;-webkit-transform:translateY(0)}}@-moz-keyframes centralAuthPPersonalAnimation{0%{opacity:0;-moz-transform:translateY(-20px)}100%{opacity:1;-moz-transform:translateY(0)}}@-o-keyframes centralAuthPPersonalAnimation{0%{opacity:0;-o-transform:translateY(-20px)}100%{opacity:1;-o-transform:translateY(0)}}@keyframes centralAuthPPersonalAnimation{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}.centralAuthPPersonalAnimation{-webkit-animation-duration:1s;-moz-animation-duration:1s;-o-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;-moz-animation-fill-mode:both;-o-animation-fill-mode:both;animation-fill-mode:both;-webkit-animation-name:centralAuthPPersonalAnimation;-moz-animation-name:centralAuthPPersonalAnimation;-o-animation-name:centralAuthPPersonalAnimation;animation-name:centralAuthPPersonalAnimation}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:0dcacc990dd02e7db9669ab3090b80f1 */
+.ve-activated #toc,.ve-activated #siteNotice,.ve-activated .mw-indicators, .ve-active #bodyContent > :not(#siteSub):not(#contentSub):not(.ve-ui-mwTocWidget),.ve-activated #t-print,.ve-activated #t-permalink,.ve-activated #p-coll-print_export,.ve-activated #t-cite,.ve-activating .ve-ui-surface,.ve-deactivating .ve-ui-surface{display:none}.ve-activated #bodyContent,.ve-activated #firstHeading,.ve-activated #siteSub,.ve-activated #contentSub{opacity:0.6;pointer-events:none}.ve-activated #firstHeading{cursor:default} .ve-activated #content{position:relative}.ve-init-mw-viewPageTarget-loading-overlay{position:absolute;left:0;right:0;z-index:1;margin-top:-0.5em}.ve-init-mw-viewPageTarget-progress{border:1px solid #347bff;background:#fff;height:0.75em;border-radius:2px;overflow:hidden;margin:0 25%}.ve-init-mw-viewPageTarget-progress-bar{width:0;height:0.75em;background:#347bff} .mw-editsection{white-space:nowrap; unicode-bidi:-moz-isolate;unicode-bidi:-webkit-isolate;unicode-bidi:isolate}.mw-editsection-divider{color:#555}.ve-tabmessage-appendix{font-size:0.7em;vertical-align:top;line-height:1.43em;padding-left:0.5em; background-image:none !important;display:inline !important}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:98428ddb6d82ef9bb6dcf1d1c4437f25 */</style><style>
+#p-lang .uls-settings-trigger{background:transparent url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAgCAQAAACI54EcAAAAAnNCSVQICFXsRgQAAAAJcEhZcwAADdcAAA3XAUIom3gAAAAZdEVYdFNvZnR3YXJlAHd3dy5pbmtzY2FwZS5vcmeb7jwaAAABWklEQVQoz42RwWrCQBBAc/PkyXiQfpEXobKzEsipCkKh5CBUhBBmaWrw6j/oIQr6VeaSXzDpZDbZ1CWVMhBm5zGT2X1O6fwdv1L0saTwLajmar0d4JHh6XuEofqooVpiQcU7ozbeGWJklXVEGrrcWWKOCUXOeYEuQeXhQaNdv/rPrl/jFH3HjEnM1klTa2FsYNzCBV45zfa9Cu17mPH5gm903A7rhW60d0Rf7opf9D03nVf50jCwyjxHrZvnCzCkR0sZndFVK/y0Hl7NGC46rTxV9hRKH0oope0T5nL9OhDHCsJpOhKhaHyKJRRUvDMyIbRPiB7LdWifnsudJeSQUOScF17lU3pw0GjCPid9jWUqfceMMT6pu6610PiE2ECxgCun2Zh9jnuQ8fkiK58wrBe60d4RfXWf9ik2XVeR2icEFuA5svEJgQinI5kyOnuuWAnbJ8z42f7r8wfhovZYX3llNQAAAABJRU5ErkJggg==) no-repeat right top;background:transparent url(//en.wikibooks.org/static/1.26wmf7/extensions/UniversalLanguageSelector/resources/css/../images/cog-sprite.png?2015-05-20T18:45:00Z) no-repeat right top!ie;background-image:-webkit-linear-gradient(transparent,transparent),url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2214%22%20height%3D%2232%22%3E%3Cdefs%3E%3Cpath%20d%3D%22M14%209.3V6.73l-1.575-.264c-.117-.44-.292-.848-.496-1.2l.93-1.285-1.81-1.84-1.31.908c-.38-.205-.79-.38-1.196-.497L8.284%201H5.716l-.263%201.578c-.437.117-.816.293-1.196.497L2.975%202.17%201.137%203.98l.934%201.287c-.2.38-.376.79-.493%201.228L0%206.73V9.3l1.575.264c.117.438.292.818.496%201.198l-.93%201.315L2.95%2013.89l1.312-.938c.38.205.787.38%201.224.497L5.746%2015h2.566l.263-1.578c.408-.117.817-.293%201.196-.497l1.315.935%201.81-1.812-.935-1.315c.203-.38.38-.76.495-1.2L14%209.303zm-7%201.404c-1.488%200-2.683-1.2-2.683-2.69S5.542%205.327%207%205.327c1.458%200%202.683%201.198%202.683%202.69%200%201.49-1.195%202.688-2.683%202.688z%22%20id%3D%22a%22%2F%3E%3C%2Fdefs%3E%3Cuse%20xlink%3Ahref%3D%22%23a%22%20fill%3D%22%23808080%22%2F%3E%3Cuse%20transform%3D%22translate%280%2016%29%22%20xlink%3Ahref%3D%22%23a%22%20fill%3D%22%23555%22%2F%3E%3C%2Fsvg%3E%0A);background-image:-webkit-linear-gradient(transparent,transparent),url(//en.wikibooks.org/static/1.26wmf7/extensions/UniversalLanguageSelector/resources/css/../images/cog-sprite.svg?2015-05-20T18:45:00Z)!ie;background-image:linear-gradient(transparent,transparent),url(data:image/svg+xml,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%3F%3E%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Axlink%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2Fxlink%22%20width%3D%2214%22%20height%3D%2232%22%3E%3Cdefs%3E%3Cpath%20d%3D%22M14%209.3V6.73l-1.575-.264c-.117-.44-.292-.848-.496-1.2l.93-1.285-1.81-1.84-1.31.908c-.38-.205-.79-.38-1.196-.497L8.284%201H5.716l-.263%201.578c-.437.117-.816.293-1.196.497L2.975%202.17%201.137%203.98l.934%201.287c-.2.38-.376.79-.493%201.228L0%206.73V9.3l1.575.264c.117.438.292.818.496%201.198l-.93%201.315L2.95%2013.89l1.312-.938c.38.205.787.38%201.224.497L5.746%2015h2.566l.263-1.578c.408-.117.817-.293%201.196-.497l1.315.935%201.81-1.812-.935-1.315c.203-.38.38-.76.495-1.2L14%209.303zm-7%201.404c-1.488%200-2.683-1.2-2.683-2.69S5.542%205.327%207%205.327c1.458%200%202.683%201.198%202.683%202.69%200%201.49-1.195%202.688-2.683%202.688z%22%20id%3D%22a%22%2F%3E%3C%2Fdefs%3E%3Cuse%20xlink%3Ahref%3D%22%23a%22%20fill%3D%22%23808080%22%2F%3E%3Cuse%20transform%3D%22translate%280%2016%29%22%20xlink%3Ahref%3D%22%23a%22%20fill%3D%22%23555%22%2F%3E%3C%2Fsvg%3E%0A);background-image:linear-gradient(transparent,transparent),url(//en.wikibooks.org/static/1.26wmf7/extensions/UniversalLanguageSelector/resources/css/../images/cog-sprite.svg?2015-05-20T18:45:00Z)!ie;height:16px;width:14px;float:right;cursor:pointer}.skin-vector #p-lang .uls-settings-trigger{ margin-top:3px}#p-lang .uls-settings-trigger:hover{background-position:right -16px}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:9d47c45c867fd277c1fed6805350de5d */
+.mw-collapsible-toggle{float:right;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;user-select:none}  .mw-content-ltr .mw-collapsible-toggle,.mw-content-rtl .mw-content-ltr .mw-collapsible-toggle{float:right} .mw-content-rtl .mw-collapsible-toggle,.mw-content-ltr .mw-content-rtl .mw-collapsible-toggle{float:left}.mw-customtoggle,.mw-collapsible-toggle{cursor:pointer} caption .mw-collapsible-toggle,.mw-content-ltr caption .mw-collapsible-toggle,.mw-content-rtl caption .mw-collapsible-toggle,.mw-content-rtl .mw-content-ltr caption .mw-collapsible-toggle,.mw-content-ltr .mw-content-rtl caption .mw-collapsible-toggle{float:none} li .mw-collapsible-toggle,.mw-content-ltr li .mw-collapsible-toggle,.mw-content-rtl li .mw-collapsible-toggle,.mw-content-rtl .mw-content-ltr li .mw-collapsible-toggle,.mw-content-ltr .mw-content-rtl li .mw-collapsible-toggle{float:none} .mw-collapsible-toggle-li{list-style:none}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:e1ffd603cbaaa5f1a36e0d13fe843535 */
+.suggestions{overflow:hidden;position:absolute;top:0;left:0;width:0;border:none;z-index:1099;padding:0;margin:-1px 0 0 0}.suggestions-special{position:relative;background-color:white;cursor:pointer;border:solid 1px #aaaaaa;padding:0;margin:0;margin-top:-2px;display:none;padding:0.25em 0.25em;line-height:1.25em}.suggestions-results{background-color:white;cursor:pointer;border:solid 1px #aaaaaa;padding:0;margin:0}.suggestions-result{color:black;margin:0;line-height:1.5em;padding:0.01em 0.25em;text-align:left; overflow:hidden;-o-text-overflow:ellipsis; text-overflow:ellipsis;white-space:nowrap}.suggestions-result-current{background-color:#4C59A6;color:white}.suggestions-special .special-label{color:gray;text-align:left}.suggestions-special .special-query{color:black;font-style:italic;text-align:left}.suggestions-special .special-hover{background-color:silver}.suggestions-result-current .special-label,.suggestions-result-current .special-query{color:white}.highlight{font-weight:bold}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:f8d0c6895ce3ae14434c16b8fca59432 */
+.postedit-container{margin:0 auto;position:fixed;top:0;height:0;left:50%;z-index:1000;font-size:13px}.postedit-container:hover{cursor:pointer}.postedit{position:relative;top:0.6em;left:-50%;padding:.6em 3.6em .6em 1.1em;line-height:1.5625em;color:#626465;background-color:#f4f4f4;border:1px solid #dcd9d9;text-shadow:0 0.0625em 0 rgba(255,255,255,0.5);border-radius:5px;box-shadow:0 2px 5px 0 #ccc;-webkit-transition:all 0.25s ease-in-out;-moz-transition:all 0.25s ease-in-out;-ms-transition:all 0.25s ease-in-out;-o-transition:all 0.25s ease-in-out;transition:all 0.25s ease-in-out}.skin-monobook .postedit{top:6em !important}.postedit-faded{opacity:0}.postedit-icon{padding-left:41px;  line-height:25px;background-repeat:no-repeat;background-position:8px 50%}.postedit-icon-checkmark{background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAABblBMVEUAAAD///////9PfTf///80aRdTgjn///9Feij///////////9Rfzf///////////9PfjZRgDh1o1xOfTb///////+bwYqLtnj///////9PfTa82K////9WhT6YxIL///9QgDdTgzr////////j7uDl7eLq8efi693k7OH///////9UhjuBr2rp9uRUhjr///9YljVKgir///9WiTlYjT3////9/v57vFlbkT5PjC9dlD/5/fhuq09stUTs9uhxuElctCpfnT1huDFloEZloUZmpENmvDZpvDxpvTxqvjxrvT5rvT9rwTxsqktswD5uwkBvuUdxw0NztFBztU9ztVBzwkp0tlJ1xkd2t1R3uVR4w1F4xk54x014yE15uVZ5v1R5xVB6v1R7yFJ8wVh9xVl9yFR9yVd9ylN+xVh+yFd/x1l/yFeAylmEx1+Ny2uY0Hqe04Wj1Ymv3Ze33qLD47TJ5L3O6cPU7Mrq9eb2+/Q4j37OAAAAQHRSTlMAAQIEBAUFBQwPFB4fJCUoKiosQEhJS01RUlZZXmdydXaChYuSlJSWmJmoq6uur8LExcvM19fg5ejt8fX2+Pr7SljgewAAAKpJREFUGBkFwQNCAwAAAMDLtl3LtrG4rWXbtvX77gAgZ6grFwC0bhwNVgKgdPZx8b0dgLi+s7Wn0VoAqpfOI9+BNADZI7fLrz2pSEwGHZuH+78lSK8ZLkLezF3ooyUG3VPXq2USei9WngeyoG195yBYWDF3E/2pAhl1e9Gr8bGT+bfOFCC2fnvh4X7rcqIAQNNu+HT6sxkAjceTL/2ZAIhv+PorBwBJxfkA//dFHSCBy/UTAAAAAElFTkSuQmCC);background-image:url(//en.wikibooks.org/static/1.26wmf7/resources/src/mediawiki.action/images/green-checkmark.png?2015-05-20T18:40:00Z)!ie;background-position:left}.postedit-close{position:absolute;padding:0 .8em;right:0;top:0;font-size:1.25em;font-weight:bold;line-height:2.3em;color:black;text-shadow:0 0.0625em 0 white;text-decoration:none;opacity:0.2;filter:alpha(opacity=20)}.postedit-close:hover{color:black;text-decoration:none;opacity:0.4;filter:alpha(opacity=40)}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:4bb3f1253592fad3197d26442619142b */</style><style>
+.suggestions a.mw-searchSuggest-link,.suggestions a.mw-searchSuggest-link:hover,.suggestions a.mw-searchSuggest-link:active,.suggestions a.mw-searchSuggest-link:focus{color:black;text-decoration:none}.suggestions-result-current a.mw-searchSuggest-link,.suggestions-result-current a.mw-searchSuggest-link:hover,.suggestions-result-current a.mw-searchSuggest-link:active,.suggestions-result-current a.mw-searchSuggest-link:focus{color:white}.suggestions a.mw-searchSuggest-link .special-query{ overflow:hidden;-o-text-overflow:ellipsis; text-overflow:ellipsis;white-space:nowrap}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:ae3fa4570b5ac0c6cf7b3776c8ae4d6f */</style><meta name="ResourceLoaderDynamicStyles" content="">
+<link rel="stylesheet" href="http://en.wikibooks.org/w/load.php?debug=false&lang=en&modules=site&only=styles&skin=vector&*">
+<style>a:lang(ar),a:lang(kk-arab),a:lang(mzn),a:lang(ps),a:lang(ur){text-decoration:none}
+/* cache key: enwikibooks:resourceloader:filter:minify-css:7:4969bf752d40e7c60e4c1bc8e4153549 */</style>
+<script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/load.php"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/load(1).php"></script>
+<script>if(window.mw){
+mw.config.set({"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Aros/Developer/AHIDrivers","wgTitle":"Aros/Developer/AHIDrivers","wgCurRevisionId":2608841,"wgRevisionId":2608841,"wgArticleId":221770,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":["Aros"],"wgBreakFrames":false,"wgPageContentLanguage":"en","wgPageContentModel":"wikitext","wgSeparatorTransformTable":["",""],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","January","February","March","April","May","June","July","August","September","October","November","December"],"wgMonthNamesShort":["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"wgRelevantPageName":"Aros/Developer/AHIDrivers","wgRelevantArticleId":221770,"wgIsProbablyEditable":true,"wgRestrictionEdit":[],"wgRestrictionMove":[],"wgWikiEditorEnabledModules":{"toolbar":true,"dialogs":true,"hidesig":true,"preview":false,"publish":false},"wgMediaViewerOnClick":true,"wgMediaViewerEnabledByDefault":true,"wgVisualEditor":{"pageLanguageCode":"en","pageLanguageDir":"ltr","usePageImages":false,"usePageDescriptions":true},"wgPoweredByHHVM":true,"wgULSAcceptLanguageList":[],"wgULSCurrentAutonym":"English","wgBetaFeaturesFeatures":[],"wgFlaggedRevsParams":{"tags":{"value":{"levels":3,"quality":2,"pristine":3}}},"wgStableRevisionId":2608841,"wgCategoryTreePageCategoryOptions":"{\"mode\":0,\"hideprefix\":20,\"showcount\":true,\"namespaces\":false}","wgNoticeProject":"wikibooks"});
+}</script><script>if(window.mw){
+mw.loader.implement("user.options",function($,jQuery){mw.user.options.set({"variant":"en"});});mw.loader.implement("user.tokens",function($,jQuery){mw.user.tokens.set({"editToken":"+\\","patrolToken":"+\\","watchToken":"+\\"});});
+/* cache key: enwikibooks:resourceloader:filter:minify-js:7:a5c52c063dc436c1ca7c9f456936a5e9 */
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.page.startup","mediawiki.legacy.wikibits","mediawiki.legacy.ajax","ext.centralauth.centralautologin","ext.imageMetrics.head","ext.visualEditor.viewPageTarget.init","ext.uls.init","ext.uls.interface","ext.centralNotice.bannerController","skins.vector.js"]);
+}</script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/load(2).php"></script>
+<link rel="dns-prefetch" href="http://meta.wikimedia.org/">
+<!--[if lt IE 7]><style type="text/css">body{behavior:url("/w/static/1.26wmf7/skins/Vector/csshover.min.htc")}</style><![endif]-->
+<link rel="stylesheet" href="http://en.wikibooks.org/w/index.php?title=MediaWiki:Common.css/Aros&action=raw&ctype=text/css"><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index.php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(1).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(2).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(3).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(4).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(5).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(6).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(7).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(8).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(9).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(10).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(11).php" type="text/javascript"></script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(12).php" type="text/javascript"></script><link rel="stylesheet" href="http://en.wikibooks.org/w/index.php?title=MediaWiki:Perbook/Aros.css&action=raw&ctype=text/css"><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(13).php" type="text/javascript"></script></head>
+<body class="mediawiki ltr sitedir-ltr ns-0 ns-subject page-Aros_Developer_AHIDrivers skin-vector action-view">
+		<div id="mw-page-base" class="noprint"></div>
+		<div id="mw-head-base" class="noprint"></div>
+		<div id="content" class="mw-body" role="main">
+			<a id="top"></a>
+
+							<div id="siteNotice"><div id="centralNotice"></div><!-- CentralNotice --></div>
+						<div class="mw-indicators">
+</div>
+			<h1 id="firstHeading" class="firstHeading" lang="en">Aros/Developer/AHIDrivers</h1>
+									<div id="bodyContent" class="mw-body-content">
+									<div id="siteSub">From Wikibooks, open books for an open world</div>
+								<div id="contentSub"><span class="subpages">&lt; <a href="http://en.wikibooks.org/wiki/Aros" title="Aros">Aros</a></span></div>
+												<div id="jump-to-nav" class="mw-jump">
+					Jump to:					<a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#mw-head">navigation</a>, 					<a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#p-search">search</a>
+				</div>
+				<div id="mw-content-text" lang="en" dir="ltr" class="mw-content-ltr"><table style="border:3px solid; background:#efefef;" align="right">
+<tbody><tr>
+<td>Navbar for the <a href="http://en.wikibooks.org/wiki/Aros" title="Aros">Aros</a> wikibook
+<hr></td>
+</tr>
+<tr>
+<td><i>Aros User Docs</i></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/User/Docs" title="Aros/User/Docs">Aros User Docs</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/User/FAQs" title="Aros/User/FAQs">Aros User FAQs</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/User/Applications" title="Aros/User/Applications">Aros User Applications</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/User/DOS" title="Aros/User/DOS">Aros User DOS Shell</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/User/AmigaLegacy" title="Aros/User/AmigaLegacy">Aros/User/AmigaLegacy</a></td>
+</tr>
+<tr>
+<td></td>
+</tr>
+<tr>
+<td><i>Aros Dev Docs</i></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/Docs" title="Aros/Developer/Docs">Aros Developer Docs</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/Porting_software" title="Aros/Developer/Porting software">Porting Software from AmigaOS/SDL</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/Zune" title="Aros/Developer/Zune">For Zune Beginners</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/Zune/Classes" title="Aros/Developer/Zune/Classes">Zune .MUI Classes</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/SDL" title="Aros/Developer/SDL">For SDL Beginners</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Developer/BuildSystem" title="Aros/Developer/BuildSystem">Aros Developer BuildSystem</a></td>
+</tr>
+<tr>
+<td></td>
+</tr>
+<tr>
+<td><i>Specific platforms</i></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/Arm_Raspberry_Pi_support" title="Aros/Platforms/Arm Raspberry Pi support">Arm Raspberry Pi Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/68k_support" title="Aros/Platforms/68k support">Motorola 68k Amiga Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/Installing_on_Android" title="Aros/Platforms/Installing on Android">Android Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/Installing_on_*nix" title="Aros/Platforms/Installing on *nix">Linux and FreeBSD Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/Support_for_*nix" title="Aros/Platforms/Support for *nix">Windows Mingw and MacOSX Support</a></td>
+</tr>
+<tr>
+<td></td>
+</tr>
+<tr>
+<td></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/x86_installing" title="Aros/Platforms/x86 installing">Aros x86 Installing</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/x86_support" title="Aros/Platforms/x86 support">Aros x86 Audio/Video Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/x86_Network_support" title="Aros/Platforms/x86 Network support">Aros x86 Network Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/x86_Complete_System_HCL" title="Aros/Platforms/x86 Complete System HCL">Aros x86 Complete System HCL</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/Storage_support" title="Aros/Platforms/Storage support">Aros Storage Support IDE SATA etc</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/AROS_USB_support" title="Aros/Platforms/AROS USB support">Aros Poseidon USB Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/x86_64_support" title="Aros/Platforms/x86 64 support">x86-64 Support</a></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/Platforms/PPC_support" title="Aros/Platforms/PPC support">PPC Power Architecture</a></td>
+</tr>
+<tr>
+<td></td>
+</tr>
+<tr>
+<td><i>misc</i></td>
+</tr>
+<tr>
+<td><a href="http://en.wikibooks.org/wiki/Aros/APL" title="Aros/APL">Aros Public License</a></td>
+</tr>
+</tbody></table>
+<p><br></p>
+<p></p>
+<div id="toc" class="toc">
+<div id="toctitle">
+<h2>Contents</h2>
+<span class="toctoggle">&nbsp;[<a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#" id="togglelink">hide</a>]&nbsp;</span></div>
+<ul>
+<li class="toclevel-1 tocsection-1"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Retargetable_Audio_Devices"><span class="tocnumber">1</span> <span class="toctext">Retargetable Audio Devices</span></a>
+<ul>
+<li class="toclevel-2 tocsection-2"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Library_Approach"><span class="tocnumber">1.1</span> <span class="toctext">Library Approach</span></a></li>
+<li class="toclevel-2 tocsection-3"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Device_Approach"><span class="tocnumber">1.2</span> <span class="toctext">Device Approach</span></a></li>
+<li class="toclevel-2 tocsection-4"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Setting_up"><span class="tocnumber">1.3</span> <span class="toctext">Setting up</span></a></li>
+<li class="toclevel-2 tocsection-5"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Playing_a_Sound"><span class="tocnumber">1.4</span> <span class="toctext">Playing a Sound</span></a></li>
+<li class="toclevel-2 tocsection-6"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Freeing_Audio"><span class="tocnumber">1.5</span> <span class="toctext">Freeing Audio</span></a></li>
+<li class="toclevel-2 tocsection-7"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Closing_down"><span class="tocnumber">1.6</span> <span class="toctext">Closing down</span></a></li>
+<li class="toclevel-2 tocsection-8"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Updating_Sound_often"><span class="tocnumber">1.7</span> <span class="toctext">Updating Sound often</span></a></li>
+<li class="toclevel-2 tocsection-9"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Misc"><span class="tocnumber">1.8</span> <span class="toctext">Misc</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-10"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Examples"><span class="tocnumber">2</span> <span class="toctext">Examples</span></a></li>
+<li class="toclevel-1 tocsection-11"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Other_Examples"><span class="tocnumber">3</span> <span class="toctext">Other Examples</span></a>
+<ul>
+<li class="toclevel-2 tocsection-12"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Hooks"><span class="tocnumber">3.1</span> <span class="toctext">Hooks</span></a></li>
+</ul>
+</li>
+<li class="toclevel-1 tocsection-13"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#Reference"><span class="tocnumber">4</span> <span class="toctext">Reference</span></a>
+<ul>
+<li class="toclevel-2 tocsection-14"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_AllocAudioA"><span class="tocnumber">4.1</span> <span class="toctext">AHI_AllocAudioA</span></a></li>
+<li class="toclevel-2 tocsection-15"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_AllocAudioRequestA"><span class="tocnumber">4.2</span> <span class="toctext">AHI_AllocAudioRequestA</span></a></li>
+<li class="toclevel-2 tocsection-16"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_AudioRequestA"><span class="tocnumber">4.3</span> <span class="toctext">AHI_AudioRequestA</span></a></li>
+<li class="toclevel-2 tocsection-17"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_BestAudioIDA"><span class="tocnumber">4.4</span> <span class="toctext">AHI_BestAudioIDA</span></a></li>
+<li class="toclevel-2 tocsection-18"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_ControlAudioA"><span class="tocnumber">4.5</span> <span class="toctext">AHI_ControlAudioA</span></a></li>
+<li class="toclevel-2 tocsection-19"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_FreeAudio"><span class="tocnumber">4.6</span> <span class="toctext">AHI_FreeAudio</span></a></li>
+<li class="toclevel-2 tocsection-20"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_FreeAudioRequest"><span class="tocnumber">4.7</span> <span class="toctext">AHI_FreeAudioRequest</span></a></li>
+<li class="toclevel-2 tocsection-21"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_GetAudioAttrsA"><span class="tocnumber">4.8</span> <span class="toctext">AHI_GetAudioAttrsA</span></a></li>
+<li class="toclevel-2 tocsection-22"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_LoadSound"><span class="tocnumber">4.9</span> <span class="toctext">AHI_LoadSound</span></a></li>
+<li class="toclevel-2 tocsection-23"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_NextAudioID"><span class="tocnumber">4.10</span> <span class="toctext">AHI_NextAudioID</span></a></li>
+<li class="toclevel-2 tocsection-24"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_PlayA"><span class="tocnumber">4.11</span> <span class="toctext">AHI_PlayA</span></a></li>
+<li class="toclevel-2 tocsection-25"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_SampleFrameSize"><span class="tocnumber">4.12</span> <span class="toctext">AHI_SampleFrameSize</span></a></li>
+<li class="toclevel-2 tocsection-26"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_SetEffect"><span class="tocnumber">4.13</span> <span class="toctext">AHI_SetEffect</span></a></li>
+<li class="toclevel-2 tocsection-27"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_SetFreq"><span class="tocnumber">4.14</span> <span class="toctext">AHI_SetFreq</span></a></li>
+<li class="toclevel-2 tocsection-28"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_SetSound"><span class="tocnumber">4.15</span> <span class="toctext">AHI_SetSound</span></a></li>
+<li class="toclevel-2 tocsection-29"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_SetVol"><span class="tocnumber">4.16</span> <span class="toctext">AHI_SetVol</span></a></li>
+<li class="toclevel-2 tocsection-30"><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#AHI_UnloadSound"><span class="tocnumber">4.17</span> <span class="toctext">AHI_UnloadSound</span></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p></p>
+<h2><span class="mw-headline" id="Retargetable_Audio_Devices">Retargetable Audio Devices</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=1" title="Edit section: Retargetable Audio Devices">edit</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>For other sound cards, a system called AHI was developed to support other sound cards other than using Paula (Amiga(TM)). AHI uses the ahi.device and extra drivers to support different sound cards which is set in the AHI preferences (in Prefs drawer). You can program it in a similar way as the old Amiga audio.device. More information is included with the AHI Developer files which you can download from the <a rel="nofollow" class="external text" href="http://arp2.berlios.de/ahi/#support" target="_blank">AHI homepage</a> or Aminet.</p>
+<p><br>
+<a class="external text" href="http://en.wikipedia.org/wiki/AHI_(Amiga)" target="_blank">Wikipedia page</a></p>
+<p><a rel="nofollow" class="external text" href="http://amiga.sourceforge.net/amigadevhelp/" target="_blank">Amiga Sourceforge DevHelp</a></p>
+<p><a rel="nofollow" class="external text" href="http://cataclysm.cx/random/amiga/reference/Devices_Manual_guide/node0000.html" target="_blank">Devices</a></p>
+<p><br>
+Units 0 - 3 can be shared by as many programs as you define channels for them. Music Unit blocks the hardware which it is set to exclusively, so that no other program can play sound at the same time through this hardware. That's what &lt;ahi-device&gt;.audio was invented, it is a virtual hardware for which sends its sound data to the unit you set it up. This way, although music unit pull-down option blocks &lt;ahi-device&gt;.audio exclusively, other programs can still send sound to unit 0 - 3. Normally all programs use unit 0. Only very few programs use the music unit.</p>
+<p><br>
+It works on two models, as a device driver (High-level) or library (Low-level). Although this confused me at first, having programmed the device model it is because this is simple just allowing you to send sound streams and the library model deals with samples for use with trackers which are preloaded.</p>
+<p><br></p>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Library_Approach">Library Approach</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=2" title="Edit section: Library Approach">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>The library (Low-level) approach use AHI functions like AHI_SetSound(), AHI_SetVol() and so on. In reality, this way has one big problem: if you work with this method, you will not have any mixing functions - your program will lock ahi.device and while your program is running, all other ahi programs will not work. The only advantage of low-level coding as mentioned in the documentation is "low overhead and much more advanced control over the playing sounds".</p>
+<p>Here you get exclusive access to the audio hardware, and can do almost whatever you want, including monitoring.</p>
+<p>Disadvantage is obviously, that the audio hardware is blocked for all other programs. Most of the drivers don't care about this situation, and if a program tries to access the hardware it mostly trashes everything and you need to restart your program, or re-allocate the audio hardware.</p>
+<p>From AHI6 on, there is a nonblocking AHI mode called "device mode", but it doesn't allow recording. Playback only and has bad timing. Good enough for Playback something, but too bad for realtime response.</p>
+<p>To use two samples, you need to use the library model, you would open the ahi.device and extract the library base from the AHI device structure.</p>
+<p><br></p>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Device_Approach">Device Approach</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=3" title="Edit section: Device Approach">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>In this way you just use ahi.device as standard amiga device, and use CMD_WRITE for sending raw data to the AHI. With hi-level ahi coding you are allowed to mix sound, there are no 'locks' of ahi.device anymore and so on. For example, for mp3 playing, or for mod players, you just depack the data needed by the CPU and use this unpacked raw data with CMD_WRITE.</p>
+<p>The device interface is much easier to program, and is suitable for system niose or mp3 players. It has a fix latency of 20ms, which is ok in most (non-musical) situations. It is non-blocking the hardware, so it is the first choise when it comes to quick play some audio.</p>
+<p><br>
+It also supports the CMD_READ message but</p>
+<ul>
+<li>As soon as you read, it blocks AHI exclusively.</li>
+<li>it can sometimes gives the odd click while recording via device interfaces</li>
+</ul>
+<p>All you do is use the CMD_WRITE command with the sample info set in the AHI IORequest structure, for more samples you will need to copy the IORequest and use that for the other samples, and so on. Essentially the structure is sent as a message to the AHI daemon, which is standard for Exec devices, so that is why it needs a copy. Otherwise it would try to link a message in the list which is already in there, of the same address, then crash!</p>
+<p><br>
+I would start with the device API, not least because it's very simple. When you have loaded/generated sample data, opened the AHI device and allocated IORequest(s), you can use the Exec library functions (DoIO, SendIO, BeginIO...) to play the samples. However, there may be a limited amount of AHI channels, so IIRC in that case lower priority sounds will be queued and played later. You could create your own mixer routine which basically "streams" data using double-buffered IO requests (there is an example in the AHI SDK about double buffering).</p>
+<p>Do I really need to record via ahi.device? If it is just the monitor feature, you can use ahi's internal monitor functionality (which has the lowest possible latency and might use the hardware possibility to monitor) or you can read, manipulate and copy to the outbuffer your data using the lib interface. The latency will be usually 20ms, depending on the driver, the application has no control over this.</p>
+<p>You could also use datatypes.library to play samples but cannot say if it's very accurate timing wisely, but it's at least very simple to use.</p>
+<pre>CreateMsgPort
+CreateIORequest
+OpenDevice (ahi.device)
+
+loop
+    {
+    depack some music data
+    fill AHIdatas
+    SendIO((struct IORequest *) AHIdatas);
+    }
+</pre>
+<p>Then, when i need , i just do for sound (which will be played on second channel (it's only solution to make it works at the same time by ahi):</p>
+<pre>CreateMsgPort
+CreateIORequest
+OpenDevice (ahi.device)
+
+fill AHIdatas
+
+DoIO/sendio
+</pre>
+<p>Find the default audio ID such as for unit 0 or the default unit. Then call AHI_AllocAudioA() and pass it the ID, or AHI_DEFALUT_ID, and a AHIA_Channels tag with the minimum channels you need. Then check if it allocated the channels. If so you should know it has enough channels and you can then AHI_FreeAudio(). If not that should mean it doesn't have enough provided you have passed all the required tags.</p>
+<p>AHI device interface plays streams, not samples. AHI mixes as many streams together as you have channels set in the prefs. If you try to play more streams than channels are available, the additional streams are muted.</p>
+<p>If you need to synchronise two samples (perhaps for stereo) then you can issue a CMD_STOP, do your CMD_WRITEs, then issue a CMD_START to start play. What you have gotta watch is that is affects all AHI applications and not just your own.</p>
+<p>This brings me to another point. Are your sounds mono or stereo? As you would have read the proper way for stereo is to tell AHI to centre the pan and to give it a stereo sample. I don't know if it returns an error if it can't do it, possibly will accept the write but with a muted channel as it looks like you found out.</p>
+<p>Another thing about multiple CMD_WRITEs from different AHI Requests. AHI will treat each instance separately and will mix the sound together on the same track. Providing the hardware supports it, the high level API can only offer panning and not let specify a direct track AFAIK.</p>
+<p><a rel="nofollow" class="external free" href="http://utilitybase.com/forum/index.php?action=vthread&forum=201&topic=1565&page=-1" target="_blank">http://utilitybase.com/forum/index.php?action=vthread&amp;forum=201&amp;topic=1565&amp;page=-1</a></p>
+<p>If you want to play multiple samples with only one channel through the device API, you have to create one stream from the samples yourself.</p>
+<p><br>
+The AHI API uses OpenDevice to do CMD_READ, CMD_WRITE, CMD_START, CMD_STOP.</p>
+<p><a rel="nofollow" class="external text" href="http://utilitybase.com/forum/index.php?action=vthread&forum=6&topic=666" target="_blank">see here thread</a></p>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Setting_up">Setting up</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=4" title="Edit section: Setting up">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="kw1">if</span> <span class="br0">(</span>AHImp<span class="sy0">=</span>CreateMsgPort<span class="br0">(</span><span class="br0">)</span><span class="br0">)</span> <span class="br0">{</span>
+  <span class="kw1">if</span> <span class="br0">(</span>AHIio<span class="sy0">=</span><span class="br0">(</span><span class="kw4">struct</span> AHIRequest <span class="sy0">*</span><span class="br0">)</span>CreateIORequest<span class="br0">(</span>AHImp<span class="sy0">,</span><span class="kw4">sizeof</span><span class="br0">(</span><span class="kw4">struct</span> AHIRequest<span class="br0">)</span><span class="br0">)</span><span class="br0">)</span> <span class="br0">{</span>
+     AHIio<span class="sy0">-&gt;</span>ahir_Version <span class="sy0">=</span> <span class="nu0">6</span><span class="sy0">;</span>
+     AHIDevice<span class="sy0">=</span>OpenDevice<span class="br0">(</span>AHINAME<span class="sy0">,</span><span class="nu0">0</span><span class="sy0">,</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>AHIio<span class="sy0">,</span>NULL<span class="br0">)</span><span class="sy0">;</span>
+  <span class="br0">}</span>
+</pre></div>
+</div>
+<p>This will create a new message port, the create some IORequest structures and finally open the AHI device for which to write.</p>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Playing_a_Sound">Playing a Sound</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=5" title="Edit section: Playing a Sound">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="co1">// Play buffer</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Message</span>.<span class="me1">mn_Node</span>.<span class="me1">ln_Pri</span> <span class="sy0">=</span> pri<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Command</span> <span class="sy0">=</span> CMD_WRITE<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Data</span> <span class="sy0">=</span> p1<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Length</span> <span class="sy0">=</span> length<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Offset</span> <span class="sy0">=</span> <span class="nu0">0</span><span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Frequency <span class="sy0">=</span> FREQUENCY<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Type <span class="sy0">=</span> TYPE<span class="sy0">;</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Volume <span class="sy0">=</span> <span class="nu12">0x10000</span><span class="sy0">;</span> <span class="co1">// Full volume</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Position <span class="sy0">=</span> <span class="nu12">0x8000</span><span class="sy0">;</span> <span class="co1">// Centered</span>
+AHIio<span class="sy0">-&gt;</span>ahir_Link <span class="sy0">=</span> link<span class="sy0">;</span>
+SendIO<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span> AHIio<span class="br0">)</span><span class="sy0">;</span>
+</pre></div>
+</div>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="co1">// fill</span>
+ 
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Message</span>.<span class="me1">mn_Node</span>.<span class="me1">ln_Pri</span> <span class="sy0">=</span> <span class="nu0">127</span><span class="sy0">;</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Command</span>  <span class="sy0">=</span> CMD_WRITE<span class="sy0">;</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Data</span>     <span class="sy0">=</span> raw_data<span class="sy0">;</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Length</span>   <span class="sy0">=</span> size_of_buffer<span class="sy0">;</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Offset</span>   <span class="sy0">=</span> <span class="nu0">0</span><span class="sy0">;</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Frequency       <span class="sy0">=</span> <span class="nu0">48000</span><span class="sy0">;</span>     <span class="co1">// freq</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Type            <span class="sy0">=</span> AHIST_S16S<span class="sy0">;</span><span class="co1">// 16b</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Volume          <span class="sy0">=</span> <span class="nu12">0x10000</span><span class="sy0">;</span>   <span class="co1">// vol.</span>
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Position        <span class="sy0">=</span> <span class="nu12">0x8000</span><span class="sy0">;</span>   
+  AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">-&gt;</span>ahir_Link            <span class="sy0">=</span> NULL<span class="sy0">;</span>
+ 
+<span class="co1">// send</span>
+ 
+SendIO<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span> AHIios<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="br0">)</span><span class="sy0">;</span>
+</pre></div>
+</div>
+<p>The AHI_IORequest structure is similar to audio device structures. p1 points to the actual raw sound data, length is the size of the data buffer, Frequency is the amount to reply at e.g. 8000 Hertz, Type is type of music data e.g. AHIST_M8S, then the Volume and Position of speakers. SendIO will start playing the sound and you may use WaitIO to wait until the buffer is played before starting on next block of data.</p>
+<p><br></p>
+<h3><span class="mw-headline" id="Freeing_Audio">Freeing Audio</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=6" title="Edit section: Freeing Audio">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<ul>
+<li>i call AHI_ControlAudio()n with play to false so that i make sure nothing is being played</li>
+<li>i unload the sounds using AHI_UnloadSound() to make sure sounds get unloaded</li>
+<li>then i call AHI_FreeAudio()</li>
+</ul>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Closing_down">Closing down</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=7" title="Edit section: Closing down">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Once you have finished with the AHI device, you need to close down the device. e.g.</p>
+<ul>
+<li>Does a CloseDevice()</li>
+<li>then DeletIORequest()</li>
+<li>and last DeleteMsgPort()</li>
+</ul>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="kw1">if</span> <span class="br0">(</span><span class="sy0">!</span>AHIDevice<span class="br0">)</span>
+   CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>AHIio<span class="br0">)</span><span class="sy0">;</span>
+   DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>AHIio<span class="br0">)</span><span class="sy0">;</span>
+   DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>AHIio2<span class="br0">)</span><span class="sy0">;</span>
+   DeleteMsgPort<span class="br0">(</span>AHImp<span class="br0">)</span><span class="sy0">;</span>
+</pre></div>
+</div>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Updating_Sound_often">Updating Sound often</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=8" title="Edit section: Updating Sound often">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Take a look at the simpleplay example.</p>
+<p>If you want to 'update' your sound on a regular base then there is already functionality available.</p>
+<p>In AllocAudio() you can provide a playerfunction using the AHIA_PlayerFunc field.</p>
+<p>AHIA_PlayerFunc If you are going to play a musical score, you should use this "interrupt" source instead of VBLANK or CIA timers in order to get the best result with all audio drivers. If you cannot use this, you must not use any "non-realtime" modes (see AHI_GetAudioAttrsA() in the autodocs, the AHIDB_Realtime tag).</p>
+<p>AHIA_PlayerFreq If non-zero, it enables timing and specifies how many times per second PlayerFunc will be called. This must be specified if AHIA_PlayerFunc is! It is suggested that you keep the frequency below 100-200 Hz. Since the frequency is a fixpoint number AHIA_PlayerFreq should be less than 13107200 (that's 200 Hz).</p>
+<p>That way it is for example possible to write some kind of replayer that decides which sounds needs to be stopped, or for example be slided, volume turned up/down etc.</p>
+<p>Just make the mainloop waits for the player to be 'done'.</p>
+<p>You could do that by messaging, but for example also by using a signal. In order to stop the player you could use a boolean (that you set by pressing a button or whatever you want) that the player checks and then signals the mainloop to quit.</p>
+<p>Please take a look at the PlaySineEverywhere.c example in the AHI developer archive.</p>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Misc">Misc</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=9" title="Edit section: Misc">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>There are a number of things that are called "latency." The thing that concerns me most is the time between when audio (like a microphone) hits the input and when it comes out the monitor output. You can measure this by putting something with a short rise time (a cross stick sound is good) into one channel, and connect the output of that channel to the input of another channel. Record a few seconds on both channels. Stop the recording, zoom in on the waveform of the two channels, and measure the time difference between them. That's the input/output latency.</p>
+<p>Latency when playing samples is trickier because it depends on the program that's supporting the VST instrument. If you have a MIDI keyboard with sounds you could choose a similar sound on the keyboard and from the VST library, connect the analog output of the sample playback channel to one input, connect the synth output to another input, play your sound, record it to two tracks, and look at the time difference between the tracks. That's not totally accurate but it will get you a ballpark measurement.</p>
+<p><br>
+If you do the following literally (in your code):</p>
+<pre>filebuffer = Open("e.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length1 = Read(filebuffer,p1,BUFFERSIZE);
+
+
+filebuffer = Open("a.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length2 = Read(filebuffer,p2,BUFFERSIZE);
+
+filebuffer = Open("d.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length3 = Read(filebuffer,p3,BUFFERSIZE);
+
+filebuffer = Open("g.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length4 = Read(filebuffer,p4,BUFFERSIZE);
+
+filebuffer = Open("b.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length5 = Read(filebuffer,p5,BUFFERSIZE);
+
+filebuffer = Open("ec.raw",MODE_OLDFILE);
+if (filebuffer==NULL) printf("nfilebuffer NULL");
+else length6 = Read(filebuffer,p6,BUFFERSIZE);
+
+Then your variable "filebuffer" (which is a special pointer to the handle of the file) gets overwritten before the handle is closed.
+
+red:
+So i kind of expected something like:
+filebuffer = Open("b.raw",MODE_OLDFILE);
+if (filebuffer==NULL)
+{
+  printf("nfilebuffer NULL")
+}
+else
+{
+  length5 = Read(filebuffer,p5,BUFFERSIZE);
+  if close(filebuffer)
+  {
+    printf("nfile b.raw closed succesfully")
+  }
+  else
+  {
+    printf("nfile b.raw did not close properly, but we cannot use the filehandle anymore because it is not valid anymore")
+  }
+}
+</pre>
+<p>you have to unload/free every used or not used but allocated channels/sounds.</p>
+<p>For example something like this will loop around until last allocated channel.</p>
+<p>For(chan_no=0;chan_no&lt;num_of_channels;chan_no++) { If(channel[chan_no]) free(channel[chan_no]); }</p>
+<p>Maybe If(channel[chan_no]!=NULL)</p>
+<p>And just to makesure you can NULL every sound bank before exit.</p>
+<p><br></p>
+<p><br></p>
+<h2><span class="mw-headline" id="Examples">Examples</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=10" title="Edit section: Examples">edit</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Another <a rel="nofollow" class="external text" href="https://github.com/nicolasgramlich/AndEngineMODPlayerExtension/blob/master/jni/drivers/amiga.c" target="_blank">example</a>.</p>
+<p><br>
+Double buffering is required though.</p>
+<pre>struct MsgPort    *AHIPort = NULL;
+struct AHIRequest *AHIReq = NULL;
+BYTE               AHIDevice = -1;
+UBYTE              unit = AHI_DEFAULT_UNIT;
+
+static int write_ahi_output (char * output_data, int output_size);
+static void close_ahi_output ( void );
+
+static int
+open_ahi_output ( void ) {
+    if (AHIPort = CreateMsgPort())
+    {
+        if (AHIReq = (struct AHIRequest *) CreateIORequest(AHIPort, sizeof(struct AHIRequest)))
+        {
+            AHIReq-&gt;ahir_Version = 4;
+            if (!(AHIDevice = OpenDevice(AHINAME, unit, (struct IORequest *) AHIReq, NULL)))
+            {
+                send_output = write_ahi_output;
+                close_output = close_ahi_output;
+                return 0;
+            }
+            DeleteIORequest((struct IORequest *) AHIReq);
+            AHIReq = NULL;
+
+        }
+        DeleteMsgPort(AHIPort);
+        AHIPort = NULL;
+    }
+
+    return -1;
+}
+
+static int
+write_ahi_output (char * output_data, int output_size) {
+    if (!CheckIO((struct IORequest *) AHIReq))
+    {
+        WaitIO((struct IORequest *) AHIReq);
+        //AbortIO((struct IORequest *) AHIReq);
+    }
+
+    AHIReq-&gt;ahir_Std.io_Command = CMD_WRITE;
+    AHIReq-&gt;ahir_Std.io_Flags = 0;
+    AHIReq-&gt;ahir_Std.io_Data = output_data;
+    AHIReq-&gt;ahir_Std.io_Length = output_size;
+    AHIReq-&gt;ahir_Std.io_Offset = 0;
+    AHIReq-&gt;ahir_Frequency = rate;
+    AHIReq-&gt;ahir_Type = AHIST_S16S;
+    AHIReq-&gt;ahir_Volume = 0x10000;
+    AHIReq-&gt;ahir_Position = 0x8000;
+    AHIReq-&gt;ahir_Link = NULL;
+    SendIO((struct IORequest *) AHIReq);
+     
+    return 0;
+}
+
+static void
+close_ahi_output ( void ) {
+if (!CheckIO((struct IORequest *) AHIReq)) {
+    WaitIO((struct IORequest *) AHIReq);
+    AbortIO((struct IORequest *) AHIReq);
+}
+
+if (AHIReq) {
+    CloseDevice((struct IORequest *) AHIReq);
+    AHIDevice = -1;
+    DeleteIORequest((struct IORequest *) AHIReq);
+    AHIReq = NULL;
+}
+
+if (AHIPort) {
+    DeleteMsgPort(AHIPort);
+    AHIPort = NULL;
+}
+
+}
+</pre>
+<p><br></p>
+<p><br>
+High level ahi for sound playback - The idea is to create several iorequests and then when you want to play a sound you pick one that is free and then simply start CMD_WRITE to it with BeginIO() and then mark the iorequest as in use (ch-&gt;busy field in above code). What the SoundIO() function does is check for replies from ahi.device that some iorequest has finished and then simply marks them as not in use any more. If no iorequest is free the PlaySnd function simply interrupts the one that has been playing for longest with AbortIO()/WaitIO() and then reuses that one.</p>
+<pre>
+</pre>
+<p><br></p>
+<pre>
+char *snd_buffer[5];
+int sound_file_size[5];
+
+int number;
+
+
+struct Process *sound_player;
+int sound_player_done = 0;
+
+void load_sound(char *name, int number)
+{
+
+
+   FILE *fp_filename;
+   
+
+   if((fp_filename = fopen(name,"rb")) == NULL)
+     { printf("can't open sound file\n");exit(0);} ;
+
+   fseek (fp_filename,0,SEEK_END);
+   sound_file_size[number] = ftell(fp_filename);
+   fseek (fp_filename,0,SEEK_SET);
+
+   snd_buffer[number]=(char *)malloc(sound_file_size[number]);
+
+
+   fread(snd_buffer[number],sound_file_size[number],1,fp_filename);
+
+   //printf("%d\n",sound_file_size[number]);
+
+   fclose(fp_filename);
+
+ //  free(snd_buffer[number]);
+
+}
+
+
+
+
+void play_sound_routine(void)
+
+{
+
+struct MsgPort    *AHImp_sound     = NULL;
+struct AHIRequest *AHIios_sound[2] = {NULL,NULL};
+struct AHIRequest *AHIio_sound     = NULL;
+BYTE               AHIDevice_sound = -1;
+//ULONG sig_sound;
+
+
+//-----open/setup ahi
+
+    if((AHImp_sound=CreateMsgPort()) != NULL) {
+    if((AHIio_sound=(struct AHIRequest *)CreateIORequest(AHImp_sound,sizeof(struct AHIRequest))) != NULL) {
+      AHIio_sound-&gt;ahir_Version = 4;
+      AHIDevice_sound=OpenDevice(AHINAME,0,(struct IORequest *)AHIio_sound,0);
+    }
+  }
+
+  if(AHIDevice_sound) {
+    Printf("Unable to open %s/0 version 4\n",AHINAME);
+    goto sound_panic;
+  }
+
+
+  AHIios_sound[0]=AHIio_sound;
+  SetIoErr(0);
+
+
+    AHIios_sound[0]-&gt;ahir_Std.io_Message.mn_Node.ln_Pri = 127;
+    AHIios_sound[0]-&gt;ahir_Std.io_Command  = CMD_WRITE;
+    AHIios_sound[0]-&gt;ahir_Std.io_Data     = snd_buffer[number];//sndbuf;
+    AHIios_sound[0]-&gt;ahir_Std.io_Length   = sound_file_size[number];//fib_snd.fib_Size;
+    AHIios_sound[0]-&gt;ahir_Std.io_Offset   = 0;
+    AHIios_sound[0]-&gt;ahir_Frequency       = 8000;//44100;
+    AHIios_sound[0]-&gt;ahir_Type            = AHIST_M8S;//AHIST_M16S;
+    AHIios_sound[0]-&gt;ahir_Volume          = 0x10000;          // Full volume
+    AHIios_sound[0]-&gt;ahir_Position        = 0x8000;           // Centered
+    AHIios_sound[0]-&gt;ahir_Link            = NULL;
+
+    DoIO((struct IORequest *) AHIios_sound[0]);
+
+
+sound_panic:
+
+  //printf("are we on sound_exit?\n");
+  if(!AHIDevice_sound)
+    CloseDevice((struct IORequest *)AHIio_sound);
+  DeleteIORequest((struct IORequest *)AHIio_sound);
+  DeleteMsgPort(AHImp_sound);
+  sound_player_done = 1;
+
+
+}
+
+void stop_sound(void)
+{
+
+     Signal(&amp;sound_player-&gt;pr_Task, SIGBREAKF_CTRL_C );
+     while(sound_player_done !=1){};
+     sound_player_done=0;
+}
+
+
+
+void play_sound(int num)
+
+{
+      number=num;
+ 
+
+         #ifdef __MORPHOS__
+
+         sound_player = CreateNewProcTags(
+                                                        NP_Entry, &amp;play_sound_routine,
+                                                        NP_Priority, 1,
+                                                        NP_Name, "Ahi raw-sound-player Process",
+                          //  NP_Input, Input(),
+                          //  NP_CloseInput, FALSE,
+                          //  NP_Output, Output(),
+                          //  NP_CloseOutput, FALSE,
+
+                            NP_CodeType, CODETYPE_PPC,
+
+                                                        TAG_DONE);
+
+         #else
+
+         sound_player = CreateNewProcTags(
+                                                        NP_Entry, &amp;play_sound_routine,
+                                                        NP_Priority, 1,
+                                                        NP_Name, "Ahi raw-sound-player Process",
+                          //  NP_Input, Input(),
+                          //  NP_CloseInput, FALSE,
+                          //  NP_Output, Output(),
+                          //  NP_CloseOutput, FALSE,
+
+                                                        TAG_DONE);
+         #endif
+
+         Delay(10); // little delay for make sounds finish
+
+}
+</pre>
+<p><br></p>
+<p><br>
+Low level for music playback</p>
+<pre>These steps will allow you to use low-level AHI functions:
+- Create message port and AHIRequest with appropriate functions from exec.library.
+- Open the device with OpenDevice() giving AHI_NO_UNIT as a unit.
+- Get interface to the library with GetInterface() giving as the first parameter io_Device field of IORequest.
+
+struct AHIIFace *IAHI;
+struct Library *AHIBase;
+struct AHIRequest *ahi_request;
+struct MsgPort *mp;
+
+if (mp = IExec-&gt;CreateMsgPort())
+{   if (ahi_request = (struct AHIRequest *)IExec-&gt;CreateIORequest(mp, sizeof(struct AHIRequest)))
+   {
+      ahi_request-&gt;ahir_Version = 4;
+      if (IExec-&gt;OpenDevice("ahi.device", AHI_NO_UNIT, (struct IORequest *)ahi_request, 0) == 0)
+      {
+         AHIBase = (struct Library *)ahi_request-&gt;ahir_Std.io_Device;
+         if (IAHI = (struct AHIIFace *)IExec-&gt;GetInterface(AHIBase, "main", 1, NULL))
+         {
+            // Interface got, we can now use AHI functions
+            // ...
+            // Once we are done we have to drop interface and free resources
+            IExec-&gt;DropInterface((struct Interface *)IAHI);
+         }
+         IExec-&gt;CloseDevice((struct IORequest *)ahi_request);
+      }
+      IExec-&gt;DeleteIORequest((struct IORequest *)ahi_request);
+   }
+   IExec-&gt;DeleteMsgPort(mp);
+}
+</pre>
+<p><br></p>
+<pre>Once you get the AHI interface you can use its functions. To start playing sounds you need to allocate audio (optionally you can ask user for Audio mode and frequency). Then you need to Load samples to use with AHI. You do it with AHI_AllocAudio(), AHI_ControlAudio() and AHI_LoadSound().
+
+struct AHIAudioCtrl *ahi_ctrl;
+
+if (ahi_ctrl = IAHI-&gt;AHI_AllocAudio(
+   AHIA_AudioID, AHI_DEFAULT_ID,
+   AHIA_MixFreq, AHI_DEFAULT_FREQ,
+   AHIA_Channels, NUMBER_OF_CHANNELS, // the desired number of channels
+   AHIA_Sounds, NUMBER_OF_SOUNDS, // maximum number of sounds used
+TAG_DONE))
+{
+   IAHI-&gt;AHI_ControlAudio(ahi_ctrl, AHIC_Play, TRUE, TAG_DONE);
+   int i;
+   for (i = 0; i &lt; NUMBER_OF_SOUNDS; i++)
+   {
+      // These variables need to be initialized
+      uint32 type;
+      APTR samplearray;
+      uint32 length;
+      struct AHISampleInfo sample;
+
+      sample.ahisi_Type = type; 
+      // where type is the type of sample, for example AHIST_M8S for 8-bit mono sound
+      sample.ahisi_Address = samplearray; 
+      // where samplearray must point to sample data
+      sample.ahisi_Length = length / IAHI-&gt;AHI_SampleFrameSize(type);
+      if (IAHI-&gt;AHI_LoadSound(i + 1, AHIST_SAMPLE, &amp;sample, ahi_ctrl)) != 0)
+      {
+         // error while loading sound, cleanup
+      }
+   }
+   // everything OK, play the sounds
+   // ...
+   // then unload sounds and free the audio
+   for (i = 0; i &lt; NUMBER_OF_SOUNDS; i++)
+      IAHI-&gt;AHI_UnloadSound(i + 1, ahi_ctrl);
+   IAHI-&gt;AHI_ControlAudio(ahi_ctrl, AHIC_Play, FALSE, TAG_DONE);
+   IAHI-&gt;AHI_FreeAudio(ahi_ctrl);
+}
+</pre>
+<p>use the functions AHI_SetVol() to set volume, AHI_SetFreq() to set frequency, AHI_SetSound() to play the sounds.</p>
+<p><br></p>
+<p><br></p>
+<pre>#include &lt;devices/ahi.h&gt;
+#include &lt;dos/dostags.h&gt;
+#include &lt;proto/dos.h&gt;
+#include &lt;proto/exec.h&gt;
+#include &lt;proto/ptplay.h&gt;
+
+struct UserArgs
+{
+        STRPTR file;
+        LONG   *freq;
+};
+
+CONST TEXT Version[] = "$VER: ShellPlayer 1.0 (4.4.06)";
+
+STATIC struct Library *PtPlayBase;
+STATIC struct Task *maintask;
+STATIC APTR modptr;
+STATIC LONG frequency;
+STATIC VOLATILE int player_done = 0;
+
+STATIC VOID AbortAHI(struct MsgPort *port, struct IORequest *r1, struct IORequest *r2)
+{
+        if (!CheckIO(r1))
+        {
+                AbortIO(r1);
+                WaitIO(r1);
+        }
+
+        if (!CheckIO(r2))
+        {
+                AbortIO(r2);
+                WaitIO(r2);
+        }
+
+        GetMsg(port);
+        GetMsg(port);
+}
+
+STATIC VOID StartAHI(struct AHIRequest *r1, struct AHIRequest *r2, WORD *buf1, WORD *buf2)
+{
+        PtRender(modptr, (BYTE *)(buf1), (BYTE *)(buf1+1), 4, frequency, 1, 16, 2);
+        PtRender(modptr, (BYTE *)(buf2), (BYTE *)(buf2+1), 4, frequency, 1, 16, 2);
+
+        r1-&gt;ahir_Std.io_Command = CMD_WRITE;
+        r1-&gt;ahir_Std.io_Offset  = 0;
+        r1-&gt;ahir_Std.io_Data    = buf1;
+        r1-&gt;ahir_Std.io_Length  = frequency*2*2;
+        r2-&gt;ahir_Std.io_Command = CMD_WRITE;
+        r2-&gt;ahir_Std.io_Offset  = 0;
+        r2-&gt;ahir_Std.io_Data    = buf2;
+        r2-&gt;ahir_Std.io_Length  = frequency*2*2;
+
+        r1-&gt;ahir_Link = NULL;
+        r2-&gt;ahir_Link = r1;
+
+        SendIO((struct IORequest *)r1);
+        SendIO((struct IORequest *)r2);
+}
+
+STATIC VOID PlayerRoutine(void)
+{
+        struct AHIRequest req1, req2;
+        struct MsgPort *port;
+        WORD *buf1, *buf2;
+
+        buf1 = AllocVec(frequency*2*2, MEMF_ANY);
+        buf2 = AllocVec(frequency*2*2, MEMF_ANY);
+
+        if (buf1 &amp;&amp; buf2)
+        {
+                port = CreateMsgPort();
+
+                if (port)
+                {
+                        req1.ahir_Std.io_Message.mn_Node.ln_Pri = 0;
+                        req1.ahir_Std.io_Message.mn_ReplyPort = port;
+                        req1.ahir_Std.io_Message.mn_Length = sizeof(req1);
+                        req1.ahir_Version = 2;
+
+                        if (OpenDevice("ahi.device", 0, (struct IORequest *)&amp;req1, 0) == 0)
+                        {
+                                req1.ahir_Type           = AHIST_S16S;
+                                req1.ahir_Frequency      = frequency;
+                                req1.ahir_Volume         = 0x10000;
+                                req1.ahir_Position       = 0x8000;
+
+                                CopyMem(&amp;req1, &amp;req2, sizeof(struct AHIRequest));
+
+                                StartAHI(&amp;req1, &amp;req2, buf1, buf2);
+
+                                for (;;)
+                                {
+                                        struct AHIRequest *io;
+                                        ULONG sigs;
+
+                                        sigs = Wait(SIGBREAKF_CTRL_C | 1 &lt;&lt; port-&gt;mp_SigBit);
+
+                                        if (sigs &amp; SIGBREAKF_CTRL_C)
+                                                break;
+
+                                        if ((io = (struct AHIRequest *)GetMsg(port)))
+                                        {
+                                                if (GetMsg(port))
+                                                {
+                                                        // Both IO request finished, restart
+
+                                                        StartAHI(&amp;req1, &amp;req2, buf1, buf2);
+                                                }
+                                                else
+                                                {
+                                                        APTR link;
+                                                        WORD *buf;
+
+                                                        if (io == &amp;req1)
+                                                        {
+                                                                link = &amp;req2;
+                                                                buf = buf1;
+                                                        }
+                                                        else
+                                                        {
+                                                                link = &amp;req1;
+                                                                buf = buf2;
+                                                        }
+
+                                                        PtRender(modptr, (BYTE *)buf, (BYTE *)(buf+1), 4, frequency, 1, 16, 2);
+
+                                                        io-&gt;ahir_Std.io_Command = CMD_WRITE;
+                                                        io-&gt;ahir_Std.io_Offset  = 0;
+                                                        io-&gt;ahir_Std.io_Length  = frequency*2*2;
+                                                        io-&gt;ahir_Std.io_Data    = buf;
+                                                        io-&gt;ahir_Link = link;
+
+                                                        SendIO((struct IORequest *)io);
+                                                }
+                                        }
+                                }
+
+                                AbortAHI(port, (struct IORequest *)&amp;req1, (struct IORequest *)&amp;req2);
+                                CloseDevice((struct IORequest *)&amp;req1);
+                        }
+
+                        DeleteMsgPort(port);
+                }
+        }
+
+        FreeVec(buf1);
+        FreeVec(buf2);
+
+        Forbid();
+        player_done = 1;
+        Signal(maintask, SIGBREAKF_CTRL_C);
+}
+
+int main(void)
+{
+        struct RDArgs *args;
+        struct UserArgs params;
+
+        int rc = RETURN_FAIL;
+
+        maintask = FindTask(NULL);
+
+        args = ReadArgs("FILE/A,FREQ/K/N", (IPTR *)&amp;params, NULL);
+
+        if (args)
+        {
+                PtPlayBase = OpenLibrary("ptplay.library", 0);
+
+                if (PtPlayBase)
+                {
+                        BPTR fh;
+
+                        if (params.freq)
+                        {
+                                frequency = *params.freq;
+                        }
+
+                        if (frequency &lt; 4000 || frequency &gt; 96000)
+                                frequency = 48000;
+
+                        fh = Open(params.file, MODE_OLDFILE);
+
+                        if (fh)
+                        {
+                                struct FileInfoBlock fib;
+                                APTR buf;
+
+                                ExamineFH(fh, &amp;fib);
+
+                                buf = AllocVec(fib.fib_Size, MEMF_ANY);
+
+                                if (buf)
+                                {
+                                        Read(fh, buf, fib.fib_Size);
+                                }
+
+                                Close(fh);
+
+                                if (buf)
+                                {
+                                        ULONG type;
+
+                                        type = PtTest(params.file, buf, 1200);
+
+                                        modptr = PtInit(buf, fib.fib_Size, frequency, type);
+
+                                        if (modptr)
+                                        {
+                                                struct Process *player;
+
+                                                player = CreateNewProcTags(
+                                                        NP_Entry, &amp;PlayerRoutine,
+                                                        NP_Priority, 1,
+                                                        NP_Name, "Player Process",
+                                                        #ifdef __MORPHOS__
+                                                        NP_CodeType, CODETYPE_PPC,
+                                                        #endif
+                                                        TAG_DONE);
+
+                                                if (player)
+                                                {
+                                                        rc = RETURN_OK;
+                                                        Printf("Now playing \033[1m%s\033[22m at %ld Hz... Press CTRL-C to abort.\n", params.file, frequency);
+
+                                                        do
+                                                        {
+                                                                Wait(SIGBREAKF_CTRL_C);
+
+                                                                Forbid();
+                                                                if (!player_done)
+                                                                {
+                                                                        Signal(&amp;player-&gt;pr_Task, SIGBREAKF_CTRL_C);
+                                                                }
+                                                                Permit();
+                                                        }
+                                                        while (!player_done);
+                                                }
+
+                                                PtCleanup(modptr);
+                                        }
+                                        else
+                                        {
+                                                PutStr("Unknown file!\n");
+                                        }
+                                }
+                                else
+                                {
+                                        PutStr("Not enough memory!\n");
+                                }
+                        }
+                        else
+                        {
+                                PutStr("Could not open file!\n");
+                        }
+
+                        CloseLibrary(PtPlayBase);
+                }
+
+                FreeArgs(args);
+        }
+
+        if (rc = RETURN_FAIL)
+                PrintFault(IoErr(), NULL);
+        return rc;
+}
+</pre>
+<p><br></p>
+<p><br></p>
+<p><br></p>
+<h2><span class="mw-headline" id="Other_Examples">Other Examples</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=11" title="Edit section: Other Examples">edit</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Master volume utility</p>
+<p>Anyone can make such a relative simple utility. It's a matter of calling AHI_SetEffect() with a master volume struct. You can make a window with a slider and call said function easily.</p>
+<p><br></p>
+<p><br>
+You write to AHI device, and AHI will write to a sound card, the native hardware, or even to a file. These options are user-configurable. AHI also performs the software mixing duties so that more than one sound can be played simultaneously.</p>
+<p>AHI provides four 'units' for audio. This makes it possible to have a program play on the native hardware, and another play on a sound card by attaching the appropriate AHI driver to a unit number. For the software developer, AHI provides two ways to play audio. One is the AUDIO: DOS device. AHI can create a volume called AUDIO: that works like an AmigaDOS volume. You can read and write data directly to it and it plays through the speakers. This is the easiest way to write PCM, but it's not the best.</p>
+<p>First of all, if a user takes the AUDIO: entry out of the mountlist, your program won't work and you get bombarded with stupid support questions like 'I've got AHI, why doesn't it work?'. The better option is to send IORequests to AHI. This allows you to control volume and balance settings while the program runs (with AUDIO: you set these when you open the file and you can't change them without closing and re-opening AUDIO:) and you can use a neat trick called double-buffering to improve efficiency. Double-buffering allows you to fill one audio buffer while another one is playing. This kind of asynchronous operation can prevent 'choppy' audio on slower systems.</p>
+<p>We initialize AHI and then prepare and send AHI request to the ahi.device.</p>
+<p>It's very important to calculate the number of bytes you want AHI to read from the buffer. You can cause a nasty crash indeed if it's incorrect! To do this, multiply the PCM count by the number of channels by the number of AHI buffers.</p>
+<p>A quick note about volume and position: AHI uses a fairly arcane datatype called Fixed. A Fixed number consists of 32 bits: a sign bit, a 15-bit integer part, and a 16-bit fractional part. When I construct the AHI request, I multiply this number by 0x00010000 to convert it to the fixed value. If I use this code as part of a DOS background process, I can change the volume and balance on the fly so the next sample that's queued will be played louder or quieter. It's also possible to interrupt AHI so the change takes effect immediately, but I won't go into that.</p>
+<p>Once the request is sent, we put the requisite bits in to check for CTRL-C and any AHI interrupt messages. Then it's time to swap buffers around.</p>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="coMULTI">/*
+ * Copyright (C) 2005 Mark Olsen
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */</span>
+ 
+<span class="co2">#include &lt;exec/exec.h&gt;</span>
+<span class="co2">#include &lt;devices/ahi.h&gt;</span>
+<span class="co2">#include &lt;proto/exec.h&gt;</span>
+<span class="co2">#define USE_INLINE_STDARG</span>
+<span class="co2">#include &lt;proto/ahi.h&gt;</span>
+<span class="co2">#include &lt;utility/hooks.h&gt;</span>
+ 
+<span class="co2">#include "../game/q_shared.h"</span>
+<span class="co2">#include "../client/snd_local.h"</span>
+ 
+<span class="kw4">struct</span> AHIdata <span class="sy0">*</span>ad<span class="sy0">;</span>
+ 
+<span class="kw4">struct</span> AHIChannelInfo
+<span class="br0">{</span>
+	<span class="kw4">struct</span> AHIEffChannelInfo aeci<span class="sy0">;</span>
+	ULONG offset<span class="sy0">;</span>
+<span class="br0">}</span><span class="sy0">;</span>
+ 
+<span class="kw4">struct</span> AHIdata
+<span class="br0">{</span>
+	<span class="kw4">struct</span> MsgPort <span class="sy0">*</span>msgport<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIRequest <span class="sy0">*</span>ahireq<span class="sy0">;</span>
+	<span class="kw4">int</span> ahiopen<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIAudioCtrl <span class="sy0">*</span>audioctrl<span class="sy0">;</span>
+	<span class="kw4">void</span> <span class="sy0">*</span>samplebuffer<span class="sy0">;</span>
+	<span class="kw4">struct</span> Hook EffectHook<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIChannelInfo aci<span class="sy0">;</span>
+	<span class="kw4">unsigned</span> <span class="kw4">int</span> readpos<span class="sy0">;</span>
+<span class="br0">}</span><span class="sy0">;</span>
+ 
+<span class="co2">#if !defined(__AROS__)</span>
+ULONG EffectFunc<span class="br0">(</span><span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> Hook <span class="sy0">*</span>hook <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Hook <span class="sy0">*</span><span class="br0">)</span>REG_A0<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIEffChannelInfo <span class="sy0">*</span>aeci <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> AHIEffChannelInfo <span class="sy0">*</span><span class="br0">)</span>REG_A1<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> AHIdata <span class="sy0">*</span>ad<span class="sy0">;</span>
+ 
+	ad <span class="sy0">=</span> hook<span class="sy0">-&gt;</span>h_Data<span class="sy0">;</span>
+ 
+	ad<span class="sy0">-&gt;</span>readpos <span class="sy0">=</span> aeci<span class="sy0">-&gt;</span>ahieci_Offset<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">;</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">static</span> <span class="kw4">struct</span> EmulLibEntry EffectFunc_Gate <span class="sy0">=</span>
+<span class="br0">{</span>
+	TRAP_LIB<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span> <span class="br0">(</span><span class="kw4">void</span> <span class="br0">(</span><span class="sy0">*</span><span class="br0">)</span><span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span><span class="br0">)</span>EffectFunc
+<span class="br0">}</span><span class="sy0">;</span>
+<span class="co2">#else</span>
+AROS_UFH3<span class="br0">(</span>ULONG<span class="sy0">,</span> EffectFunc<span class="sy0">,</span>
+          AROS_UFHA<span class="br0">(</span><span class="kw4">struct</span> Hook <span class="sy0">*,</span> hook<span class="sy0">,</span> A0<span class="br0">)</span><span class="sy0">,</span>
+          AROS_UFHA<span class="br0">(</span><span class="kw4">struct</span> AHIAudioCtrl <span class="sy0">*,</span> aac<span class="sy0">,</span> A2<span class="br0">)</span><span class="sy0">,</span>
+          AROS_UFHA<span class="br0">(</span><span class="kw4">struct</span> AHIEffChannelInfo <span class="sy0">*,</span> aeci<span class="sy0">,</span> A1<span class="br0">)</span>
+         <span class="br0">)</span>
+<span class="br0">{</span>
+    AROS_USERFUNC_INIT
+ 
+	<span class="kw4">struct</span> AHIdata <span class="sy0">*</span>ad<span class="sy0">;</span>
+ 
+	ad <span class="sy0">=</span> hook<span class="sy0">-&gt;</span>h_Data<span class="sy0">;</span>
+ 
+	ad<span class="sy0">-&gt;</span>readpos <span class="sy0">=</span> aeci<span class="sy0">-&gt;</span>ahieci_Offset<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">;</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+ 
+    AROS_USERFUNC_EXIT
+<span class="br0">}</span>
+<span class="co2">#endif</span>
+ 
+qboolean SNDDMA_Init<span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span>
+<span class="br0">{</span>
+	ULONG channels<span class="sy0">;</span>
+	ULONG speed<span class="sy0">;</span>
+	ULONG bits<span class="sy0">;</span>
+ 
+	ULONG r<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> Library <span class="sy0">*</span>AHIBase<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> AHISampleInfo sample<span class="sy0">;</span>
+ 
+	cvar_t <span class="sy0">*</span>sndbits<span class="sy0">;</span>
+	cvar_t <span class="sy0">*</span>sndspeed<span class="sy0">;</span>
+	cvar_t <span class="sy0">*</span>sndchannels<span class="sy0">;</span>
+ 
+	<span class="kw4">char</span> modename<span class="br0">[</span><span class="nu0">64</span><span class="br0">]</span><span class="sy0">;</span>
+ 
+	<span class="kw1">if</span> <span class="br0">(</span>ad<span class="br0">)</span>
+		<span class="kw1">return</span><span class="sy0">;</span>
+ 
+	sndbits <span class="sy0">=</span> Cvar_Get<span class="br0">(</span><span class="st0">"sndbits"</span><span class="sy0">,</span> <span class="st0">"16"</span><span class="sy0">,</span> CVAR_ARCHIVE<span class="br0">)</span><span class="sy0">;</span>
+	sndspeed <span class="sy0">=</span> Cvar_Get<span class="br0">(</span><span class="st0">"sndspeed"</span><span class="sy0">,</span> <span class="st0">"0"</span><span class="sy0">,</span> CVAR_ARCHIVE<span class="br0">)</span><span class="sy0">;</span>
+	sndchannels <span class="sy0">=</span> Cvar_Get<span class="br0">(</span><span class="st0">"sndchannels"</span><span class="sy0">,</span> <span class="st0">"2"</span><span class="sy0">,</span> CVAR_ARCHIVE<span class="br0">)</span><span class="sy0">;</span>
+ 
+	speed <span class="sy0">=</span> sndspeed<span class="sy0">-&gt;</span>integer<span class="sy0">;</span>
+ 
+	<span class="kw1">if</span> <span class="br0">(</span>speed <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+		speed <span class="sy0">=</span> <span class="nu0">22050</span><span class="sy0">;</span>
+ 
+	ad <span class="sy0">=</span> AllocVec<span class="br0">(</span><span class="kw4">sizeof</span><span class="br0">(</span><span class="sy0">*</span>ad<span class="br0">)</span><span class="sy0">,</span> MEMF_ANY<span class="br0">)</span><span class="sy0">;</span>
+	<span class="kw1">if</span> <span class="br0">(</span>ad<span class="br0">)</span>
+	<span class="br0">{</span>
+		ad<span class="sy0">-&gt;</span>msgport <span class="sy0">=</span> CreateMsgPort<span class="br0">(</span><span class="br0">)</span><span class="sy0">;</span>
+		<span class="kw1">if</span> <span class="br0">(</span>ad<span class="sy0">-&gt;</span>msgport<span class="br0">)</span>
+		<span class="br0">{</span>
+			ad<span class="sy0">-&gt;</span>ahireq <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> AHIRequest <span class="sy0">*</span><span class="br0">)</span>CreateIORequest<span class="br0">(</span>ad<span class="sy0">-&gt;</span>msgport<span class="sy0">,</span> <span class="kw4">sizeof</span><span class="br0">(</span><span class="kw4">struct</span> AHIRequest<span class="br0">)</span><span class="br0">)</span><span class="sy0">;</span>
+			<span class="kw1">if</span> <span class="br0">(</span>ad<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span>
+			<span class="br0">{</span>
+				ad<span class="sy0">-&gt;</span>ahiopen <span class="sy0">=</span> <span class="sy0">!</span>OpenDevice<span class="br0">(</span><span class="st0">"ahi.device"</span><span class="sy0">,</span> AHI_NO_UNIT<span class="sy0">,</span> <span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="sy0">,</span> <span class="nu0">0</span><span class="br0">)</span><span class="sy0">;</span>
+				<span class="kw1">if</span> <span class="br0">(</span>ad<span class="sy0">-&gt;</span>ahiopen<span class="br0">)</span>
+				<span class="br0">{</span>
+					AHIBase <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Library <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Device</span><span class="sy0">;</span>
+ 
+					ad<span class="sy0">-&gt;</span>audioctrl <span class="sy0">=</span> AHI_AllocAudio<span class="br0">(</span>AHIA_AudioID<span class="sy0">,</span> AHI_DEFAULT_ID<span class="sy0">,</span>
+					                               AHIA_MixFreq<span class="sy0">,</span> speed<span class="sy0">,</span>
+					                               AHIA_Channels<span class="sy0">,</span> <span class="nu0">1</span><span class="sy0">,</span>
+					                               AHIA_Sounds<span class="sy0">,</span> <span class="nu0">1</span><span class="sy0">,</span>
+					                               TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+					<span class="kw1">if</span> <span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span>
+					<span class="br0">{</span>
+						AHI_GetAudioAttrs<span class="br0">(</span>AHI_INVALID_ID<span class="sy0">,</span> ad<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+						                  AHIDB_BufferLen<span class="sy0">,</span> <span class="kw4">sizeof</span><span class="br0">(</span>modename<span class="br0">)</span><span class="sy0">,</span>
+						                  AHIDB_Name<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span>modename<span class="sy0">,</span>
+						                  AHIDB_MaxChannels<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>channels<span class="sy0">,</span>
+						                  AHIDB_Bits<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>bits<span class="sy0">,</span>
+						                  TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+						AHI_ControlAudio<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+						                 AHIC_MixFreq_Query<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>speed<span class="sy0">,</span>
+						                 TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+						<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span> <span class="sy0">||</span> bits <span class="sy0">==</span> <span class="nu0">16</span><span class="br0">)</span>
+						<span class="br0">{</span>
+							<span class="kw1">if</span> <span class="br0">(</span>channels <span class="sy0">&gt;</span> <span class="nu0">2</span><span class="br0">)</span>
+								channels <span class="sy0">=</span> <span class="nu0">2</span><span class="sy0">;</span>
+ 
+							dma.<span class="me1">speed</span> <span class="sy0">=</span> speed<span class="sy0">;</span>
+							dma.<span class="me1">samplebits</span> <span class="sy0">=</span> bits<span class="sy0">;</span>
+							dma.<span class="me1">channels</span> <span class="sy0">=</span> channels<span class="sy0">;</span>
+<span class="co2">#if !defined(__AROS__)</span>
+							dma.<span class="me1">samples</span> <span class="sy0">=</span> <span class="nu0">2048</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">;</span>
+<span class="co2">#else</span>
+							dma.<span class="me1">samples</span> <span class="sy0">=</span> <span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">;</span>
+<span class="co2">#endif</span>
+							dma.<span class="me1">submission_chunk</span> <span class="sy0">=</span> <span class="nu0">1</span><span class="sy0">;</span>
+ 
+<span class="co2">#if !defined(__AROS__)</span>
+							ad<span class="sy0">-&gt;</span>samplebuffer <span class="sy0">=</span> AllocVec<span class="br0">(</span><span class="nu0">2048</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="sy0">*</span>channels<span class="sy0">,</span> MEMF_ANY<span class="br0">)</span><span class="sy0">;</span>
+<span class="co2">#else</span>
+							ad<span class="sy0">-&gt;</span>samplebuffer <span class="sy0">=</span> AllocVec<span class="br0">(</span><span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="sy0">*</span>channels<span class="sy0">,</span> MEMF_ANY<span class="br0">)</span><span class="sy0">;</span>
+<span class="co2">#endif</span>
+							<span class="kw1">if</span> <span class="br0">(</span>ad<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span>
+							<span class="br0">{</span>
+								dma.<span class="me1">buffer</span> <span class="sy0">=</span> ad<span class="sy0">-&gt;</span>samplebuffer<span class="sy0">;</span>
+ 
+								<span class="kw1">if</span> <span class="br0">(</span>channels <span class="sy0">==</span> <span class="nu0">1</span><span class="br0">)</span>
+								<span class="br0">{</span>
+									<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span><span class="br0">)</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_M8S<span class="sy0">;</span>
+									<span class="kw1">else</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_M16S<span class="sy0">;</span>
+								<span class="br0">}</span>
+								<span class="kw1">else</span>
+								<span class="br0">{</span>
+									<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span><span class="br0">)</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_S8S<span class="sy0">;</span>
+									<span class="kw1">else</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_S16S<span class="sy0">;</span>
+								<span class="br0">}</span>
+ 
+								sample.<span class="me1">ahisi_Address</span> <span class="sy0">=</span> ad<span class="sy0">-&gt;</span>samplebuffer<span class="sy0">;</span>
+<span class="co2">#if !defined(__AROS__)</span>
+								sample.<span class="me1">ahisi_Length</span> <span class="sy0">=</span> <span class="br0">(</span><span class="nu0">2048</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="br0">)</span><span class="sy0">/</span>AHI_SampleFrameSize<span class="br0">(</span>sample.<span class="me1">ahisi_Type</span><span class="br0">)</span><span class="sy0">;</span>
+<span class="co2">#else</span>
+								sample.<span class="me1">ahisi_Length</span> <span class="sy0">=</span> <span class="br0">(</span><span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>speed<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="br0">)</span><span class="sy0">/</span>AHI_SampleFrameSize<span class="br0">(</span>sample.<span class="me1">ahisi_Type</span><span class="br0">)</span><span class="sy0">;</span>								
+<span class="co2">#endif</span>
+ 
+								r <span class="sy0">=</span> AHI_LoadSound<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> AHIST_DYNAMICSAMPLE<span class="sy0">,</span> <span class="sy0">&amp;</span>sample<span class="sy0">,</span> ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+								<span class="kw1">if</span> <span class="br0">(</span>r <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+								<span class="br0">{</span>
+									r <span class="sy0">=</span> AHI_ControlAudio<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+									                     AHIC_Play<span class="sy0">,</span> TRUE<span class="sy0">,</span>
+									                     TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+									<span class="kw1">if</span> <span class="br0">(</span>r <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+									<span class="br0">{</span>
+										AHI_Play<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+										         AHIP_BeginChannel<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span>
+										         AHIP_Freq<span class="sy0">,</span> speed<span class="sy0">,</span>
+										         AHIP_Vol<span class="sy0">,</span> <span class="nu12">0x10000</span><span class="sy0">,</span>
+										         AHIP_Pan<span class="sy0">,</span> <span class="nu12">0x8000</span><span class="sy0">,</span>
+										         AHIP_Sound<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span>
+										         AHIP_EndChannel<span class="sy0">,</span> NULL<span class="sy0">,</span>
+										         TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+										ad<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahie_Effect</span> <span class="sy0">=</span> AHIET_CHANNELINFO<span class="sy0">;</span>
+										ad<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahieci_Func</span> <span class="sy0">=</span> <span class="sy0">&amp;</span>ad<span class="sy0">-&gt;</span>EffectHook<span class="sy0">;</span>
+										ad<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahieci_Channels</span> <span class="sy0">=</span> <span class="nu0">1</span><span class="sy0">;</span>
+ 
+<span class="co2">#if !defined(__AROS__)</span>
+										ad<span class="sy0">-&gt;</span>EffectHook.<span class="me1">h_Entry</span> <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">void</span> <span class="sy0">*</span><span class="br0">)</span><span class="sy0">&amp;</span>EffectFunc_Gate<span class="sy0">;</span>
+<span class="co2">#else</span>
+										ad<span class="sy0">-&gt;</span>EffectHook.<span class="me1">h_Entry</span> <span class="sy0">=</span> <span class="br0">(</span>IPTR <span class="br0">(</span><span class="sy0">*</span><span class="br0">)</span><span class="br0">(</span><span class="br0">)</span><span class="br0">)</span><span class="sy0">&amp;</span>EffectFunc<span class="sy0">;</span>
+<span class="co2">#endif</span>
+										ad<span class="sy0">-&gt;</span>EffectHook.<span class="me1">h_Data</span> <span class="sy0">=</span> ad<span class="sy0">;</span>
+										AHI_SetEffect<span class="br0">(</span><span class="sy0">&amp;</span>ad<span class="sy0">-&gt;</span>aci<span class="sy0">,</span> ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+ 
+										Com_Printf<span class="br0">(</span><span class="st0">"Using AHI mode <span class="es1">\"</span>%s<span class="es1">\"</span> for audio output<span class="es1">\n</span>"</span><span class="sy0">,</span> modename<span class="br0">)</span><span class="sy0">;</span>
+										Com_Printf<span class="br0">(</span><span class="st0">"Channels: %d bits: %d frequency: %d<span class="es1">\n</span>"</span><span class="sy0">,</span> channels<span class="sy0">,</span> bits<span class="sy0">,</span> speed<span class="br0">)</span><span class="sy0">;</span>
+ 
+										<span class="kw1">return</span> <span class="nu0">1</span><span class="sy0">;</span>
+									<span class="br0">}</span>
+								<span class="br0">}</span>
+							<span class="br0">}</span>
+							FreeVec<span class="br0">(</span>ad<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span><span class="sy0">;</span>
+						<span class="br0">}</span>
+						AHI_FreeAudio<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+					<span class="br0">}</span>
+					<span class="kw1">else</span>
+						Com_Printf<span class="br0">(</span><span class="st0">"Failed to allocate AHI audio<span class="es1">\n</span>"</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+					CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+				<span class="br0">}</span>
+				DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+			<span class="br0">}</span>
+			DeleteMsgPort<span class="br0">(</span>ad<span class="sy0">-&gt;</span>msgport<span class="br0">)</span><span class="sy0">;</span>
+		<span class="br0">}</span>
+		FreeVec<span class="br0">(</span>ad<span class="br0">)</span><span class="sy0">;</span>
+	<span class="br0">}</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">int</span> SNDDMA_GetDMAPos<span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw1">return</span> ad<span class="sy0">-&gt;</span>readpos<span class="sy0">*</span>dma.<span class="me1">channels</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">void</span> SNDDMA_Shutdown<span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> Library <span class="sy0">*</span>AHIBase<span class="sy0">;</span>
+ 
+	<span class="kw1">if</span> <span class="br0">(</span>ad <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+		<span class="kw1">return</span><span class="sy0">;</span>
+ 
+	AHIBase <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Library <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Device</span><span class="sy0">;</span>
+ 
+	ad<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahie_Effect</span> <span class="sy0">=</span> AHIET_CHANNELINFO<span class="sy0">|</span>AHIET_CANCEL<span class="sy0">;</span>
+	AHI_SetEffect<span class="br0">(</span><span class="sy0">&amp;</span>ad<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span><span class="sy0">,</span> ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+	AHI_ControlAudio<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+	                 AHIC_Play<span class="sy0">,</span> FALSE<span class="sy0">,</span>
+	                 TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+	AHI_FreeAudio<span class="br0">(</span>ad<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+	FreeVec<span class="br0">(</span>ad<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span><span class="sy0">;</span>
+	CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+	DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>ad<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+	DeleteMsgPort<span class="br0">(</span>ad<span class="sy0">-&gt;</span>msgport<span class="br0">)</span><span class="sy0">;</span>
+	FreeVec<span class="br0">(</span>ad<span class="br0">)</span><span class="sy0">;</span>
+ 
+	ad <span class="sy0">=</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">void</span> SNDDMA_Submit<span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span>
+<span class="br0">{</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">void</span> SNDDMA_BeginPainting <span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span>
+<span class="br0">{</span>
+<span class="br0">}</span>
+</pre></div>
+</div>
+<p><br></p>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="coMULTI">/*
+Copyright (C) 2006-2007 Mark Olsen
+ 
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ 
+See the GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/</span>
+ 
+<span class="co2">#include &lt;exec/exec.h&gt;</span>
+<span class="co2">#include &lt;devices/ahi.h&gt;</span>
+<span class="co2">#include &lt;proto/exec.h&gt;</span>
+<span class="co2">#define USE_INLINE_STDARG</span>
+<span class="co2">#include &lt;proto/ahi.h&gt;</span>
+ 
+<span class="co2">#include "quakedef.h"</span>
+<span class="co2">#include "sound.h"</span>
+ 
+<span class="kw4">struct</span> AHIChannelInfo
+<span class="br0">{</span>
+	<span class="kw4">struct</span> AHIEffChannelInfo aeci<span class="sy0">;</span>
+	ULONG offset<span class="sy0">;</span>
+<span class="br0">}</span><span class="sy0">;</span>
+ 
+<span class="kw4">struct</span> ahi_private
+<span class="br0">{</span>
+	<span class="kw4">struct</span> MsgPort <span class="sy0">*</span>msgport<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIRequest <span class="sy0">*</span>ahireq<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIAudioCtrl <span class="sy0">*</span>audioctrl<span class="sy0">;</span>
+	<span class="kw4">void</span> <span class="sy0">*</span>samplebuffer<span class="sy0">;</span>
+	<span class="kw4">struct</span> Hook EffectHook<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIChannelInfo aci<span class="sy0">;</span>
+	<span class="kw4">unsigned</span> <span class="kw4">int</span> readpos<span class="sy0">;</span>
+<span class="br0">}</span><span class="sy0">;</span>
+ 
+ULONG EffectFunc<span class="br0">(</span><span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> Hook <span class="sy0">*</span>hook <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Hook <span class="sy0">*</span><span class="br0">)</span>REG_A0<span class="sy0">;</span>
+	<span class="kw4">struct</span> AHIEffChannelInfo <span class="sy0">*</span>aeci <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> AHIEffChannelInfo <span class="sy0">*</span><span class="br0">)</span>REG_A1<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> ahi_private <span class="sy0">*</span>p<span class="sy0">;</span>
+ 
+	p <span class="sy0">=</span> hook<span class="sy0">-&gt;</span>h_Data<span class="sy0">;</span>
+ 
+	p<span class="sy0">-&gt;</span>readpos <span class="sy0">=</span> aeci<span class="sy0">-&gt;</span>ahieci_Offset<span class="br0">[</span><span class="nu0">0</span><span class="br0">]</span><span class="sy0">;</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">static</span> <span class="kw4">struct</span> EmulLibEntry EffectFunc_Gate <span class="sy0">=</span>
+<span class="br0">{</span>
+	TRAP_LIB<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span> <span class="br0">(</span><span class="kw4">void</span> <span class="br0">(</span><span class="sy0">*</span><span class="br0">)</span><span class="br0">(</span><span class="kw4">void</span><span class="br0">)</span><span class="br0">)</span>EffectFunc
+<span class="br0">}</span><span class="sy0">;</span>
+ 
+<span class="kw4">void</span> ahi_shutdown<span class="br0">(</span><span class="kw4">struct</span> SoundCard <span class="sy0">*</span>sc<span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> ahi_private <span class="sy0">*</span>p <span class="sy0">=</span> sc<span class="sy0">-&gt;</span>driverprivate<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> Library <span class="sy0">*</span>AHIBase<span class="sy0">;</span>
+ 
+	AHIBase <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Library <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Device</span><span class="sy0">;</span>
+ 
+	p<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahie_Effect</span> <span class="sy0">=</span> AHIET_CHANNELINFO<span class="sy0">|</span>AHIET_CANCEL<span class="sy0">;</span>
+	AHI_SetEffect<span class="br0">(</span><span class="sy0">&amp;</span>p<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span><span class="sy0">,</span> p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+	AHI_ControlAudio<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+	                 AHIC_Play<span class="sy0">,</span> FALSE<span class="sy0">,</span>
+	                 TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+	AHI_FreeAudio<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+ 
+	CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+	DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+ 
+	DeleteMsgPort<span class="br0">(</span>p<span class="sy0">-&gt;</span>msgport<span class="br0">)</span><span class="sy0">;</span>
+ 
+	FreeVec<span class="br0">(</span>p<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span><span class="sy0">;</span>
+ 
+	FreeVec<span class="br0">(</span>p<span class="br0">)</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">int</span> ahi_getdmapos<span class="br0">(</span><span class="kw4">struct</span> SoundCard <span class="sy0">*</span>sc<span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> ahi_private <span class="sy0">*</span>p <span class="sy0">=</span> sc<span class="sy0">-&gt;</span>driverprivate<span class="sy0">;</span>
+ 
+	sc<span class="sy0">-&gt;</span>samplepos <span class="sy0">=</span> p<span class="sy0">-&gt;</span>readpos<span class="sy0">*</span>sc<span class="sy0">-&gt;</span>channels<span class="sy0">;</span>
+ 
+	<span class="kw1">return</span> sc<span class="sy0">-&gt;</span>samplepos<span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">void</span> ahi_submit<span class="br0">(</span><span class="kw4">struct</span> SoundCard <span class="sy0">*</span>sc<span class="sy0">,</span> <span class="kw4">unsigned</span> <span class="kw4">int</span> count<span class="br0">)</span>
+<span class="br0">{</span>
+<span class="br0">}</span>
+ 
+qboolean ahi_init<span class="br0">(</span><span class="kw4">struct</span> SoundCard <span class="sy0">*</span>sc<span class="sy0">,</span> <span class="kw4">int</span> rate<span class="sy0">,</span> <span class="kw4">int</span> channels<span class="sy0">,</span> <span class="kw4">int</span> bits<span class="br0">)</span>
+<span class="br0">{</span>
+	<span class="kw4">struct</span> ahi_private <span class="sy0">*</span>p<span class="sy0">;</span>
+	ULONG r<span class="sy0">;</span>
+ 
+	<span class="kw4">char</span> name<span class="br0">[</span><span class="nu0">64</span><span class="br0">]</span><span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> Library <span class="sy0">*</span>AHIBase<span class="sy0">;</span>
+ 
+	<span class="kw4">struct</span> AHISampleInfo sample<span class="sy0">;</span>
+ 
+	p <span class="sy0">=</span> AllocVec<span class="br0">(</span><span class="kw4">sizeof</span><span class="br0">(</span><span class="sy0">*</span>p<span class="br0">)</span><span class="sy0">,</span> MEMF_ANY<span class="br0">)</span><span class="sy0">;</span>
+	<span class="kw1">if</span> <span class="br0">(</span>p<span class="br0">)</span>
+	<span class="br0">{</span>
+		p<span class="sy0">-&gt;</span>msgport <span class="sy0">=</span> CreateMsgPort<span class="br0">(</span><span class="br0">)</span><span class="sy0">;</span>
+		<span class="kw1">if</span> <span class="br0">(</span>p<span class="sy0">-&gt;</span>msgport<span class="br0">)</span>
+		<span class="br0">{</span>
+			p<span class="sy0">-&gt;</span>ahireq <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> AHIRequest <span class="sy0">*</span><span class="br0">)</span>CreateIORequest<span class="br0">(</span>p<span class="sy0">-&gt;</span>msgport<span class="sy0">,</span> <span class="kw4">sizeof</span><span class="br0">(</span><span class="kw4">struct</span> AHIRequest<span class="br0">)</span><span class="br0">)</span><span class="sy0">;</span>
+			<span class="kw1">if</span> <span class="br0">(</span>p<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span>
+			<span class="br0">{</span>
+				r <span class="sy0">=</span> <span class="sy0">!</span>OpenDevice<span class="br0">(</span><span class="st0">"ahi.device"</span><span class="sy0">,</span> AHI_NO_UNIT<span class="sy0">,</span> <span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="sy0">,</span> <span class="nu0">0</span><span class="br0">)</span><span class="sy0">;</span>
+				<span class="kw1">if</span> <span class="br0">(</span>r<span class="br0">)</span>
+				<span class="br0">{</span>
+					AHIBase <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Library <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Device</span><span class="sy0">;</span>
+ 
+					p<span class="sy0">-&gt;</span>audioctrl <span class="sy0">=</span> AHI_AllocAudio<span class="br0">(</span>AHIA_AudioID<span class="sy0">,</span> AHI_DEFAULT_ID<span class="sy0">,</span>
+					                               AHIA_MixFreq<span class="sy0">,</span> rate<span class="sy0">,</span>
+					                               AHIA_Channels<span class="sy0">,</span> <span class="nu0">1</span><span class="sy0">,</span>
+					                               AHIA_Sounds<span class="sy0">,</span> <span class="nu0">1</span><span class="sy0">,</span>
+					                               TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+					<span class="kw1">if</span> <span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span>
+					<span class="br0">{</span>
+						AHI_GetAudioAttrs<span class="br0">(</span>AHI_INVALID_ID<span class="sy0">,</span> p<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+						                  AHIDB_BufferLen<span class="sy0">,</span> <span class="kw4">sizeof</span><span class="br0">(</span>name<span class="br0">)</span><span class="sy0">,</span>
+						                  AHIDB_Name<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span>name<span class="sy0">,</span>
+						                  AHIDB_MaxChannels<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>channels<span class="sy0">,</span>
+						                  AHIDB_Bits<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>bits<span class="sy0">,</span>
+						                  TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+						AHI_ControlAudio<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+						                 AHIC_MixFreq_Query<span class="sy0">,</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="sy0">&amp;</span>rate<span class="sy0">,</span>
+						                 TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+						<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span> <span class="sy0">||</span> bits <span class="sy0">==</span> <span class="nu0">16</span><span class="br0">)</span>
+						<span class="br0">{</span>
+							<span class="kw1">if</span> <span class="br0">(</span>channels <span class="sy0">&gt;</span> <span class="nu0">2</span><span class="br0">)</span>
+								channels <span class="sy0">=</span> <span class="nu0">2</span><span class="sy0">;</span>
+ 
+							sc<span class="sy0">-&gt;</span>speed <span class="sy0">=</span> rate<span class="sy0">;</span>
+							sc<span class="sy0">-&gt;</span>samplebits <span class="sy0">=</span> bits<span class="sy0">;</span>
+							sc<span class="sy0">-&gt;</span>channels <span class="sy0">=</span> channels<span class="sy0">;</span>
+							sc<span class="sy0">-&gt;</span>samples <span class="sy0">=</span> <span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>rate<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+							p<span class="sy0">-&gt;</span>samplebuffer <span class="sy0">=</span> AllocVec<span class="br0">(</span><span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>rate<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="sy0">*</span>channels<span class="sy0">,</span> MEMF_CLEAR<span class="br0">)</span><span class="sy0">;</span>
+							<span class="kw1">if</span> <span class="br0">(</span>p<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span>
+							<span class="br0">{</span>
+								sc<span class="sy0">-&gt;</span>buffer <span class="sy0">=</span> p<span class="sy0">-&gt;</span>samplebuffer<span class="sy0">;</span>
+ 
+								<span class="kw1">if</span> <span class="br0">(</span>channels <span class="sy0">==</span> <span class="nu0">1</span><span class="br0">)</span>
+								<span class="br0">{</span>
+									<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span><span class="br0">)</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_M8S<span class="sy0">;</span>
+									<span class="kw1">else</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_M16S<span class="sy0">;</span>
+								<span class="br0">}</span>
+								<span class="kw1">else</span>
+								<span class="br0">{</span>
+									<span class="kw1">if</span> <span class="br0">(</span>bits <span class="sy0">==</span> <span class="nu0">8</span><span class="br0">)</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_S8S<span class="sy0">;</span>
+									<span class="kw1">else</span>
+										sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_S16S<span class="sy0">;</span>
+								<span class="br0">}</span>
+ 
+								sample.<span class="me1">ahisi_Address</span> <span class="sy0">=</span> p<span class="sy0">-&gt;</span>samplebuffer<span class="sy0">;</span>
+								sample.<span class="me1">ahisi_Length</span> <span class="sy0">=</span> <span class="br0">(</span><span class="nu0">16384</span><span class="sy0">*</span><span class="br0">(</span>rate<span class="sy0">/</span><span class="nu0">11025</span><span class="br0">)</span><span class="sy0">*</span><span class="br0">(</span>bits<span class="sy0">/</span><span class="nu0">8</span><span class="br0">)</span><span class="br0">)</span><span class="sy0">/</span>AHI_SampleFrameSize<span class="br0">(</span>sample.<span class="me1">ahisi_Type</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+								r <span class="sy0">=</span> AHI_LoadSound<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> AHIST_DYNAMICSAMPLE<span class="sy0">,</span> <span class="sy0">&amp;</span>sample<span class="sy0">,</span> p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+								<span class="kw1">if</span> <span class="br0">(</span>r <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+								<span class="br0">{</span>
+									r <span class="sy0">=</span> AHI_ControlAudio<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+									                     AHIC_Play<span class="sy0">,</span> TRUE<span class="sy0">,</span>
+									                     TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+									<span class="kw1">if</span> <span class="br0">(</span>r <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span>
+									<span class="br0">{</span>
+										AHI_Play<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="sy0">,</span>
+										         AHIP_BeginChannel<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span>
+										         AHIP_Freq<span class="sy0">,</span> rate<span class="sy0">,</span>
+										         AHIP_Vol<span class="sy0">,</span> <span class="nu12">0x10000</span><span class="sy0">,</span>
+										         AHIP_Pan<span class="sy0">,</span> <span class="nu12">0x8000</span><span class="sy0">,</span>
+										         AHIP_Sound<span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span>
+										         AHIP_EndChannel<span class="sy0">,</span> NULL<span class="sy0">,</span>
+										         TAG_END<span class="br0">)</span><span class="sy0">;</span>
+ 
+										p<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahie_Effect</span> <span class="sy0">=</span> AHIET_CHANNELINFO<span class="sy0">;</span>
+										p<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahieci_Func</span> <span class="sy0">=</span> <span class="sy0">&amp;</span>p<span class="sy0">-&gt;</span>EffectHook<span class="sy0">;</span>
+										p<span class="sy0">-&gt;</span>aci.<span class="me1">aeci</span>.<span class="me1">ahieci_Channels</span> <span class="sy0">=</span> <span class="nu0">1</span><span class="sy0">;</span>
+ 
+										p<span class="sy0">-&gt;</span>EffectHook.<span class="me1">h_Entry</span> <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">void</span> <span class="sy0">*</span><span class="br0">)</span><span class="sy0">&amp;</span>EffectFunc_Gate<span class="sy0">;</span>
+										p<span class="sy0">-&gt;</span>EffectHook.<span class="me1">h_Data</span> <span class="sy0">=</span> p<span class="sy0">;</span>
+ 
+										AHI_SetEffect<span class="br0">(</span><span class="sy0">&amp;</span>p<span class="sy0">-&gt;</span>aci<span class="sy0">,</span> p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+ 
+										Com_Printf<span class="br0">(</span><span class="st0">"Using AHI mode <span class="es1">\"</span>%s<span class="es1">\"</span> for audio output<span class="es1">\n</span>"</span><span class="sy0">,</span> name<span class="br0">)</span><span class="sy0">;</span>
+										Com_Printf<span class="br0">(</span><span class="st0">"Channels: %d bits: %d frequency: %d<span class="es1">\n</span>"</span><span class="sy0">,</span> channels<span class="sy0">,</span> bits<span class="sy0">,</span> rate<span class="br0">)</span><span class="sy0">;</span>
+ 
+										sc<span class="sy0">-&gt;</span>driverprivate <span class="sy0">=</span> p<span class="sy0">;</span>
+ 
+										sc<span class="sy0">-&gt;</span>GetDMAPos <span class="sy0">=</span> ahi_getdmapos<span class="sy0">;</span>
+										sc<span class="sy0">-&gt;</span>Submit <span class="sy0">=</span> ahi_submit<span class="sy0">;</span>
+										sc<span class="sy0">-&gt;</span>Shutdown <span class="sy0">=</span> ahi_shutdown<span class="sy0">;</span>
+ 
+										<span class="kw1">return</span> <span class="nu0">1</span><span class="sy0">;</span>
+									<span class="br0">}</span>
+								<span class="br0">}</span>
+							<span class="br0">}</span>
+							FreeVec<span class="br0">(</span>p<span class="sy0">-&gt;</span>samplebuffer<span class="br0">)</span><span class="sy0">;</span>
+						<span class="br0">}</span>
+						AHI_FreeAudio<span class="br0">(</span>p<span class="sy0">-&gt;</span>audioctrl<span class="br0">)</span><span class="sy0">;</span>
+					<span class="br0">}</span>
+					<span class="kw1">else</span>
+						Com_Printf<span class="br0">(</span><span class="st0">"Failed to allocate AHI audio<span class="es1">\n</span>"</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+					CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+				<span class="br0">}</span>
+				DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest <span class="sy0">*</span><span class="br0">)</span>p<span class="sy0">-&gt;</span>ahireq<span class="br0">)</span><span class="sy0">;</span>
+			<span class="br0">}</span>
+			DeleteMsgPort<span class="br0">(</span>p<span class="sy0">-&gt;</span>msgport<span class="br0">)</span><span class="sy0">;</span>
+		<span class="br0">}</span>
+		FreeVec<span class="br0">(</span>p<span class="br0">)</span><span class="sy0">;</span>
+	<span class="br0">}</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+SoundInitFunc AHI_Init <span class="sy0">=</span> ahi_init<span class="sy0">;</span>
+</pre></div>
+</div>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="Hooks">Hooks</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=12" title="Edit section: Hooks">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<p>Old idea which is best avoided if possible. The hook function should be used to play/control the sample(s). It is called at the frequency you initialized it with (in your case 100).</p>
+<p>So in your 'normal' code you would flip a switch somewhere, telling the hookfunction to start playing a sample (or do with it whatever you want).</p>
+<p>In the hookfunction you then start playing the sample and/or apply effects with the ahi ctrl function (and others).</p>
+<p>One such example could be for instance be that module (as in well now .mod fileformat) data is being processed for each channel and apply effect etc.</p>
+<p>In your case it would be a bit simpler as a mod player. you want to start playing a note and stop it at your will. For instance when a couonter reached a certain value.</p>
+<p>The (probable) reason your number it not printing is because that routine is called _a lot_ every second</p>
+<p>The gist is that you have to find a mechanism (that suits your purpose the best) that uses your mouseclicks (or keyclicks) to 'feed' the player (hookfunct) and find something that 'tells' the player to do something else with the played sample (stopping it, applying an effect etc).</p>
+<p>You can use the data property of the hookfunc to 'give' / push a structure to your 'replay' routine so that you can for example tell the player that a certain sample started being played. The player can then decide (if counter reached a value for example) to actually stop the sample from playing and setting/changing the status in that structure so that the main program knows the sample can be 'played'/triggered again.</p>
+<p><br></p>
+<div dir="ltr" class="mw-geshi mw-code mw-content-ltr">
+<div class="c source-c">
+<pre class="de1"><span class="co2">#include "backends/platform/amigaos3/amigaos3.h"</span>
+<span class="co2">#include "backends/mixer/amigaos3/amigaos3-mixer.h"</span>
+<span class="co2">#include "common/debug.h"</span>
+<span class="co2">#include "common/system.h"</span>
+<span class="co2">#include "common/config-manager.h"</span>
+<span class="co2">#include "common/textconsole.h"</span>
+ 
+<span class="co1">// Amiga includes</span>
+<span class="co2">#include &lt;clib/exec_protos.h&gt;</span>
+<span class="co2">#include "ahi-player-hook.h"</span>
+ 
+<span class="co2">#define DEFAULT_MIX_FREQUENCY 11025</span>
+ 
+AmigaOS3MixerManager<span class="sy0">*</span> g_mixerManager<span class="sy0">;</span>
+ 
+ 
+<span class="kw4">static</span> <span class="kw4">void</span> audioPlayerCallback<span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+     g_mixerManager<span class="sy0">-&gt;</span>callbackHandler<span class="br0">(</span><span class="br0">)</span><span class="sy0">;</span>
+<span class="br0">}</span> 
+ 
+ 
+ 
+AmigaOS3MixerManager<span class="sy0">::</span><span class="me2">AmigaOS3MixerManager</span><span class="br0">(</span><span class="br0">)</span>
+	<span class="sy0">:</span>
+	_mixer<span class="br0">(</span><span class="nu0">0</span><span class="br0">)</span><span class="sy0">,</span>
+	_audioSuspended<span class="br0">(</span><span class="kw2">false</span><span class="br0">)</span> <span class="br0">{</span>
+ 
+    g_mixerManager <span class="sy0">=</span> this<span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+AmigaOS3MixerManager<span class="sy0">::</span>~AmigaOS3MixerManager<span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+	<span class="kw1">if</span> <span class="br0">(</span>_mixer<span class="br0">)</span> <span class="br0">{</span>
+        _mixer<span class="sy0">-&gt;</span>setReady<span class="br0">(</span><span class="kw2">false</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+        <span class="kw1">if</span> <span class="br0">(</span>audioCtrl<span class="br0">)</span> <span class="br0">{</span>
+            debug<span class="br0">(</span><span class="nu0">1</span><span class="sy0">,</span> <span class="st0">"deleting AHI_ControlAudio"</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+            <span class="co1">// Stop sounds.</span>
+            AHI_ControlAudio<span class="br0">(</span>audioCtrl<span class="sy0">,</span> AHIC_Play<span class="sy0">,</span> FALSE<span class="sy0">,</span> TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+ 
+            <span class="kw1">if</span> <span class="br0">(</span>_mixer<span class="br0">)</span> <span class="br0">{</span>
+                _mixer<span class="sy0">-&gt;</span>setReady<span class="br0">(</span><span class="kw2">false</span><span class="br0">)</span><span class="sy0">;</span>
+            <span class="br0">}</span>
+ 
+            AHI_UnloadSound<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> audioCtrl<span class="br0">)</span><span class="sy0">;</span>
+            AHI_FreeAudio<span class="br0">(</span>audioCtrl<span class="br0">)</span><span class="sy0">;</span>
+            audioCtrl <span class="sy0">=</span> NULL<span class="sy0">;</span>
+        <span class="br0">}</span>
+ 
+        <span class="kw1">if</span> <span class="br0">(</span>audioRequest<span class="br0">)</span> <span class="br0">{</span>
+            debug<span class="br0">(</span><span class="nu0">1</span><span class="sy0">,</span> <span class="st0">"deleting AHIDevice"</span><span class="br0">)</span><span class="sy0">;</span>
+            CloseDevice<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest<span class="sy0">*</span><span class="br0">)</span>audioRequest<span class="br0">)</span><span class="sy0">;</span>
+            DeleteIORequest<span class="br0">(</span><span class="br0">(</span><span class="kw4">struct</span> IORequest<span class="sy0">*</span><span class="br0">)</span>audioRequest<span class="br0">)</span><span class="sy0">;</span>
+            audioRequest <span class="sy0">=</span> NULL<span class="sy0">;</span>
+ 
+            DeleteMsgPort<span class="br0">(</span>audioPort<span class="br0">)</span><span class="sy0">;</span>
+            audioPort <span class="sy0">=</span> NULL<span class="sy0">;</span>
+            AHIBase <span class="sy0">=</span> NULL<span class="sy0">;</span>
+        <span class="br0">}</span>
+ 
+        <span class="kw1">if</span> <span class="br0">(</span>sample.<span class="me1">ahisi_Address</span><span class="br0">)</span> <span class="br0">{</span>
+            debug<span class="br0">(</span><span class="nu0">1</span><span class="sy0">,</span> <span class="st0">"deleting soundBuffer"</span><span class="br0">)</span><span class="sy0">;</span>
+            FreeVec<span class="br0">(</span>sample.<span class="me1">ahisi_Address</span><span class="br0">)</span><span class="sy0">;</span>
+            sample.<span class="me1">ahisi_Address</span> <span class="sy0">=</span> NULL<span class="sy0">;</span>
+        <span class="br0">}</span>
+ 
+    	delete _mixer<span class="sy0">;</span>
+    <span class="br0">}</span>
+<span class="br0">}</span> 
+ 
+<span class="kw4">void</span> AmigaOS3MixerManager<span class="sy0">::</span><span class="me2">init</span><span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+ 
+    audioPort <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> MsgPort<span class="sy0">*</span><span class="br0">)</span>CreateMsgPort<span class="br0">(</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="kw1">if</span> <span class="br0">(</span><span class="sy0">!</span>audioPort<span class="br0">)</span> <span class="br0">{</span>
+        error<span class="br0">(</span><span class="st0">"Could not create a Message Port for AHI"</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    audioRequest <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> AHIRequest<span class="sy0">*</span><span class="br0">)</span>CreateIORequest<span class="br0">(</span>audioPort<span class="sy0">,</span> <span class="kw4">sizeof</span><span class="br0">(</span><span class="kw4">struct</span> AHIRequest<span class="br0">)</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="kw1">if</span> <span class="br0">(</span><span class="sy0">!</span>audioRequest<span class="br0">)</span> <span class="br0">{</span>
+        error<span class="br0">(</span><span class="st0">"Could not create an IO Request for AHI"</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    <span class="co1">// Open at least version 4.</span>
+    audioRequest<span class="sy0">-&gt;</span>ahir_Version <span class="sy0">=</span> <span class="nu0">4</span><span class="sy0">;</span>
+ 
+    BYTE deviceError <span class="sy0">=</span> OpenDevice<span class="br0">(</span>AHINAME<span class="sy0">,</span> AHI_NO_UNIT<span class="sy0">,</span> <span class="br0">(</span><span class="kw4">struct</span> IORequest<span class="sy0">*</span><span class="br0">)</span>audioRequest<span class="sy0">,</span> NULL<span class="br0">)</span><span class="sy0">;</span>
+    <span class="kw1">if</span> <span class="br0">(</span>deviceError<span class="br0">)</span> <span class="br0">{</span>
+        error<span class="br0">(</span><span class="st0">"Unable to open AHI Device: %s version 4"</span><span class="sy0">,</span> AHINAME<span class="br0">)</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    <span class="co1">// Needed by Audio Control?</span>
+    AHIBase <span class="sy0">=</span> <span class="br0">(</span><span class="kw4">struct</span> Library <span class="sy0">*</span><span class="br0">)</span>audioRequest<span class="sy0">-&gt;</span>ahir_Std.<span class="me1">io_Device</span><span class="sy0">;</span>
+ 
+    <span class="kw4">uint32</span> desiredMixingfrequency <span class="sy0">=</span> <span class="nu0">0</span><span class="sy0">;</span>
+ 
+	<span class="co1">// Determine the desired output sampling frequency.</span>
+	<span class="kw1">if</span> <span class="br0">(</span>ConfMan.<span class="me1">hasKey</span><span class="br0">(</span><span class="st0">"output_rate"</span><span class="br0">)</span><span class="br0">)</span> <span class="br0">{</span>
+		desiredMixingfrequency <span class="sy0">=</span> ConfMan.<span class="me1">getInt</span><span class="br0">(</span><span class="st0">"output_rate"</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    <span class="kw1">if</span> <span class="br0">(</span>desiredMixingfrequency <span class="sy0">==</span> <span class="nu0">0</span><span class="br0">)</span> <span class="br0">{</span>
+		desiredMixingfrequency <span class="sy0">=</span> DEFAULT_MIX_FREQUENCY<span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    ULONG audioId <span class="sy0">=</span> AHI_DEFAULT_ID<span class="sy0">;</span>
+ 
+    audioCtrl <span class="sy0">=</span> AHI_AllocAudio<span class="br0">(</span>
+      AHIA_AudioID<span class="sy0">,</span> audioId<span class="sy0">,</span>
+      AHIA_MixFreq<span class="sy0">,</span> desiredMixingfrequency<span class="sy0">,</span>
+      AHIA_Channels<span class="sy0">,</span> numAudioChannels<span class="sy0">,</span>
+      AHIA_Sounds<span class="sy0">,</span> <span class="nu0">1</span><span class="sy0">,</span>
+      AHIA_PlayerFunc<span class="sy0">,</span> createAudioPlayerCallback<span class="br0">(</span>audioPlayerCallback<span class="br0">)</span><span class="sy0">,</span>
+      AHIA_PlayerFreq<span class="sy0">,</span> audioCallbackFrequency<span class="sy0">&lt;&lt;</span><span class="nu0">16</span><span class="sy0">,</span>
+      AHIA_MinPlayerFreq<span class="sy0">,</span> audioCallbackFrequency<span class="sy0">&lt;&lt;</span><span class="nu0">16</span><span class="sy0">,</span>
+      AHIA_MaxPlayerFreq<span class="sy0">,</span> audioCallbackFrequency<span class="sy0">&lt;&lt;</span><span class="nu0">16</span><span class="sy0">,</span>
+      TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+ 
+    <span class="kw1">if</span> <span class="br0">(</span><span class="sy0">!</span>audioCtrl<span class="br0">)</span> <span class="br0">{</span>
+        error<span class="br0">(</span><span class="st0">"Could not create initialize AHI"</span><span class="br0">)</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    <span class="co1">// Get obtained mixing frequency.</span>
+    ULONG obtainedMixingfrequency <span class="sy0">=</span> <span class="nu0">0</span><span class="sy0">;</span>
+    AHI_ControlAudio<span class="br0">(</span>audioCtrl<span class="sy0">,</span> AHIC_MixFreq_Query<span class="sy0">,</span> <span class="br0">(</span>Tag<span class="br0">)</span><span class="sy0">&amp;</span>obtainedMixingfrequency<span class="sy0">,</span> TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+    debug<span class="br0">(</span><span class="nu0">5</span><span class="sy0">,</span> <span class="st0">"Mixing frequency desired = %d Hz"</span><span class="sy0">,</span> desiredMixingfrequency<span class="br0">)</span><span class="sy0">;</span>
+    debug<span class="br0">(</span><span class="nu0">5</span><span class="sy0">,</span> <span class="st0">"Mixing frequency obtained = %d Hz"</span><span class="sy0">,</span> obtainedMixingfrequency<span class="br0">)</span><span class="sy0">;</span>
+ 
+ 
+    <span class="co1">// Calculate the sample factor.</span>
+    ULONG sampleCount <span class="sy0">=</span> <span class="br0">(</span>ULONG<span class="br0">)</span><span class="kw3">floor</span><span class="br0">(</span>obtainedMixingfrequency <span class="sy0">/</span> audioCallbackFrequency<span class="br0">)</span><span class="sy0">;</span>
+    debug<span class="br0">(</span><span class="nu0">5</span><span class="sy0">,</span> <span class="st0">"Calculated sample rate @ %u times per second  = %u"</span><span class="sy0">,</span> audioCallbackFrequency<span class="sy0">,</span> sampleCount<span class="br0">)</span><span class="sy0">;</span>  
+ 
+    <span class="co1">// 32 bits (4 bytes) are required per sample for storage (16bit stereo).</span>
+    sampleBufferSize <span class="sy0">=</span> <span class="br0">(</span>sampleCount <span class="sy0">*</span> AHI_SampleFrameSize<span class="br0">(</span>AHIST_S16S<span class="br0">)</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+    sample.<span class="me1">ahisi_Type</span> <span class="sy0">=</span> AHIST_S16S<span class="sy0">;</span>
+    sample.<span class="me1">ahisi_Address</span> <span class="sy0">=</span> AllocVec<span class="br0">(</span>sampleBufferSize<span class="sy0">,</span> MEMF_PUBLIC<span class="sy0">|</span>MEMF_CLEAR<span class="br0">)</span><span class="sy0">;</span>
+    sample.<span class="me1">ahisi_Length</span> <span class="sy0">=</span> sampleCount<span class="sy0">;</span>
+ 
+ 
+    AHI_SetFreq<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> obtainedMixingfrequency<span class="sy0">,</span> audioCtrl<span class="sy0">,</span> AHISF_IMM<span class="br0">)</span><span class="sy0">;</span>
+    AHI_SetVol<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> 0x10000L<span class="sy0">,</span> 0x8000L<span class="sy0">,</span> audioCtrl<span class="sy0">,</span> AHISF_IMM<span class="br0">)</span><span class="sy0">;</span>
+ 
+    AHI_LoadSound<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> AHIST_DYNAMICSAMPLE<span class="sy0">,</span> <span class="sy0">&amp;</span>sample<span class="sy0">,</span> audioCtrl<span class="br0">)</span><span class="sy0">;</span>
+    AHI_SetSound<span class="br0">(</span><span class="nu0">0</span><span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span> <span class="nu0">0</span><span class="sy0">,</span> audioCtrl<span class="sy0">,</span> AHISF_IMM<span class="br0">)</span><span class="sy0">;</span>    
+ 
+    <span class="co1">// Create the mixer instance and start the sound processing.</span>
+    <span class="kw3">assert</span><span class="br0">(</span><span class="sy0">!</span>_mixer<span class="br0">)</span><span class="sy0">;</span>
+	_mixer <span class="sy0">=</span> new Audio<span class="sy0">::</span><span class="me2">MixerImpl</span><span class="br0">(</span>g_system<span class="sy0">,</span> obtainedMixingfrequency<span class="br0">)</span><span class="sy0">;</span>
+	<span class="kw3">assert</span><span class="br0">(</span>_mixer<span class="br0">)</span><span class="sy0">;</span>
+    _mixer<span class="sy0">-&gt;</span>setReady<span class="br0">(</span><span class="kw2">true</span><span class="br0">)</span><span class="sy0">;</span>
+ 
+ 
+    <span class="co1">// Start feeding samples to sound hardware (and start the AHI callback!)</span>
+    AHI_ControlAudio<span class="br0">(</span>audioCtrl<span class="sy0">,</span> AHIC_Play<span class="sy0">,</span> TRUE<span class="sy0">,</span> TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">void</span> AmigaOS3MixerManager<span class="sy0">::</span><span class="me2">callbackHandler</span><span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+	<span class="kw3">assert</span><span class="br0">(</span>_mixer<span class="br0">)</span><span class="sy0">;</span>
+ 
+	_mixer<span class="sy0">-&gt;</span>mixCallback<span class="br0">(</span><span class="br0">(</span>byte<span class="sy0">*</span><span class="br0">)</span>sample.<span class="me1">ahisi_Address</span><span class="sy0">,</span> sampleBufferSize<span class="br0">)</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+ 
+ 
+<span class="kw4">void</span> AmigaOS3MixerManager<span class="sy0">::</span><span class="me2">suspendAudio</span><span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+	AHI_ControlAudio<span class="br0">(</span>audioCtrl<span class="sy0">,</span> AHIC_Play<span class="sy0">,</span> FALSE<span class="sy0">,</span> TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+ 
+	_audioSuspended <span class="sy0">=</span> <span class="kw2">true</span><span class="sy0">;</span>
+<span class="br0">}</span>
+ 
+<span class="kw4">int</span> AmigaOS3MixerManager<span class="sy0">::</span><span class="me2">resumeAudio</span><span class="br0">(</span><span class="br0">)</span> <span class="br0">{</span>
+	<span class="kw1">if</span> <span class="br0">(</span><span class="sy0">!</span>_audioSuspended<span class="br0">)</span> <span class="br0">{</span>
+		<span class="kw1">return</span> <span class="sy0">-</span><span class="nu0">2</span><span class="sy0">;</span>
+    <span class="br0">}</span>
+ 
+    AHI_ControlAudio<span class="br0">(</span>audioCtrl<span class="sy0">,</span> AHIC_Play<span class="sy0">,</span> TRUE<span class="sy0">,</span> TAG_DONE<span class="br0">)</span><span class="sy0">;</span>
+ 
+	_audioSuspended <span class="sy0">=</span> <span class="kw2">false</span><span class="sy0">;</span>
+ 
+	<span class="kw1">return</span> <span class="nu0">0</span><span class="sy0">;</span>
+<span class="br0">}</span>
+</pre></div>
+</div>
+<p><a rel="nofollow" class="external text" href="http://amigan.1emu.net/releases/AmiArcadia.lha" target="_blank">AmiArcadia</a> also uses AHI and has c src and ScummVM AGA from AmiNet....all the source code is there. To create the AHI callback hook you'll also need to include the <a rel="nofollow" class="external text" href="http://sditools.cvs.sourceforge.net/viewvc/sditools/sditools/headers/" target="_blank">SDI header files</a>.</p>
+<p><br></p>
+<p><br></p>
+<h2><span class="mw-headline" id="Reference">Reference</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=13" title="Edit section: Reference">edit</a><span class="mw-editsection-bracket">]</span></span></h2>
+<p>Still to be edited and possibly redone...</p>
+<p>You may need to supply AHI_MinPlayerFreq &amp; AHI_MaxPlayerFreq?</p>
+<p>AHIA_PlayerFreq (Fixed) - If non-zero, enables timing and specifies how many times per second PlayerFunc will be called. This must be specified if AHIA_PlayerFunc is! Do not use any extreme frequencies. The result of MixFreq/PlayerFreq must fit an UWORD, i.e. it must be less or equal to 65535. It is also suggested that you keep the result over 80. For normal use this should not be a problem. Note that the data type is Fixed, not integer. 50 Hz is 50 16.</p>
+<p>Default is a reasonable value. Don't depend on it.</p>
+<p>AHIA_MinPlayerFreq (Fixed) - The minimum frequency (AHIA_PlayerFreq) you will use. You MUST supply this if you are using the device's interrupt feature!</p>
+<p>AHIA_MaxPlayerFreq (Fixed) - The maximum frequency (AHIA_PlayerFreq) you will use. You MUST supply this if you are using the device's interrupt feature!</p>
+<p>I don't see anything in the documentation limiting the high-end frequency, just keep in mind that AHI has to be able to finish the callback function completely in time to be able to make it to the next callback. How big is your callback function?</p>
+<p>AHI_GetAudioAttrs() should have TAG_DONE</p>
+<p>What is AHIR_DoMixFreq? remove AHIR_DoMixFreq tag from AHI_AllocAudio() call, I don't think it should be there.</p>
+<p>decode audio to a sample buffer and feed buffer to AHI using normal double buffering method from a subprocess. can AHI buffer the sound in a music interrupt, to play it later? How would I do what you suggest? never used library API, sorry. I always use CMD_WRITE to play the sound. It does not work. Sooner than later io requests go out of sync due to task switching.</p>
+<p>Advice about number of channels <a rel="nofollow" class="external text" href="http://utilitybase.com/forum/index.php?action=vthread&forum=201&topic=1565" target="_blank">set up</a></p>
+<p><br></p>
+<p><br></p>
+<pre>CMD_FLUSH
+CMD_READ
+CMD_RESET
+CMD_START
+CMD_STOP
+CMD_WRITE
+
+CloseDevice
+NSCMD_DEVICEQUERY
+OpenDevice
+ahi.device
+</pre>
+<p><br></p>
+<pre>if(AHI_GetAudioAttrs(AHI_DEFAULT_ID, NULL, AHIDB_BufferLen, 100, AHIDB_Inputs, &amp;num_inputs))
+//if(AHI_GetAudioAttrs(AHI_INVALID_ID, Record_AudioCtrl, AHIDB_BufferLen, 100, AHIDB_Inputs, &amp;num_inputs))
+{
+printf("getaudioattrs worked\n");
+
+
+STRPTR input_name[num_inputs-1][100];
+
+printf("num inputs is %i\navailable inputs:\n",num_inputs);
+
+for(int a=0; a!=num_inputs; a++)
+{
+//AHI_GetAudioAttrs(AHI_INVALID_ID, Record_AudioCtrl, AHIDB_BufferLen, 100, AHIDB_InputArg, a, AHIDB_Input, &amp;input_name[a]);
+AHI_GetAudioAttrs(AHI_DEFAULT_ID, NULL, AHIDB_BufferLen, 100, AHIDB_InputArg, a, AHIDB_Input, &amp;input_name[a]);
+printf("%i: %s\n",a,input_name[a]);
+}
+
+//AHI_ControlAudio(Record_AudioCtrl, AHIC_Input, &amp;selected_input, TAG_DONE);
+//AHI_ControlAudio(Record_AudioCtrl, AHIC_Input, 1, TAG_DONE);
+//AHI_ControlAudio(NULL, AHIC_Input, 1, TAG_DONE);
+//AHI_ControlAudio(NULL, AHIC_Input, &amp;selected_input, TAG_DONE);
+
+}
+</pre>
+<pre>//changed second argument from..
+
+AHIDevice=OpenDevice(AHINAME,0,(struct IORequest *)AHIio,NULL);
+
+//to this..
+
+AHIDevice=OpenDevice(AHINAME,AHI_NO_UNIT,(struct IORequest *)AHIio,NULL); 
+</pre>
+<p><br></p>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_AllocAudioA">AHI_AllocAudioA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=14" title="Edit section: AHI AllocAudioA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>audioctrl = AHI_AllocAudioA( tags );
+</pre>
+<pre>struct AHIAudioCtrl *AHI_AllocAudioA( struct TagItem * );
+</pre>
+<pre>audioctrl = AHI_AllocAudio( tag1, ... );
+</pre>
+<pre>struct AHIAudioCtrl *AHI_AllocAudio( Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_AllocAudioRequestA">AHI_AllocAudioRequestA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=15" title="Edit section: AHI AllocAudioRequestA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>requester = AHI_AllocAudioRequestA( tags );
+</pre>
+<pre>struct AHIAudioModeRequester *AHI_AllocAudioRequestA(struct TagItem * );
+</pre>
+<pre>requester = AHI_AllocAudioRequest( tag1, ... );
+</pre>
+<pre>struct AHIAudioModeRequester *AHI_AllocAudioRequest( Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_AudioRequestA">AHI_AudioRequestA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=16" title="Edit section: AHI AudioRequestA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>success = AHI_AudioRequestA( requester, tags );
+</pre>
+<pre>BOOL AHI_AudioRequestA( struct AHIAudioModeRequester *, struct TagItem * );
+</pre>
+<pre>result = AHI_AudioRequest( requester, tag1, ... );
+</pre>
+<pre>BOOL AHI_AudioRequest( struct AHIAudioModeRequester *, Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_BestAudioIDA">AHI_BestAudioIDA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=17" title="Edit section: AHI BestAudioIDA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>ID = AHI_BestAudioIDA( tags );
+</pre>
+<pre>ULONG AHI_BestAudioIDA( struct TagItem * );
+</pre>
+<pre>ID = AHI_BestAudioID( tag1, ... );
+</pre>
+<pre>ULONG AHI_BestAudioID( Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_ControlAudioA">AHI_ControlAudioA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=18" title="Edit section: AHI ControlAudioA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>error = AHI_ControlAudioA( audioctrl, tags );
+</pre>
+<pre>ULONG AHI_ControlAudioA( struct AHIAudioCtrl *, struct TagItem * );
+</pre>
+<pre>error = AHI_ControlAudio( AudioCtrl, tag1, ...);
+</pre>
+<pre>ULONG AHI_ControlAudio( struct AHIAudioCtrl *, Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_FreeAudio">AHI_FreeAudio</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=19" title="Edit section: AHI FreeAudio">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_FreeAudio( audioctrl );
+</pre>
+<pre>void AHI_FreeAudio( struct AHIAudioCtrl * );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_FreeAudioRequest">AHI_FreeAudioRequest</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=20" title="Edit section: AHI FreeAudioRequest">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_FreeAudioRequest( requester );
+</pre>
+<pre>void AHI_FreeAudioRequest( struct AHIAudioModeRequester * );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_GetAudioAttrsA">AHI_GetAudioAttrsA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=21" title="Edit section: AHI GetAudioAttrsA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>success = AHI_GetAudioAttrsA( ID, [audioctrl], tags );
+</pre>
+<pre>BOOL AHI_GetAudioAttrsA( ULONG, struct AHIAudioCtrl *, struct TagItem * );
+</pre>
+<pre>success = AHI_GetAudioAttrs( ID, [audioctrl], attr1, &amp;result1, ...);
+</pre>
+<pre>BOOL AHI_GetAudioAttrs( ULONG, struct AHIAudioCtrl *, Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_LoadSound">AHI_LoadSound</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=22" title="Edit section: AHI LoadSound">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>error = AHI_LoadSound( sound, type, info, audioctrl );
+</pre>
+<pre>ULONG AHI_LoadSound( UWORD, ULONG, IPTR, struct AHIAudioCtrl * );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_NextAudioID">AHI_NextAudioID</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=23" title="Edit section: AHI NextAudioID">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>next_ID = AHI_NextAudioID( last_ID );
+</pre>
+<pre>ULONG AHI_NextAudioID( ULONG );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_PlayA">AHI_PlayA</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=24" title="Edit section: AHI PlayA">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_PlayA( audioctrl, tags );
+</pre>
+<pre>void AHI_PlayA( struct AHIAudioCtrl *, struct TagItem * );
+</pre>
+<pre>AHI_Play( AudioCtrl, tag1, ...);
+</pre>
+<pre>void AHI_Play( struct AHIAudioCtrl *, Tag, ... );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_SampleFrameSize">AHI_SampleFrameSize</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=25" title="Edit section: AHI SampleFrameSize">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>size = AHI_SampleFrameSize( sampletype );
+</pre>
+<pre>ULONG AHI_SampleFrameSize( ULONG );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_SetEffect">AHI_SetEffect</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=26" title="Edit section: AHI SetEffect">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>error = AHI_SetEffect( effect, audioctrl );
+</pre>
+<pre>ULONG AHI_SetEffect( IPTR, struct AHIAudioCtrl * );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_SetFreq">AHI_SetFreq</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=27" title="Edit section: AHI SetFreq">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_SetFreq( channel, freq, audioctrl, flags );
+</pre>
+<pre>void AHI_SetFreq( UWORD, ULONG, struct AHIAudioCtrl *, ULONG );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_SetSound">AHI_SetSound</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=28" title="Edit section: AHI SetSound">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_SetSound( channel, sound, offset, length, audioctrl, flags );
+</pre>
+<pre>void AHI_SetSound( UWORD, UWORD, ULONG, LONG, struct AHIAudioCtrl *, ULONG );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_SetVol">AHI_SetVol</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=29" title="Edit section: AHI SetVol">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_SetVol( channel, volume, pan, audioctrl, flags );
+</pre>
+<pre>void AHI_SetVol( UWORD, Fixed, sposition, struct AHIAudioCtrl *, ULONG );
+</pre>
+<p><br></p>
+<h3><span class="mw-headline" id="AHI_UnloadSound">AHI_UnloadSound</span><span class="mw-editsection"><span class="mw-editsection-bracket">[</span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit&section=30" title="Edit section: AHI UnloadSound">edit</a><span class="mw-editsection-bracket">]</span></span></h3>
+<pre>AHI_UnloadSound( sound, audioctrl );
+</pre>
+<pre>void AHI_UnloadSound( UWORD, struct AHIAudioCtrl * );
+</pre>
+
+<!-- 
+NewPP limit report
+Parsed by mw1150
+CPU time usage: 0.167 seconds
+Real time usage: 0.185 seconds
+Preprocessor visited node count: 298/1000000
+Preprocessor generated node count: 0/1500000
+Post‐expand include size: 2073/2097152 bytes
+Template argument size: 0/2097152 bytes
+Highest expansion depth: 7/40
+Expensive parser function count: 0/500
+-->
+
+<!-- 
+Transclusion expansion time report (%,ms,calls,template)
+100.00%   85.781      1 - -total
+ 17.48%   14.998      1 - Template:ArosNav
+  9.33%    8.002      2 - Template:BookCat
+  3.41%    2.924      2 - Template:FULLBOOKNAME
+-->
+
+<!-- Saved in parser cache with key enwikibooks:pcache:idhash:221770-0!*!0!!en!*!* and timestamp 20150527164556 and revision id 2608841
+ -->
+<noscript>&lt;img src="//en.wikibooks.org/wiki/Special:CentralAutoLogin/start?type=1x1" alt="" title="" width="1" height="1" style="border: none; position: absolute;" /&gt;</noscript></div>									<div class="printfooter">
+						Retrieved from "<a dir="ltr" href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&oldid=2608841">http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&amp;oldid=2608841</a>"					</div>
+													<div id="catlinks" class="catlinks"><div id="mw-normal-catlinks" class="mw-normal-catlinks"><a href="http://en.wikibooks.org/wiki/Special:Categories" title="Special:Categories">Category</a>: <ul><li><a href="http://en.wikibooks.org/wiki/Category:Aros" title="Category:Aros">Aros</a></li></ul></div></div>												<div class="visualClear"></div>
+							</div>
+		</div>
+		<div id="mw-navigation">
+			<h2>Navigation menu</h2>
+
+			<div id="mw-head">
+									<div id="p-personal" role="navigation" class="" aria-labelledby="p-personal-label">
+						<h3 id="p-personal-label">Personal tools</h3>
+						<ul>
+							<li id="pt-createaccount"><a href="http://en.wikibooks.org/w/index.php?title=Special:UserLogin&returnto=Aros%2FDeveloper%2FAHIDrivers&type=signup" title="You are encouraged to create an account and log in; however, it is not mandatory">Create account</a></li><li id="pt-login"><a href="http://en.wikibooks.org/w/index.php?title=Special:UserLogin&returnto=Aros%2FDeveloper%2FAHIDrivers" title="You are encouraged to log in; however, it is not mandatory [alt-shift-o]" accesskey="o">Log in</a></li>						</ul>
+					</div>
+									<div id="left-navigation">
+										<div id="p-namespaces" role="navigation" class="vectorTabs" aria-labelledby="p-namespaces-label">
+						<h3 id="p-namespaces-label">Namespaces</h3>
+						<ul>
+															<li id="ca-nstab-main" class="selected"><span><a href="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/Aros_Developer_AHIDrivers - Wikibooks, open books for an open world.html" title="View the content page [alt-shift-c]" accesskey="c">Book</a></span></li>
+															<li id="ca-talk" class="new"><span><a href="http://en.wikibooks.org/w/index.php?title=Talk:Aros/Developer/AHIDrivers&action=edit&redlink=1" title="Discussion about the content page [alt-shift-t]" accesskey="t">Discussion</a></span></li>
+													</ul>
+					</div>
+										<div id="p-variants" role="navigation" class="vectorMenu emptyPortlet" aria-labelledby="p-variants-label">
+												<h3 id="p-variants-label" tabindex="0"><span>Variants</span><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#" tabindex="-1"></a></h3>
+
+						<div class="menu">
+							<ul>
+															</ul>
+						</div>
+					</div>
+									</div>
+				<div id="right-navigation">
+										<div id="p-views" role="navigation" class="vectorTabs" aria-labelledby="p-views-label">
+						<h3 id="p-views-label">Views</h3>
+						<ul>
+															<li id="ca-view" class="selected"><span><a href="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/Aros_Developer_AHIDrivers - Wikibooks, open books for an open world.html">Read</a></span></li>
+															<li id="ca-edit"><span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=edit" title="You can edit this page. Please use the preview button before saving [alt-shift-e]" accesskey="e">Edit</a></span></li>
+															<li id="ca-history" class="collapsible"><span><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=history" title="Past revisions of this page [alt-shift-h]" accesskey="h">View history</a></span></li>
+													</ul>
+					</div>
+										<div id="p-cactions" role="navigation" class="vectorMenu emptyPortlet" aria-labelledby="p-cactions-label">
+						<h3 id="p-cactions-label" tabindex="0"><span>More</span><a href="http://en.wikibooks.org/wiki/Aros/Developer/AHIDrivers#" tabindex="-1"></a></h3>
+
+						<div class="menu">
+							<ul>
+															</ul>
+						</div>
+					</div>
+										<div id="p-search" role="search">
+						<h3>
+							<label for="searchInput">Search</label>
+						</h3>
+
+						<form action="http://en.wikibooks.org/w/index.php" id="searchform">
+														<div id="simpleSearch">
+															<input type="search" name="search" placeholder="Search" title="Search Wikibooks [alt-shift-f]" accesskey="f" id="searchInput" tabindex="1" autocomplete="off"><input type="hidden" value="Special:Search" name="title"><input type="submit" name="go" value="Go" title="Go to a page with this exact name if exists" id="searchButton" class="searchButton">								</div>
+						</form>
+					</div>
+									</div>
+			</div>
+			<div id="mw-panel">
+				<div id="p-logo" role="banner"><a class="mw-wiki-logo" href="http://en.wikibooks.org/wiki/Main_Page" title="Visit the main page"></a></div>
+						<div class="portal" role="navigation" id="p-Navigation" aria-labelledby="p-Navigation-label">
+			<h3 id="p-Navigation-label">Navigation</h3>
+
+			<div class="body">
+									<ul>
+													<li id="n-mainpage"><a href="http://en.wikibooks.org/wiki/Main_Page" title="Visit the main page [alt-shift-z]" accesskey="z">Main Page</a></li>
+													<li id="n-help"><a href="https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents" title="Find help on how to use and edit Wikibooks">Help</a></li>
+													<li id="n-Browse"><a href="http://en.wikibooks.org/wiki/Wikibooks:Card_Catalog_Office" title="Check out what Wikibooks has to offer">Browse wiki</a></li>
+													<li id="n-Cookbook"><a href="http://en.wikibooks.org/wiki/Cookbook:Table_of_Contents" title="Learn recipes from around the world">Cookbook</a></li>
+													<li id="n-Wikijunior"><a href="http://en.wikibooks.org/wiki/Wikijunior" title="Books for children">Wikijunior</a></li>
+													<li id="n-Featured-books"><a href="http://en.wikibooks.org/wiki/Wikibooks:Featured_books" title="The best of Wikibooks">Featured books</a></li>
+													<li id="n-recentchanges"><a href="http://en.wikibooks.org/wiki/Special:RecentChanges" title="A list of recent changes in the wiki [alt-shift-r]" accesskey="r">Recent changes</a></li>
+													<li id="n-sitesupport"><a href="http://donate.wikimedia.org/wiki/Special:FundraiserRedirector?utm_source=donate&utm_medium=sidebar&utm_campaign=C13_en.wikibooks.org&uselang=en" title="Support Wikibooks">Donations</a></li>
+													<li id="n-randomrootpage"><a href="http://en.wikibooks.org/wiki/Special:RandomRootpage">Random book</a></li>
+													<li id="n-Using-Wikibooks"><a href="http://en.wikibooks.org/wiki/Using_Wikibooks">Using Wikibooks</a></li>
+											</ul>
+							</div>
+		</div>
+			<div class="portal" role="navigation" id="p-Community" aria-labelledby="p-Community-label">
+			<h3 id="p-Community-label">Community</h3>
+
+			<div class="body">
+									<ul>
+													<li id="n-Reading-room"><a href="http://en.wikibooks.org/wiki/Wikibooks:Reading_room" title="Discuss Wikibooks-related questions and concerns with others">Reading room</a></li>
+													<li id="n-portal"><a href="http://en.wikibooks.org/wiki/Wikibooks:Community_Portal" title="Find your way around the Wikibooks community">Community portal</a></li>
+													<li id="n-currentevents"><a href="http://en.wikibooks.org/wiki/Wikibooks:Reading_room/Bulletin_Board" title="Important community news">Bulletin Board</a></li>
+													<li id="n-maintenance"><a href="http://en.wikibooks.org/wiki/Wikibooks:Maintenance" title="Frequent tasks that you can help with">Help out!</a></li>
+													<li id="n-Policies-and-guidelines"><a href="http://en.wikibooks.org/wiki/Wikibooks:Policies_and_guidelines" title="Pages detailing important rules and procedures">Policies and guidelines</a></li>
+													<li id="n-contact"><a href="http://en.wikibooks.org/wiki/Wikibooks:Contact_us" title="Alternative methods of communication">Contact us</a></li>
+											</ul>
+							</div>
+		</div>
+			<div class="portal" role="navigation" id="p-tb" aria-labelledby="p-tb-label">
+			<h3 id="p-tb-label">Tools</h3>
+
+			<div class="body">
+									<ul>
+													<li id="t-whatlinkshere"><a href="http://en.wikibooks.org/wiki/Special:WhatLinksHere/Aros/Developer/AHIDrivers" title="A list of all wiki pages that link here [alt-shift-j]" accesskey="j">What links here</a></li>
+													<li id="t-recentchangeslinked"><a href="http://en.wikibooks.org/wiki/Special:RecentChangesLinked/Aros/Developer/AHIDrivers" title="Recent changes in pages linked from this page [alt-shift-k]" accesskey="k">Related changes</a></li>
+													<li id="t-upload"><a href="http://commons.wikimedia.org/wiki/Special:UploadWizard" title="Upload files [alt-shift-u]" accesskey="u">Upload file</a></li>
+													<li id="t-specialpages"><a href="http://en.wikibooks.org/wiki/Special:SpecialPages" title="A list of all special pages [alt-shift-q]" accesskey="q">Special pages</a></li>
+													<li id="t-permalink"><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&oldid=2608841" title="Permanent link to this revision of the page">Permanent link</a></li>
+													<li id="t-info"><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&action=info" title="More information about this page">Page information</a></li>
+						<li id="t-cite"><a href="http://en.wikibooks.org/w/index.php?title=Special:CiteThisPage&page=Aros%2FDeveloper%2FAHIDrivers&id=2608841" title="Information on how to cite this page">Cite this page</a></li>					</ul>
+							</div>
+		</div>
+			<div class="portal" role="navigation" id="p-lang" aria-labelledby="p-lang-label"><span class="uls-settings-trigger" tabindex="0" role="button" aria-haspopup="true" original-title="Language settings"></span>
+			<h3 id="p-lang-label">Languages</h3>
+
+			<div class="body">
+									<ul>
+													
+											</ul>
+				<div class="after-portlet after-portlet-lang"><span class="wb-langlinks-add wb-langlinks-link"><a href="http://www.wikidata.org/wiki/Special:NewItem?site=enwikibooks&page=Aros%2FDeveloper%2FAHIDrivers" title="Add interlanguage links" class="wbc-editpage">Add links</a></span></div>			</div>
+		</div>
+			<div class="portal" role="navigation" id="p-Sister_projects" aria-labelledby="p-Sister_projects-label">
+			<h3 id="p-Sister_projects-label">Sister projects</h3>
+
+			<div class="body">
+									<ul>
+													<li id="n-Wikipedia"><a href="http://en.wikipedia.org/wiki/Main_Page">Wikipedia</a></li>
+													<li id="n-Wikiversity"><a href="http://en.wikiversity.org/wiki/Wikiversity:Main_Page">Wikiversity</a></li>
+													<li id="n-Wiktionary"><a href="http://en.wiktionary.org/wiki/Wiktionary:Main_Page">Wiktionary</a></li>
+													<li id="n-Wikiquote"><a href="http://en.wikiquote.org/wiki/Main_Page">Wikiquote</a></li>
+													<li id="n-Wikisource"><a href="http://en.wikisource.org/wiki/Main_Page">Wikisource</a></li>
+													<li id="n-Wikinews"><a href="http://en.wikinews.org/wiki/Main_Page">Wikinews</a></li>
+													<li id="n-Wikivoyage"><a href="http://en.wikivoyage.org/wiki/Main_Page">Wikivoyage</a></li>
+													<li id="n-Commons"><a href="http://commons.wikimedia.org/wiki/Main_Page">Commons</a></li>
+													<li id="n-Wikidata"><a href="http://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a></li>
+											</ul>
+							</div>
+		</div>
+			<div class="portal" role="navigation" id="p-coll-print_export" aria-labelledby="p-coll-print_export-label">
+			<h3 id="p-coll-print_export-label">Print/export</h3>
+
+			<div class="body">
+									<ul>
+													<li id="coll-create_a_book"><a href="http://en.wikibooks.org/w/index.php?title=Special:Book&bookcmd=book_creator&referer=Aros%2FDeveloper%2FAHIDrivers">Create a collection</a></li>
+													<li id="coll-download-as-rdf2latex"><a href="http://en.wikibooks.org/w/index.php?title=Special:Book&bookcmd=render_article&arttitle=Aros%2FDeveloper%2FAHIDrivers&oldid=2608841&writer=rdf2latex">Download as PDF</a></li>
+													<li id="t-print"><a href="http://en.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&printable=yes" title="Printable version of this page [alt-shift-p]" accesskey="p">Printable version</a></li>
+											</ul>
+							</div>
+		</div>
+				</div>
+		</div>
+		<div id="footer" role="contentinfo">
+							<ul id="footer-info">
+											<li id="footer-info-lastmod"> This page was last modified on 13 February 2014, at 02:53.</li>
+											<li id="footer-info-copyright">Text is available under the <a href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike License.</a>; additional terms may apply.  By using this site, you agree to the <a href="http://wikimediafoundation.org/wiki/Terms_of_Use">Terms of Use</a> and <a href="http://wikimediafoundation.org/wiki/Privacy_policy">Privacy Policy.</a></li>
+									</ul>
+							<ul id="footer-places">
+											<li id="footer-places-privacy"><a href="http://wikimediafoundation.org/wiki/Privacy_policy" title="wikimedia:Privacy policy">Privacy policy</a></li>
+											<li id="footer-places-about"><a href="http://en.wikibooks.org/wiki/Wikibooks:Welcome" title="Wikibooks:Welcome">About Wikibooks</a></li>
+											<li id="footer-places-disclaimer"><a href="http://en.wikibooks.org/wiki/Wikibooks:General_disclaimer" title="Wikibooks:General disclaimer">Disclaimers</a></li>
+											<li id="footer-places-developers"><a href="https://www.mediawiki.org/wiki/Special:MyLanguage/How_to_contribute">Developers</a></li>
+											<li id="footer-places-mobileview"><a href="http://en.m.wikibooks.org/w/index.php?title=Aros/Developer/AHIDrivers&mobileaction=toggle_view_mobile" class="noprint stopMobileRedirectToggle">Mobile view</a></li>
+									</ul>
+										<ul id="footer-icons" class="noprint">
+											<li id="footer-copyrightico">
+															<a href="http://wikimediafoundation.org/"><img src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/wikimedia-button.png" srcset="/static/images/wikimedia-button-1.5x.png 1.5x, /static/images/wikimedia-button-2x.png 2x" width="88" height="31" alt="Wikimedia Foundation"></a>
+													</li>
+											<li id="footer-poweredbyico">
+															<a href="http://www.mediawiki.org/"><img src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="//en.wikibooks.org/static/1.26wmf7/resources/assets/poweredby_mediawiki_132x47.png 1.5x, //en.wikibooks.org/static/1.26wmf7/resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31"></a>
+													</li>
+									</ul>
+						<div style="clear:both"></div>
+		</div>
+		<script>if(window.jQuery)jQuery.ready();</script><script>if(window.mw){
+mw.loader.state({"ext.globalCssJs.site":"ready","ext.globalCssJs.user":"ready","site":"loading","user":"ready","user.groups":"ready"});
+}</script>
+<script>if(window.mw){
+mw.loader.load(["mediawiki.toc","mediawiki.action.view.postEdit","mediawiki.user","mediawiki.hidpi","mediawiki.page.ready","mediawiki.searchSuggest","ext.cirrusSearch.loggingSchema","ext.imageMetrics.loader","ext.visualEditor.targetLoader","ext.eventLogging.subscriber","ext.wikimediaEvents.statsd","ext.navigationTiming","schema.UniversalLanguageSelector","ext.uls.eventlogger","ext.uls.interlanguage","ext.gadget.extlinks","ext.flaggedRevs.advanced"],null,true);
+}</script>
+<script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(14).php"></script>
+<script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/index(15).php"></script>
+<script>if(window.mw){
+document.write("\u003Cscript src=\"//en.wikibooks.org/w/load.php?debug=false\u0026amp;lang=en\u0026amp;modules=site\u0026amp;only=scripts\u0026amp;skin=vector\u0026amp;*\"\u003E\u003C/script\u003E");
+}</script><script src="./Aros_Developer_AHIDrivers - Wikibooks, open books for an open world_files/load(3).php"></script>
+<script>if(window.mw){
+mw.config.set({"wgBackendResponseTime":134,"wgHostname":"mw1113"});
+}</script><div class="suggestions" style="display: none; font-size: 13px;"><div class="suggestions-results"></div><div class="suggestions-special"></div></div>
+	
+
+<iframe frameborder="0" scrolling="no" style="border: 0px; display: none; background-color: transparent;"></iframe><div id="GOOGLE_INPUT_CHEXT_FLAG" input="null" input_stat="{&quot;tlang&quot;:true,&quot;tsbc&quot;:true,&quot;pun&quot;:true,&quot;mk&quot;:false,&quot;ss&quot;:true}" style="display: none;"></div></body></html>

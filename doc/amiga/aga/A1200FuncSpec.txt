@@ -1,0 +1,1179 @@
+A1200/A1200HD
+Advanced Amiga 1200 System
+Functional Specification
+October 28, 1992
+Revision 1.6
+
+
+
+
+
+
+
+
+
+
+by Edgar A. Gunther, Brian Fenimore, and George Robbins.
+Copyright (C) 1992 Commodore-Amiga, Inc.
+TABLE OF CONTENTS
+
+1.0	INTRODUCTION
+1.1	 Basic Objectives
+1.2	 Block Diagram
+
+2.0	FEATURES
+2.1	CPU
+2.2	Memory
+2.3	ROM
+2.4	MassStorage
+2.5	AA Custom Chips
+2.5.1	Alice
+2.5.2	Lisa
+2.5.3	Paula
+2.5.4	AA Chip Set Feature Summary
+2.6	Video
+2.6.1	Video Output
+2.6.2	AA Video Support
+2.7	System I/O
+2.7.1	External System I/O
+2.7.2	Internal System I/O
+2.8	Expansion
+2.8.1	PCMCIA PC Card Standard 2.0
+2.8.2	A1201 Memory expansion/RTC
+2.8.3	150 Pin CPU bus Expansion Card Edge
+2.9	ASICs
+2.9.1	AAGayle
+2.9.2	Budgie
+2.9.3	Keyboard MPU
+
+3.0	A1200 Power Supply
+
+4.0	Mechanical/Appearance
+
+5.0	Al2OOMemoryMap
+
+Appendix A	Video, External, and Internal Connector Pinouts
+Appendix B	Gayle and Budgie Block Diagrams
+1.0	INTRODUCTION
+
+The A1200 is a significantly enhanced version of the A600 which 
+utilizes the Advanced Amiga Chip Set known as AA1(pronounced 
+'double A'). Among new features to be discussed later in this 
+document, the A1200 supports 8 bitplanes, allowing displays with 
+25~imultaneous colors chosen from a palette of 16,777,216 colors. In 
+essence, the AA Chip Set consists of enhanced versions of Agnus and 
+Denise, known respectively as Alice and Lisa, and the existing Paula 
+chip. These same AA chips are used on other AA systems, such as 
+the A4000. The A1200 represents Commodore's low end, low cost 
+consumer version of an Advanced Amiga personal computer system, 
+and the A1200 is somewhat more expensive than the A600 in order to 
+support the new AA features.
+
+1.1	Basic Objectives
+
+The main goal of the A1200 is to place a AA upgraded A600 hardware 
+design into altered A600 casework which allows the use of a full size 
+keyboard with numeric keypad. This is to be accomplished using 
+existing components such as Alice, Lisa, and Paula without the need 
+for any new features. Given the above constraints, this is to be 
+accomplished with the least possible cost premium over the A600.
+
+1.2	Block Diagram
+
+Refer to Page 4 for the block diagram of the A1200 system.
+
+1AA is also known as AGA, Advanced Graphics Architecture.
+
+
+
+
+
+AdvancedAmiga  1200 System		3
+2.0	FEATURES
+2.1	CPU
+					14.32 MHz 68EC020 NTSC
+					14.18MHz 68EC020 PAL
+					24 bit Address space
+					32 bit Data path
+
+Optional 68881168882 FPU
+
+2.2	Memory
+1Megabyte (1MB) Chip Memory standard on motherboard 
+organized as 256K x 32 bit
+
+Expandable to 2MB Chip Memory with addition of 
+1MB(256K x 32) A1201 Memory/Real Time Clock(RTC) 
+expansion card
+or
+Optional 1 Megabyte (1MB) of Additional Chip Memory on 
+Motherboard for total of 2MB Chip Memory (Systems 
+are cuirently configured with 2MB Chip Memory 
+standard.)
+
+2.3	ROM
+512KB AA Kickstart Mask ROM Version 3.0
+standard organized as 128K x 32 bit
+1MB(256K x32) and 2MB(512K x 32) Mask ROM also 
+supported
+
+
+
+
+
+
+
+
+AdvancedAmiga 1200 System		5
+2.4 Mass Storage
+
+Internal slim 3.5 inch Floppy Disk Drive(FDD)
+mounted on the right side of the unit like A600 with 
+880K formatted capacity
+
+	Internal 2.5 inch IDE Hard Disk Drive(HDD) with
+20 or 4OMB+ formatted capacity
+Optional on A1200, standard on A12OOHD unit
+
+2.5	AA Custom Chips
+
+Briefly, the Advanced Amiga chip set greatly enhances the video 
+capabilities of the Amiga, while remaining upwardly compatible with 
+the Amiga ECS chip set and retaining all of the graphics features 
+characteristic of and unique to previous Amiga Systems. The AA chip 
+set consists of Alice, Lisa, and Paula.
+
+2.5.1	Alice
+
+Alice is based directly on the 2MB ECS Agnus chip, and it continues to 
+act as the main Amiga Chip bus controller. Although Alice retains the 
+same 16 bit data bus as the ECS Agnus, it can now direct 32 bit 
+and/or double-CAS page mode transactions on the Chip bus and has 
+a stripped down interface to a 32 bit Chip memory bus. External logic 
+is used for memory selection and decode.
+
+2.5.2	Lisa
+
+Lisa is a new full custom design replacement for Denise implemented 
+in 1.5um CMOS technology. In addition to a 32 bit Chip interface, Lisa 
+improves video output to 24 bits of digital RGB video. Coupled with 
+8Ons DRAM, Lisa can use double fetch cycles to obtain 64 bits of data 
+in a single Chip bus cycle resulting in an overall four fold increase in 
+Chip memory bandwidth for video.
+AdvancedAmiga 1200 System		6
+2.5.3	Paula
+The same pre-ECS Paula chip rounds out the AA Chip set lineup. 
+Paula continues to perform the same functions such as 8 bit audio 
+with four voices configured as two stereo channels, floppy disk I/O, 
+RS-232 serial I/O, potentiometer inputs, and interrupt control.
+
+Notes:	Lisa requires the use of an industry standard, 30 MHz Triple 
+8-Bit Video DAC to generate analog RGB. See section 2.6.2 
+for further details.
+
+For information on ASICs which are required for use in
+conjunction with the AA Chip Set in the A1200, see
+section 2.9.
+
+2.5.4	AA Chip Set Feature Summary
+
+32 bit wide data bus supports input of 32 bit wide bitplane data 
+and allows the doubling of memory bandwidth. Additional 
+doubling of bandwidth is achieved by using Fast Page Mode 
+Ram. The same bandwidth enhancements are available for 
+sprites. Also, the maximum number of bitplanes useable in all 
+modes has increased to eight(8).
+
+The Color Palette has been expanded to 256 colors deep and 
+25 bits wide(8 RED, 8 GREEN, 8 BLUE, 1 GENLOCK). This 
+permits the display of 256 simultaneous colors in all 
+resolutions. A palette of 16,777,216 colors is available in all 
+resolutions.
+
+28MHz clock input allows for cleaner definition of HIRES
+and SHRES pixels. ALICE's clock generator is synchronized 
+by means of LISA's 14MHz and SCLK outputs. Genlock XCLK 
+and *XCLKEN pins are handled with external logic.
+AdvancedAmiga 1200 System 7
+A bitplane mask field of 8 bits allows an address offset into the color 
+palette. Two 4-bit mask fields do the same for odd and even sprites.
+
+In Dual Playfield modes, 2 4-bitplane playfields are now possible in all 
+resolutions.
+
+Two Extra high-order playfield scroll bits allow seamless scrolling of up 
+to 64 bit wide bitplanes in all resolutions. Resolution of bitplane scroll, 
+display window, and horizontal sprite position has been improved to 
+35ns in all resolutions.
+
+A new 8 bitplane HAM mode has been created, 6 for colors and 2 for 
+control bits. All HAM modes are available in all resolutions(not just 
+LORES as before).
+
+A reset input has been added which resets all the bits contained in 
+registers new for ECS or LISA.
+
+Sprite resolution can be set to LORES, HIRES, and SHRES 
+independent of bitplane resolution. Attached Sprites are now available 
+in all resolutions.A new register bit allows sprites to appear in the 
+screen border regions.
+
+Hardware Scan Doubling support has been added for bitplanes and 
+sprites. This is intended to allow 15KHz screens to be intelligently 
+displayed on a 31 KHz monitor, sharing the display with 31KHz 
+screens.
+
+
+
+
+
+
+
+
+AdvancedAmiga 1200 System  8
+2.6	Video
+
+2.6.1	Video Output
+
+The A1200 supports the same external video connectors as the A600:
+
+Standard Amiga 23 pin Analog RGB, Digital RGBI
+Color composite video output(PAL or NTSC)
+RF Output for standard TV(PAL or NTSC)
+
+As with the A600, while the PCB can accommodate either PAL or 
+NTSC, the actual components placed on the board determine which of 
+these two video standards is supported.
+
+See Appendix A for information on the pinouts for these connectors.
+
+Note:	There may be a restriction in supporting both RGB and 
+Composite/RF simultaneously, specifically, when the RGB 
+port is in use, the composite/RF signal may be degraded
+
+2.6.2	AA Video Support
+
+In order to display the 24 bits of digital RGB video output by Lisa, the 
+tried and true Video Hybrid circuit must be replaced by a triple 8-bit 
+Video DAC, a Bt101 or equivalent.
+
+
+
+
+
+
+
+
+
+AdvancedAmiga 1200 System  9
+2.7  System I/O
+2.7.1	External System I/O
+
+External Floppy, Serial, Parallel, Mouse, Joystick, and Stereo Audio 
+ports are the same as the A600.
+
+See Appendix A for information on the pinouts for these ports.
+
+2.7.2	Internal System I/O
+
+Internal Floppy Signal and Power and 1DB Signal and Power 
+connectors are also the same as the A600. The Keyboard Membrane 
+connector has been extended to 31 pins to accommodate a full size 
+keyboard with numeric keypad. The Keyboard Status LEDs have been 
+changed back to the large A500 style power/status LEDs.
+
+See Appendix A for information on the pinouts for these connectors.
+
+2.8	Expansion
+
+2.8.1	PCMCIA PC Card Standard 2.0
+
+The 68 pin PC Card 2.0 expansion interface remains basically 
+unchanged from the A600 implementation. Memory and I/O cards are 
+supported. The fastest access speed has been redefined to support 
+no-wait state 14MHz access with sufficiently fast sram cards.
+
+2.8.2	A1201 or Memory Expansion/RTC
+
+Two 40 Pin DIL headers have been provided on the A1200 for a 
+Memory/RTC expander. The A1201 Memory Expansion Card can 
+have 1MB of DRAM organized as 256K x 32 and/or a battery backed 
+up RTC. On A12OOs with 2MB of DRAM on the motherboard, the unit 
+may only provide a 22 pin header for RTC support. This card is 
+installed through a removable top opening in the PCB shield.
+AdvancedAmiga 1200 System  10
+2.8.3	150 Pin CPU bus Expansion Card Edge
+
+The new CPU bus expansion slot provides a well-defined, 
+userinstallable interface for expansion cards which implement "fast" 
+memory or faster processors/coprocessors to enhance system 
+performance, or which implement new functions such as DSP's, SCSI 
+or network interfaces or other peripheral devices to extend the basic 
+capabilities of the system.
+
+See section 4.0 Mechanical/Appearance for further information.
+
+2.9	ASICs
+
+2.9.1	AAGayle
+
+The AA Gayle gate array is a derivative of the Gayle used in the A600. 
+Minor modifications were required for Gayle to operate with Alice since 
+a decision was made to eliminate the *AS, *UDS, and
+*LDS Pins from Alice. Additional changes were needed to support the 
+requirements of the 14MHz 68EC020 processor.
+
+Refer to the AA Gayle specification for addtional information.
+
+2.9.2	Budgie
+
+Budgie is a chip that serves as the main data path element in the 
+A1200 system. It provides the interface between the 32-bit processor 
+bus and the 32-bit chip memory bus, generates the RAS and CAS 
+select signals from the RAS and CAS timing signals that Alice 
+supports. It also provides a 16-bit bus buffer which can be used for 
+either an expansion bus or in this case the PCMCIA port data buffer. It 
+also includes some miscellaneous functions, notably processor clock 
+generation and 28Mhz/Genlock clock multiplexing.
+It is implemented as a CMOS ASIC in a 128 Pin SMT package.
+AdvancedAmiga 1200 System   11
+Internally, the data path element is similar to Bridgette or the bus 
+buffer/bridge logic implemented on the A3000 system. Data can be 
+routed to/from the 32-bit processor port to either half of the 32-bit chip 
+memory bus. Data can be bridged from the low order half of the chip 
+memory bus to the high order half to support 16-bit Amiga chip 
+accesses. Data read from memory is latched to meet the processor 
+data hold requirements. CAS select logic is used to prevent contention 
+when bridging the two halves of the chip bus.
+
+The spare 16-bit expansion port(used for PCMCIA duty in the A1200) 
+provides a simple path to/from the 16-bit processor port. The direction 
+is dependent on the X-NOR of R_W and _BGACK signals to support 
+either expansion bus or several purpose buffer requirements.
+
+The memory decoding takes the RAS and CAS timing signals 
+provided by Alice and the multiplexed address bus and generates 
+appropriate selection for 32-bit accesses. It also uses A1/A0 and 
+SIZ1/SIZ0 on processor accesses to do the right decoding there.
+
+It supports 2-banks of 32 bit memory with 9-bit addressing for a total of 
+2M-bytes of chip memory. RAS selection is used for bank selection, 
+CAS selection is used for byte write control and to avoid contention on 
+bridged reads. Refrcsh is done with CAS before RAS and the logic 
+must assert all RAS and CAS signals during refresh cycles.
+
+The processor clock generation simply X-NORS the 7MHz and *CDAC 
+clocks to generate a 14MHz processor clock. The 28MHz/Genlock 
+clock multiplexor is a simple 2 input multiplexor. It has no connection 
+with the rest of the logic and can be used for other functions if desired. 
+The CCK/4 output is provided for the PAL color burst generation 
+circuitry.
+
+Refer to Appendix B for addtional information.
+AdvancedAmiga 1200 System	12
+2.9.3	Keyboard Microprocessor
+
+The 6500/1 keyboard MPU, used in previous Systems, has been 
+replaced by a CMOS Motorola 68HC05C4A MPU. This part provides a 
+simpler implementation and reduces power requirements.
+
+3.0	A1200 Power Supply
+
+The A1200 uses the same Power Supply as the A600. The power 
+connector is compatible with the A500 power supply if a higher rating 
+is required. Specifications are as follows:
+
+Output Voltage	Current(max)
+						+5V		3.0A
+					+12V		500mA
+					-12V		100mA
+
+See Appendix A for information on the power supply connector pinout.
+
+4.0	Mechanical/Appearance
+
+Externally, the A12O0 looks similar to the A600 except for the 
+nameplate, but it is elongated in order to accommodate a full size 
+keyboard. However, the A1200 has the same external connectors, HD 
+assembly, and Floppy Disk assembly as the A600. Internally, a hatch 
+is provided in the PCB shield for the installation of an A1201 
+Memory/RTC expander.
+
+Also, the A1200 provides a large, internal CPU expansion card edge 
+accesible from the bottom of the system, roughly similar in physical 
+details to the A501 on the A500. In addition, an "extra" DB25 sized 
+connector position is provided on the right rear of the unit. A wiring 
+channel is provided to allow for the external connection of expansion 
+slot devices.
+AdvancedAmiga 1200 System 13
+5.0	A1200 Memory Map
+Address	Size
+000000 to 1FFFFF	2 MB	Chip RAM(or system ROM overlay)
+200000 to 5FFFFF	4 MB	Zorro II expansion space
+600000 to 9FFFFF	4 MB	Credit Card memory if CC present
+AOOOOO to A1FFFF	128 KB	Credit Card Attributes
+A20000 to A3FFFF	128 KB	Credit Card I/O
+A40000 to A5FFFF	128 KB	Credit Card Bits (similar to CDTV)
+A60000 to A7FFFF	128 KB	PC I/O
+A80000 to B7FFFF	1 MB	System ROM selected
+B80000 to BEFFFF	448 KB	Not used(Reserved for CDTV)
+BF0000 to BFFFFF	64KB	8520CIAs
+C00000 to CFFFFF	1 MB	C00000 Memory
+D00000 to D7FFFF	512 KB	PC memory
+D80000 to D8FFFF	64 KB	SPARE chip select
+D90000 to D9FFFF	64 KB	ARCNET chip select
+DA0000 to DA3FFF	16 KB	IDE drive
+DA4000 to DA4FFF	16 KB	IDE reserved
+DA8000 to DAFFFF	32 KB	Credit Card and IDE configregisters
+DB0000 to DBFFFF	64 KB	Not used(reserved for external IDE)
+DC0000 to DCFFFF	64 KB	Real Time Clock(RTC)
+DD0000 to DDFFFF	64 KB	RESERVED for DMA controller
+DE0000 to DEFFFF	64 KB	Not Used
+DF0000 to DFFFFF	64 KB	Chip Registers
+E00000 to E7FFFF	512 KB	System ROM(lst half if 1MB ROM)
+E80000 to EFFFFF	512 KB	Configuration and I/O card space
+F00000 to F7FFFF	512 KB	Flash ROM space
+F80000 to FFFFF	512 KB	System ROM(2nd half if 1MB ROM)
+Appendix A
+
+External Connectors
+A 1.0 Video Connectors	A 1.3  RF Modulator
+										(RCA Phono Jack,
+A1.1 RGB Video						Channel Select SW)
+(DB23 Male)
+			Pin	    Signal Name
+	Pin	SignalName	1	    Ground
+	1	XCLK	2	    RF Output
+	2	/XCLKEN
+	3	Analog Red
+	4	Analog Green
+	5	Analog Blue	A2.0	External System I/O
+	6	Digital Intensity
+	7	Digital Blue
+	8	Digital Green	A2.1	Floppy Port
+	9	Digital Red		(DB23 Female)
+	10	/CSYNC
+	11	/HSYNC	Pin	    SignalName
+	12	/VSYNC	1	   /RDY
+	13	Ground	2	   /DKRD
+	14	Pixel Switch	3-7	    Ground
+	15	/C1
+	16-20	Video Ground	8	   /MTRX
+	21	-12V	9	    /SEL3
+	22	+12v	10	/DKRST
+			11	/CHNG
+	 23	    +5V	12	+5V
+		13	SIDE
+A1.2 Color Composite Video	14	/WPROT
+		15	/TRK0
+	(RCA Jack)	16	/DKWEB
+		17	/DKWDB
+    Pin	    SignalName	18	STEP
+    1	    Ground	19	DIR
+    2	    Composite Video Out	20	NO CONNECT
+		21	/SEL2
+		22	/INDEX
+		23	+12V
+Appendix	AdvancedAmiga 1200 System	2
+
+A2.2	Serial Port	A2.5	Parallel Port
+		(DB25 Male)		(DB25 Female)
+	Pin	Signal Name	Pin	Signal Name
+	1	Ground	1	/STROBE
+	2	TxD	2	Data0
+	3	RxD	3	Data1
+	4	RTS	4	Data2
+	5	CTS	5	Data3
+	6	DTR	6	Data4
+	7	Ground	7	Data5
+	8	CD	8	Data6
+	9	+12V	9	Data7
+	10	-12V	10	/ACK
+	11	Audio Out	11	BUSY
+	12-17	NOCONNECT	12	POUT
+	18	Audio In	13	SEL
+	19	NO CONNECT	14	/AUTO(+5V)
+	20	DTR	15	NO CONNECT
+	21	NO CONNECT	16	/INIT
+	22	RI	17-25	Ground
+	23-25	NO CONNECT
+A2.3 Stereo Audio Ports	A2.6 Mouse/Game Ports
+	Audio Left	Mouse Ports(1 and 2)
+	  (RCA Jack)               	  (DB9 Male)
+	Pin   SignalName	Pin	SignalName
+	1    Shorting Bar to Right	1	V Pulse
+	2    Leff Audio Channel	2	H Pulse
+	3    Ground	3	VQ Pulse
+		4	VH Pulse
+	Audio Right	5	Middle Button
+	(RCA Jack)	6	Left Button
+			7	+5V
+	Pin	SignalName	8	Ground
+	1	Shorting Bar to Left	9	Right Button
+	2	Right Audio Channel
+	3	Ground
+Appendix AdvancedAmiga 1200System   3
+	Internal Connectors
+	Joystick Ports(1 and 2)	A3.0 Internal System I/O
+		(DB9 Male)
+	Pin  SignalName	A3. 1	Internal Floppy Signal
+	1	  Forward*		  (Header, 34 Pin DIL)
+	2	  Back*
+	3	  Left*		Pin	SignalName
+	4	  Rjght*		1	Ground
+	5	  PotX		2	/CHNG
+	6	  Fjre*		3	KEY
+	7	 +5V		4	/INUSE1
+	8	  Ground              		5-33 odd	Ground
+	9	  PotY		6	/INUSE0
+				8	INDEX
+Light Pen Port(2 only)		10	/SEL0
+				12	/SEL1
+		(DB9 Male)		14	/INUSE1
+	Pin	SignalName	16	/MTR0D
+	1		18	DIR
+	2		20	/STEP
+	3		22	/DKWDB
+	4		24	/DKWEB
+	5	Light Pen Press	26	/TRK0
+	6	Ljghtpen*	28	/WPROT
+	7	+5V	30	/DKRD
+	8	Ground	32	/SIDE
+	9		34	/RDY
+A2.7 Power Connector	A3. 1 Internal Floppy Power
+	(5 Pin Square DIN)	(Header, 4 Pin SIL)
+	Pin.  SignalName	Pin  SignalName
+	1	+5V	1	+5V
+			2	Ground
+	2	Shield Ground	3	Ground
+	3	+12V	4	+12V
+	4	Ground
+	5	-12V
+
+
+
+Appendix	AdvancedAmiga 1200 System	4
+A3. 1 Internal IDE Signal/Power  A3.2 Keyboard Membrane
+(Header, 44 Pin DIL)	(31 Pin Locking ZIF, FFC)
+	Pin	Signal Name	Pin	Signal Name
+	1	Reset-	I  	Row2
+	2	Ground	2  	Row3
+	3	DD7	3  	Row4
+	4	DD8	4  	Row 5
+	5	DD6	5  	Row1
+	6	DD9	6  	Right Shift
+	7	DD5	7  	Row0
+	8	DD10	8  	Right Alt
+	9	DD4	9  	VCC
+	10	DD11	10 	RightAmiga
+	11	DD3	11 	CTRL
+	12	DD12	12 	Leftshift
+	13	DD2	13 	LeftAlt
+	14	DD13	14 	LeftAmiga
+	15	DD1	15 	Column 14
+	16	DD14	16 	Column 13
+	17	DD0	17 	Column 12
+	18	DD15	18 	Column 11
+	19	Ground	19 	Column 10
+	20	(keypin)	20 	Column 9
+	21	DMARQ	21 	Column 8
+	22	Ground	22 	Column 7
+	23	DIOW-	23 	Column 6
+	24	Ground	24 	Column 5
+	25	DIOR-	25 	Column 4
+	26	Ground	26 	Column 3
+	27	IORDY	27 	Column 2
+	28	SPSYNC:CSEL	28 	Column 1
+	29	DMACK-	29 	Column 0
+	30	Ground	30	Ground
+	31	INTRQ	31 	LED
+	32	1OCS16-
+	33	DA1
+	34	PDIAG-		A3.3 Internal Keyboard LEDS
+	35	DA0	(Header, 5 Pin SIL,keyed)
+	36	DA2
+	37	CS1FX-
+	38	CS3FX-	Pin	Sjgnal Name
+	39	DASP-	1 	*POWER_LED
+	40	Ground	2 	*FLOPPY_LED
+	41	vcc
+	42	vcc	3 	*IDE_LED
+	43	Ground	4 	NC
+	44	vcc	5 	GND
+
+
+Appendix 	AdvancedAmiga 1200System	5
+Expansion Connectors
+
+A4.0 PCMCIA PC Card 2.0 (68 Pin Rt. Angle)
+	Pin	Signal Name	Pin	Signal Name
+	1	Ground	35	Ground
+	2	D3	36	CD1-
+	3	D4	37	D11
+	4	D5	38	D12
+	5	D6	39	D13
+	6	D7	40	D14
+	7	CEl-	41	D15
+	8	Al0	42	CE2-
+	9	OE-	43	RFSH
+	10	All	44	RFU/IORD
+	11	A9	45	RFU/IOWR-
+	12	A8	46	A17
+	13	A13	47	A18
+	14	A14	48	A19
+	15	WE-/PGM-	49	A20
+	16	BSY-/IREQ-	50	A21
+	17	VCC	51	VCC
+	18	VPP1	52	VPP2
+	19	A16	53	A22
+	20	Al5	54	A23
+	21	A12	55	A24
+	22	A7	56	A25
+	23	A6	57	RFU
+	24	AS	58	RESET
+	25	A4	59	WAIT-
+	26	A3	60	RFU/INPACK-
+	27	A2	61	REG-
+	28	Al	62	BVD2/SPKR-
+	29	A0	63	BVD1/STSCHG-
+	30	DO	64	D8
+	31	Dl	65	D9
+	32	D2	66	D10
+	33	WP/IOIS16-	67	CD2-
+	34	Ground	68	Ground
+
+Appendix Advanced Amiga 1200 System   6
+Appendix B
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Appendix AdvancedAmiga 1200 System    8
+A1200 Hardware Developer / Expansion Slot Notes
+by George Robbins
+
+
+******************************************
+Disclaimer:	certain parts of this docuiment are specific tOD the A1200, while others suggest an 
+expansion connector/architecture that could be implemented in future Systems.  This document should 
+be viewed only as a Statement of design intent, not as a definition of future SyStems or a commitment 
+that this particular physical/electrical expansion definition will be implemented in any system other than 
+the current A1200.
+******************************************
+General System Information
+
+The A1200 is an Amiga system which includes a 68EC020 processor chip running at 14MHZ, 
+the AGA chipset (Alice/Lisa), 2M-bytes of 32-bit "chip memory" and 32-bit/120nS system ROM.
+
+By virtue of the 14MHz 68EC020 processor and 32-bit system implementation the system is 
+considerably more powerful than the A500/A600. The inclusion of the AGA chipset both adds 
+new graphics modes and makes more chip memory cycles available for enhanced performance 
+in traditional display modes.
+
+The overall system arrangement is similar to the A600, but with a full 98-key Amiga keyboard 
+(includes numeric keypad section).  The PCMCIA port serves as the primary external expansion 
+interface, and there is also an optional internal 2.5" IDE hard disk.  The system board has 
+provision for either 1 or 2M-bytes of chip memory, an optional RTC and an optional FPU.  There 
+are expansion headers and a hatch in the shield allow installation of a small "dealer-installable" 
+memory/RTC daughter card if the chip memory or RTC are not configured on the main board.
+
+The major new expansion feature is a CPU bus expansion slot accessible from the bottom of 
+the system which provides both a full processor bus interface and access to various system 
+specific signals.  In addition an "extra" DB25 sized connector position on the rear of the machine 
+has a wiring channel to allow connection of devices in the expansion slot to the outside world.
+
+The new CPU bus expansion slot provides a well-defined, user-installable interface for 
+expansion cards which can implement "fast" memory or faster processors/coprocessors to 
+enhance system performance, or which implement new functions such as DSP's, SCSI or 
+network interfaces or other peripheral devices to extend the basic capabilities of the system.
+
+The pinout of the slot includes signal assignments not only for the 68EC020, but also reserved 
+pins for future 68020/68030 products allowing the potential for expansion cards to serve in 
+several products.  This provision should not be taken as an assertion that Commodore will or 
+will not make such products or compatible expansion cards.
+
+System Implementation Details
+
+The A1200 system is controlled by two gate arrays referred to as Gayle and Budgie.  The Gayle 
+array handles all the address decoding and processor control functions, while the Budgie chip 
+implements the 32-bit data paths and DRAM interface.
+
+The Gayle chip is a derivative of the one used in the A600, but has been enhanced to work with 
+a 14MHZ processor, 68EC020 control signals and interface to the AGA chipset.  The only 
+change to the software model is the redefinition of one of the PCMCIA "speeds" to support zero 
+wait state (16-bit) access for fast SRAM cards.
+
+Unlike the high-end (A3000/A4000) chipsets, the Gayle chip only supports synchronous 
+processor operation at 14MHZ and only decodes a 24-bit (16M-byte) address space.  While this 
+doesn't preclude use of faster, full-featured processors in the expansion slot, it does impose 
+some additional design constraints to insure that an alternate processor or DMA master in the 
+expansion slot is "well behaved" in Gayle's terms.
+
+Expansion Slot physical Details
+
+The expansion slot consists of a 150-pin/50 mil card edge connector (male) set into the A1200 
+system PCB, an internal space provided for the card, and an access door and provision for 
+guiding/retaining the card at the edge connector interface.
+
+The internal space is L-shaped, with a wide area where the mating connector on the expansion 
+board and a narrower tail section that extends out towards the side of the case.
+
+The design intent of the slot and hatch detail is for a board arranged similar to A601 memory 
+expansion, in that the PCB is "upside down", with the major components facing down.  
+However, the vertical space profile above the board is wedge shaped, short in front, with more 
+clearance toward the rear, so that components can be mounted on both sides of the PCB if 
+required.
+
+Overall, the expansion card is not very large and the shape is inconvenient, however given the 
+use of surface mount technology it should be possible to implement some rather sophisticated 
+devices. Trivial devices such as a 4M-byte RAM expansion or 14MHz '030+'882 can fit entirely 
+within the rectangular section, while more ambitious devices may require use of all available 
+area.
+
+The connector space on the rear of the system is slightly larger than a DB25 connector.  For 
+use in conjunction with the expansion slot, the connector is mounted on an L-'shaped metal 
+bracket which slides into the case from the rear and is secured by one screw coming up from 
+the bottom of the case.
+There is an open channel about x by y, to allow routing the cable from the connector to the end 
+of the expansion board.  For low pin counts, wires or a small cable can be threaded through, 
+while for higher pin counts, a shredded ribbon-cable or flex-circuit is likely to be required.
+
+Thermal, Power and Electrical Constraints
+
+As with any of the low end systems, there is no explicit provision far cooling - there are vents, 
+but the main cooling mechanism is internal convection and then conduction/radiation from the 
+case surface  As a result there is a practical limitation on how much power can be dissipated in 
+the expansion area without compromising system or expansion device reliability.
+
+This is really not a problem for many devices, however something like a 50MHZ '030 or a '040 
+that requires air flow or a heat-sink is probably unrealistic.  In addition, devices intended for sale 
+in the US will require some form of FCC shielding which will only add to the thermal problems.
+
+The A1200 power supply ships with the same de-rated power supply used for the A600. This 
+supply provides 3.OA @ +5V, 500mA @ +12v and 100 mA @ -12v, which provides some 
+margin for a fully loaded system, with all the peripheral ports drawing rated current and drives 
+active. For most users, there is enough current available to meet the expansion power budget 
+specified, if these numbers are exceeded, then the product should be bundled with an "A500 
+replacement" power supply to provide adequate margins.
+
+The electrical nature of the expansion connector is basically that of a "processor bus access" 
+connector, rather than a tightly-specified, well-characterized expansion bus.  Expansion devices 
+should put minimal loading and trace length on the signals.  Board design should be based on 
+worst case 68EC020 timings, with allowance for genlock deviations.
+
+Critical signals generated on the A1200 usually have series RC termination, tweaked to control 
+overshoot/FCC issues.  Critical signals driven by the expansion device should have some 
+provision for adding termination if product verification shows excessive ringing on the A1200 
+end of the traces.
+
+Due to the constraints of the internal connector position, processor speed and electrical 
+interface, we don't believe that it is reasonable to try to drive an expansion bus or any daisy 
+changed expansion scheme from the expansion connector.
+Fast processor/Coprocessor Board Notes
+
+Since the current A1200 is designed around a medium-speed 68EC020, it seems likely that 
+some developers will focus on expansion products that provide a faster processor and/or add a 
+math coprocessor.  This should not be too hard to do, however the implementation of Gayle 
+imposes some constraints for proper operation.
+
+Gayle requires that  the term: _AS asserted and (_DS or R_W asserted) change synchronously 
+relative the 14MHz processor clock.  A 16MHz 68020 or 68030 running at 14MHz guarantees 
+this.  Gayle also requires this term to be false for at least one rising edge of the processor clock 
+between cycles.  Failure to meet these criteria will result in internal state machines locking up or 
+cycles being skipped.
+
+In addition, the timing margins for address and data setup/hold are dependent on the setup and 
+hold times of the 14MHz processor timings. If the faster processor does not maintain 14MHz 
+setup and hold times, then the timing specification for the PCMCIA interface, IDE drive and 
+other internal peripheral chips will be violated and end user systems will be unreliable.
+
+There are two basic approaches to implementing a fast processor interface which addresses 
+these issues.  The first is to implement a state machine running at the fast processor clock 
+speed (or 2x) which synchronizes the processor to the 14MHz system clock and issues "14MHz 
+68020" control signals to the system.
+
+The other, simpler approach is implement a 14MHz state machine which gates the control 
+signals from the fast to the system so they conform to 14MHz timings and also mediates 
+_DSACK timing.  Either approach will require latching (at least) the data bus, and conditioning of 
+interrupt and/or DMA signals may also be required.
+
+For cycles local to the expansion board, the logic simply insures that Gayle never sees 
+address/data strobe.  Since Gayle cycle control and most outputD signals are conditioned by 
+_AS and/or _DS the expansion board activity simply appears as idle cycles.
+
+For cycles that access main board resources, _AS is clocked over the falling edge of the 14MHz 
+CPU clock, and _DS is clocked on the same edge for reads, or the next falling edge for writes.  
+When _DSACK(*) from Gayle is clocked in on the falling edge, _AS and _DS are driven high on 
+the next falling edge, read data is latched and _DSACK is passed to the processor.  For fast 
+processors, one-shot logic is needed to inhibit _DSACK after _AS rises or the next cycle may be 
+terminated prematurely.
+
+(*)	_DSACK above really refers to _DSACKO/_DSACK1/_BEER/_HALT signals.
+
+Since Gayle state machines and read/write strobes run on the positive edge of the 14MHZ 
+clock, this protocol insures address/data setup times by virtue of a minimum 35 nS delay on 
+_AS/_DS and the 3 state _DSACK to address-invalid delay on the fast processor.
+In addition, clocking this state machine on the falling edge of the 14MHz clock while Gayle 
+clocks on the rising edge effects dual-rank synchronization of the Gayle control signal inputs.  
+Note however, that Gayle's assertion of _DSACK is not always synchronous - on zero wait state 
+cycles and on cycles terminated by an asynchronous wait signal (PCMCIA for example), Gayle 
+logic relies on the processor's synchronization of _DSACK and the eventual de-assertion of _AS 
+to finish the cycle.
+
+Obviously, a fast processor following this protocol can't access A1200 on-board resources any 
+faster than the 14MHZ on-board processor. This isn't such a bad thing, since the "zero wait 
+state" timing (ROM) on the board assumes 14MHZ timings.  Any real processor speedup has to 
+come from faster processor/coprocessor internal operation, caches or accessing fast memory or 
+other resources local to the expansion card's fast processor bus.
+
+A well designed fast processor card should take at least all of the 68EC020 control signals into 
+account.  Cycle control logic should support bus error and retry cycles.  Control signals should 
+be conditioned to 14MHz clock/16MHz processor timings.  Be sure to have provision for bus 
+grant to tn-state appropriate control signals to allow compatibility with systems having bn-board 
+processor bus DMA masters.
+
+The card must also be somewhat cognizant of the system environment with respect to the bus 
+grant / acknowledge signals.  In the A1200 the _BOSS signal is simply tied to _BR and 
+therefore a processor card asserting _BOSS to disable the on-board CPU will always see _BG 
+asserted.  Future implementations may have functional bus grant mechanisms (including 
+_BGACK) to support on-board DMA masters. Assuming the processor card simply grounds 
+_BOSS, sensing the state of _BR at reset should identify the _BOSS implementation.
+
+One trap to watch out for is that the IPL lines which are dniven by the interrupt controller in 
+Paula have quite a bit of skew.  Even though the 680X0 processor specification claims to treat 
+these as asynchronous inputs, skew can cause a fast processor to split the IPL code, resulting 
+in various spurious interrupt conditions. Reclocking the system IPL outputs on the rising edge of 
+CCK should eliminate this problem, or at least reduce the window to the skew time between the 
+outputs on the flip-flops.
+
+Another issue that must be addressed for processor cards is cache control.  The system 
+software assumes that the caches are disabled in some parts of the memory map and then 
+uses the MMU (if available) for finer control.  The simple approach is simply to assert cache-in 
+inhibit for accesses to the 16M-byte main board address space.
+
+Alternatively, you can make the ROM and "Zorro-Il" areas cacheable, but some provision to 
+disable cacheing these areas, expecially the area shared by the Zorro-Il and the PCMCIA main 
+memory would be a good idea.
+Math Coprocessor Notes
+
+While the A1200 as currently configured does not include a math coprocessor, Gayle 
+implements the math coprocessor detect/select protocol and there is a math coprocessor 
+footprint on the circuit board.  Since the detect/select signals are duplicated on the expansion 
+connector, adding a 14MHZ coprocessor requires simply connecting the appropriate signals.
+
+The implementation of coprocessor cycles in Gayle is to assert the coprocessor select signal, 
+assume that someone out there will eventually assert _DSACK and make _AS go away.  If the 
+detect signal isn't grounded, coprocessor cycles are bus error terminated.
+
+This implementation should support a faster coprocessor running on an asynchronous clock 
+with no additional interface complication. However fast processor/coprocessor combinations 
+should generate their own math coprocessor select signal, since in this case, the  timings from 
+Gayle may not meet the _AS/_CS constraints as detailed in recent versions of the 
+MC68881/882 manual.
+Memory/Expansion Device Notes
+
+Since the current A1200 is effectively a "chip memory only" system, adding fast, 32-bit memory 
+is the single most effective way of enhancing system performance.  While the PCMCIA card 
+does provide some fast memory potential, it is only 16-bits wide and only the relatively 
+expensive fast SRAM cards can support no-wait access.
+
+Because the A1200 implements only a 16 M-byte address space and the software currently 
+implements only the Zorro-Il auto-configuration protocol, memory expansion devices are limited 
+to the 4/8 M-bytes allocated to "Zorro Space" memory expansion in the address map. There are 
+4-Mbytes available if a PCMCIA card is inserted, 8M-bytes if no card is inserted or the interface 
+is disabled by software.
+
+Memory/expansion device design is similar to that of Zorro bus peripherals, with the exception 
+that the devices should run off the 14MHz processor clock and most memory devices will use 
+the _OVR signal to disable the default Gayle cycle termination and aasert their own _DSACK for 
+32-bit termination.
+
+All devices should implement the Zorro-Il auto-configuration protocol, since this provides for 
+automatic address assignment and device driver linkage.  There is a pin on the expansion 
+connector that is defined to be the start of the auto-config chain, currently this is just a ground, 
+but future systems are may put some auto-config resources on the main board and implement 
+this as an output.
+
+There are some fixed decodes implemented for specific devices, (UART, network and RTC) 
+however these should be avoided except for the most trivial devices since system software may 
+assume the presence of specific (but currently undefined) devices at those decodes.
+
+Obviously, the expansion connector has been laid out to support processors with 32-bit address 
+busses and/or faster processor clocks.  Since these implementations do not currently exist, it is 
+difficult to completely define their characteristics or the physical/electrical details of their 
+expansion connector.
+
+Two configuration bits are defined on the expansion connector to characterize the system 
+implementation as one of the following:
+
+a)	68EC020, 24-bit address, 14 MHz
+b)	68020, 32-bit address, 14 MHz
+c)	68(EC)030, 32-bit address, 14 MHz
+d)	68(xx)0X0, 32-bit address, > 14 MHz
+
+The intent is really attribute oriented:  A 68EC020 system will only drive/interpret 24-bit 
+addres'ses lines, others are support the full 32-bits.  A system claiming to be a 68020 will only  
+support _DSACK cycle termination, while one claiming to be a 68030 would also support 
+_STERM and the cache control/burst signals.  14MHz systems either run the processor at 
+14MHz or run some expansion cycles with reference to a 14MHz clock.  The exception might be 
+68030 running the expansion connector at processor speed, but there are other possibilities.
+Even though designing for complete upwards compatibility in this sort of environment is 
+problematic, there are a few simple options.  A device can operate in either the 24 or 32-bit 
+address environment with logic that checks the 8 high-order address bits, enabled by the 
+configuration code.  In the 24-bit environment, these bits are ignored and the device must 
+respond to the Zorro-Il auto-config address and protocol, while in the 32-bit environment the 
+device would ignore any cycles where the 8 high-order bits were non-zero.
+
+If future systems/software implement the Zorro-III auto-configuration protocol (but *not* bus 
+protocol) for extended address assignment, then a 24-bit capable card would respond as a 
+Zorro-Il card and ignore the Zorro-III auto-config transactions, while a a 32-bit capable  card 
+could engage in either Zorro-Il or Zorro-III auto-config transactions depending on the its 
+requirements and the system type.
+
+Cards purporting to be DMA masters should drive all 32 address lines and the function code 
+lines, even if the 8 high order bits are fixed at zero.  There is probably no point in conditioning 
+this based on system type.  The A1200 terminates all cycles normally, except for issuing _BEER 
+on some PCMCIA access cycles, future systems may implement synchronous termination, retry 
+or bus-timeout options.
+
+The behavior of a card in the exception case (>14MHz) is probably dependent on the card type.  
+If the card is simple and arbitrarily fast, such as a SRAM memory card, a dual-ported SRAM 
+device interface or a simple/fast peripheral chip, it can simply go along with the game.
+
+If it is a DRAM card with internal tjming, it might assume the system will honor its cycle 
+termination appropriately, but in this case it would be required to assure that read data is valid 
+no later than one clock after the cycle termination signal, while a DRAM or other card using the 
+processor clock as a critical timing basis would need some sort of jumpers to match behavior to 
+processor clock speed.
+
+The key to providing this degree of upwards compatibility would be fast decode/configuration 
+logic and flexible functional logic, perhaps based on user replaceable PAL's or FPGA's.  For a 
+simple card like a 4 M-byte memory expansion, anything beyond the 24/32-bit accommodation 
+probably isn't worth the effort and the card should simply refuse to auto-config if it doesn't like 
+the system type code.
+**	68EC020 processor signals
+
+A(23:0)	address bus (note 11)
+_AS	address strobe
+_AVEC	auto vector (note 14)
+_BEER	bus error
+_BG	bus grant
+_BR	bus request (may be tied to _BOSS)
+_CPUCLK_A	processor clock (14 MHz in A1200)
+D(31:0)	data bus
+_DS	data strobe
+_DSACK_0	data strobe acknowledge
+_DSACK_1	"    "
+FC(2:0)	function codes (only 1:0 decoded) (note 12)
+_HLT	halt request
+_IPL(2:0)	interrupt priority (note 14)
+_RMC	read/modify cycle (not implemented)
+_RST	reset (processor bus)
+R_W	read/write
+SIZE_0	transfer size
+SIZE_1	"     "
+
+**	signals not implemented on A1200/68EC020 **
+
+A(31:24)	processor address lines (note 11)
+_BGACK	bus grant acknowledge
+_CBACK	cache burst acknowledge
+_CBREQ	cache burst request
+_CIIN	cache inhibit in
+_ClOUT	cache inhibit out
+_ECS	early cycle start
+_IPEND	interrupt pending
+_OCS	operand cycle start
+_STERM	synchronous termination
+
+**	math coprocessor signals
+
+_FPU_CS	floating point chip select (note 10)
+_FPU_SENSE	floating point chip detect (note 10)
+**	amiga system specific signals
+
+_BOSS	main CPU disable (tied to _BG in A1200)
+CCK_A	amiga color clock (3.58MHz)
+_CC_ENA	credit card enable (note 1)
+E	phi-2 clock for 8520's
+_CFGOUT	auto-config chain origin
+_FLASH	FO-F7 (flash) address decode (use with _OE/_WE) (note 8)
+_INT2	priority 2 interrupt request
+_INT6	priority 6 interrupt request
+_lORD	I/O read strobe (note 2)
+_IOWR	I/O write strobe (note 2)
+_KB_RESET	power fail reset input
+LEFT	left audio channel (note 3)
+_NET_CS	D9 (network) chip select (use with _IORD/_IOWR) (note 8)
+_OE	memory read strobe (note 2)
+_OVR	Gayle decode override (note 4)
+_REG	credit card register space (note 2)
+_RESET	buffered reset signal
+RIGHT	right audio channel (note 3)
+_RTC_CS	DC (RTC) chip select (use with _IORD/_IOWR) (note 8)
+_SPARE_CS	D8 (UART) chip select (use with _IORD/_IOWR) (note 8)
+SYSTEM_0	System type code (note 9)
+SYSTEM_1                       "             "
+_WAIT	wait Dinput for _IORD/_IOWR/_OE/_WE (note 2)
+_WE	memory write strobe (note 2)
+_WIDE	32-bit termination (broken in A1200) (note 6)
+XRDY	wait request (note 5)
+_ZORRO	7MHz bus master (not supported in A1200) (note 6)
+_xRxD	receive data from serial connector (note 7)
+_xTxD	transmit data or'ed to serial connector (note 7)
+
+Power and Ground
+
++5v (11 pins)   logic +5 volts 	@250 MA (???)
+GROUND(11 pins) logic ground
++12v (1 pin)    +12 volts 	@25 MA (???)
+-12v (1 pin)    -12 volts 	@25 MA (???)
+AUDIO (1 pin)   audio ground
+Notes
+
+1)	the credit card _CC_ENABLE and _REG signals decode to define the two credit card 
+spaces and two address spaces which support "Intel/PC" strobes and timing.
+
+CC_ENA _REG   address description
+	o	1	60-9F  PCMCIA Main memory (card inserted)
+o	     	0	   AO-A1   PCMCIA Attribute (_OE/_WE) A2-A3   PCMCIA I/O (_IORD/_IOWR)
+1		1     	    DO-D7   512K "PC" Memory (_OE/_WE)
+1		0	   A6-A7   128K "PC" I/O (_IORD/_IOWR)
+
+2)	Various address ranges are decoded and generate "Intel/PC" style memory 
+read/write (_OE/_WE) and I/O read/write (_IORD/_IOWR) strobe signals, insert 
+default wait-states for peripheral timing and obey the _WAIT signal to add additional 
+wait states.
+
+3)	The LEFT and RIGHT audio and AUDIO ground are available on the expansion 
+connector - these are the audio outputs, any output from the card is simply resistively 
+combined with the Amiga audio output.
+
+	4)	Signals analogous to the Zorro II bus _DOVR, XRDY bus are provided
+		to modify default Gayle operation. Use of these signals is only 
+		supported in the "Zorro/Auto-config space" (20-5F, E8-EF, C0-CF). XRDY holds of 
+		the assertion of _DSACK but does not tn-state the DSACK lines, _OVR tn-states the 
+		_DSACK lines so that the device may assert its own DSACKS. _OVR must be 
+		decoded prior to the assertion of address strobe and is latched for the duration of 
+		the cycle.
+
+5)	A _CFGOUT pin is defined since the A1200 software supports the Zorno-Il 
+auto-config protocols.  Even though there is no Zorro-Il bus, the auto-config protocols 
+provides and effective way of assigning addresses and linking driven software.  In the 
+A1200 this pin is grounded, future systems may have on-board auto-config resources 
+which will be configured before assenting this pin.
+
+6)	Two other signals are present but not supported - _ZORRO modifies _DSACK 
+assertion for compatibility with 7MHZ bus masters / timing, and _WIDE forces 32-bit 
+termination of certain address ranges.
+
+7)	The serial transmit and and receive data lines from the serial port are present on the 
+connector to allow a high-performance (deep fifo, etc) UART to take control of the 
+serial port. Using these signals requires a custom serial driver to idle the Amiga UART 
+and talk through the new UART while still using the 8520's to control the RS232 
+control signals.
+8)	Various "convenience" address decodes are present on the connector with nominal 
+function labels.   For each decode there is a defined number of wait states and 
+activation of the _OE/_WE, _IORD/_IOWR, _WAIT interface signals.  Depending on 
+application requirements you can use either these strobes or the 68020 _AS/_DS and 
+XRDY signals.
+
+Note that these decodes represent resources in the system address map that may or 
+may not be present in a given system configuration. Any multi-function cards should 
+provide some means of disabling individual functions which might be redundant.
+
+_FLASH  512K, 0 wait read/l write, _OE/_WE/_WAIT
+
+Memory at this decode is searched by the software for a diagnostic (early 
+boot takeover) flag/vector and for "ROM-tags".
+
+Placing ROM, RAM or FLASH memory at this decode provides potential for 
+application specific ROM's, soft-loading OS modules and other debugging 
+aids.
+
+Since _WIDE is broken in the A1200, default termination for this space is 
+16-bit, asserting _OVR disables the decode, so 32-bit memory would have 
+to do its own decode.
+
+_SPARE_CS 64K, 3 wait read/4 write, _IORD/_IOWR/_WAIT
+
+Nominally an Z8530 or 1NS8250 derivative UART. Note that while slow 
+timing is provided there is no hardware support for the PCLK "holdoff" 
+required by the Z8530 chips, this must be insured by software and/or using 
+one of the derivative chips which minimize this requirement.
+
+_RTC_CS 64K, 3 wait read/4 write, _IORD/_IOWR/_WAIT
+
+Nominally a OKI M5M6242 or Ricoh RF5C01 Real-Time clock chip.  Note 
+that there is provision for this chip both on board and on a "A501 style" chip 
+memory expansion header.
+
+_NET_CS	64K, 0 wait read/1 write, _IORD/_IOWR/_WAIT Nominally a network 
+interface chip such as the SMC C0M2020 Arcnet controller chip or one of 
+the various  "single chip" Ethernet controller chips.
+9)	A two bit system type code is provided which may be used to identify different 
+main-board environments in case additional systems are implemented which share a 
+compatible internal expansion connector.
+
+The codes do not define planned systems, they are simply "best guess" at what would 
+make sense in the future.  Depending on the level of sophistication, an expansion 
+card might adapt to the environment, provide a diagnostic that it isn't compatible or 
+simply ignore this provision.
+
+system1 system0     description
+	o	0	68EC020 (24-bit addr) / 14MHz synchronous
+	o	1	68020 (32-bit addr) / 14MHz synchronous
+	1	0	68(EC)030 (32-bit addr) / 14MHz synchronous
+	1	1	68(xX)0X0 (32-bit addr) / ?MHz asynchronous
+
+What is a safe assumption is that code 00 defines a system which implements a 
+24-bit address space and any other code 32-bit.  This can be used to disable 
+comparison of high-order address bits.
+
+10)	The Gayle implementation can meet the timing requirements of a 16MHz Mc68881 or 
+MC68882 running off the 14 MHz CPUCLK, however other processor 
+clock/coprocessor clock combinations may run into problems with the coprocessor 
+chip select vs. address strobe timing traps.
+
+The _FPU_SENSE line should be treated as bi-directional, there is provision for a 
+FPU on the A1200 board, and this line will be grounded if a FPU is installed.  If a 
+coprocessor is present on the expansion card, it should ground this signal.
+
+11)	The A1200 only supports 24-bit addressing, that is it decodes and drives A(23:0), 
+while future systems may drive/decode all 32 address lines.  From the software point 
+of view, the high order bits are always zero, which is to say that the 24-bit address 
+space maps to the first 16M-bytes of the 32-bit address space.
+
+In a 24-bit environment, external devices must ignore the high order address lines 
+and if a expansion card contains a 32-bit processor with on-board memory outside 
+the 24-bit space, the processor interface must hide accesses outside the 24-bit space 
+from the A1200 system.
+
+12)	The A1200 only decodes FC(1:0) to determine the address space, however external 
+processors or DMA masters should drive all three lines.  DMA masters should assert 
+FC=0, not FC=3 or leave the lines floating, since FC=3 or FC=7 will be interpreted as 
+a CPU/FPU access.
+
+	13)	Unimplemented control signa1s may be un-connected or pulled up
+		to +5v.  Implemented control signals will be pulled up to +5v.
+		Unimplemented address lines may be un-connected or terminated.
+		Address and Data buses may unterminated or terminated to Ground,
+		+5 or some other level as required to address FCC/FTZ issues.
+14)	The _AVEC signal may be actively driven or simply grounded depending on system 
+implementation.  As in previous Amiga systems, only auto-vector interrupts are 
+supported.
+
+The IPL lines are outputs from the Paula interrupt Dcontroller function - an expansion 
+card should drive either _INT2 or _INT6 to request an interrupt.  Fast processors need 
+to reclock the IPL lines with CCK to prevent skew from causing false interrupt level 
+coding.

@@ -1,0 +1,685 @@
+Content-Type: multipart/related; start=<op.mhtml.1363363035635.3bfe1067177cc2ae@10.164.4.195>; boundary=----------bKy2FHMfhRYwQ7Uq65mfwA
+Content-Location: http://zakalwe.fi/~shd/amiga-cracking/agafix-v2.html
+Subject: =?utf-8?Q?Action's=20guide=20to=20AGA=20fixing=20software!?=
+MIME-Version: 1.0
+
+------------bKy2FHMfhRYwQ7Uq65mfwA
+Content-Disposition: inline; filename=agafix-v2.html
+Content-Type: text/html; name=agafix-v2.html
+Content-ID: <op.mhtml.1363363035635.3bfe1067177cc2ae@10.164.4.195>
+Content-Location: http://zakalwe.fi/~shd/amiga-cracking/agafix-v2.html
+Content-Transfer-Encoding: 8bit
+
+<html>
+<head>
+<title>Action's guide to AGA fixing software!</title><meta name="Description" content="How to AGA fix Amiga software at #ACTION_URL#">
+
+<h3>Action's Guide to AGA-Fixing!</h3>
+
+<p>Don't you hate it! You upgrade your Amiga to a fancy 1200 or 4000, and a lot
+of the old software you used to use no longer works! Well there are a number
+of people out there fixing games, so here is a brief description of what
+is generally required to get games and demos working:</p>
+
+<ul>
+<li><a href="#24BitAddresses">24 Bit Addresses</a>
+</li><li><a href="#Blitter">Blitter</a>
+</li><li><a href="#ColourBitFixes">Colour Bit Fixes</a>
+</li><li><a href="#Caches">CPU Caches</a>
+</li><li><a href="#Prefetch">CPU Prefetch</a>
+</li><li><a href="#Protection">Disk based protection</a>
+</li><li><a href="#DodgyCode">Dodgy Code</a>
+</li><li><a href="#FaultyMemoryDetection">Faulty Memory Detection</a>
+</li><li><a href="#Freezes">Freezes on keypresses</a>
+</li><li><a href="#KeyboardInt">Keyboard Interrupts</a>
+</li><li><a href="#Movem">Movem instruction</a>
+</li><li><a href="#Movep">Movep instruction</a>
+</li><li><a href="#SelfModifyingCode">Self Modifying Code</a>
+</li><li><a href="#StackFrames">Stackframes are different on each processor</a>
+</li><li><a href="#StatusRegister">Status Register</a>
+</li><li><a href="#VBR">VBR (Vector Base Register)</a>
+</li><li><a href="#WeirdROMAccesses">Weird ROM Accesses</a>
+</li></ul>
+
+<p>Please note that this section is called "AGA fixing" and most
+of the problems will occur with ECS upgraded configurations. 680x0 fixing
+may be a more suitable name, but that title does not look as nice as the
+current one! So no complaints please!</p>
+
+<p>Greetings must go to Legionary, N.O.M.A.D, Jean François 
+Fabre, Bert Jahn, Galahad/Fairlight and numerous others for their help 
+in this area. Thanks a lot guys!</p><p>
+
+
+</p><h4><a name="24BitAddresses">24-bit Addresses</a></h4>
+
+<p>In non-EC CPUs such as 68030, 68040, 68060 (not 68000 nor 680EC20), an 
+address is coded in 32 bits, whereas 68000 and 680EC20 only take the 24 
+lower bits into consideration when accessing memory, for data or instruction 
+fetch.</p>
+
+<p>e.g: on a 68000, if you want to jump to $4000, you can code either of:</p>
+
+<p></p><pre><tt>        jmp     $4000               ;the simplest
+        jmp     $xx004000           ;xx = anything different from zero
+                                    ;(the stupidest)</tt></pre><p>
+
+</p><p>Then, jmp $ff004000 will jump to $4000 (the PC will be equal to $ff004000 
+but the instuctions will be fetched from $4000 and so on and it won't 
+crash.</p>
+
+<p>Conversely, as real 32 bits CPUs don't mask the most significant byte, the 
+same instruction jmp $ff004000 executed on a 68040 will cause the cpu to 
+fetch the instructions from $FF004000, which will most likely cause a superb 
+crash.</p>
+
+<p>"But the programmers never code jmp $ff004000 instead of jmp $4000", 
+I hear you say. Yes, but they often use address tables (for fast switch/case) 
+like this:</p>
+
+<p></p><pre><tt>        move.l  d0,d1
+        lsl.l   #2,d1
+        lea     addresstable,a0
+        move.l  (a0,d1.l),a1
+        jsr     (a1)                ;Jump to fetched address
+        move.w  #$95,d1
+        moveq.l #0,d0
+
+addresstable:
+        dc.l    $00004000,$00004046,$0000502A,...</tt></pre><p></p>
+
+<p>A very convenient technique, except if the programmer has the stupid idea to 
+use the unused most significant byte of an address (for instance at location 
+(addresstable)) to store 1 byte data, such as a counter. Then, the JSR will 
+only be correct if the value is 0, else it will crash.</p>
+
+<p>This kind of error is very hard to find, and then you must patch it. It was 
+the cause of the crash of Xenon2 and Z-Out, for instance, but only when a 
+special bonus was taken.</p>
+
+<p>On Agony it was harder to detect, as some enemies cannot be killed on a 
+68060, even with all caches off. This is still a 24 bit problem.</p>
+
+<p>Once found, you can modify the code as follows:</p>
+
+<p></p><pre><tt>        move.l  d0,d1
+        lsl.l   #2,d1
+        lea     addresstable,a0
+        move.l  (a0,d1.l),a1
+        jsr     My24BitPatch
+        NOP
+        moveq.l #0,d0</tt></pre><p></p>
+
+<p>Add NOPs as you won't have the room for the jsr (6 bytes vs 2 for JSR (A1)) 
+and copy some original code you overwrote:</p>
+
+<p></p><pre><tt>My24BitPatch:
+        move.l  d0,-(a7)            ;save d0
+        move.l  a1,-(a7)            ;save a1
+        move.l  a1,d0
+        and.l   #$00ffffff,d0       ;filter the MSB (only with data registers)
+        move.l  d0,a1
+        jsr     (a1)                ;jump
+        move.l  (a7)+,a1            ;in case the game uses MSB of a1 (suckers!)
+        move.l  (a7)+,d0            ;restore d0
+        move.w  #$95,d0             ;original game code
+        rts                     ;return</tt></pre><p></p>
+
+<p>This example was adapted from the Xenon 2 patch by Jean François 
+Fabre.</p>
+
+
+<h4><a name="Blitter">Blitter</a></h4>
+
+<p>This is a very frequent problem on the Amiga. You try a game, and the
+character flashes, or the game crashes after a few seconds, and the 
+screen is corrupt.</p>
+
+<p>In most cases, the game can be played, but the graphic bugs are
+annoying. One would think the AGA chipset is the cause but it's not.
+For proof, test the faulty game on an accelerated A2000 and the result
+is the same.</p>
+
+<p>The problem is that programmers often don't wait for the old blit to
+finish before starting another. This is no concern on A500/68000
+because they know the blits are over due to the terrible speed of the
+68000, but when you upgrade to A1200/020 you see the good coders.</p>
+
+<p>Be aware that some blitter problems cannot be detected even on 68060
+processors! This is due to the chipmem access speed on certain cards such 
+as the 68060 Blizzard card. It is terribly slow compared to even a standard 
+A1200/020 with caches on or a Blizzard 68030-IV card!</p>
+
+<p>There's also some Bltpri configuration which seems to change behaviour 
+whether setpatch has been run or not.</p>
+
+<p>To find them, you've got to search for write accesses to $dff058 blitter 
+register. It can be found in various flavours in the code:</p>
+
+<p></p><pre><tt>        move.w  d1,$dff058</tt></pre><p></p>
+
+<p>or:</p>
+
+<p></p><pre><tt>        lea      $dff000,a5
+        ...
+        move.w   #$56,($58,a5)</tt></pre><p></p>
+
+<p>or even:</p>
+
+<p></p><pre><tt>        lea      $dff048,a6
+        ...
+        move.w   #$56,($10,a6)</tt></pre><p></p>
+
+<p>As you can see, it can be a real pain in the arse to find these instructions!
+Once you do find one, search for more identical instructions in the code. This
+is because programmers are generally lazy and if they get some code working,
+they will copy and paste it throughout the rest of the program.</p>
+
+<p>To fix blitter problems, you've got to make the CPU wait before or after the 
+blit is performed. It sounds natural that if you wait after, you'll lose CPU 
+cycles since non-blitter related stuff has to wait. This can slow down the 
+game a lot (eg. Mighty Bombjack which performs hundreds of small blits).</p>
+
+<p>If you wait before the blit, non-blitter code will be able to execute in 
+parallel with the DMA blit, and the CPU will wait only in the case the old 
+blit is not over when you reach the new blit instruction. This synchronization 
+is necessary between the CPU and Blitter.</p>
+
+<p>To wait for blitter operation to complete:</p>
+
+<p></p><pre><tt>       btst     #6,$dff002          ;dmaconr
+wait:  btst     #6,$dff002          ;test twice to fix old bug
+       beq.b    wait                ;wait until blitter DMA is over
+       &lt;make the blit&gt;</tt></pre><p></p>
+
+<p>If you have the graphics library open, it is safer to call the WaitBlit()
+function than code your own - this should be guaranteed to work for
+all processors. Unfortunately, most games hit the hardware directly 
+so you usually have to insert the code above anyway :(</p>
+
+
+<h4><a name="ColourBitFixes">Colour Bit Fixes</a></h4>
+
+<p>On some dodgy graphics cards, the screen display will appear corrupt if
+the programmer has not set the colour bit in BplCon0 ($dff100):
+
+</p><p></p><pre><tt>Bit 1:      ERSY:   External sync. This line is reset on power up (1 = external, 
+                                                                   0 = internal)
+Bit 2:      LACE:   Interlace enable. This line is reset on power up (1 = interlaced)
+Bit 3:      LPEN:   Light pen enable. This line is reset on power up (1 = enabled)
+Bits 4-7:   Unused
+Bit 8:      GAUD:   Genlock audio enable (1 = enabled)
+Bit 9:      COLOUR: Composite video colour enable (1 = colour, 0 = black and white)
+Bit 10:     DBLPF:  Double (dual) playfield mode (1 = dual playfield)
+Bit 11:     HOMOD:  Hold-and-modify mode (1 = HAM)
+Bits 12-14: BPU:    Bitplanes used
+Bit 15:     HIRES:  High resolution mode (1 = high resolution, 0 = low resolution)</tt></pre><p></p>
+
+<p>On Amiga 1000's with colour composite output, you can set this bit equal to 0
+to output a monochrome display through the composite video port. This bit has
+no affect on the RGB output.</p>
+
+<p>To fix can either be very easy, or a real nightmare! Sometimes you will get lucky
+and find the early game setup does something like this:</p>
+
+<p></p><pre><tt>        move.w  #$4000,$dff100      ;Setup a 16 colour screen</tt></pre><p></p>
+
+<p>Set bit 9 to fix it, which is the same as adding $200 in the previous example:</p>
+
+<p></p><pre><tt>        move.w  #$4200,$dff100      ;16 colour screen with colour bit set</tt></pre><p></p>
+
+<p>Sometimes the game will write the value all through it so you have to manually 
+find them all, and other games copy the value from a table and insert it into a 
+copperlist on the fly (sometimes an easy fix, other times very difficult). A MMU
+combined with WHDLoad comes in very handy for this task!</p>
+
+
+<h4><a name="Caches">CPU Caches</a></h4>
+
+<p>The CPU caches cause a lot of problems on older software. Self modifying
+code and CPU delay loops all fail on anything above a 68020. Turning off
+the caches helps the software to run correctly.</p>
+
+<p>To make software run faster, turn on the caches. Remember the data cache
+is not enabled on an Amiga 4000/030/040 until the setpatch command has run.</p>
+
+<p>Programmers should use the CacheClearU() or CacheClearE() routines on
+KS36+ machines.</p>
+
+
+<h4><a name="Prefetch">CPU Prefetch</a></h4>
+
+<p>All processors of the 68K family have a prefetch feature. The processor 
+assumes that the code will be executed without break of sequence, so it 
+prefetches the instructions to avoid memory accesses, and this feature 
+cannot be disabled, unlike the cache feature which can be controlled.
+So disabling the caches will not solve all the self-modifying code 
+problems.</p>
+
+<p>On a 68000, this code will work properly:</p>
+
+<p></p><pre><tt>        move.b  #1,moveinst+2
+        nop
+moveinst:
+        move.b  #0,D0
+        ...</tt></pre><p></p>
+
+<p>The value in D0 will be 1 (self-modifying code).</p>
+
+<p>On a 68020 this still seems to work, at least the first time, and all 
+the time if you disable the instruction cache.</p>
+
+<p>On a 68060, this code will not work (D0 will be equal to 0!!) whether the 
+caches are on or off. This can be harmless but can also lead to strange 
+behaviour if the instruction dynamically modified is a branch!</p>
+
+<p>In this case there's no other way than patching the code 'by hand', by 
+breaking the instruction flow (e.g by a TRAP or a BSR.B).</p>
+
+<p>Hint: Coders insert NOPs in the code like the example above to be sure 
+prefetch will be knocked out on a 68000. Search for NOPs in the code, 
+and you'll be surprised to find interesting things like CPU dependent 
+loops, prefetch and cracked software :)</p>
+
+<p>Most of the Readysoft games have the equivalent of this routine in their
+bootblock:</p>
+
+<p></p><pre><tt>        lea     _Fetch(pc),a0
+        ...
+_Fetch  clr.l   (a0)+               ;2 bytes (long word aligned)
+        addq.l  #8,d0               ;2 bytes</tt></pre><p></p>
+
+<p>All Amigas will fetch both instructions in one hit, even though both
+lines of code will be eliminated. However, a number of emulators (eg. Fellow)
+will wipe out the 2nd instruction and cause the add line to be interpreted
+as something else, eventually causing the game to crash. Hence, no uncracked 
+Readysoft games will work on emulators! (There are many more problems aswell,
+sigh!)</p>
+
+
+<h4><a name="DodgyCode">Dodgy Code</a></h4>
+
+<p>Sometimes you have to wonder how people who write software ever managed
+to create a program which runs. Check out the following code from an old
+Oracle intro:</p>
+
+<p></p><pre><tt>        move.l  #4,a0
+        move.l  (a0),a0
+        move.l  (a0),a6
+        ...proceed to use a6 as GfxBase...</tt></pre><p></p>
+
+<p>How often will GfxBase happen to be the 2nd library down the chain?
+Another classic example is from the game Final Blow, cracked by Crystal.
+Their intro is a standard AmigaDos executable program and the bootblock
+decides to load it at $40000 and then jsr $40000. Slight problem. The
+AmigaDos hunks are the first $20 odd bytes. It's a miracle this code
+ever ran at all!</p>
+		
+
+<h4><a name="Protection">Disk based protection</a></h4>
+
+<p>Surprisingly enough, most games will not work on non 68000 computers due 
+to shitty disk based protection and dodgy loaders! Often the game itself 
+is reasonably well written and would have worked had the disk format been
+standard. For example, Rob Northen Copylock v1.0 fails on anything higher 
+than a 68010, so many old (original) games will not work!</p>
+
+<p>Remove the protection and you will often get the game working! Contact
+your local cracker!</p>
+
+
+<h4><a name="FaultyMemoryDetection">Faulty Memory Detection</a></h4>
+
+<p>A problem encountered sometimes is a faulty chip memory detection because 
+of the "unexpected" fact that AGA amigas have got 2MB of chip
+memory. (Programmers should not assume anything about memory on a computer
+but often do!)</p>
+
+<p>Some games try to find fast memory at $200000:</p>
+
+<p></p><pre><tt>        move.l  #$aaaaaaaa,$200000  ;Poke in $200000
+        cmp.l   #$aaaaaaaa,$200000  ;Re-read to check valid address
+        bne     NoFastAt200000
+        ...</tt></pre><p></p>
+
+<p>This detection works provided the chipmem size does not exceed 1Mb 
+($0 to $FFFFF). With an AGA Amiga like the A1200, chip memory can be 
+found from $0 to $1FFFFF.</p>
+
+<p>When you poke in $200000 on a A1200 without fastmem at $200000, there 
+is a mirror effect and the write address is decoded as $0. So, the re-read 
+is OK, and the game trusts that there is at least 512K of memory from 
+$200000 to $27FFFF. It actually stores the data from $0 to $7FFFF and it 
+crashes very efficiently, as program code and stack are in that zone 99% 
+of the time.</p>
+
+<p>The "safe" thing to do would have been:</p>
+
+<p></p><pre><tt>       move.l   #0,$0
+       move.l   #$aaaaaaaa,$200000  ;Poke in $200000
+       cmp.l    #$aaaaaaaa,$200000  ;Re-read to check valid address
+       bne      NoFastAt200000
+       cmp.l    $0,$200000          ;Test the mirror effect
+       beq      NoFastAt200000</tt></pre><p></p>
+
+<p>The mirror or modulo effect is detected. This error was found and corrected 
+by Jean François Fabre in Lotus Turbo Challenge 2 and 3, from 
+Gremlin.</p>
+
+
+<h4><a name="Freezes">Freezes on keypresses</a></h4>
+
+<p>Some games work fine until you press a key. Then it freezes and you're 
+forced to reboot. But the music is still playing, and some animation can 
+continue!</p>
+
+<p>That sounds strange and it is! Keyboard interrupts have got a priority 
+level of 2, while VBL interrupts (often used by tracker routines) have 
+a level of 3. Which explains that the music can continue playing. The
+keyboard interrupt was not acknowledged, and it happens all the time. The
+program can't continue. Only higher interrupts can run.</p>
+
+<p>This is often caused by an acknowledge too soon before the rte:</p>
+
+<p></p><pre><tt>KbInt:  move.w  #8,$dff09c      ;Acknowledge interrupt
+        ...
+        ...
+        rte</tt></pre><p></p>
+
+<p>Moving the acknowledge instruction just before the rte can be enough.
+If this does not work, try replacing #8 by #$7FFF.</p>
+
+<p>Interrupt 3 can behave the same way too. Use the same solution (try #$70 
+before trying #$7FFF).</p>
+
+<p>These problems were noticed (and fixed) in Ninja Spirit, R-Type 2 and 
+Z-Out!</p>
+
+
+<h4><a name="KeyboardInt">Keyboard Interrupts</a></h4>
+
+<p>Keyboard routines are usually setup to run from the level 2 interrupt.
+When a keypress is detected, the level 2 interrupt is fired.
+Between detecting the key and acknowledging the keypress, there needs
+to be a time delay. The ways to achieve this are (ranked from best to
+worst):</p>
+
+<ol>
+<li>CIA Timer
+</li><li>Raster positioning
+</li><li>A CPU Loop
+</li></ol>
+
+<p>The CIA timer is virtually never used in (older) games, and the raster
+positioning method is hardly ever found.  Most games resort to a stupid
+loop like this between detecting and acknowledging the keypress:</p>
+
+<p></p><pre><tt>        move.b  $bfec01,d0      ; Keypress
+        not.b   d0
+        ror.b   #1,d0           ; d0 now contains the raw key
+dump    moveq   #36,d1
+loop    dbf     d1,loop         ; Stupid loop</tt></pre><p></p>
+
+<p>The problem with this is that faster CPU's make the loop almost non
+existant, and the keypress is not acknowledged. The computer then locks
+up. The easiest fix is to steal 6 bytes from the code, and insert a
+jsr to some patch code which has a working delay:</p>
+
+<p></p><pre><tt>        lea     .KBFix(pc),a0       ;Your keyboard fix routine
+        move.w  #$4e79,dumb         ;Insert JSR
+        move.l  a0,loop
+
+        ...
+
+.KBFix  movem.l d0-d1/a0,-(sp)      ;Horizontal raster timing code
+        lea     (_custom+vhposr),a0
+        moveq   #3-1,d0             ;Wait because handshake min 75µs
+.1      move.b  (a0),d1
+.2      cmp.b   (a0),d1             ;One line is 63.5µs
+        beq.b   .2
+        dbf     d0,.1               ;Min=127µs Max=190.5µs
+        movem.l (sp)+,d0-d1/a0
+.RTS    rts                         ;Back to original code</tt></pre><p></p>
+
+
+<h4><a name="Movem">Movem instruction</a></h4>
+
+<p>The following movem command yields different results when run on a 
+68000/010 and a 68020/030/040/060:</p>
+
+<p></p><pre><tt>        movem.x rl,-(an)</tt></pre><p></p>
+
+<p>There is a difference if the register used in predecrement mode is also 
+contained in the register list. For the 68020, 68030 and 68040 the value 
+written to memory is the initial register value decemented by the size of
+the operation. The 68000 and 68010 write the initial register value 
+(not decremented).</p>
+
+<p>Because this type of construction is not very useful, no problems to 
+existing software are known.</p>
+
+
+<h4><a name="MoveP">MoveP instruction</a></h4>
+
+<p>The MoveP (Move to/from Peripheral) instruction moves word or longword
+data between a data register and alternate bytes of memory. This instruction
+is intended to interface to 8-bit peripherals connected to either the high 
+byte or the low byte of the data bus. The only time it will save you much
+work is when you have a peripheral device, for example a math processor, with
+a multiple-byte internal register that's memory mapped externally. In other
+words, not too often.</p>
+
+<p>The memory address is specified using address register indirect with
+displacement notation.</p>
+
+<p></p><pre><tt>        movep   Dn,d(An)            ;Assembler syntax
+        movep   D(An),Dn
+
+        movep.l d0,0(a0)            ;Opcode $01c80000
+        movep.w 0(a0),d0            ;Opcode $01080000</tt></pre><p></p>
+
+<p>You maybe wondering why we care about this instruction. The reason is the
+68060 no longer has this instruction, so any software which uses it crashes
+on these CPU's! However, fixing it is pretty easy, here are a few examples:</p>
+
+<p>In the game E-Motion from The Assembly Line:
+
+</p><p></p><pre><tt>        movep.w (-1,a1),d0</tt></pre><p></p>
+
+<p>To fix this, you need to change the instruction to run the following code:</p>
+
+<p></p><pre><tt>        move.b  (-1,a1),d0
+        lsl.w   #8,d0
+        move.b  (1,a1),d0</tt></pre><p></p>
+
+<p>In the game Speedball 2, the following code is found:</p>
+
+<p></p><pre><tt>        move.l  (a0)+,d0 
+        movep.l d0,(1,a1) 
+        move.l  (a0)+,d0
+        movep.l d0,(9,a1)</tt></pre><p></p>
+
+<p>To fix this, you need to change the code to:</p>
+
+<p></p><pre><tt>        move.l  (a0),d0             ;Not really needed
+        move.b  (a0)+,(1,a1) 
+        move.b  (a0)+,(3,a1)
+        move.b  (a0)+,(5,a1)
+        move.b  (a0)+,(7,a1)
+        move.l  (a0),d0
+        move.b  (a0)+,(9,a1)
+        move.b  (a0)+,(11,a1)
+        move.b  (a0)+,(13,a1)
+        move.b  (a0)+,(15,a1)</tt></pre><p></p>
+
+<p>The first and 5th lines of fix code are not strictly necessary as the
+game proceeds to destroy d0 anyway, but the above code is at least a 
+perfect emulation of the 4 lines of original instructions.</p>
+
+<p>The movep command does not affect any condition flags, and is usually 4 
+bytes long, so you cannot simply put a jsr routine over the top of the code
+as that requires 6 bytes. You may need to use traps, a 16 bit displacement 
+jsr or modifying the previous or following instruction to steal the extra
+2 bytes you need.</p>
+
+
+<h4><a name="SelfModifyingCode">Self Modifying Code</a></h4>
+
+<p>This is a major problem found in a surprisingly large number of games,
+including several reasonably new ones. Basically the programmers write code
+which modifies itself while it is running. As more efficient CPU's came out, 
+they had caches on them which store the last few instructions executed. When 
+the code modified itself, it modified only the copy in memory and not the 
+one in the cache. The next few instructions in the cache will be rubbish
+because the game expected to decrypt the next few instructions. Shortly after
+the game will crash!</p>
+
+<p>In the old days, crackers just used to save the decrypted file over the
+game and make it jump into the code partway through it. That way the decryption
+phase has already happened and the code will run on all CPU's. The more elegant
+way to fix this is to emulate the decryption instructions yourself which operate
+on the data in real memory and once it has fully decrypted you can clear the
+cache and execute the game code.</p>
+
+
+<h4><a name="StackFrames">Stackframes are different on each processor</a></h4>
+
+<p>The stackframes created by the processor on interrupts and exceptions 
+are different for the members of the 68k family. On the 68000 a stackframe 
+is 6 bytes, except on Bus and Address Error. The stackframe contains
+first the saved SR at (a7) and the saved PC at (2,a7). On all other 
+processors (68010+) the minimal stackframe is 8 bytes and additionally
+contains the vector number as word at (6,a7). This Four-Word stackframe
+format $0 is created for "Trap #xx" and Interrupts on 68010-68060. 
+The stackframes on other exceptions are different on each processor.</p>
+
+<p>The RTE instruction works differently on the 68000 against 68010+. On a 
+68000 it simply writes the SR and PC back and continues program execution 
+at the interrupted address. On the 68010+ it additionally frees the
+stackframe depending on the stackframe format.</p>
+
+<p>Some programs push an address (PC) and a SR and then execute an RTE 
+instruction. This works on a 68000 only, but on 68010+ this will have 
+undefinable results.</p>
+
+<p>For example, the Ben Daglish music replay routine creates a stack frame
+and calls rte. This was probably seen in it's day as some nice code as it 
+sets the SR back to the what it was originally and returns back to the code.
+However, this code bombs on 68010+ processors:</p>
+
+<p></p><pre><tt>        lea     $dff000,a6
+        move.w  sr,-(sp)            ;Save SR onto the stack
+        ori.w   #$700,sr
+        ...
+        move.w  #2,6(a1)
+        rte</tt></pre><p></p>
+		
+<p>The code above originally worked because the game already had the return
+address on the stack, so by placing the SR also on the stack, it created a
+valid 68000 stackframe. The easiest fix for this code is to nop out the
+SR code and change the rte to an rts:</p>
+		
+<p></p><pre><tt>        lea     $dff000,a6
+        nop                         ;move.w  sr,-(sp)
+        nop                         ;ori.w   #$700,sr
+        nop
+        ...
+        move.w  #2,6(a1)
+        rts                         ;rte</tt></pre><p></p>
+
+<p>You could also fix it with the following code:</p>
+
+<p></p><pre><tt>        lea     $dff000,a6
+        move.w  sr,-(sp)
+        ori.w   #$700,sr
+        ...
+        move.w  #2,6(a1)
+        move.w  (sp)+,sr            ;Restore the SR
+        rts                         ;RTS instead of RTE</tt></pre><p></p>
+		
+<p>You can search for the opcodes $40e7007c700 to detect the Ben Daglish
+replayer. The bug exists in Artura, Axel's Magic Hammer, Deflektor, Federation
+of Free Traders, H.A.T.E., Super Cars, Switchblade and probably many more!</p>
+		
+<p>If a program contains dodgy stack frame code, you have to emulate it. 
+Sometimes it may be enough to replace the rte with an rtr.</p>
+
+<p>Another way is to make the stackframe independent from the type of processor 
+by using a TRAP (the JSR equivalent of RTE).</p>
+
+
+<h4><a name="StatusRegister">Status Register</a></h4>
+
+<p>Some games insert strange values into the status register which cause the game
+to crash on non 68000 machines. For example, in the game Defender 2 by Jeff 
+Minter/Arc, the following code was found:</p>
+
+<p></p><pre><tt>        move.w  #$78ff,sr           ;Crashes on most CPU's</tt></pre><p></p>
+
+<p>Try inserting "normal" values for the SR if you find problems. In
+this case, a normal supervisor mode value of $2000 does the trick and allows the
+game to run:</p>
+
+<p></p><pre><tt>        move.w  #$2000,sr           ;SR fixed!</tt></pre><p></p>
+
+
+<h4><a name="VBR">VBR (Vector Base Register)</a></h4>
+
+<p>All 680x0 machines have a 1K "exception table" starting at address $0 when
+the machine first boots.  This can subsequently be moved into another area
+on 010's and higher using the Vector Base Register (VBR) and a simple copy
+loop.</p>
+
+<p>Assuming it's located at $0, then $0 - $ff is where the main action's at,
+on all 68k machines.  The address range $100 - $3ff is reserved by Motorola
+for "user vectors".  This address space is unused on the Amiga, 
+but might be used on other machines.  The point is that $0 - $ff are the 
+important vectors on all 68k machines, and $100 - $3ff *might* also be used, 
+or then again, might not be.</p>
+
+
+<h4><a name="WeirdROMAccesses">Weird ROM Accesses</a></h4>
+
+<p>Some games rely on some values in ROM to work properly. For example, the
+great game "Gods" works OK from OS1.3 to OS3.0, but fails
+on OS3.1 on the same computer! It works OK with a softkicked OS3.0, but
+fails with a OS3.1 chip!)</p>
+
+<p>The solution: the game reads in $FFxxxx (I don't remember now) and I really 
+don't know why. By luck, it worked until OS3.0 but the game seems not to 
+like the values returned by OS3.1!</p>
+
+<p>Some other games even call ROM addresses directly (Gravity Force) or poke in 
+non documented exec strucures, copperlists...</p>
+
+<p>A possible explanation of those accesses in non-DOS games is a protection 
+against hardware freezers like Action Replay or Nordic Power.</p>
+
+<p>Another example: There is a check in $F00000 for the value $1111 in the game
+Pinball Dreams, maybe to detect such a device but:</p>
+
+<ol>
+<li>It does not detect an Action Replay III cartridge.
+</li><li>It will detect a Blizzard 1260 card and crash!
+</li></ol>
+
+<p>If you find routines looking like this, remove them, or it may cause problems 
+to other users of your patches. For the moment, the solution is:</p>
+
+<ol>
+<li>Look.
+</li><li>Get a good value (using a 1.3 kick, and/or another Amiga).
+</li><li>Remove.
+</li><li>Imitate.
+</li></ol>
+
+<!-- Page stops here -->
+</td>
+<td width="15">
+	 
+</td>
+</tr>
+</tbody></table>
+</body></html>
+
+------------bKy2FHMfhRYwQ7Uq65mfwA--
