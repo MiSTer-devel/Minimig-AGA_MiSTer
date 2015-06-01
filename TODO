@@ -1,16 +1,25 @@
 IMPORTANT - AGA CHIPSET stuff
-- http://eab.abime.net/showpost.php?p=669147&postcount=77
-- bitplane shifter problems - more 'undocumented' stuff ... (looks like the output shifter is actually 256 bit to allow 64-pixel fetches in lowres to be shifted on shres resolution - implemented)
-- upper is probably wrong, shifter is 64bitsd plus additional shres shifter (two bits?)
-- even that bitplane shifter is probably wrong: http://eab.abime.net/showthread.php?t=71437
-- CPU compatibility fixes are a must!
-- CPU : add PACK & UNPK imstruction support (TG68KdotC_kernel.vhd, from line 2236 on -- also look at 68000 programmer's reference!)
-- CPU really needs chipRAM 'turbo' reads AND writes!
 - increment hpos counter in denise by two LSB bits (35ns counter)
 - hdiwstrt & hdiwstop (HDIWHIGH) also have two new high-resolution bits
-- sprites can be positioned on 35ns pixels - to add!
-- sprite scandoubling DONE
-- bitplanes scandoubling
+- http://eab.abime.net/showpost.php?p=669147&postcount=77
+- bitplane shifter problems 
+  * more 'undocumented' stuff ... (looks like the output shifter is actually 256 bit to allow 64-pixel fetches in lowres to be shifted on shres resolution - implemented)
+  * upper is probably wrong, shifter is 64bits plus additional shres shifter (two bits?)
+  * even that bitplane shifter is probably wrong: http://eab.abime.net/showthread.php?t=71437
+- bitplane DMA register delays (TLC - PowerTrax demo, hint by Toni Wilen):
+  * Writing to BPLxPT when exactly next cycle has DMA to matching BPLxDAT: write goes nowhere. (Same happens with sprites and blitter registers too, I assume all DMA channels have similar internal 2 cycle pipeline)
+  * Another similar special feature is bitplane modulos, writing to BPLxMOD when exactly next cycle is matching BPLxDAT write and it also does modulo add, _old_ modulo value is used! (Write to BPLxMOD is still accepted, next time BPLxMOD value is needed it is used normally)
+- sprites can be positioned on 35ns pixels - to add! - I think I did this - CHECK
+- sprite scandoubling DONE (and fixed, and fixed the fix)
+- bitplanes scandoubling DONE
+
+
+IMPORTANT - CPU stuff
+- CPU : add PACK & UNPK imstruction support (TG68KdotC_kernel.vhd, from line 2236 on -- also look at 68000 programmer's reference!) (Till Harbaum working on this, partial fix available)
+- CPU really needs chipRAM 'turbo' reads AND writes!
+- CPU compatibility fixes are a must!
+- CPU kickstart turbo - DONE, some problems remain (restart freeze)
+
 
 MEDIUM - mostly firmware stuff
 - fix firmware config, display config
@@ -18,6 +27,7 @@ MEDIUM - mostly firmware stuff
 - cpu turbo enable menu
 - fast kickstart rtl / menu
 - 1MB kickstart
+
 
 LOW - waay down the line
 - turbo blitter
