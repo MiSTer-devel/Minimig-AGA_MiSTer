@@ -1,0 +1,413 @@
+<session jtag_chain="USB-Blaster [USB-0]" jtag_device="" sof_file="">
+  <display_tree gui_logging_enabled="0">
+    <display_branch instance="auto_signaltap_0" log="USE_GLOBAL_TEMP" signal_set="USE_GLOBAL_TEMP" trigger="USE_GLOBAL_TEMP"/>
+  </display_tree>
+  <instance entity_name="sld_signaltap" is_auto_node="yes" is_expanded="true" name="auto_signaltap_0" source_file="sld_signaltap.vhd">
+    <node_ip_info instance_id="0" mfg_id="110" node_id="0" version="6"/>
+    <signal_set global_temp="1" is_expanded="true" name="signal_set: 2015/05/02 22:21:06  #0">
+      <clock name="minimig:minimig|clk" polarity="posedge" tap_mode="classic"/>
+      <config ram_type="M4K" reserved_data_nodes="0" reserved_storage_qualifier_nodes="0" reserved_trigger_nodes="0" sample_depth="256" trigger_in_enable="yes" trigger_in_node="minimig:minimig|cart:CART1|sel_custom_mirror" trigger_in_tap_mode="classic" trigger_out_enable="no"/>
+      <top_entity/>
+      <signal_vec>
+        <trigger_input_vec>
+          <wire name="minimig:minimig|_cpu_as" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_dtack" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_lds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_uds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_r_w" tap_mode="classic" type="combinatorial"/>
+        </trigger_input_vec>
+        <data_input_vec>
+          <wire name="minimig:minimig|_cpu_as" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_dtack" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_lds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_uds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_r_w" tap_mode="classic" type="combinatorial"/>
+        </data_input_vec>
+        <storage_qualifier_input_vec>
+          <wire name="minimig:minimig|_cpu_as" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_dtack" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_ipl[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_lds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|_cpu_uds" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_address[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_data_in[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="minimig:minimig|cpu_r_w" tap_mode="classic" type="combinatorial"/>
+        </storage_qualifier_input_vec>
+      </signal_vec>
+      <presentation>
+        <data_view>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_as"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_address" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[23]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[22]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[21]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[20]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[19]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[18]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[17]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[16]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[1]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_uds"/>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_lds"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|_cpu_ipl" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|cpu_r_w"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_data" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[0]"/>
+          </bus>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_data_in" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_dtack"/>
+        </data_view>
+        <setup_view>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_as"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_address" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[23]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[22]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[21]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[20]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[19]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[18]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[17]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[16]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_address[1]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_uds"/>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_lds"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|_cpu_ipl" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|_cpu_ipl[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|cpu_r_w"/>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_data" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data[0]"/>
+          </bus>
+          <bus is_signal_inverted="no" link="all" name="minimig:minimig|cpu_data_in" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[15]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[14]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[13]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[12]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[11]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[10]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[9]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[8]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[7]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[6]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[5]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[4]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[3]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[2]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[1]"/>
+            <net is_signal_inverted="no" name="minimig:minimig|cpu_data_in[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="minimig:minimig|_cpu_dtack"/>
+        </setup_view>
+      </presentation>
+      <trigger CRC="A85C7B24" attribute_mem_mode="false" gap_record="true" global_temp="1" is_expanded="true" name="trigger: 2015/05/02 22:21:06  #1" position="pre" power_up_trigger_mode="false" record_data_gap="true" segment_size="256" storage_mode="off" storage_qualifier_disabled="no" storage_qualifier_port_is_pin="false" storage_qualifier_port_name="auto_stp_external_storage_qualifier" storage_qualifier_port_tap_mode="classic" trigger_in="rising edge" trigger_out="active high" trigger_type="circular">
+        <power_up_trigger position="pre" storage_qualifier_disabled="no" trigger_in="dont_care" trigger_out="active high"/>
+        <events use_custom_flow_control="no">
+          <level enabled="yes" name="condition1" type="basic">
+            <power_up enabled="yes">
+            </power_up><op_node/>
+          </level>
+        </events>
+        <storage_qualifier_events>
+          <transitional>000000000000000000000000000000000000000000000000000000000000000
+            <pwr_up_transitional>000000000000000000000000000000000000000000000000000000000000000</pwr_up_transitional>
+          </transitional>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+        </storage_qualifier_events>
+        <log>
+          <data global_temp="1" name="log: 2015/05/02 22:54:00  #0" power_up_mode="false" sample_depth="256" trigger_position="32">111111100111111110101110000000000010100000001100000000000000001111111100111111110101110000000000010100000001100000000000000001011110000111111111101110000000000010100000001100000000000000001011110000111111111101110000000000010100000001100000000000000001011110000111111111101110000000000010100000001100000000000000001011110000111111111101110000000000010100000001100000000000000001001110000111111111101110000000000010100000001100000000000000001001110000111111111101110000000000010100000001100000000000000001001110000111111111101110000000000010100000001101000101100100111001110000111111111101110000000000010100000001101000101100100111001110000111111111101110000000000010100000001101000101100100111001110000111111111101110000000010001011001001101000101100100111111111100111111111101110000000010001011001001100000000000000001111111100111111111101110000000010001011001001100000000000000001111111100111111111101110000000010001011001001100000000000000001111111100111111111101110000000010001011001001100000000000000001111111100111111111101110000000010001011001001100000000000000001111111100111111111101110000000010001011001001100000000000000001011110011111000010111100111110010001011001001100000000000000001011110011111000010111100111110010001011001001100000000000000001011110011111000010111100111110010001011001001100000000000000001011110011111000010111100111110010001011001001100000000000000001001110011111000010111100111110010001011001001100000000000000001001110011111000010111100111110010001011001001100000000000000001001110011111000010111100111110010001011001001100001110000001001001110011111000010111100111110010001011001001100001110000001001001110011111000010111100111110010001011001001100000110111101001001110011111000010111100111110000001101111010000000110111101001111111111111000010111100111110000001101111010000000000000000001111111111111000010111100111110000001101111010000000000000000001111111111111000010111100111110000001101111010000000000000000001111111111111000010111100111110000001101111010000000000000000001111111111111000010111100111110000001101111010000000000000000001111111111111000010111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001111111111111000011111100111110000001101111010000000000000000001011110011111000011111100111110000001101111010000000000000000001011110011111000011111100111110000001101111010000000000000000001011110011111000011111100111110000001101111010000000000000000001011110011111000011111100111110000001101111010000000000000000001001110011111000011111100111110000001101111010000000000000000001001110011111000011111100111110000001101111010000000000000000001001110011111000011111100111110000001101111010000000110111101001001110011111000011111100111110000001101111010000000110111101001001110011111000011111100111110000001101111010000000000000000001001110011111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001111111111111000011111100111110000000000000000000000000000000001011110011111000010111110111110000000000000000000000000000000001011110011111000010111110111110000000000000000000000000000000001011110011111000010111110111110000000000000000000000000000000001011110011111000010111110111110000000000000000000000000000000001001110011111000010111110111110000000000000000000000000000000001001110011111000010111110111110000000000000000000000000000000001001110011111000010111110111110000000000000000000000000000000001001110011111000010111110111110000000000000000000000000000000001001110011111000010111110111110000000000000000011000001111111111001110011111000010111110111110110000011111111111000001111111111111111111111000010111110111110110000011111111100000000000000001111111111111000010111110111110110000011111111100000000000000001111111111111000010111110111110110000011111111100000000000000001111111111111000010111110111110110000011111111100000000000000001111111111111000010111110111110110000011111111100000000000000001111111111111000010111110111110110000011111111100000000000000001011110011111000011111110111110110000011111111100000000000000001011110011111000011111110111110110000011111111100000000000000001011110011111000011111110111110110000011111111100000000000000001011110011111000011111110111110110000011111111100000000000000001001110011111000011111110111110110000011111111100000000000000001001110011111000011111110111110110000011111111100000000000000001001110011111000011111110111110110000011111111111000001111111111001110011111000011111110111110110000011111111111000001111111111001110011111000011111110111110110000011111111111100100101110011001110011111000011111110111110111001001011100111100100101110011111111111111000011111110111110111001001011100100000000000000001111111111111000011111110111110111001001011100100000000000000001111111111111000011111110111110111001001011100100000000000000001111111111111000011111110111110111001001011100100000000000000001111111111111000011111110111110111001001011100100000000000000001111111111111000011111110111110111001001011100100000000000000001011110011111000010111101111110111001001011100100000000000000001011110011111000010111101111110111001001011100100000000000000001011110011111000010111101111110111001001011100100000000000000001011110011111000010111101111110111001001011100100000000000000001001110011111000010111101111110111001001011100100000000000000001001110011111000010111101111110111001001011100100000000000000001001110011111000010111101111110111001001011100111100100101110011001110011111000010111101111110111001001011100111100100101110011001110011111000010111101111110111001001011100111101001100000111001110011111000010111101111110111010011000001111101001100000111111111111111000010111101111110111010011000001100000000000000001111111111111000010111101111110111010011000001100000000000000001111111111111000010111101111110111010011000001100000000000000001111111111111000010111101111110111010011000001100000000000000001111111111111000010111101111110111010011000001100000000000000001111111111111000010111101111110111010011000001100000000000000001011110010010000000000010101001111010011000001100000000000000001011110010010000000000010101001111010011000001100000000000000001011110010010000000000010101001111010011000001100000000000000001011110010010000000000010101001111010011000001100000000000000001001110010010000000000010101001111010011000001100000000000000001001110010010000000000010101001111010011000001100000000000000001001110010010000000000010101001111010011000001111101001100000111001110010010000000000010101001111010011000001111101001100000111001110010010000000000010101001111010011000001100000000011111001001110010010000000000010101001000000000111110000000000011111001111111110010000000000010101001000000000111110000000000000000001111111110010000000000010101001000000000111110000000000000000001111111110010000000000010101001000000000111110000000000000000001111111110010000000000010101001000000000111110000000000000000001111111110010000000000010101001000000000111110000000000000000001111111110010000000000010101001000000000111110000000000000000001011110010010000001000010101001000000000111110000000000000000001011110010010000001000010101001000000000111110000000000000000001011110010010000001000010101001000000000111110000000000000000001011110010010000001000010101001000000000111110000000000000000001001110010010000001000010101001000000000111110000000000000000001001110010010000001000010101001000000000111110000000000000000001001110010010000001000010101001000000000111110000000000011111001001110010010000001000010101001000000000111110000000000011111001001110010010000001000010101001000000000111110000011100000011111001110010010000001000010101001000111000000111100011100000011111111111110010000001000010101001000111000000111100000000000000001111111110010000001000010101001000111000000111100000000000000001111111110010000001000010101001000111000000111100000000000000001111111110010000001000010101001000111000000111100000000000000001111111110010000001000010101001000111000000111100000000000000001111111110010000001000010101001000111000000111100000000000000001011110000111000010111100001111000111000000111100000000000000001011110000111000010111100001111000111000000111100000000000000001011110000111000010111100001111000111000000111100000000000000001011110000111000010111100001111000111000000111100000000000000001001110000111000010111100001111000111000000111100000000000000001001110000111000010111100001111000111000000111100000000000000001001110000111000010111100001111000111000000111100011100000011111001110000111000010111100001111000111000000111100011100000011111001110000111000010111100001111000111000000111100011010000010011001110000111000010111100001111000110100000100100011010000010011111111100111000010111100001111000110100000100100000000000000001111111100111000010111100001111000110100000100100000000000000001111111100111000010111100001111000110100000100100000000000000001111111100111000010111100001111000110100000100100000000000000001111111100111000010111100001111000110100000100100000000000000001111111100111000010111100001111000110100000100100000000000000001011110000111000011111100001111000110100000100100000000000000001011110000111000011111100001111000110100000100100000000000000001011110000111000011111100001111000110100000100100000000000000001011110000111000011111100001111000110100000100100000000000000001001110000111000011111100001111000110100000100100000000000000001001110000111000011111100001111000110100000100100000000000000001001110000111000011111100001111000110100000100100011010000010011001110000111000011111100001111000110100000100100011010000010011001110000111000011111100001111000110100000100101101100000111011001110000111000011111100001111011011000001110101101100000111011111111100111000011111100001111011011000001110100000000000000001111111100111000011111100001111011011000001110100000000000000001111111100111000011111100001111011011000001110100000000000000001111111100111000011111100001111011011000001110100000000000000001111111100111000011111100001111011011000001110100000000000000001111111100111000011111100001111011011000001110100000000000000001011110000111000010111110001111011011000001110100000000000000001011110000111000010111110001111011011000001110100000000000000001011110000111000010111110001111011011000001110100000000000000001011110000111000010111110001111011011000001110100000000000000001001110000111000010111110001111011011000001110100000000000000001001110000111000010111110001111011011000001110100000000000000001001110000111000010111110001111011011000001110101101100000111011001110000111000010111110001111011011000001110101101100000111011001110000111000010111110001111011011000001110111100101111011001001110000111000010111110001111111001011110110011100101111011001111111100111000010111110001111111001011110110000000000000000001111111100111000010111110001111111001011110110000000000000000001111111100111000010111110001111111001011110110000000000000000001111111100111000010111110001111111001011110110000000000000000001111111100111000010111110001111111001011110110000000000000000001111111100111000010111110001111111001011110110000000000000000001111111101101010000000000010011111001011110110000000000000000001011110000111000010111110010111111001011110110000000000000000001011110000111000010111110010111111001011110110000000000000000001011110000111000010111110010111111001011110110000000000000000001001110000111000010111110010111111001011110110000000000000000001001110000111000010111110010111111001011110110000000000000000001001110000111000010111110010111111001011110110011100101111011001001110000111000010111110010111111001011110110011100101111011001001110000111000010111110010111111001011110110000011000010100011001110000111000010111110010111000110000101000100011000010100011111111100111000010111110010111000110000101000100000000000000001111111100111000010111110010111000110000101000100000000000000001111111100111000010111110010111000110000101000100000000000000001111111100111000010111110010111000110000101000100000000000000001111111100111000010111110010111000110000101000100000000000000001111111100111000010111110010111000110000101000100000000000000001011110000111000011111110010111000110000101000100000000000000001011110000111000011111110010111000110000101000100000000000000001011110000111000011111110010111000110000101000100000000000000001011110000111000011111110010111000110000101000100000000000000001001110000111000011111110010111000110000101000100000000000000001001110000111000011111110010111000110000101000100000000000000001001110000111000011111110010111000110000101000100011000010100011001110000111000011111110010111000110000101000100011000010100011001110000111000011111110010111000110000101000100000001111000001001110000111000011111110010111000000011110000000000001111000001111111100111000011111110010111000000011110000000000000000000001111111100111000011111110010111000000011110000000000000000000001111111100111000011111110010111000000011110000000000000000000001111111100111000011111110010111000000011110000000000000000000001111111100111000011111110010111000000011110000000000000000000001111111100111000011111110010111000000011110000000000000000000001011110000111000010111101010111000000011110000000000000000000001011110000111000010111101010111000000011110000000000000000000001011110000111000010111101010111000000011110000000000000000000001011110000111000010111101010111000000011110000000000000000000001001110000111000010111101010111000000011110000000000000000000001001110000111000010111101010111000000011110000000000000000000001001110000111000010111101010111000000011110000000000001111000001001110000111000010111101010111000000011110000000000001111000001001110000111000010111101010111000000011110000000010111000010011001110000111000010111101010111000101110000100100010111000010011111111100111000010111101010111000101110000100100000000000000001111111100111000010111101010111000101110000100100000000000000001111111100111000010111101010111000101110000100100000000000000001111111100111000010111101010111000101110000100100000000000000001111111100111000010111101010111000101110000100100000000000000001111111100111000010111101010111000101110000100100000000000000001011110001101010001000011110011000101110000100100000000000000001011110001101010001000011110011000101110000100100000000000000001011110001101010001000011110011000101110000100100000000000000001011110001101010001000011110011000101110000100100000000000000001001110001101010001000011110011000101110000100100000000000000001001110001101010001000011110011000101110000100100000000000000001001110001101010001000011110011000101110000100100010111000010011001110001101010001000011110011000101110000100100010111000010011001110001101010001000011110011000101110000100110000001101100001001110001101010001000011110011100000011011000010000001101100001111111101101010001000011110011100000011011000000000000000000001111111101101010001000011110011100000011011000000000000000000001111111101101010001000011110011100000011011000000000000000000001111111101101010001000011110011100000011011000000000000000000001111111101101010001000011110011100000011011000000000000000000001111111101101010001000011110011100000011011000000000000000000001011110000111000011111101010111100000011011000000000000000000001011110000111000011111101010111100000011011000000000000000000001011110000111000011111101010111100000011011000000000000000000001011110000111000011111101010111100000011011000000000000000000001001110000111000011111101010111100000011011000000000000000000001001110000111000011111101010111100000011011000000000000000000001</data>
+          <extradata>11111111111111111111111111111111T1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111</extradata>
+        </log>
+      </trigger>
+    </signal_set>
+    <position_info>
+      <single attribute="active tab" value="1"/>
+      <single attribute="data horizontal scroll position" value="0"/>
+      <single attribute="data vertical scroll position" value="0"/>
+      <single attribute="zoom level denominator" value="2"/>
+      <single attribute="zoom level numerator" value="1"/>
+      <single attribute="zoom offset denominator" value="1"/>
+      <single attribute="zoom offset numerator" value="261888"/>
+    </position_info>
+  </instance>
+  <mnemonics/>
+  <static_plugin_mnemonics/>
+  <global_info>
+    <single attribute="active instance" value="0"/>
+    <single attribute="config widget visible" value="1"/>
+    <single attribute="data log widget visible" value="1"/>
+    <single attribute="hierarchy widget visible" value="1"/>
+    <single attribute="instance widget visible" value="1"/>
+    <single attribute="jtag widget visible" value="1"/>
+    <multi attribute="column width" size="23" value="34,34,240,74,68,70,88,88,98,98,88,88,110,101,101,101,101,101,101,101,101,107,56"/>
+    <multi attribute="frame size" size="2" value="1920,1148"/>
+    <multi attribute="jtag widget size" size="2" value="334,120"/>
+  </global_info>
+</session>
