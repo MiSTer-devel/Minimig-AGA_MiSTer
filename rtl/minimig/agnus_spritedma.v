@@ -84,10 +84,12 @@ parameter FMODE         = 9'h1fc;
 reg 	[20:16] sprpth [7:0];		//upper 5 bits sprite pointers register bank
 reg 	[15:1]  sprptl [7:0];		//lower 16 bits sprite pointers register bank
 reg		[15:8]  sprpos [7:0];		//sprite vertical start position register bank
+reg           sprposh [7:0];  // sprite horizontal position (SH10)
 reg		[15:4]  sprctl [7:0];		//sprite vertical stop position register bank
 									//JB: implementing ECS extended vertical sprite position
 
 wire	[9:0] vstart;				//vertical start of selected sprite
+wire        spr_sscan2;   // sprite scan double bit
 wire	[9:0] vstop;				//vertical stop of selected sprite
 reg		[2:0] sprite;				//sprite select signal
 wire	[20:1] newptr;				//new sprite pointer value
@@ -169,11 +171,16 @@ assign address_out[15:1] = sprptl[sprite];
 //sprite vertical start position register bank (implemented using distributed ram)
 always @(posedge clk)
   if (clk7_en) begin
-  	if ((reg_address_in[8:6]==SPRPOSCTLBASE[8:6]) && (reg_address_in[2:1]==2'b00))//if bus write
+  	if ((reg_address_in[8:6]==SPRPOSCTLBASE[8:6]) && (reg_address_in[2:1]==2'b00)) begin
+      // if bus write
   		sprpos[pcsel] <= data_in[15:8];
+      sprposh[pcsel] <= data_in[7];
+    end
   end
 
 assign vstart[7:0] = sprpos[sprsel];
+
+assign spr_sscan2 = sprposh[sprsel];
 
 //sprite vertical stop position register bank (implemented using distributed ram)
 always @(posedge clk)
@@ -200,7 +207,7 @@ assign dmastate = dmastate_mem[sprsel];
 always @(*)
 	if (vbl || ({ecs&vstop[9],vstop[8:0]}==vpos[9:0]))
 		dmastate_in = 0;
-	else if ({ecs&vstart[9],vstart[8:0]}==vpos[9:0])
+	else if ( ({ecs&vstart[9],vstart[8:0]}==vpos[9:0]) && ((fmode[15] && spr_sscan2) ? (vpos[0] == vstart[0]) : 1'b1) )
 		dmastate_in = 1;
 	else
 		dmastate_in = dmastate;
