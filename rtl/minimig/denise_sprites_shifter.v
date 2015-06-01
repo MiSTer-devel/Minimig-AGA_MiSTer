@@ -67,8 +67,7 @@ always @(posedge clk)
 // generate load signal
 always @(posedge clk)
   if (clk7_en) begin
-    load <= armed && (hpos[7:0] == hstart[7:0]) && (fmode[15] ? hstart[8] : (hpos[8] == hstart[8])) ? 1'b1 : 1'b0;
-    //load <= armed && (hpos[8:0] == hstart[8:0]) ? 1'b1 : 1'b0;
+    load <= armed && (hpos[7:0] == hstart[7:0]) && (fmode[15] || (hpos[8] == hstart[8])) ? 1'b1 : 1'b0;
   end
 
 always @(posedge clk)
