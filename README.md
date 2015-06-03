@@ -1,17 +1,38 @@
-# minimig-de1
+# minimig-mist
+
+This is a port of the minimig core to the [MiST board](http://harbaum.org/till/mist/index.shtml).
+
+[minimig](http://en.wikipedia.org/wiki/Minimig) (short for Mini Amiga) is an open source re-implementation of an Amiga using a field-programmable gate array (FPGA). Original minimig author is Dennis van Weeren.
+
+[Amiga](http://en.wikipedia.org/wiki/Amiga_500) was - in my opinion - an amazing personal computer, announced around 1984, which - at the time - far surpassed any other personal computer on the market, with advanced graphic & sound capabilities, not to mention its great OS with preemptive multitasking capabilities.
+
+The minimig-mist variant in this repository has been upgraded with [AGA chipset](http://en.wikipedia.org/wiki/Amiga_Advanced_Graphics_Architecture) capabilites, which allows it to emulate the latest Amiga models ([Amiga 1200](http://en.wikipedia.org/wiki/Amiga_1200), [Amiga 4000](http://en.wikipedia.org/wiki/Amiga_4000) and (partially) [Amiga CD32](http://en.wikipedia.org/wiki/Amiga_CD32)).
 
 
-This is a port of minimig to the [Altera DE1 board](http://www.altera.com/education/univ/materials/boards/de1/unv-de1-board.html).
+## Core features supported
 
-[minimig](http://en.wikipedia.org/wiki/Minimig) (short for Mini Amiga) is an open source re-implementation of an Amiga 500 using a field-programmable gate array (FPGA). Original minimig author is Dennis van Weeren.
-
-[Amiga](http://en.wikipedia.org/wiki/Amiga_500) was (in my opinion) an amazing personal computer, announced around 1984, which - at the time - far surpassed any other personal computer on the market, with advanced graphic & sound capabilities.
+* chipset variants : OCS, ECS, AGA
+* chipRAM : 0.5MB - 2.0MB
+* slowRAM : 0.0MB - 1.5MB
+* fastRAM : 0.0MB - 24MB
+* CPU core : 68000, 68010, 68020
+* kickstart : 1.2 - 3.1 (256kB and 512kB kickstart ROMs currently supported)
+* HRTmon with custom registers mirror
+* floppy disks : 1-4 floppies (supports ADF floppy image format)
+* hard disks : 1-2 hard disk images (supports whole disk images, partition images, using whole SD card and using SD card partition)
+* video standard : PAL / NTSC
+* supports normal & scandoubled video output (15kHz / 30kHz) - can be used with a monitor or a TV with a SCART cable
+* peripherals : real Amiga mice, real Amiga joysticks, USB keyboards, USB mice, USB gamepads, MIDI in / out
+* could potentially support anything that can be connected to USB (ethernet, RTC, USB Flash, ...)
 
 
 ## Usage
 
+### Hardware
+To use this minimig core on the MiST board, you will at the minimum need an SD/SDHC card, formatted with the FAT32 filesystem, an USB keyboard and a compatible monitor / TV. Joysticks & mouse can be emulated on the keyboard. You will probably want to attach a set of speakers of headphones, a real Amiga or USB mouse and a real Amiga joystick or an USB gamepad. The MiST board is needed, too, of course ;)
+
 ### Software
-FPGA core releases can be found [here](http://meditation.somuch.guru/minimig/). The latest release is [minimig-de1-rel5](http://meditation.somuch.guru/minimig/files/de1/rel/minimig-de1-rel5.zip). The zip file contains a .sof and a .pof file that can be used to program the FPGA, and a de1_boot.bin file, which should be placed on the root of a FAT or FAT32 formatted SD / SDHC / MMC card.
+FPGA core releases can be found [here](http://meditation.somuch.guru/minimig/). The latest release available is *minimig-mist-1_0*. The zip file contains a minimig-mist-1_0.rbf file, which is the FPGA core, and a firmware.upg file, which can be used to upgrade the firmware on the ARM microcontroller (usually, there is no need to upgrade the firmware, unless it is specifically mentioned to do so). Both files should be placed on the root of your SD card. If you want this core to be the default, you need to rename it to *core.rbf*.
 
 To use the core, you will also need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
 
@@ -19,41 +40,87 @@ The minimig can read any ADF floppy images you place on the SD card. I recommend
 
 The minimig can also use HDF harddisk images, which can be created with [WinUAE](http://www.winuae.net/).
 
-### Hardware
-You need at least an SD/SDHC card for the software and a PS/2 keyboard connected to the DE1 board's PS/2 port. And, of course, a VGA monitor and a set of speakers. Minimig-DE1 supports joystick and mouse emulation on the keyboard, which can be enabled with the NumLock key. There's a way to also connect a PS/2 mouse and two real Amiga joysticks or real Amiga mouse, but you have to make an adapter board (there's a schematic [here](https://github.com/rkrajnc/minimig-de1/tree/master/minimig-src/minimigtg68/other)).
-
 ### Controling minimig
-DE1 board switches / keys:
 
-* SW9  - scandoubler enable
-* SW7  - audio L/R switch
-* SW6  - audio mix (mix some left audio to right channel and vice-versa)
-* KEY3 - left mouse button
-* KEY2 - right mouse button
-* KEY0 - reset
-
-Keyboard emulation:
+Keyboard special keys:
 
 * F12         - OSD menu
-* Ctrl+Break  - start monitor (HRTmon)
-* NumLock     - enable keyboard mouse/joystick emulation
-* NumSlash    - left mouse button
-* NumStar     - right mouse button
-* NumPad      - mouse movement
-* Cursor keys - joystick up/down/left/right
-* LCtrl       - joystick fire 1
-* LAlt        - joystick fire 2
+* F11         - start monitor (HRTmon)
+* ScrollLock  - toggle keyoard only / mouse / joystick 1 / joystick 2 emulation on the keyboard (direction keys + LCTRL)
+
+
+## Issues & Bug reports
+
+All issues for this project are tracked on this repository's [Issues page](https://github.com/rkrajnc/minimig-mist/issues).
+
+If you are a Github user, you can report any issues or bugs directly [here](https://github.com/rkrajnc/minimig-mist/issues).
+
+In case you don't have an account, you can use this [link](https://gitreports.com/issue/rkrajnc/minimig-mist).
+
+
+## Development notes
+
+All development on this repository is done on the [dev](https://github.com/rkrajnc/minimig-mist/tree/dev) branch, or a branch forked from dev. Master branch contains only release-ready, stable changes. All stable releases are tagged with a tag minimig-mist-*release_version*.
+
+See Changelog [here](https://raw.githubusercontent.com/rkrajnc/minimig-mist/master/Changelog).
+
+See TODO list [here](https://raw.githubusercontent.com/rkrajnc/minimig-mist/master/TODO).
+
+
+## Building minimig-mist from sources
+
+* checkout the source using this [link](https://github.com/rkrajnc/minimig-de1.git) (or alternatively, download source [zip file](https://github.com/rkrajnc/minimig-de1/archive/master.zip))
+* download / install / build an ARM GCC toolchain (install script [here](http://mist-board.googlecode.com/svn/trunk/tools/install_arm-none-eabi-gcc.sh), or alternatively, download an already build arm-none-eabi-gcc package for you operating system - requires support for ARM7TDMI)
+* download / install [Altera Quartus II](https://dl.altera.com/?edition=web) (latest supported version for Cyclone III FPGA device used on the MiST board is 13.1; I'm still using version 10.1SP1)
+* if you are using linux and have the $PATH variable properly set up, you can use the Makefile in the root of the project, otherwise build the ARM firmware using your favourite tool / GUI (firmware is in fw/mist), and build the core using Quartus GUI (project file in fpga/mist)
+* place the firmware.upg & minimig-mist.rbf files on the root of your SD card (optionally, rename minimig-mist.rbf to core.rbf to make it the default core)
+* don't forget to place kickstart ROM of your choosing on the root of the SD card (these are still copyrighted, so either copy the ROM from your real Amiga, or buy AmigaForever)
+* place some ADF (floppy disk images) of your favourite games / demos / programs on your SD card
+* optionally place minimig.bal, minimig.art & minimig.cop files on the root of your SD card for a nice bootup animation
+* enjoy minimig! :)
 
 
 ## Sources
 
+This sourcecode is based on my previous project ([minimig-de1](https://github.com/rkrajnc/minimig-de1)), and it continues from there. It was split into a new project to allow changes that would never fit in the FPGA on the DE1 board.
+
 Original minimig sources from Dennis van Weeren with updates by Jakub Bednarski are published on [Google Code](http://code.google.com/p/minimig/).
+
 Some minimig updates are published on the [Minimig Discussion Forum](http://www.minimig.net/), done by Sascha Boing.
-'ARM' firmware updates by Christian Vogelsang (https://github.com/cnvogelg/minimig_tc64) and A.M. Robinson (https://github.com/robinsonb5/minimig_tc64)
+
+ARM firmware updates by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
+
+MiST board & firmware by Till Harbaum ([MiST](https://code.google.com/p/mist-board/)).
+
 TG68K.C core by Tobias Gubener.
 
 
-## Links & info
+## Links & more info
 
-Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/)
+My page [somuch.guru](http://somuch.guru/).
+
+Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/).
+
+MiST board support & other cores on the [MiST Project Page](https://code.google.com/p/mist-board/).
+
+
+## License
+
+Copyright © 2011 - 2015 Rok Krajnc (rok.krajnc@gmail.com)
+
+Copyright © 2005 - 2015 Dennis van Weeren, Jakub Bednarski, Sascha Boing, A.M. Robinson, Tobias Gubener, Till Harbaum
+
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
