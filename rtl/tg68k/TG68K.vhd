@@ -152,6 +152,7 @@ COMPONENT TG68KdotC_Kernel
 	signal ziiiram_ena : std_logic;
 	signal sel_ziiiram : std_logic;
 	signal sel_kickram : std_logic;
+  signal sel_interrupt : std_logic;
 
 	type sync_states is (sync0, sync1, sync2, sync3, sync4, sync5, sync6, sync7, sync8, sync9);
 	signal sync_state		: sync_states;
@@ -187,7 +188,9 @@ BEGIN
 
   sel_kickram <= '1' when cpuaddr(23 downto 19)="11111" else '0'; -- $f8xxxx
 
-	sel_fast <= '1' when state/="01" AND
+  sel_interrupt <= '1' when cpuaddr(31 downto 28) = "1111" else '0'; -- TODO
+
+	sel_fast <= '1' when state/="01" AND --IPL/="000" AND -- TODO IPL doesn't work here ...
 		(
 			(turbochip_ena='1' and turbochip_d='1' AND sel_kickram='1' )
 			OR cpuaddr(23 downto 21)="001"
