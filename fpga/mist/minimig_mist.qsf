@@ -336,8 +336,12 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_VS
 
 
 
+
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/rga_decode.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/debug.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/dpram_be_1024x16.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/dpram_256x32.v
+set_global_assignment -name VERILOG_FILE ../../rtl/sdram/cpu_cache_new.v
 set_global_assignment -name VERILOG_FILE ../../rtl/cache/TwoWayCache.v
 set_global_assignment -name VERILOG_FILE ../../rtl/cache/CacheBlockRAM.v
 set_global_assignment -name VERILOG_FILE ../../rtl/cache/Cache_DataRAM.v
@@ -416,6 +420,5 @@ set_global_assignment -name VHDL_FILE ../../rtl/tg68k/TG68K.vhd
 set_global_assignment -name SDC_FILE minimig_mist.sdc
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_be_1024x16.qip
 set_global_assignment -name QIP_FILE ../../rtl/sdram/dpram_256x32.qip
-
 set_global_assignment -name SIGNALTAP_FILE scroller.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
