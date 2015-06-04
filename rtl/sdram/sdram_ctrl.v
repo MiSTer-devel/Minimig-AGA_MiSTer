@@ -348,10 +348,11 @@ end
 // cpu cache
 ////////////////////////////////////////
 
+`define SDRAM_NEW_CACHE
+
+`ifdef SDRAM_NEW_CACHE
 wire snoop_act;
 assign snoop_act = ((sdram_state==ph2)&&(slot1_type==CHIP)) || ((sdram_state==ph10)&&(slot2_type==CHIP));
-
-`if 1
 
 //// cpu cache ////
 cpu_cache_new cpu_cache (
@@ -376,7 +377,6 @@ cpu_cache_new cpu_cache (
   .snoop_act        (snoop_act),                    // snoop do write
   .snoop_dat_w      (chipWR)                        // snoop write data
 );
-
 
 `else
 
@@ -404,7 +404,9 @@ TwoWayCache mytwc (
   .snoop_addr       (20'bxxxxxxxxxxxxxxxxxxxx),
   .snoop_req        (1'bx)
 );
+
 `endif
+
 
 //// writebuffer ////
 // write buffer, enables CPU to continue while a write is in progress
