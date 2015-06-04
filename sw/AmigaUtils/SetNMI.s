@@ -6,7 +6,7 @@ execbase = 4
 superstate = -150
 userstate = -156
 NMI_vec = $7c
-HRTmon_entry = $00a0000c
+HRTmon_entry = $00a1000c
 
 EnterSuper:
   move.l execbase,a6
