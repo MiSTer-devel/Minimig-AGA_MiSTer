@@ -28,11 +28,13 @@ FPGA_BIN_FILES = $(FPGA_SRC_DIR)/out/minimig_mist.rbf
 ### build rules ###
 BUILD_OPT=clean all
 
+
 # all
-all: dirs fw fpga
+all: dirs
 	@echo Building all ...
-#	@make fw
-#	@make fpga
+	@make fw
+	@make fpga
+	@echo DONE building all!
 
 # directories
 dirs: Makefile
