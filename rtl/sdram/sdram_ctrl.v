@@ -348,6 +348,38 @@ end
 // cpu cache
 ////////////////////////////////////////
 
+wire snoop_act;
+assign snoop_act = ((sdram_state==ph2)&&(slot1_type==CHIP)) || ((sdram_state==ph10)&&(slot2_type==CHIP));
+
+`if 1
+
+//// cpu cache ////
+cpu_cache_new cpu_cache (
+  .clk              (sysclk),                       // clock
+  .rst              (!reset || !cache_rst),         // cache reset
+  .cache_en         (1'b1),                         // cache enable
+  .cpu_cs           (!cpustate[2]),                 // cpu activity
+  .cpu_adr          ({cpuAddr_mangled, 1'b0}),      // cpu address
+  .cpu_bs           ({!cpuU, !cpuL}),               // cpu byte selects
+  .cpu_we           (&cpustate[1:0]),               // cpu write
+  .cpu_ir           (!(|cpustate[1:0])),            // cpu instruction read
+  .cpu_dr           (cpustate[1] && !cpustate[0]),  // cpu data read
+  .cpu_dat_w        (cpuWR),                        // cpu write data
+  .cpu_dat_r        (cpuRD),                        // cpu read data
+  .cpu_ack          (ccachehit),                    // cpu acknowledge
+  .wb_en            (writebuffer_cache_ack),        // writebuffer enable
+  .sdr_dat_r        (sdata_reg),                    // sdram read data
+  .sdr_read_req     (cache_req),                    // sdram read request from cache
+  .sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
+  .snoop_cs         (!chipRW),                      // chip write
+  .snoop_adr        ({chipAddr, 1'b0}),             // chip address
+  .snoop_act        (snoop_act),                    // snoop do write
+  .snoop_dat_w      (chipWR)                        // snoop write data
+);
+
+
+`else
+
 //// cpu cache ////
 TwoWayCache mytwc (
   .clk              (sysclk),
@@ -372,7 +404,7 @@ TwoWayCache mytwc (
   .snoop_addr       (20'bxxxxxxxxxxxxxxxxxxxx),
   .snoop_req        (1'bx)
 );
-
+`endif
 
 //// writebuffer ////
 // write buffer, enables CPU to continue while a write is in progress
@@ -619,7 +651,7 @@ always @ (posedge sysclk) begin
   cache_fill_1                <= #1 1'b0;
   cache_fill_2                <= #1 1'b0;
   if(cpustate[5]) begin
-    cena <= 1'b 0;
+    cena <= 1'b0;
   end
   if(!init_done) begin
     if(sdram_state == ph1) begin
