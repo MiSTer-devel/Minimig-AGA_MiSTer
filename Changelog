@@ -10,6 +10,7 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-06-04 - TH - TG68         - PACK, UNPK instructions fix
 2015-06-01 - RK - DENISE       - another (final!) SSCAN2 fix (SH10 coincidence detection) - Fantastic Dizzy works now
 2015-06-01 - RK - AGNUS        - implemented sprite scandoubling (to be tested!)
 2015-06-01 - RK - MIST         - updated global makefile
