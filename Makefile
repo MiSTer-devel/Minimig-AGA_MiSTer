@@ -57,8 +57,8 @@ fpga: Makefile dirs
 # clean
 clean:
 	@echo Clearing release dir ...
-	@rm -rf $(FW_REL_DIR)
-	@rm -rf $(FPGA_REL_DIR)
+#	@rm -rf $(FW_REL_DIR)
+#	@rm -rf $(FPGA_REL_DIR)
 	@$(MAKE) -C $(FW_SRC_DIR) clean
 	@$(MAKE) -C $(FPGA_SRC_DIR) clean
 
