@@ -351,7 +351,7 @@ void ini_save(const ini_cfg_t* cfg)
   // loop over sections
   for (section=0; section<cfg->nsections; section++) {
     ini_parser_debugf("writing section %s ...", cfg->sections[section].name);
-    sprintf(line, "[%s]\n", cfg->sections[section].name);
+    siprintf(line, "[%s]\n", cfg->sections[section].name);
     ini_pt = ini_putline(line);
     // loop over vars
     for (var=0; var<cfg->nvars; var++) {
@@ -361,20 +361,20 @@ void ini_save(const ini_cfg_t* cfg)
           case UINT8:
           case UINT16:
           case UINT32:
-            sprintf(line, "%s=%u\n", cfg->vars[var].name, *(uint32_t*)(cfg->vars[var].var));
+            siprintf(line, "%s=%u\n", cfg->vars[var].name, *(uint32_t*)(cfg->vars[var].var));
             break;
           case INT8:
           case INT16:
           case INT32:
-            sprintf(line, "%s=%d\n", cfg->vars[var].name, *(int32_t*)(cfg->vars[var].var));
+            siprintf(line, "%s=%d\n", cfg->vars[var].name, *(int32_t*)(cfg->vars[var].var));
             break;
           #ifdef INI_ENABLE_FLOAT
           case FLOAT:
-            sprintf(line, "%s=%f\n", cfg->vars[var].name, *(float*)(cfg->vars[var].var));
+            siprintf(line, "%s=%f\n", cfg->vars[var].name, *(float*)(cfg->vars[var].var));
             break;
           #endif
           case STRING:
-            sprintf(line, "%s=\"%s\"\n", cfg->vars[var].name, (char*)(cfg->vars[var].var));
+            siprintf(line, "%s=\"%s\"\n", cfg->vars[var].name, (char*)(cfg->vars[var].var));
             break;
         }
         ini_pt = ini_putline(line);

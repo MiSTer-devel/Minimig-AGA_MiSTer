@@ -108,13 +108,19 @@ int8_t fat_medium_present() {
   if(lread == MMC_Read) 
     return MMC_CheckCard();
   
+#ifdef USB_STORAGE
   return(storage_devices > 0);
+#else
+  return(false);
+#endif
 }
 
+#ifdef USB_STORAGE
 void fat_switch_to_usb(void) {
   lread = usb_storage_read;
   lwrite = usb_storage_write; 
 }
+#endif
 
 // return fat sector index of a given cluster entry
 #define CLUSTER2SECTOR(c) ((c) >> (fat32?7:8))

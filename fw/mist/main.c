@@ -140,6 +140,7 @@ int main(void)
     if(!mmc_ok) {
       uint32_t to = GetTimer(2000);
 
+#ifdef USB_STORAGE
       // poll usb 2 seconds or until a mass storage device becomes ready
       while(!storage_devices && !CheckTimer(to)) 
 	usb_poll();
@@ -149,6 +150,9 @@ int main(void)
         FatalError(1);	
 
       fat_switch_to_usb();  // redirect file io to usb
+#else
+      FatalError(1);	
+#endif
     }
 
     if (!FindDrive())

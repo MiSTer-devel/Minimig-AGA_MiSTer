@@ -854,7 +854,7 @@ void fpga_init(char *name) {
       BootInit();
       WaitTimer(500);
       char rtl_ver[45];
-      sprintf(rtl_ver, "**** MINIMIG-AGA v%d.%d%s for MiST ****", ver_major, ver_minor, ver_beta ? " BETA" : "");
+      siprintf(rtl_ver, "**** MINIMIG-AGA v%d.%d%s for MiST ****", ver_major, ver_minor, ver_beta ? " BETA" : "");
       BootPrintEx(rtl_ver);
       BootPrintEx(" ");
       BootPrintEx("MINIMIG-AGA for MiST by Rok Krajnc (rok.krajnc@gmail.com)");
