@@ -22,16 +22,16 @@ reg [8-1:0] mem1 [0:1024-1];
 
 // port a
 always @ (posedge clock) begin
-  if (wren_a && byteena_a[0] mem0[wraddres_a] <= #1 data_a[ 8-1:0];
-  if (wren_a && byteena_a[1] mem1[wraddres_a] <= #1 data_a[16-1:8];
+  if (wren_a && byteena_a[0]) mem0[address_a] <= #1 data_a[ 8-1:0];
+  if (wren_a && byteena_a[1]) mem1[address_a] <= #1 data_a[16-1:8];
   q_a[ 8-1:0] <= #1 mem0[address_a];
   q_a[16-1:8] <= #1 mem1[address_a];
 end
 
 // port b
 always @ (posedge clock) begin
-  if (wren_b && byteena_b[0] mem0[wraddres_b] <= #1 data_b[ 8-1:0];
-  if (wren_b && byteena_b[1] mem1[wraddres_b] <= #1 data_b[16-1:8];
+  if (wren_b && byteena_b[0]) mem0[address_b] <= #1 data_b[ 8-1:0];
+  if (wren_b && byteena_b[1]) mem1[address_b] <= #1 data_b[16-1:8];
   q_b[ 8-1:0] <= #1 mem0[address_b];
   q_b[16-1:8] <= #1 mem1[address_b];
 end
