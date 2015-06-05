@@ -3,7 +3,7 @@
 
 
 module tg68_ram #(
-  parameter MS = 512;
+  parameter MS = 512
 )(
   input  wire           clk,
   input  wire           tg68_as,

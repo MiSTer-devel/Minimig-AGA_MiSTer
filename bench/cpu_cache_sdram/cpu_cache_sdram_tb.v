@@ -99,7 +99,9 @@ wire          tg68_uds;
 wire          tg68_lds;
 wire          tg68_rw;
 wire [ 2-1:0] cpu_config;
+wire          turbochipram;
 wire [ 6-1:0] memcfg;
+wire          tg68_ovr;
 wire [32-1:0] tg68_VBRout;
 `else
 reg  [32-1:0] tg68_cad=0;
@@ -123,9 +125,11 @@ reg           tg68_uds=0;
 reg           tg68_lds=0;
 reg           tg68_rw=0;
 wire [ 2-1:0] cpu_config;
+wire          turbochipram;
 wire [ 6-1:0] memcfg;
 reg  [32-1:0] tg68_VBRout=0;
 `endif
+
 
 //// toplevel logic ////
 assign sdctl_rst = pll_locked;
@@ -148,7 +152,9 @@ assign tg68_rst = ~RST; // TODO
 assign tg68_IPL = 3'b111;
 
 assign cpu_config = 2'b11;
-assign memcfg = 6'b100000;
+assign turbochipram = 1'b1;
+assign memcfg = 6'b110000;
+assign tg68_ovr = 1'b0;
 
 assign DRAM_CKE  = 1'b1;
 assign DRAM_CLK  = clk_sdram;
@@ -175,8 +181,10 @@ initial begin
   $display("* BENCH : SDRAM ready ...");
 
 `ifdef USE_TG68
+
   // TODO
   repeat (4000) @ (posedge clk_28);
+
 `else
 
   // single writes / reads
@@ -196,8 +204,6 @@ initial begin
   tg68_read (32'h0000000c, dat);
   tg68_write(32'h0000000e, 2'b11, 16'h4567);
   tg68_read (32'h0000000e, dat);
-
-
 
 `endif
 
@@ -313,7 +319,9 @@ TG68K tg68k (
   .fromram      (tg68_cout        ),
   .ramready     (tg68_cpuena      ),
   .cpu          (cpu_config       ),
-  .memcfg       (memcfg           ),
+  .turbochipram (turbochipram     ),
+  .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
+  .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
   .nResetOut    (                 ),
@@ -346,7 +354,6 @@ sdram_ctrl sdram_ctrl (
   .reset_in     (sdctl_rst        ),
   .cache_rst    (tg68_rst         ),
   .reset_out    (reset_out        ),
-  .cache_ena    (cctrl[0]         ),
   // sdram
   .sdaddr       (DRAM_ADDR        ),
   .sd_cs        (sdram_cs         ),
@@ -357,13 +364,13 @@ sdram_ctrl sdram_ctrl (
   .dqm          (sdram_dqm        ),
   .sdata        (DRAM_DQ          ),
   // host
-  .host_cs      (bridge_cs        ),
-  .host_adr     ({2'b00, bridge_adr}),
-  .host_we      (bridge_we        ),
-  .host_bs      (bridge_sel       ),
-  .host_wdat    (bridge_dat_w     ),
-  .host_rdat    (bridge_dat_r     ),
-  .host_ack     (bridge_ack       ),
+  .hostWR       (bridge_dat_w     ),
+  .hostAddr     ({2'b00, bridge_adr}),
+  .hostState    ({1'b0, 2'b01}    ),
+  .hostL        (!bridge_sel[0]   ),
+  .hostU        (!bridge_sel[1]   ),
+  .hostRD       (bridge_dat_r     ),
+  .hostena      (bridge_ack       ),
   // chip
   .chipAddr     ({2'b00, ram_address[21:1]}),
   .chipL        (_ram_ble         ),
@@ -372,6 +379,7 @@ sdram_ctrl sdram_ctrl (
   .chip_dma     (_ram_oe          ),
   .chipWR       (ram_data         ),
   .chipRD       (ramdata_in       ),
+  .chip48       (                 ),
   // cpu
   .cpuAddr      (tg68_cad[24:1]   ),
   .cpustate     (tg68_cpustate    ),
