@@ -272,20 +272,19 @@ always @ (posedge clk) begin
         if (!cpu_cs) cpu_sm_state <= #1 CPU_SM_IDLE;
       end
       CPU_SM_FILL : begin
-        if (!sdr_read_ack) begin
-          sdr_read_req <= #1 1'b1;
-          cpu_sm_state <= #1 CPU_SM_FILL;
-        end else begin
+        if (!sdr_read_ack) sdr_read_req <= #1 1'b1;
+        else begin
           sdr_read_req <= #1 1'b0;
           cpu_dat_r <= #1 sdr_dat_r;
           cpu_ack <= #1 1'b1;
-          if (!cpu_ack) begin
-            cpu_sm_state <= #1 CPU_SM_IDLE;
-          end else begin
-            cpu_sm_state <= #1 CPU_SM_FILL;
-          end
+          cpu_sm_state <= #1 CPU_SM_WAIT;
         end
       end
+/*
+      CPU_SM_FILLW : begin
+        if (!cpu_ack) cpu_sm_state <= #1 CPU_SM_IDLE;
+      end
+*/
     endcase
     // when CPU lowers its request signal, lower ack too
     if (!cpu_cs) cpu_ack <= #1 1'b0;
