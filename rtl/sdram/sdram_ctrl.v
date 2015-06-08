@@ -352,7 +352,7 @@ end
 
 `ifdef SDRAM_NEW_CACHE
 wire snoop_act;
-assign snoop_act = ((sdram_state==ph2)&&(slot1_type==CHIP)) || ((sdram_state==ph10)&&(slot2_type==CHIP));
+assign snoop_act = ((sdram_state==ph2)&&(slot1_type==CHIP));
 
 //// cpu cache ////
 cpu_cache_new cpu_cache (
@@ -372,8 +372,8 @@ cpu_cache_new cpu_cache (
   .sdr_dat_r        (sdata_reg),                    // sdram read data
   .sdr_read_req     (cache_req),                    // sdram read request from cache
   .sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
-  .snoop_cs         (!chipRW),                      // chip write
-  .snoop_adr        ({chipAddr, 1'b0}),             // chip address
+  .snoop_cs         (!cas_sd_we),                   // chip write
+  .snoop_adr        (casaddr),                      // chip address
   .snoop_act        (snoop_act),                    // snoop do write
   .snoop_dat_w      (chipWR)                        // snoop write data
 );

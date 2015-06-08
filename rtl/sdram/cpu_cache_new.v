@@ -31,7 +31,7 @@ module cpu_cache_new (
   input  wire           sdr_read_ack, // sdram read acknowledge to cache
   // snoop
   input  wire           snoop_cs,     // chip write
-  input  wire [ 24-1:0] snoop_adr,    // chip address                      
+  input  wire [ 25-1:0] snoop_adr,    // chip address                      
   input  wire           snoop_act,    // snoop do write
   input  wire [ 16-1:0] snoop_dat_w   // snoop write data
 );
@@ -59,6 +59,11 @@ reg  [32-1:0] cpu_sm_tag_dat_w;
 reg  [10-1:0] sdr_sm_adr;
 reg           sdr_sm_itag_we;
 reg           sdr_sm_dtag_we;
+reg           sdr_sm_iram0_we;
+reg           sdr_sm_iram1_we;
+reg           sdr_sm_dram0_we;
+reg           sdr_sm_dram1_we;
+reg  [16-1:0] sdr_sm_mem_dat_w;
 reg  [32-1:0] sdr_sm_tag_dat_w;
 
 // cpu address
@@ -280,11 +285,6 @@ always @ (posedge clk) begin
           cpu_sm_state <= #1 CPU_SM_WAIT;
         end
       end
-/*
-      CPU_SM_FILLW : begin
-        if (!cpu_ack) cpu_sm_state <= #1 CPU_SM_IDLE;
-      end
-*/
     endcase
     // when CPU lowers its request signal, lower ack too
     if (!cpu_cs) cpu_ack <= #1 1'b0;
@@ -301,11 +301,19 @@ always @ (posedge clk) begin
     sdr_sm_state      <= #1 SDR_SM_INIT0;
     sdr_sm_itag_we    <= #1 1'b0;
     sdr_sm_dtag_we    <= #1 1'b0;
+    sdr_sm_iram0_we   <= #1 1'b0;
+    sdr_sm_iram1_we   <= #1 1'b0;
+    sdr_sm_dram0_we   <= #1 1'b0;
+    sdr_sm_dram1_we   <= #1 1'b0;
   end else begin
     // default values
     cache_init_done   <= #1 1'b1;
     sdr_sm_itag_we    <= #1 1'b0;
     sdr_sm_dtag_we    <= #1 1'b0;
+    sdr_sm_iram0_we   <= #1 1'b0;
+    sdr_sm_iram1_we   <= #1 1'b0;
+    sdr_sm_dram0_we   <= #1 1'b0;
+    sdr_sm_dram1_we   <= #1 1'b0;
     // state machine
     case (sdr_sm_state)
       SDR_SM_INIT0 : begin
@@ -331,6 +339,10 @@ always @ (posedge clk) begin
       end
       SDR_SM_IDLE : begin
         cache_init_done <= #1 1'b1;
+        sdr_sm_adr <= #1 snoop_adr[10:1];
+        if (snoop_act) begin
+          sdr_sm_adr <= #1 snoop_adr[10:1];
+        end
       end
     endcase
   end
@@ -375,6 +387,10 @@ assign idram0_cpu_adr   = {cpu_adr_idx, cpu_adr_blk};
 assign idram0_cpu_bs    = cpu_sm_bs;
 assign idram0_cpu_we    = cpu_sm_iram0_we;
 assign idram0_cpu_dat_w = cpu_sm_mem_dat_w;
+assign idram0_sdr_adr   = sdr_sm_adr[9:0];
+assign idram0_sdr_bs    = 2'b11;
+assign idram0_sdr_we    = sdr_sm_iram0_we;
+assign idram0_sdr_dat_w = sdr_sm_mem_dat_w;
 
 `ifdef SOC_SIM
 dpram_inf_be_1024x16
@@ -400,6 +416,10 @@ assign idram1_cpu_adr   = {cpu_adr_idx, cpu_adr_blk};
 assign idram1_cpu_bs    = cpu_sm_bs;
 assign idram1_cpu_we    = cpu_sm_iram1_we;
 assign idram1_cpu_dat_w = cpu_sm_mem_dat_w;
+assign idram1_sdr_adr   = sdr_sm_adr[9:0];
+assign idram1_sdr_bs    = 2'b11;
+assign idram1_sdr_we    = sdr_sm_iram1_we;
+assign idram1_sdr_dat_w = sdr_sm_mem_dat_w;
 
 `ifdef SOC_SIM
 dpram_inf_be_1024x16
@@ -459,6 +479,10 @@ assign ddram0_cpu_adr   = {cpu_adr_idx, cpu_adr_blk};
 assign ddram0_cpu_bs    = cpu_sm_bs;
 assign ddram0_cpu_we    = cpu_sm_dram0_we;
 assign ddram0_cpu_dat_w = cpu_sm_mem_dat_w;
+assign ddram0_sdr_adr   = sdr_sm_adr[9:0];
+assign ddram0_sdr_bs    = 2'b11;
+assign ddram0_sdr_we    = sdr_sm_dram0_we;
+assign ddram0_sdr_dat_w = sdr_sm_mem_dat_w;
 
 `ifdef SOC_SIM
 dpram_inf_be_1024x16
@@ -484,6 +508,10 @@ assign ddram1_cpu_adr   = {cpu_adr_idx, cpu_adr_blk};
 assign ddram1_cpu_bs    = cpu_sm_bs;
 assign ddram1_cpu_we    = cpu_sm_dram1_we;
 assign ddram1_cpu_dat_w = cpu_sm_mem_dat_w;
+assign ddram1_sdr_adr   = sdr_sm_adr[9:0];
+assign ddram1_sdr_bs    = 2'b11;
+assign ddram1_sdr_we    = sdr_sm_dram1_we;
+assign ddram1_sdr_dat_w = sdr_sm_mem_dat_w;
 
 `ifdef SOC_SIM
 dpram_inf_be_1024x16
