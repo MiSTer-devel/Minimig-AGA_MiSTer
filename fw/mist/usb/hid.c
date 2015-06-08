@@ -303,8 +303,9 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       
       // use fixed setup for known interfaces 
+      
       if((vid == 0x0079) && (pid == 0x0011) && (i==0)) {
-	iprintf("hacking cheap NES pad\n");
+        iprintf("hacking cheap NES pad\n");
         
         // fixed setup for nes gamepad
         info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5;
@@ -318,15 +319,84 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       }
 
       if((vid == 0x04d8) && (pid == 0xf6ec) && (i==0)) {
-	iprintf("hacking 5200daptor\n");
-        
-	info->iface[0].conf.joystick_mouse.button[2].byte_offset = 4;
-	info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Reset"
-	info->iface[0].conf.joystick_mouse.button[3].byte_offset = 4;
-	info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x10;    // "Start"
+        iprintf("hacking 5200daptor\n");
+            
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 4;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Reset"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 4;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x10;    // "Start"
 
-	info->iface[0].is_5200daptor = true;
+        info->iface[0].is_5200daptor = true;
       }
+      
+      if((vid == 0x0583) && (pid == 0x2060) && (i==0)) {
+        iprintf("hacking iBuffalo SNES pad - BSGP801\n");
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Select"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x80;    // "Start"
+      }
+      
+      if((vid == 0x0411) && (pid == 0x00C6) && (i==0)) {
+        iprintf("hacking Buffalo NES pad - BGCFC801\n");
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Select"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x80;    // "Start"
+      }
+      
+      if((vid == 0x081F) && (pid == 0xE401) && (i==0)) {
+        iprintf("hacking no-brand SNES Pad\n");
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x20;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x80;    // "B"
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x10;    // "Select"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x20;    // "Start"
+      }
+      
+      if((vid == 0x0079) && (pid == 0x0006) && (i==0)) {
+        iprintf("hacking RetroLink N64 pad\n");
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x20;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x10 | 0x08; // "B"
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x02 | 0x01 | 0x04;    // "Select" - the shoulder buttons or Z in GC pad
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x20;    // "Start"
+      }
+      
+      // annoyingly retrolink used the exact same IDs for this and B/A live in different offsets
+      /*
+      if((vid == 0x0079) && (pid == 0x0006) && (i==0)) { //REV 0109
+        iprintf("hacking RetroLink Gamecube pad\n");
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x40;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x80;    // "B"
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x02 | 0x01 | 0x04;    // "Select" - any of shoulder or Z buttons
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x20;    // "Start"
+      }
+      */
+      
+      if((vid == 0x0F30) && (pid == 0x1012) && (i==0)) {
+        iprintf("hacking Qanba Q4RAF arcade stick\n");
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5; 
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x04;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x08; // "B"
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x20;    // "Select"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x02;    // "Start"
+      }
+      
+      
     }
 
     rcode = hid_set_idle(dev, info->iface[i].iface_idx, 0, 0);
@@ -610,13 +680,15 @@ static uint8_t usb_hid_poll(usb_device_t *dev) {
 		  uint8_t size = conf->joystick_mouse.hat.size;
 		  while(size-- > 4) 
 		    hat >>= 1;
+
+		  //		  iprintf("HAT = %d\n", hat);
 		  
 		  // TODO: Deal with 3 bit (4 direction/no diagonal) hats 
-		  static const uint8_t hat2x[] = { 128,255,255,255,128,  0,  0,  0 };
-		  static const uint8_t hat2y[] = {   0,  0,128,255,255,255,128,  0 };
+		  static const uint8_t hat2x[] = { 127,255,255,255,127,  0,  0,  0 };
+		  static const uint8_t hat2y[] = {   0,  0,127,255,255,255,127,  0 };
 
 		  if(hat&8) 
-		    a[0] = a[1] = 128;
+		    a[0] = a[1] = 127;
 		  else {
 		    a[0] = hat2x[hat];
 		    a[1] = hat2y[hat];
@@ -687,6 +759,22 @@ void hid_set_kbd_led(unsigned char led, bool on) {
 
 void hid_joystick_axis_remap(char *s) {
   hid_debugf("%s(%s)", __FUNCTION__, s);
+}
+
+int8_t hid_keyboard_present(void) {
+  // check all USB devices for keyboards
+  usb_device_t *dev = usb_get_devices();
+  int i;
+  for(i=0;i<USB_NUMDEVICES;i++) {
+    if(dev[i].bAddress && (dev[i].class == &usb_hid_class)) {
+      // search for keyboard interfaces
+      int j;
+      for(j=0;j<MAX_IFACES;j++)
+	if(dev[i].hid_info.iface[j].device_type == HID_DEVICE_KEYBOARD)
+	  return 1;
+    }
+  }
+  return 0;
 }
 
 const usb_device_class_config_t usb_hid_class = {
