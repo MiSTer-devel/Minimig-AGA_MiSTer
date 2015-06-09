@@ -372,9 +372,8 @@ cpu_cache_new cpu_cache (
   .sdr_dat_r        (sdata_reg),                    // sdram read data
   .sdr_read_req     (cache_req),                    // sdram read request from cache
   .sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
-  .snoop_cs         (!cas_sd_we),                   // chip write
-  .snoop_adr        (casaddr),                      // chip address
-  .snoop_act        (snoop_act),                    // snoop do write
+  .snoop_act        (!cas_sd_we && snoop_act),      // snoop act (write only - just update existing data in cache)
+  .snoop_adr        (casaddr),                      // snoop address
   .snoop_dat_w      (chipWR)                        // snoop write data
 );
 
