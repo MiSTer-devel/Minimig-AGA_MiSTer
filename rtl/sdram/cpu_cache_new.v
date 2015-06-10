@@ -10,29 +10,30 @@
 
 module cpu_cache_new (
   // system
-  input  wire           clk,          // clock
-  input  wire           rst,          // cache reset
-  input  wire           cache_en,     // cache enable
+  input  wire           clk,            // clock
+  input  wire           rst,            // cache reset
+  input  wire           cache_en,       // cache enable
+  input  wire           cache_inhibit,  // cache inhibit
   // cpu
-  input  wire           cpu_cs,       // cpu activity
-  input  wire [ 25-1:0] cpu_adr,      // cpu address
-  input  wire [  2-1:0] cpu_bs,       // cpu byte selects
-  input  wire           cpu_we,       // cpu write
-  input  wire           cpu_ir,       // cpu instruction read
-  input  wire           cpu_dr,       // cpu data read
-  input  wire [ 16-1:0] cpu_dat_w,    // cpu write data
-  output reg  [ 16-1:0] cpu_dat_r,    // cpu read data
-  output reg            cpu_ack,      // cpu acknowledge
+  input  wire           cpu_cs,         // cpu activity
+  input  wire [ 25-1:0] cpu_adr,        // cpu address
+  input  wire [  2-1:0] cpu_bs,         // cpu byte selects
+  input  wire           cpu_we,         // cpu write
+  input  wire           cpu_ir,         // cpu instruction read
+  input  wire           cpu_dr,         // cpu data read
+  input  wire [ 16-1:0] cpu_dat_w,      // cpu write data
+  output reg  [ 16-1:0] cpu_dat_r,      // cpu read data
+  output reg            cpu_ack,        // cpu acknowledge
   // writebuffer
-  output reg            wb_en,        // writebuffer enable
+  output reg            wb_en,          // writebuffer enable
   // sdram
-  input  wire [ 16-1:0] sdr_dat_r,    // sdram read data
-  output reg            sdr_read_req, // sdram read request from cache
-  input  wire           sdr_read_ack, // sdram read acknowledge to cache
+  input  wire [ 16-1:0] sdr_dat_r,      // sdram read data
+  output reg            sdr_read_req,   // sdram read request from cache
+  input  wire           sdr_read_ack,   // sdram read acknowledge to cache
   // snoop
-  input  wire           snoop_act,    // snoop act (write only - just update existing data in cache)
-  input  wire [ 25-1:0] snoop_adr,    // chip address                      
-  input  wire [ 16-1:0] snoop_dat_w   // snoop write data
+  input  wire           snoop_act,      // snoop act (write only - just update existing data in cache)
+  input  wire [ 25-1:0] snoop_adr,      // chip address                      
+  input  wire [ 16-1:0] snoop_dat_w     // snoop write data
 );
 
 
@@ -313,33 +314,38 @@ always @ (posedge clk) begin
           // read data to cpu
           cpu_dat_r <= #1 sdr_dat_r;
           cpu_ack <= #1 1'b1;
-          // update tag ram
-          if (cpu_ir) begin
-            if (itag_lru) begin
-              cpu_sm_tag_dat_w <= #1 {1'b0, 1'b1, itram_cpu_dat_r[29], 1'b0, itram_cpu_dat_r[27:14], cpu_adr_tag};
+          if (cache_inhibit) begin
+            // don't update cache if caching is inhibited
+            cpu_sm_state <= #1 CPU_SM_FILLW;
+          end else begin      
+            // update tag ram
+            if (cpu_ir) begin
+              if (itag_lru) begin
+                cpu_sm_tag_dat_w <= #1 {1'b0, 1'b1, itram_cpu_dat_r[29], 1'b0, itram_cpu_dat_r[27:14], cpu_adr_tag};
+              end else begin
+                cpu_sm_tag_dat_w <= #1 {1'b1, itram_cpu_dat_r[30], 1'b1, 1'b0, cpu_adr_tag, itram_cpu_dat_r[13: 0]};
+              end
             end else begin
-              cpu_sm_tag_dat_w <= #1 {1'b1, itram_cpu_dat_r[30], 1'b1, 1'b0, cpu_adr_tag, itram_cpu_dat_r[13: 0]};
+              if (dtag_lru) begin
+                cpu_sm_tag_dat_w <= #1 {1'b0, 1'b1, dtram_cpu_dat_r[29], 1'b0, dtram_cpu_dat_r[27:14], cpu_adr_tag};
+              end else begin
+                cpu_sm_tag_dat_w <= #1 {1'b1, dtram_cpu_dat_r[30], 1'b1, 1'b0, cpu_adr_tag, dtram_cpu_dat_r[13: 0]};
+              end
             end
-          end else begin
-            if (dtag_lru) begin
-              cpu_sm_tag_dat_w <= #1 {1'b0, 1'b1, dtram_cpu_dat_r[29], 1'b0, dtram_cpu_dat_r[27:14], cpu_adr_tag};
-            end else begin
-              cpu_sm_tag_dat_w <= #1 {1'b1, dtram_cpu_dat_r[30], 1'b1, 1'b0, cpu_adr_tag, dtram_cpu_dat_r[13: 0]};
-            end
+            cpu_sm_itag_we <= #1  cpu_ir;
+            cpu_sm_dtag_we <= #1 !cpu_ir;
+            // cache line fill 1st word
+            cpu_sm_tag_adr <= #1 cpu_adr_tag;
+            cpu_sm_id   <= #1 cpu_ir;
+            cpu_sm_ilru <= #1 itag_lru;
+            cpu_sm_dlru <= #1 dtag_lru;
+            cpu_sm_mem_dat_w <= #1 sdr_dat_r;
+            cpu_sm_iram0_we <= #1  itag_lru &&  cpu_ir;
+            cpu_sm_iram1_we <= #1 !itag_lru &&  cpu_ir;
+            cpu_sm_dram0_we <= #1  dtag_lru && !cpu_ir;
+            cpu_sm_dram1_we <= #1 !dtag_lru && !cpu_ir;
+            cpu_sm_state <= #1 CPU_SM_FILL2;
           end
-          cpu_sm_itag_we <= #1  cpu_ir;
-          cpu_sm_dtag_we <= #1 !cpu_ir;
-          // cache line fill 1st word
-          cpu_sm_tag_adr <= #1 cpu_adr_tag;
-          cpu_sm_id   <= #1 cpu_ir;
-          cpu_sm_ilru <= #1 itag_lru;
-          cpu_sm_dlru <= #1 dtag_lru;
-          cpu_sm_mem_dat_w <= #1 sdr_dat_r;
-          cpu_sm_iram0_we <= #1  itag_lru &&  cpu_ir;
-          cpu_sm_iram1_we <= #1 !itag_lru &&  cpu_ir;
-          cpu_sm_dram0_we <= #1  dtag_lru && !cpu_ir;
-          cpu_sm_dram1_we <= #1 !dtag_lru && !cpu_ir;
-          cpu_sm_state <= #1 CPU_SM_FILL2;
         end
       end
       CPU_SM_FILL2 : begin
@@ -436,9 +442,8 @@ always @ (posedge clk) begin
         // wait for action
         cache_init_done <= #1 1'b1;
         sdr_sm_adr <= #1 snoop_adr[10:1];
-        if (snoop_act) begin
+        if (1'b0/*snoop_act*/) begin
           // chip write happening
-          sdr_sm_mem_dat_w <= #1 snoop_dat_w;
           sdr_sm_state <= #1 SDR_SM_SNOOP;
         end/* else if (sdr_read_req) begin
           // cpu read cache request
@@ -449,6 +454,7 @@ always @ (posedge clk) begin
       end
       SDR_SM_SNOOP : begin
         // update if a matching address is in cache
+        sdr_sm_mem_dat_w <= #1 snoop_dat_w;
         sdr_sm_iram0_we <= #1 sdr_itag0_match && sdr_itag0_valid;
         sdr_sm_iram1_we <= #1 sdr_itag1_match && sdr_itag1_valid;
         sdr_sm_dram0_we <= #1 sdr_dtag0_match && sdr_dtag0_valid;
@@ -568,7 +574,7 @@ assign idram0_cpu_adr   = fill ? cpu_sm_adr : {cpu_adr_idx, cpu_adr_blk};
 assign idram0_cpu_bs    = cpu_sm_bs;
 assign idram0_cpu_we    = cpu_sm_iram0_we;
 assign idram0_cpu_dat_w = cpu_sm_mem_dat_w;
-assign idram0_sdr_adr   = sdr_sm_adr[9:0];
+assign idram0_sdr_adr   = snoop_adr[9:0];
 assign idram0_sdr_bs    = 2'b11;
 assign idram0_sdr_we    = sdr_sm_iram0_we;
 assign idram0_sdr_dat_w = sdr_sm_mem_dat_w;
@@ -597,7 +603,7 @@ assign idram1_cpu_adr   = fill ? cpu_sm_adr : {cpu_adr_idx, cpu_adr_blk};
 assign idram1_cpu_bs    = cpu_sm_bs;
 assign idram1_cpu_we    = cpu_sm_iram1_we;
 assign idram1_cpu_dat_w = cpu_sm_mem_dat_w;
-assign idram1_sdr_adr   = sdr_sm_adr[9:0];
+assign idram1_sdr_adr   = snoop_adr[9:0];
 assign idram1_sdr_bs    = 2'b11;
 assign idram1_sdr_we    = sdr_sm_iram1_we;
 assign idram1_sdr_dat_w = sdr_sm_mem_dat_w;
@@ -666,7 +672,7 @@ assign ddram0_cpu_adr   = fill ? cpu_sm_adr : {cpu_adr_idx, cpu_adr_blk};
 assign ddram0_cpu_bs    = cpu_sm_bs;
 assign ddram0_cpu_we    = cpu_sm_dram0_we;
 assign ddram0_cpu_dat_w = cpu_sm_mem_dat_w;
-assign ddram0_sdr_adr   = sdr_sm_adr[9:0];
+assign ddram0_sdr_adr   = snoop_adr[9:0];
 assign ddram0_sdr_bs    = 2'b11;
 assign ddram0_sdr_we    = sdr_sm_dram0_we;
 assign ddram0_sdr_dat_w = sdr_sm_mem_dat_w;
@@ -695,7 +701,7 @@ assign ddram1_cpu_adr   = fill ? cpu_sm_adr : {cpu_adr_idx, cpu_adr_blk};
 assign ddram1_cpu_bs    = cpu_sm_bs;
 assign ddram1_cpu_we    = cpu_sm_dram1_we;
 assign ddram1_cpu_dat_w = cpu_sm_mem_dat_w;
-assign ddram1_sdr_adr   = sdr_sm_adr[9:0];
+assign ddram1_sdr_adr   = snoop_adr[9:0];
 assign ddram1_sdr_bs    = 2'b11;
 assign ddram1_sdr_we    = sdr_sm_dram1_we;
 assign ddram1_sdr_dat_w = sdr_sm_mem_dat_w;

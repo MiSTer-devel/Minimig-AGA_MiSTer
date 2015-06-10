@@ -55,6 +55,7 @@ entity TG68K is
         cpu           : in std_logic_vector(1 downto 0);
         fastramcfg           : in std_logic_vector(2 downto 0);
 		  turbochipram : in std_logic;
+        cache_inhibit : out std_logic;
         ovr           : in std_logic;
         ramaddr    	  : out std_logic_vector(31 downto 0);
         cpustate      : out std_logic_vector(5 downto 0);
@@ -63,7 +64,7 @@ entity TG68K is
         cpuDMA         : buffer std_logic;
         ramlds        : out std_logic;
         ramuds        : out std_logic;
-        VBR_out       : out std_logic_vector(31 downto 0)
+        VBR_out       : buffer std_logic_vector(31 downto 0)
         );
 end TG68K;
 
@@ -87,7 +88,7 @@ COMPONENT TG68KdotC_Kernel
 		IPL_autovector   	: in std_logic:='0';
 		CPU             	: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only same parts - yet)
         addr           		: buffer std_logic_vector(31 downto 0);
-        data_write        	: out std_logic_vector(15 downto 0);
+        data_write        	: buffer std_logic_vector(15 downto 0);
 		nWr			  		: out std_logic;
 		nUDS, nLDS	  		: out std_logic;
 		nResetOut	  		: out std_logic;
@@ -102,15 +103,8 @@ COMPONENT TG68KdotC_Kernel
 
 
    SIGNAL cpuaddr     : std_logic_vector(31 downto 0);
-   SIGNAL t_addr      : std_logic_vector(31 downto 0);
---   SIGNAL data_write  : std_logic_vector(15 downto 0);
---   SIGNAL t_data      : std_logic_vector(15 downto 0);
    SIGNAL r_data      : std_logic_vector(15 downto 0);
    SIGNAL cpuIPL      : std_logic_vector(2 downto 0);
-   SIGNAL addr_akt_s  : std_logic;
-   SIGNAL addr_akt_e  : std_logic;
-   SIGNAL data_akt_s  : std_logic;
-   SIGNAL data_akt_e  : std_logic;
    SIGNAL as_s        : std_logic;
    SIGNAL as_e        : std_logic;
    SIGNAL uds_s       : std_logic;
@@ -123,23 +117,18 @@ COMPONENT TG68KdotC_Kernel
    SIGNAL waitm       : std_logic;
    SIGNAL clkena_e    : std_logic;
    SIGNAL S_state     : std_logic_vector(1 downto 0);
-   SIGNAL S_stated     : std_logic_vector(1 downto 0);
    SIGNAL decode	  : std_logic;
    SIGNAL wr	      : std_logic;
    SIGNAL uds_in	  : std_logic;
    SIGNAL lds_in	  : std_logic;
    SIGNAL state       : std_logic_vector(1 downto 0);
    SIGNAL clkena	  : std_logic;
---   SIGNAL n_clk		  : std_logic;
    SIGNAL vmaena	  : std_logic;
-   SIGNAL vmaenad	  : std_logic;
    SIGNAL state_ena	  : std_logic;
-   SIGNAL sync_state3 : std_logic;
    SIGNAL eind	      : std_logic;
    SIGNAL eindd	      : std_logic;
    SIGNAL sel_autoconfig: std_logic;
    SIGNAL autoconfig_out: std_logic_vector(1 downto 0); -- We use this as a counter since we have two cards to configure
-   SIGNAL autoconfig_out_next: std_logic_vector(1 downto 0); -- We use this as a counter since we have two cards to configure
    SIGNAL autoconfig_data: std_logic_vector(3 downto 0); -- Zorro II RAM
    SIGNAL autoconfig_data2: std_logic_vector(3 downto 0); -- Zorro III RAM
    SIGNAL sel_fast: std_logic;
@@ -167,54 +156,41 @@ BEGIN
   -- TODO change outgoing address to 0x7c when NMi vector is requested (VBR+0x7c), so that the response comes from cart.v
   -- also disable selecting fast ram in this case!
 
---	n_clk <= NOT clk;
---	wrd <= data_akt_e OR data_akt_s;
 	wrd <= wr;
-	addr <= cpuaddr;-- WHEN addr_akt_e='1' ELSE t_addr WHEN addr_akt_s='1' ELSE "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
---	data <= data_write WHEN data_akt_e='1' ELSE t_data WHEN data_akt_s='1' ELSE "ZZZZZZZZZZZZZZZZ";
---	datatg68 <= fromram WHEN sel_fast='1' ELSE r_data; 
+	addr <= cpuaddr;
 	datatg68 <= --NMI_vector when ovr='1' ELSE
     fromram WHEN sel_fast='1'
 		ELSE autoconfig_data&r_data(11 downto 0) when sel_autoconfig='1' and autoconfig_out="01" -- Zorro II autoconfig
 		ELSE autoconfig_data2&r_data(11 downto 0) when sel_autoconfig='1' and autoconfig_out="10" -- Zorro III autoconfig
 		ELSE r_data;
---	toram <= data_write;
 	
    sel_autoconfig <= '1' when fastramcfg(2 downto 0)/="000" AND cpuaddr(23 downto 19)="11101" AND autoconfig_out/="00" ELSE '0'; --$E80000 - $EFFFFF
 
 	sel_ziiiram <='1' when cpuaddr(31 downto 24)=ziii_base and ziiiram_ena='1' else '0';
 
-	sel_chipram <= '1' when state/="01" AND (cpuaddr(23 downto 21)="000") ELSE '0'; --$000000 - $1FFFFF
+	sel_chipram <= '1' when sel_ziiiram/='1' and turbochip_ena='1' and turbochip_d='1' AND state/="01" AND (cpuaddr(23 downto 21)="000") ELSE '0'; --$000000 - $1FFFFF
 
-  sel_kickram <= '1' when cpuaddr(23 downto 19)="11111" else '0'; -- $f8xxxx
+  sel_kickram <= '1' when sel_ziiiram /='1' and turbochip_ena='1' and turbochip_d='1' AND state/="01" AND (cpuaddr(23 downto 19)="11111") else '0'; -- $f8xxxx
 
   sel_interrupt <= '1' when cpuaddr(31 downto 28) = "1111" else '0'; -- TODO
 
-	sel_fast <= '1' when state/="01" AND --IPL/="000" AND -- TODO IPL doesn't work here ...
-		(
-			(turbochip_ena='1' and turbochip_d='1' AND sel_kickram='1' )
-			OR cpuaddr(23 downto 21)="001"
+	sel_fast <= '1' when state/="01" AND (
+			   cpuaddr(23 downto 21)="001"
 			OR cpuaddr(23 downto 21)="010"
 			OR cpuaddr(23 downto 21)="011"
 			OR cpuaddr(23 downto 21)="100"
 			OR sel_ziiiram='1'
-		)
-		ELSE '0'; --$200000 - $9FFFFF
+      OR sel_chipram='1'
+      OR sel_kickram='1'
+		) ELSE '0'; --$200000 - $9FFFFF
 
---	sel_fast <= '1' when state/="01" AND (cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" OR cpuaddr(23 downto 21)="011" OR cpuaddr(23 downto 21)="100") ELSE '0'; --$200000 - $9FFFFF
---	sel_fast <= '1' when cpuaddr(23 downto 21)="001" OR cpuaddr(23 downto 21)="010" ELSE '0'; --$200000 - $5FFFFF
---	sel_fast <= '1' when cpuaddr(23 downto 19)="11111" ELSE '0'; --$F800000;
---	sel_fast <= '0'; --$200000 - $9FFFFF
---	sel_fast <= '1' when cpuaddr(24)='1' AND state/="01" ELSE '0'; --$1000000 - $1FFFFFF
+  cache_inhibit <= '1' WHEN sel_chipram='1' ELSE '0';
+
 	ramcs <= (NOT sel_fast) or slower(0);-- OR (state(0) AND NOT state(1));
---	cpuDMA <= NOT ramcs;
 	cpuDMA <= sel_fast;
 	cpustate <= clkena&slower(1 downto 0)&ramcs&state;
 	ramlds <= lds_in;
 	ramuds <= uds_in;
---	ramaddr(23 downto 0) <= cpuaddr(23 downto 0);
---	ramaddr(24) <= sel_fast;
---	ramaddr(31 downto 25) <= cpuaddr(31 downto 25);
 	ramaddr(31 downto 25) <= "0000000";
 	ramaddr(24) <= sel_ziiiram;	-- Remap the Zorro III RAM to 0x1000000
 	ramaddr(23 downto 21) <= "100" when sel_ziiiram&cpuaddr(23 downto 21)="0001" -- 2 -> 8
@@ -240,8 +216,6 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
         clk => clk,               	-- : in std_logic;
         nReset => reset,            -- : in std_logic:='1';			--low active
         clkena_in => clkena,	        -- : in std_logic:='1';
---        data_in => r_data,       -- : in std_logic_vector(15 downto 0);
---        data_in => data_read,       -- : in std_logic_vector(15 downto 0);
         data_in => datatg68,       -- : in std_logic_vector(15 downto 0);
 		IPL => cpuIPL,				  	-- : in std_logic_vector(2 downto 0):="111";
 		IPL_autovector => '1',   	-- : in std_logic:='0';
@@ -310,7 +284,6 @@ end process;
 
 		IF rising_edge(clk) THEN
 			IF reset='0' THEN
-				autoconfig_out_next <= "01";		--autoconfig on
 				autoconfig_out <= "01";		--autoconfig on
 				turbochip_ena <= '0';	-- disable turbo_chipram until we know kickstart's running...
 				ziiiram_ena <='0';
@@ -345,19 +318,10 @@ end process;
 		IF rising_edge(clk) THEN
 			IF reset='0' THEN
 				vmaena <= '0';
-				vmaenad <= '0';
-				sync_state3 <= '0';
 			ELSIF ena7RDreg='1' THEN
 				vmaena <= '0';
-				sync_state3 <= '0';
-				IF state/="01" OR state_ena='1' THEN
-					vmaenad <= vmaena;
-				END IF;
 				IF sync_state=sync5 THEN
 					e <= '1';
-				END IF;
-				IF sync_state=sync3 THEN
-					sync_state3 <= '1';
 				END IF;
 				IF sync_state=sync9 THEN
 					e <= '0';
@@ -366,7 +330,6 @@ end process;
 			END IF;
 		END IF;	
 		IF rising_edge(clk) THEN
-			S_stated <= S_state;
 			IF ena7WRreg='1' THEN
 				eind <= ein;
 				eindd <= eind;
@@ -433,16 +396,12 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 			rw_s <= '1';
 			uds_s <= '1';
 			lds_s <= '1';
-			addr_akt_s <= '0';
-			data_akt_s <= '0';
 		ELSIF rising_edge(clk) THEN
         	IF ena7WRreg='1' THEN
 				as_s <= '1';
 				rw_s <= '1';
 				uds_s <= '1';
 				lds_s <= '1';
-				addr_akt_s <= '0';
-				data_akt_s <= '0';
 					CASE S_state IS
 						WHEN "00" => IF state/="01" AND sel_fast='0' THEN
 										 uds_s <= uds_in;
@@ -454,11 +413,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 									 uds_s <= uds_in;
 									 lds_s <= lds_in;
 									 S_state <= "10";
-									 t_addr <= cpuaddr;
---									 t_data <= data_write;
 						WHEN "10" =>
-									 addr_akt_s <= '1';
-									 data_akt_s <= NOT wr;
 									 r_data <= data_read;
 									 IF waitm='0' OR (vma='0' AND sync_state=sync9) THEN
 										S_state <= "11";
@@ -480,8 +435,6 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 			uds_e <= '1';
 			lds_e <= '1';
 			clkena_e <= '0';
-			addr_akt_e <= '0';
-			data_akt_e <= '0';
 		ELSIF rising_edge(clk) THEN
         	IF ena7RDreg='1' THEN
 				as_e <= '1';
@@ -489,31 +442,25 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 				uds_e <= '1';
 				lds_e <= '1';
 				clkena_e <= '0';
-				addr_akt_e <= '0';
-				data_akt_e <= '0';
 				CASE S_state IS
-					WHEN "00" => addr_akt_e <= '1';
+					WHEN "00" => 
 								 cpuIPL <= IPL;
 								 IF sel_fast='0' THEN
 									 IF state/="01" THEN
 										as_e <= '0';
 									 END IF;
 									 rw_e <= wr;
-									 data_akt_e <= NOT wr;
 									 IF wr='1' THEN
 										 uds_e <= uds_in;
 										 lds_e <= lds_in;					
 									 END IF;
 								 END IF;
-					WHEN "01" => addr_akt_e <= '1';
-								 data_akt_e <= NOT wr;
+					WHEN "01" => 
 									as_e <= '0';
 									 rw_e <= wr;
 									 uds_e <= uds_in;
 									 lds_e <= lds_in;					
 					WHEN "10" => rw_e <= wr;
-								 addr_akt_e <= '1';
-								 data_akt_e <= NOT wr;
 								 cpuIPL <= IPL;
 								 waitm <= dtack;
 					WHEN OTHERS => --null;			
@@ -523,3 +470,4 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 		END IF;	
 	END PROCESS;
 END;	
+

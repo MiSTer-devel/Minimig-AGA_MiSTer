@@ -78,7 +78,7 @@ entity TG68KdotC_Kernel is
 		IPL_autovector          : in std_logic:='0';
 		CPU                     : in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only some parts - yet)
 		addr                    : buffer std_logic_vector(31 downto 0);
-		data_write              : out std_logic_vector(15 downto 0);
+		data_write              : buffer std_logic_vector(15 downto 0);
 		nWr                     : out std_logic;
 		nUDS                    : out std_logic;
 		nLDS                    : out std_logic;

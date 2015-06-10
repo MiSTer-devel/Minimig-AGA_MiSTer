@@ -27,6 +27,7 @@ module sdram_ctrl(
   input  wire           c_7m,
   input  wire           reset_in,
   input  wire           cache_rst,
+  input  wire           cache_inhibit,
   output wire           reset_out,
   // sdram
   output reg  [ 13-1:0] sdaddr,
@@ -352,13 +353,14 @@ end
 
 `ifdef SDRAM_NEW_CACHE
 wire snoop_act;
-assign snoop_act = ((sdram_state==ph2)&&(slot1_type==CHIP));
+assign snoop_act = ((sdram_state==ph2)&&(!chipRW));
 
 //// cpu cache ////
 cpu_cache_new cpu_cache (
   .clk              (sysclk),                       // clock
   .rst              (!reset || !cache_rst),         // cache reset
   .cache_en         (1'b1),                         // cache enable
+  .cache_inhibit    (cache_inhibit),                // cache inhibit
   .cpu_cs           (!cpustate[2]),                 // cpu activity
   .cpu_adr          ({cpuAddr_mangled, 1'b0}),      // cpu address
   .cpu_bs           ({!cpuU, !cpuL}),               // cpu byte selects
@@ -372,8 +374,8 @@ cpu_cache_new cpu_cache (
   .sdr_dat_r        (sdata_reg),                    // sdram read data
   .sdr_read_req     (cache_req),                    // sdram read request from cache
   .sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
-  .snoop_act        (!cas_sd_we && snoop_act),      // snoop act (write only - just update existing data in cache)
-  .snoop_adr        (casaddr),                      // snoop address
+  .snoop_act        (snoop_act),                    // snoop act (write only - just update existing data in cache)
+  .snoop_adr        ({1'b0, chipAddr, 1'b0}),       // snoop address
   .snoop_dat_w      (chipWR)                        // snoop write data
 );
 

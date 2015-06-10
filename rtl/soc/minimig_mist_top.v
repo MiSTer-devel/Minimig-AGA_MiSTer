@@ -101,6 +101,7 @@ wire           tg68_cpuena;
 wire [  4-1:0] cpu_config;
 wire [  6-1:0] memcfg;
 wire           turbochipram;
+wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
 wire           tg68_cdma;
@@ -270,6 +271,7 @@ TG68K tg68k (
   .ramready     (tg68_cpuena      ),
   .cpu          (cpu_config[1:0]  ),
   .turbochipram (turbochipram     ),
+  .cache_inhibit(cache_inhibit    ),
   .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
   .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
@@ -358,6 +360,7 @@ sdram_ctrl sdram (
 //sdram sdram (
 sdram_ctrl sdram (
   .cache_rst    (tg68_rst         ),
+  .cache_inhibit(cache_inhibit    ),
   .sdata        (SDRAM_DQ         ),
   .sdaddr       (SDRAM_A[12:0]    ),
   .dqm          (sdram_dqm        ),
