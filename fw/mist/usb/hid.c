@@ -331,6 +331,10 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       if((vid == 0x0583) && (pid == 0x2060) && (i==0)) {
         iprintf("hacking iBuffalo SNES pad - BSGP801\n");
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x01;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x02 | 0x04;    // "B"
         info->iface[0].conf.joystick_mouse.button[2].byte_offset = 2;
         info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Select"
         info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
@@ -339,9 +343,9 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       if((vid == 0x0411) && (pid == 0x00C6) && (i==0)) {
         iprintf("hacking Buffalo NES pad - BGCFC801\n");
-        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 3;
         info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x40;    // "Select"
-        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 3;
         info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x80;    // "Start"
       }
       
@@ -350,7 +354,7 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
         info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5;
         info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x20;    // "A"
         info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
-        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x80;    // "B"
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x40 | 0x10;    // "B"
         info->iface[0].conf.joystick_mouse.button[2].byte_offset = 6;
         info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x10;    // "Select"
         info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
@@ -360,11 +364,11 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       if((vid == 0x0079) && (pid == 0x0006) && (i==0)) {
         iprintf("hacking RetroLink N64 pad\n");
         info->iface[0].conf.joystick_mouse.button[0].byte_offset = 6;
-        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x20;    // "A"
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x04;    // "A"
         info->iface[0].conf.joystick_mouse.button[1].byte_offset = 6;
-        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x10 | 0x08; // "B"
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x10; // "B"
         info->iface[0].conf.joystick_mouse.button[2].byte_offset = 6;
-        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x02 | 0x01 | 0x04;    // "Select" - the shoulder buttons or Z in GC pad
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x02 | 0x01 | 0x08;    // "Select" - the shoulder buttons or Z
         info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
         info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x20;    // "Start"
       }
@@ -386,13 +390,13 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       if((vid == 0x0F30) && (pid == 0x1012) && (i==0)) {
         iprintf("hacking Qanba Q4RAF arcade stick\n");
-        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5; 
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 1; 
         info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x04;    // "A"
-        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 1;
         info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x08; // "B"
-        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 1;
         info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x20;    // "Select"
-        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
         info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x02;    // "Start"
       }
       
