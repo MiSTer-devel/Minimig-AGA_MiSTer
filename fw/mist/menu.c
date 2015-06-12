@@ -91,9 +91,8 @@ const char *config_dither_msg[] = {"off", "SPT", "RND", "S+R"};
 const char *config_memory_fast_msg[] = {"none  ", "2.0 MB", "4.0 MB","24.0 MB","24.0 MB"};
 const char *config_cpu_msg[] = {"68000 ", "68010", "-----","68020"};
 const char *config_hdf_msg[] = {"Disabled", "Hardfile (disk img)", "MMC/SD card", "MMC/SD partition 1", "MMC/SD partition 2", "MMC/SD partition 3", "MMC/SD partition 4"};
-
 const char *config_chipset_msg[] = {"OCS-A500", "OCS-A1000", "ECS", "---", "---", "---", "AGA", "---"};
-
+const char *config_turbo_msg[] = {"none", "CHIPRAM", "KICK", "BOTH"};
 char *config_autofire_msg[] = {"        AUTOFIRE OFF", "        AUTOFIRE FAST", "        AUTOFIRE MEDIUM", "        AUTOFIRE SLOW"};
 
 enum HelpText_Message {HELPTEXT_NONE,HELPTEXT_MAIN,HELPTEXT_HARDFILE,HELPTEXT_CHIPSET,HELPTEXT_MEMORY,HELPTEXT_VIDEO};
@@ -1773,23 +1772,25 @@ void HandleUI(void)
         strcpy(s, "         CPU : ");
         strcat(s, config_cpu_msg[config.cpu & 0x03]);
         OsdWrite(1, s, menusub == 0,0);
+        strcpy(s, "       Turbo : ");
+        strcat(s, config_turbo_msg[(config.cpu >> 2) & 0x03]);
+        OsdWrite(2, s, menusub == 1,0);
         strcpy(s, "       Video : ");
         strcat(s, config.chipset & CONFIG_NTSC ? "NTSC" : "PAL");
-        OsdWrite(2, s, menusub == 1,0);
-        strcpy(s, "     Chipset : ");
-	strcat(s, config_chipset_msg[(config.chipset >> 2) & (minimig_v1()?3:7)]);
         OsdWrite(3, s, menusub == 2,0);
-        OsdWrite(4, "", 0,0);
+        strcpy(s, "     Chipset : ");
+        strcat(s, config_chipset_msg[(config.chipset >> 2) & (minimig_v1()?3:7)]);
+        OsdWrite(4, s, menusub == 3,0);
         OsdWrite(5, "", 0,0);
         OsdWrite(6, "", 0,0);
-        OsdWrite(7, STD_EXIT, menusub == 3,0);
+        OsdWrite(7, STD_EXIT, menusub == 4,0);
 
         menustate = MENU_SETTINGS_CHIPSET2;
         break;
 
     case MENU_SETTINGS_CHIPSET2 :
 
-        if (down && menusub < 3)
+        if (down && menusub < 4)
         {
             menusub++;
             menustate = MENU_SETTINGS_CHIPSET1;
@@ -1806,48 +1807,57 @@ void HandleUI(void)
             if (menusub == 0)
             {
                 menustate = MENU_SETTINGS_CHIPSET1;
-                config.cpu += 1; 
-                if ((config.cpu & 0x03)==0x02)
-					config.cpu += 1; 
+                int _config_cpu = config.cpu & 0x3;
+                _config_cpu += 1; 
+                if (_config_cpu==0x02) _config_cpu += 1;
+                config.cpu = (config.cpu & 0xfc) | (_config_cpu & 0x3);
                 ConfigCPU(config.cpu);
             }
             else if (menusub == 1)
+            {
+                menustate = MENU_SETTINGS_CHIPSET1;
+                int _config_turbo = (config.cpu >> 2) & 0x3;
+                _config_turbo += 1;
+                config.cpu = (config.cpu & 0x3) | ((_config_turbo & 0x3) << 2);
+                ConfigCPU(config.cpu);
+            }
+
+            else if (menusub == 2)
             {
                 config.chipset ^= CONFIG_NTSC;
                 menustate = MENU_SETTINGS_CHIPSET1;
                 ConfigChipset(config.chipset);
             }
-            else if (menusub == 2)
+            else if (menusub == 3)
             {
-	        if(minimig_v1()) 
-		{
-		    if (config.chipset & CONFIG_ECS)
-		        config.chipset &= ~(CONFIG_ECS|CONFIG_A1000);
-		    else
-		        config.chipset += CONFIG_A1000;
-		} 
-		else
-		{
-		    switch(config.chipset&0x1c) {
-		    case 0:
-		        config.chipset = (config.chipset&3) | CONFIG_A1000;
-			break;
-		    case CONFIG_A1000:
-		        config.chipset = (config.chipset&3) | CONFIG_ECS;
-			break;
-		    case CONFIG_ECS:
-		        config.chipset = (config.chipset&3) | CONFIG_AGA | CONFIG_ECS;
-			break;
-		    case (CONFIG_AGA|CONFIG_ECS):
-		        config.chipset = (config.chipset&3) | 0;
-			break;
-		    }
-		}
-
+              if(minimig_v1()) 
+              {
+                if (config.chipset & CONFIG_ECS)
+                  config.chipset &= ~(CONFIG_ECS|CONFIG_A1000);
+                else
+                  config.chipset += CONFIG_A1000;
+              } 
+              else
+              {
+                switch(config.chipset&0x1c) {
+                  case 0:
+                    config.chipset = (config.chipset&3) | CONFIG_A1000;
+                    break;
+                  case CONFIG_A1000:
+                    config.chipset = (config.chipset&3) | CONFIG_ECS;
+                    break;
+                  case CONFIG_ECS:
+                    config.chipset = (config.chipset&3) | CONFIG_AGA | CONFIG_ECS;
+                    break;
+                  case (CONFIG_AGA|CONFIG_ECS):
+                    config.chipset = (config.chipset&3) | 0;
+                    break;
+                  }
+              }
                 menustate = MENU_SETTINGS_CHIPSET1;
                 ConfigChipset(config.chipset);
             }
-            else if (menusub == 3)
+            else if (menusub == 4)
             {
                 menustate = MENU_MAIN2_1;
                 menusub = 2;
