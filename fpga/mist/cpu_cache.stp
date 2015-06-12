@@ -1,0 +1,295 @@
+<session jtag_chain="USB-Blaster [USB-0]" jtag_device="@1: EP3C25/EP4CE22 (0x020F30DD)" sof_file="">
+  <display_tree gui_logging_enabled="0">
+    <display_branch instance="auto_signaltap_0" signal_set="USE_GLOBAL_TEMP" trigger="USE_GLOBAL_TEMP"/>
+  </display_tree>
+  <global_info>
+    <single attribute="active instance" value="0"/>
+    <multi attribute="frame size" size="2" value="1920,1148"/>
+    <single attribute="jtag widget visible" value="1"/>
+    <multi attribute="jtag widget size" size="2" value="334,120"/>
+    <single attribute="instance widget visible" value="1"/>
+    <single attribute="config widget visible" value="1"/>
+    <single attribute="hierarchy widget visible" value="1"/>
+    <single attribute="data log widget visible" value="1"/>
+  </global_info>
+  <instance entity_name="sld_signaltap" is_auto_node="yes" name="auto_signaltap_0" source_file="sld_signaltap.vhd">
+    <node_ip_info instance_id="0" mfg_id="110" node_id="0" version="6"/>
+    <position_info>
+      <single attribute="active tab" value="1"/>
+    </position_info>
+    <signal_set global_temp="1" name="signal_set: 2015/06/10 22:41:04  #0">
+      <clock name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|clk" polarity="posedge" tap_mode="classic"/>
+      <config ram_type="M4K" reserved_data_nodes="0" reserved_storage_qualifier_nodes="0" reserved_trigger_nodes="0" sample_depth="256" trigger_in_enable="yes" trigger_in_node="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs" trigger_in_tap_mode="classic" trigger_out_enable="no"/>
+      <top_entity/>
+      <signal_vec>
+        <trigger_input_vec>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_en" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_inhibit" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_init_done" tap_mode="classic" type="register"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ack" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[24]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_dr" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ir" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL1" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL2" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL3" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL4" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILLW" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_IDLE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_INIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_READ" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WAIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WB" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WRITE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_we" tap_mode="classic" type="combinatorial"/>
+        </trigger_input_vec>
+        <data_input_vec>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_en" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_inhibit" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_init_done" tap_mode="classic" type="register"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ack" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[24]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_dr" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ir" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL1" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL2" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL3" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL4" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILLW" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_IDLE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_INIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_READ" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WAIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WB" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WRITE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_we" tap_mode="classic" type="combinatorial"/>
+        </data_input_vec>
+        <storage_qualifier_input_vec>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_en" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_inhibit" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_init_done" tap_mode="classic" type="register"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ack" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[0]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[10]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[11]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[12]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[13]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[14]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[15]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[16]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[17]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[18]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[19]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[1]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[20]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[21]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[22]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[23]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[24]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[2]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[3]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[4]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[5]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[6]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[7]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[8]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[9]" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_dr" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ir" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL1" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL2" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL3" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL4" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILLW" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_IDLE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_INIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_READ" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WAIT" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WB" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WRITE" tap_mode="classic" type="combinatorial"/>
+          <wire name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_we" tap_mode="classic" type="combinatorial"/>
+        </storage_qualifier_input_vec>
+      </signal_vec>
+      <presentation>
+        <data_view>
+          <bus is_signal_inverted="no" link="all" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[24]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[23]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[22]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[21]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[20]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[19]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[18]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[17]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[16]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[15]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[14]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[13]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[12]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[11]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[10]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[9]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[8]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[7]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[6]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[5]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[4]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[3]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[2]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[1]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_dr"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ir"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_we"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ack"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_en"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_inhibit"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_init_done"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_INIT"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_IDLE"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WRITE"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WB"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_READ"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL1"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL2"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL3"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL4"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILLW"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WAIT"/>
+        </data_view>
+        <setup_view>
+          <bus is_signal_inverted="no" link="all" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr" order="msb_to_lsb" radix="hex" state="collapse" type="combinatorial">
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[24]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[23]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[22]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[21]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[20]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[19]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[18]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[17]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[16]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[15]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[14]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[13]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[12]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[11]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[10]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[9]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[8]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[7]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[6]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[5]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[4]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[3]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[2]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[1]"/>
+            <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_adr[0]"/>
+          </bus>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_dr"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ir"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_we"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_cs"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_ack"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_en"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_inhibit"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cache_init_done"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_INIT"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_IDLE"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WRITE"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WB"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_READ"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL1"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL2"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL3"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILL4"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_FILLW"/>
+          <net is_signal_inverted="no" name="sdram_ctrl:sdram|cpu_cache_new:cpu_cache|cpu_sm_state.CPU_SM_WAIT"/>
+        </setup_view>
+      </presentation>
+      <trigger attribute_mem_mode="false" gap_record="true" global_temp="1" name="trigger: 2015/06/10 22:41:04  #1" position="pre" power_up_trigger_mode="false" record_data_gap="true" segment_size="256" storage_mode="off" storage_qualifier_disabled="no" storage_qualifier_port_is_pin="true" storage_qualifier_port_name="auto_stp_external_storage_qualifier" storage_qualifier_port_tap_mode="classic" trigger_in="rising edge" trigger_out="active high" trigger_type="circular">
+        <power_up_trigger position="pre" storage_qualifier_disabled="no" trigger_in="dont_care" trigger_out="active high"/>
+        <events use_custom_flow_control="no">
+          <level enabled="yes" name="condition1" type="basic">
+            <power_up enabled="yes">
+            </power_up>
+            <op_node/>
+          </level>
+        </events>
+        <storage_qualifier_events>
+          <transitional>00000000000000000000000000000000000000000000
+            <pwr_up_transitional>00000000000000000000000000000000000000000000</pwr_up_transitional>
+          </transitional>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+          <storage_qualifier_level type="basic">
+            <power_up>
+            </power_up>
+            <op_node/>
+          </storage_qualifier_level>
+        </storage_qualifier_events>
+      </trigger>
+    </signal_set>
+  </instance>
+  <mnemonics/>
+</session>
