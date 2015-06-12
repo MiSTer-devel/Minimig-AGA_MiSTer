@@ -74,7 +74,7 @@ See TODO list [here](https://raw.githubusercontent.com/rkrajnc/minimig-mist/mast
 
 ## Building minimig-mist from sources
 
-* checkout the source using this [link](https://github.com/rkrajnc/minimig-de1.git) (or alternatively, download source [zip file](https://github.com/rkrajnc/minimig-de1/archive/master.zip))
+* checkout the source using this [link](https://github.com/rkrajnc/minimig-mist.git) (or alternatively, download source [zip file](https://github.com/rkrajnc/minimig-mist/archive/master.zip))
 * download / install / build an ARM GCC toolchain (install script [here](http://mist-board.googlecode.com/svn/trunk/tools/install_arm-none-eabi-gcc.sh), or alternatively, download an already build arm-none-eabi-gcc package for you operating system - requires support for ARM7TDMI)
 * download / install [Altera Quartus II](https://dl.altera.com/?edition=web) (latest supported version for Cyclone III FPGA device used on the MiST board is 13.1; I'm still using version 10.1SP1)
 * if you are using linux and have the $PATH variable properly set up, you can use the Makefile in the root of the project, otherwise build the ARM firmware using your favourite tool / GUI (firmware is in fw/mist), and build the core using Quartus GUI (project file in fpga/mist)
