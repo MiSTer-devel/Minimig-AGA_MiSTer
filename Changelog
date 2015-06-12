@@ -10,6 +10,7 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-06-12 - RK - USERIO       - chipset config is now applied on reset only
 2015-06-12 - RK - MINIMIG      - added turbo options for chipRAM & kickROM
 2015-06-10 - RK - CACHE        - updated cpu cache; working fastRAM, kickstart cache, chipRAM (non-cacheid)
 2015-06-04 - TH - TG68         - PACK, UNPK instructions fix
