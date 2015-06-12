@@ -7,6 +7,7 @@ IMPORTANT - AGA CHIPSET stuff
   * more 'undocumented' stuff ... (looks like the output shifter is actually 256 bit to allow 64-pixel fetches in lowres to be shifted on shres resolution - implemented)
   * upper is probably wrong, shifter is 64bits plus additional shres shifter (two bits?)
   * even that bitplane shifter is probably wrong: http://eab.abime.net/showthread.php?t=71437
+  * check if shifter problems are the cause of minimig display shifted to the right too much in some cases (how is shres scrolling supposed to work - what to do if those bits are set to 0??)
 - bitplane DMA register delays (TLC - PowerTrax demo, hint by Toni Wilen):
   * Writing to BPLxPT when exactly next cycle has DMA to matching BPLxDAT: write goes nowhere. (Same happens with sprites and blitter registers too, I assume all DMA channels have similar internal 2 cycle pipeline)
   * Another similar special feature is bitplane modulos, writing to BPLxMOD when exactly next cycle is matching BPLxDAT write and it also does modulo add, _old_ modulo value is used! (Write to BPLxMOD is still accepted, next time BPLxMOD value is needed it is used normally)
@@ -20,18 +21,19 @@ IMPORTANT - CPU stuff
 - CPU really needs chipRAM 'turbo' reads AND writes!
 - CPU compatibility fixes are a must!
 - CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd)
-- CPU kickstart turbo - DONE, some problems remain (restart freeze)
+- CPU kickstart turbo - DONE, some problems remain - CHECK
+- CPU chipRAM turbo - DONE, only using fastRAM path, not cached currently
 
 
 MEDIUM - mostly firmware stuff
-- fix firmware config, display config
+- fix firmware config, display config, mostly done, CHECK
 - joystick autofire menu ?
 - cpu turbo enable menu
-- fast kickstart rtl / menu
+- fast kickstart rtl / menu DONE
 - 1MB kickstart
 
 
-LOW - waay down the line
+LOW - waaay down the line
 - turbo blitter
 - ethernet
 - RTG

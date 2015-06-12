@@ -18,7 +18,7 @@ The minimig-mist variant in this repository has been upgraded with [AGA chipset]
 * CPU core : 68000, 68010, 68020
 * kickstart : 1.2 - 3.1 (256kB and 512kB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
-* floppy disks : 1-4 floppies (supports ADF floppy image format)
+* floppy disks : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
 * hard disks : 1-2 hard disk images (supports whole disk images, partition images, using whole SD card and using SD card partition)
 * video standard : PAL / NTSC
 * supports normal & scandoubled video output (15kHz / 30kHz) - can be used with a monitor or a TV with a SCART cable
@@ -32,7 +32,7 @@ The minimig-mist variant in this repository has been upgraded with [AGA chipset]
 To use this minimig core on the MiST board, you will at the minimum need an SD/SDHC card, formatted with the FAT32 filesystem, an USB keyboard and a compatible monitor / TV. Joysticks & mouse can be emulated on the keyboard. You will probably want to attach a set of speakers of headphones, a real Amiga or USB mouse and a real Amiga joystick or an USB gamepad. The MiST board is needed, too, of course ;)
 
 ### Software
-FPGA core releases can be found [here](http://meditation.somuch.guru/minimig/). The latest release available is *minimig-mist-1_0*. The zip file contains a minimig-mist-1_0.rbf file, which is the FPGA core, and a firmware.upg file, which can be used to upgrade the firmware on the ARM microcontroller (usually, there is no need to upgrade the firmware, unless it is specifically mentioned to do so). Both files should be placed on the root of your SD card. If you want this core to be the default, you need to rename it to *core.rbf*.
+FPGA core releases can be found [here](http://somuch.guru/minimig/minimig-mist/). The latest release available is *minimig-mist-1_0*. The zip file contains a minimig-mist-1_0.rbf file, which is the FPGA core, and a firmware.upg file, which can be used to upgrade the firmware on the ARM microcontroller (usually, there is no need to upgrade the firmware, unless it is specifically mentioned to do so). Both files should be placed on the root of your SD card. If you want this core to be the default, you need to rename it to *core.rbf*.
 
 To use the core, you will also need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM.
 
@@ -40,7 +40,12 @@ The minimig can read any ADF floppy images you place on the SD card. I recommend
 
 The minimig can also use HDF harddisk images, which can be created with [WinUAE](http://www.winuae.net/).
 
-### Controling minimig
+### Recommended minimig config
+
+* for ECS : CPU = 68000, Turbo=NONE, Chipset=ECS, chipRAM=0.5MB, slowRAM=0.5MB, Kickstart 1.3
+* for AGA : CPU = 68020, Turbo=BOTH, Chipset=AGA, chipRAM=2MB, slowRAM=0MB, fastRAM=24MB, Kickstart 3.1
+
+### Controlling minimig
 
 Keyboard special keys:
 
@@ -88,7 +93,7 @@ Original minimig sources from Dennis van Weeren with updates by Jakub Bednarski 
 
 Some minimig updates are published on the [Minimig Discussion Forum](http://www.minimig.net/), done by Sascha Boing.
 
-ARM firmware updates by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
+ARM firmware updates and minimig-tc64 port changes by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
 
 MiST board & firmware by Till Harbaum ([MiST](https://code.google.com/p/mist-board/)).
 
