@@ -101,6 +101,7 @@ wire           tg68_cpuena;
 wire [  4-1:0] cpu_config;
 wire [  6-1:0] memcfg;
 wire           turbochipram;
+wire           turbokick;
 wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
@@ -271,6 +272,7 @@ TG68K tg68k (
   .ramready     (tg68_cpuena      ),
   .cpu          (cpu_config[1:0]  ),
   .turbochipram (turbochipram     ),
+  .turbokick    (turbokick        ),
   .cache_inhibit(cache_inhibit    ),
   .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
   .ovr          (tg68_ovr         ),
@@ -502,6 +504,7 @@ minimig minimig (
   .cpu_config   (cpu_config       ), // CPU config
   .memcfg       (memcfg           ), // memory config
   .turbochipram (turbochipram     ), // turbo chipRAM
+  .turbokick    (turbokick        ), // turbo kickstart
   .init_b       (                 ), // vertical sync for MCU (sync OSD update)
   .fifo_full    (                 ),
   // fifo / track display

@@ -75,17 +75,16 @@ always @(posedge clk)
   if (clk7_en) begin
     if (reset)
     begin
-      chipset_config[1] <= t_chipset_config[1];
+      chipset_config <= t_chipset_config;
       ide_config <= t_ide_config;
-      cpu_config <= t_cpu_config;
+      cpu_config[1:0] <= t_cpu_config[1:0];
       memory_config <= t_memory_config;
     end
   end
 
 always @(posedge clk) begin
   if (clk7_en) begin
-    chipset_config[4:2] <= t_chipset_config[4:2];
-    chipset_config[0] <= t_chipset_config[0];
+    cpu_config[3:2] <= t_cpu_config[3:2];
   end
 end
 

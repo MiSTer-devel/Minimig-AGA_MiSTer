@@ -55,6 +55,7 @@ entity TG68K is
         cpu           : in std_logic_vector(1 downto 0);
         fastramcfg           : in std_logic_vector(2 downto 0);
 		  turbochipram : in std_logic;
+      turbokick : in std_logic;
         cache_inhibit : out std_logic;
         ovr           : in std_logic;
         ramaddr    	  : out std_logic_vector(31 downto 0);
@@ -135,6 +136,7 @@ COMPONENT TG68KdotC_Kernel
 	SIGNAL sel_chipram: std_logic;
 	SIGNAL turbochip_ena : std_logic := '0';
 	SIGNAL turbochip_d : std_logic := '0';
+  SIGNAL turbokick_d : std_logic := '0';
    SIGNAL slower       : std_logic_vector(3 downto 0);
 
 	signal ziii_base : std_logic_vector(7 downto 0);
@@ -170,7 +172,7 @@ BEGIN
 
 	sel_chipram <= '1' when sel_ziiiram/='1' and turbochip_ena='1' and turbochip_d='1' AND state/="01" AND (cpuaddr(23 downto 21)="000") ELSE '0'; --$000000 - $1FFFFF
 
-  sel_kickram <= '1' when sel_ziiiram /='1' and turbochip_ena='1' and turbochip_d='1' AND state/="01" AND (cpuaddr(23 downto 19)="11111") else '0'; -- $f8xxxx
+  sel_kickram <= '1' when sel_ziiiram /='1' and turbochip_ena='1' and turbokick_d='1' AND state/="01" AND (cpuaddr(23 downto 19)="11111") else '0'; -- $f8xxxx
 
   sel_interrupt <= '1' when cpuaddr(31 downto 28) = "1111" else '0'; -- TODO
 
@@ -232,13 +234,15 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
     VBR_out => VBR_out
         );
  
- process(clk,turbochipram)
+ process(clk,turbochipram, turbokick)
 begin
 	if rising_edge(clk) then
     if reset='0' then
       turbochip_d <= '0';
+      turbokick_d <= '0';
 		elsif state="01" then -- No mem access, so safe to switch chipram access mode
 			turbochip_d<=turbochipram;
+      turbokick_d<=turbokick;
 		end if;
 	end if;
 end process;
