@@ -390,13 +390,13 @@ static uint8_t usb_hid_init(usb_device_t *dev) {
       
       if((vid == 0x0F30) && (pid == 0x1012) && (i==0)) {
         iprintf("hacking Qanba Q4RAF arcade stick\n");
-        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 1; 
-        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x04;    // "A"
-        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 1;
-        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x08; // "B"
-        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 1;
-        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x20;    // "Select"
-        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 2;
+        info->iface[0].conf.joystick_mouse.button[0].byte_offset = 5; 
+        info->iface[0].conf.joystick_mouse.button[0].bitmask = 0x04 | 0x02;    // "A"
+        info->iface[0].conf.joystick_mouse.button[1].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[1].bitmask = 0x08 | 0x01; // "B"
+        info->iface[0].conf.joystick_mouse.button[2].byte_offset = 5;
+        info->iface[0].conf.joystick_mouse.button[2].bitmask = 0x20 | 0x80;    // "Select"
+        info->iface[0].conf.joystick_mouse.button[3].byte_offset = 6;
         info->iface[0].conf.joystick_mouse.button[3].bitmask = 0x02;    // "Start"
       }
       
@@ -691,20 +691,48 @@ static uint8_t usb_hid_poll(usb_device_t *dev) {
 		  static const uint8_t hat2x[] = { 127,255,255,255,127,  0,  0,  0 };
 		  static const uint8_t hat2y[] = {   0,  0,127,255,255,255,127,  0 };
 
-		  if(hat&8) 
-		    a[0] = a[1] = 127;
-		  else {
-		    a[0] = hat2x[hat];
-		    a[1] = hat2y[hat];
+		  if(hat&8) {
+            // hat is idle - don't override analog 
+            /*
+            if (a[0] > JOYSTICK_AXIS_TRIGGER_MIN) || a[0] < JOYSTICK_AXIS_TRIGGER_MAX) a[0] = JOYSTICK_AXIS_MID; 
+            if (a[1] > JOYSTICK_AXIS_TRIGGER_MIN) || a[1] < JOYSTICK_AXIS_TRIGGER_MAX) a[1] = JOYSTICK_AXIS_MID; 
+            */
+		  } else {
+            uint8_t x_val = hat2x[hat];
+            uint8_t y_val = hat2y[hat];
+            // cancel out with X analog axis if it pushes on the opposite direction
+            if(x_val < JOYSTICK_AXIS_TRIGGER_MIN) {
+                // hat pointing left, compensate if analog is pointing right
+                if (a[0] > JOYSTICK_AXIS_TRIGGER_MAX) { a[0] = JOYSTICK_AXIS_MID; } 
+                else a[0] = x_val;
+            } else {
+                if(x_val > JOYSTICK_AXIS_TRIGGER_MAX) {
+                    // hat pointing right, compensate if analog pointing left
+                    if (a[0] < JOYSTICK_AXIS_TRIGGER_MIN) { a[0] = JOYSTICK_AXIS_MID; } 
+                    else a[0] = x_val; 
+                }
+            }
+            // same logic for Y axis
+            if(y_val < JOYSTICK_AXIS_TRIGGER_MIN) {
+                // hat pointing down
+                if (a[1] > JOYSTICK_AXIS_TRIGGER_MAX) { a[1] = JOYSTICK_AXIS_MID; } 
+                else a[1] = y_val;
+            } else {
+                if(y_val > JOYSTICK_AXIS_TRIGGER_MAX) {
+                    // hat pointing up
+                    if (a[1] < JOYSTICK_AXIS_TRIGGER_MIN) { a[1] = JOYSTICK_AXIS_MID; } 
+                    else a[1] = y_val; //otherwise override
+                }
+            }
 		  }
 		}
 
 		//		iprintf("JOY X:%d Y:%d\n", a[0], a[1]);
 		
-		if(a[0] <  64) jmap |= JOY_LEFT;
-		if(a[0] > 192) jmap |= JOY_RIGHT;
-		if(a[1] <  64) jmap |= JOY_UP;
-		if(a[1] > 192) jmap |= JOY_DOWN;
+		if(a[0] < JOYSTICK_AXIS_TRIGGER_MIN) jmap |= JOY_LEFT;
+		if(a[0] > JOYSTICK_AXIS_TRIGGER_MAX) jmap |= JOY_RIGHT;
+		if(a[1] < JOYSTICK_AXIS_TRIGGER_MIN) jmap |= JOY_UP;
+		if(a[1] > JOYSTICK_AXIS_TRIGGER_MAX) jmap |= JOY_DOWN;
 		jmap |= btn << JOY_BTN_SHIFT;      // add buttons
 	      
 		//	      iprintf("JOY D:%d\n", jmap);
