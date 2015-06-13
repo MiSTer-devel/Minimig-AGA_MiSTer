@@ -1,32 +1,28 @@
-// Copyright 2006, 2007 Dennis van Weeren
-//
-// This file is part of Minimig
-//
-// Minimig is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 3 of the License, or
-// (at your option) any later version.
-//
-// Minimig is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-// JB:
-// 14-03-2008	- moving beamcounter to a separate file
-//				- pal/ntsc switching, NTSC doesn't use short/long line toggling,all lines are short like in PAL (227 CCKs)
-//				- composite blanking use hblank which is combined with vblank
-// 2009-03-08	- clean-up
-// 2009-05-24	- clean-up & renaming
-// 2009-06-10	- in non-interlace mode all frames are long (313 lines for PAL)
-// 2010-01-19	- added vertical interrupt request signal for Paula
-// 2010-04-14	- A1000 compatible VBL interrupt generation
-//
-// SB:
-// 2011-04-10 - added readable VPOSW and VHPOSW register (fix for RSI slideshow)
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Copyright 2006, 2007 Dennis van Weeren                                     //
+//                                                                            //
+// This file is part of Minimig                                               //
+//                                                                            //
+// Minimig is free software; you can redistribute it and/or modify            //
+// it under the terms of the GNU General Public License as published by       //
+// the Free Software Foundation; either version 3 of the License, or          //
+// (at your option) any later version.                                        //
+//                                                                            //
+// Minimig is distributed in the hope that it will be useful,                 //
+// but WITHOUT ANY WARRANTY; without even the implied warranty of             //
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              //
+// GNU General Public License for more details.                               //
+//                                                                            //
+// You should have received a copy of the GNU General Public License          //
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.      //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Agnus beamcounter                                                          //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+
 
 module agnus_beamcounter
 (

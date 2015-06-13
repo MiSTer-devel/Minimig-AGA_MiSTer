@@ -46,11 +46,11 @@ begin
       nplayfield[1] = 1;
     else
       nplayfield[1] = 0;
-      
+
     if (bpldata[8] || bpldata[6] || bpldata[4] || bpldata[2]) //detect data valid for playfield 2
       nplayfield[2] = 1;
     else
-      nplayfield[2] = 0;  
+      nplayfield[2] = 0;
   end
   else //single playfield is always playfield 2
   begin
@@ -58,7 +58,7 @@ begin
     if (bpldata[8:1]!=8'b000000)
       nplayfield[2] = 1;
     else
-      nplayfield[2] = 0;  
+      nplayfield[2] = 0;
   end
 end
 

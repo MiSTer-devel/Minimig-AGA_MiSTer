@@ -22,11 +22,11 @@ module denise_sprites_shifter
   output  reg attach        // sprite is attached
 );
 
-// register names and adresses    
-parameter POS  = 2'b00;      
-parameter CTL  = 2'b01;      
-parameter DATA = 2'b10;      
-parameter DATB = 2'b11;      
+// register names and adresses
+parameter POS  = 2'b00;
+parameter CTL  = 2'b01;
+parameter DATA = 2'b10;
+parameter DATB = 2'b11;
 
 // local signals
 reg    [63:0] datla;    // data register A

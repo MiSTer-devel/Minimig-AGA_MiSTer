@@ -1,53 +1,57 @@
-// Copyright 2006, 2007 Dennis van Weeren
-//
-// This file is part of Minimig
-//
-// Minimig is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 3 of the License, or
-// (at your option) any later version.
-//
-// Minimig is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-//
-//
-// This is Denise
-// This module  is a complete implementation of the Amiga OCS Denise chip
-// It supports all OCS modes including HAM, EHB and interlaced video
-//
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// Copyright 2006, 2007 Dennis van Weeren                                     //
+// Copyright 2008, Jakub Bednarski                                            //
+// Copyright 2011-2015, Rok Krajnc                                            //
+//                                                                            //
+// This file is part of Minimig                                               //
+//                                                                            //
+// Minimig is free software; you can redistribute it and/or modify            //
+// it under the terms of the GNU General Public License as published by       //
+// the Free Software Foundation; either version 3 of the License, or          //
+// (at your option) any later version.                                        //
+//                                                                            //
+// Minimig is distributed in the hope that it will be useful,                 //
+// but WITHOUT ANY WARRANTY; without even the implied warranty of             //
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the              //
+// GNU General Public License for more details.                               //
+//                                                                            //
+// You should have received a copy of the GNU General Public License          //
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.      //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+//                                                                            //
+// This is Denise                                                             //
+// This module  is a complete implementation of the Amiga OCS Denise chip     //
+// It supports all OCS modes including HAM, EHB and interlaced video          //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
 
 
-module denise
-(
-  input   clk,          // 35ns pixel clock
-  input   clk7_en,
-  input   c1 ,          // 35ns clock enable signals (for synchronization with clk)
-  input   c3,
-  input   cck,          // colour clock enable
-  input   reset,          // reset
-  input  strhor,          // horizontal strobe
-  input   [8:1] reg_address_in,  // register adress inputs
-  input   [15:0] data_in,      // bus data in
-  input   [48-1:0] chip48,    // big chipram read
-  output   [15:0] data_out,    // bus data out
-  input  blank,          // blanking input
-  output   [7:0] red,         // red componenent video out
-  output   [7:0] green,        // green component video out
-  output   [7:0] blue,        // blue component video out
-  input a1k,          // control EHB chipset feature
-  input  ecs,          // enables ECS chipset features
-  input aga,          // enables AGA features
-  output  hires        // hires
+module denise (
+  input  wire           clk,            // 28MHz clock
+  input  wire           clk7_en,        // 7MHz clock enable
+  input  wire           c1 ,            // 35ns clock enable signals (for synchronization with clk)
+  input  wire           c3,
+  input  wire           cck,            // colour clock enable
+  input  wire           reset,          // reset
+  input  wire           strhor,         // horizontal strobe
+  input  wire [  9-1:1] reg_address_in, // register adress inputs
+  input  wire [ 16-1:0] data_in,        // bus data in
+  input  wire [ 48-1:0] chip48,         // big chipram read
+  output wire [ 16-1:0] data_out,       // bus data out
+  input  wire           blank,          // blanking input
+  output wire [  8-1:0] red,            // red componenent video out
+  output wire [  8-1:0] green,          // green component video out
+  output wire [  8-1:0] blue,           // blue component video out
+  input  wire           a1k,            // control EHB chipset feature
+  input  wire           ecs,            // enables ECS chipset features
+  input  wire           aga,            // enables AGA features
+  output wire           hires           // hires
 );
 
 
-//register names and adresses
+// register names and adresses
 parameter DIWSTRT  = 9'h08e;
 parameter DIWSTOP  = 9'h090;
 parameter DIWHIGH  = 9'h1e4;
@@ -58,7 +62,8 @@ parameter BPLCON4  = 9'h10c;
 parameter DENISEID = 9'h07c;
 parameter BPL1DAT  = 9'h110;
 
-//local signals
+
+// local signals
 reg    [8:0] hpos;        // horizontal beamcounter
 reg    [3:0] l_bpu;      // latched bitplane enable
 

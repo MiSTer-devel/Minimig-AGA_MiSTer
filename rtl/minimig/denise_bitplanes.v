@@ -17,7 +17,7 @@
 //
 //
 //
-// This is the bitplane part of denise 
+// This is the bitplane part of denise
 // It accepts data from the bus and converts it to serial video data (6 bits).
 // It supports all ocs modes and also handles the pf1<->pf2 priority handling in
 // a seperate module.
@@ -42,7 +42,7 @@ module denise_bitplanes
 
 
 //register names and adresses
-parameter BPLCON1 = 9'h102;      
+parameter BPLCON1 = 9'h102;
 parameter BPL1DAT = 9'h110;
 parameter BPL2DAT = 9'h112;
 parameter BPL3DAT = 9'h114;
@@ -55,7 +55,7 @@ parameter FMODE   = 9'h1fc;
 
 //local signals
 reg   [15:0] bplcon1;    // bplcon1 register
-reg   [15:0] fmode /* synthesis syn_noprune */;     // fmod reg
+reg   [15:0] fmode;     // fmod reg
 reg    [63:0] bpl1dat;    // buffer register for bit plane 2
 reg    [63:0] bpl2dat;    // buffer register for bit plane 2
 reg    [63:0] bpl3dat;    // buffer register for bit plane 3
@@ -69,11 +69,11 @@ reg    load;        // bpl1dat written => load shif registers
 reg    [7:0] extra_delay_f0;  // extra delay when not alligned ddfstart
 reg    [7:0] extra_delay_f12;
 reg    [7:0] extra_delay_f3;
-reg    [7:0] extra_delay_r /* synthesis syn_noprune */;
-reg    [7:0] pf1h /* synthesis syn_noprune */;      // playfield 1 horizontal scroll
-reg    [7:0] pf2h /* synthesis syn_noprune */;      // playfield 2 horizontal scroll
-reg    [7:0] pf1h_del /* synthesis syn_noprune */;    // delayed playfield 1 horizontal scroll
-reg    [7:0] pf2h_del /* synthesis syn_noprune */;    // delayed playfield 2 horizontal scroll
+reg    [7:0] extra_delay_r;
+reg    [7:0] pf1h;      // playfield 1 horizontal scroll
+reg    [7:0] pf2h;      // playfield 2 horizontal scroll
+reg    [7:0] pf1h_del;    // delayed playfield 1 horizontal scroll
+reg    [7:0] pf2h_del;    // delayed playfield 2 horizontal scroll
 
 //--------------------------------------------------------------------------------------
 
@@ -108,7 +108,6 @@ always @(hpos)
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (load) extra_delay_r <= #1 (fmode[1:0] == 2'b00) ? extra_delay_f0 : (fmode[1:0] == 2'b11) ? extra_delay_f3 : extra_delay_f12;
-    //if (load) extra_delay_r <= #1 (fmode[1:0] == 2'b00) ? extra_delay[7:0] : (fmode[1:0] == 2'b11) ? {2'b00, extra_delay[7:2]} : {1'b0, extra_delay[7:1]};
   end
 end
 
@@ -116,26 +115,26 @@ end
 always @(posedge clk)
   if (clk7_en) begin
     if (load)
-      pf1h <= {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]} /*+ extra_delay*/;
+      pf1h <= {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]};
   end
 
 always @(posedge clk)
   if (clk7_en) begin
     pf1h_del <= pf1h + extra_delay_r;
   end
-    
+
 //playfield 2 effective horizontal scroll
 always @(posedge clk)
   if (clk7_en) begin
     if (load)
-      pf2h <= {bplcon1[15:14],bplcon1[7:4],bplcon1[13:12]} /*+ extra_delay*/;
+      pf2h <= {bplcon1[15:14],bplcon1[7:4],bplcon1[13:12]};
   end
 
 always @(posedge clk)
   if (clk7_en) begin
     pf2h_del <= pf2h + extra_delay_r;
   end
-  
+
 //writing bplcon1 register : horizontal scroll codes for even and odd bitplanes
 always @(posedge clk)
   if (clk7_en) begin
@@ -174,7 +173,7 @@ always @(posedge clk)
     if (reg_address_in[8:1] == BPL1DAT[8:1])
       bpl1dat <= {data_in,chip48_fmode};
   end
-    
+
 //bitplane buffer register for plane 2
 always @(posedge clk)
   if (clk7_en) begin
@@ -233,7 +232,7 @@ always @(posedge clk)
 //--------------------------------------------------------------------------------------
 
 //instantiate bitplane 1 parallel to serial converters, this plane is loaded directly from bus
-denise_bitplane_shifter bplshft1 
+denise_bitplane_shifter bplshft1
 (
   .clk(clk),
   .clk7_en(clk7_en),
@@ -245,12 +244,12 @@ denise_bitplane_shifter bplshft1
   .fmode(fmode[1:0]),
   .data_in(bpl1dat),
   .scroll(pf1h_del),
-  .out(bpldata[1])  
+  .out(bpldata[1])
 );
 
 //instantiate bitplane 2 to 6 parallel to serial converters, (loaded from buffer registers)
-denise_bitplane_shifter bplshft2 
-(  
+denise_bitplane_shifter bplshft2
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -261,11 +260,11 @@ denise_bitplane_shifter bplshft2
   .fmode(fmode[1:0]),
   .data_in(bpl2dat),
   .scroll(pf2h_del),
-  .out(bpldata[2])  
+  .out(bpldata[2])
 );
 
-denise_bitplane_shifter bplshft3 
-(  
+denise_bitplane_shifter bplshft3
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -276,11 +275,11 @@ denise_bitplane_shifter bplshft3
   .fmode(fmode[1:0]),
   .data_in(bpl3dat),
   .scroll(pf1h_del),
-  .out(bpldata[3])  
+  .out(bpldata[3])
 );
 
-denise_bitplane_shifter bplshft4 
-(  
+denise_bitplane_shifter bplshft4
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -291,11 +290,11 @@ denise_bitplane_shifter bplshft4
   .fmode(fmode[1:0]),
   .data_in(bpl4dat),
   .scroll(pf2h_del),
-  .out(bpldata[4])  
+  .out(bpldata[4])
 );
 
-denise_bitplane_shifter bplshft5 
-(  
+denise_bitplane_shifter bplshft5
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -306,11 +305,11 @@ denise_bitplane_shifter bplshft5
   .fmode(fmode[1:0]),
   .data_in(bpl5dat),
   .scroll(pf1h_del),
-  .out(bpldata[5])  
+  .out(bpldata[5])
 );
 
-denise_bitplane_shifter bplshft6 
-(  
+denise_bitplane_shifter bplshft6
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -321,11 +320,11 @@ denise_bitplane_shifter bplshft6
   .fmode(fmode[1:0]),
   .data_in(bpl6dat),
   .scroll(pf2h_del),
-  .out(bpldata[6])  
+  .out(bpldata[6])
 );
 
 denise_bitplane_shifter bplshft7
-(  
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -336,11 +335,11 @@ denise_bitplane_shifter bplshft7
   .fmode(fmode[1:0]),
   .data_in(bpl7dat),
   .scroll(pf1h_del),
-  .out(bpldata[7])  
+  .out(bpldata[7])
 );
 
 denise_bitplane_shifter bplshft8
-(  
+(
   .clk(clk),
   .clk7_en(clk7_en),
   .c1(c1),
@@ -351,7 +350,7 @@ denise_bitplane_shifter bplshft8
   .fmode(fmode[1:0]),
   .data_in(bpl8dat),
   .scroll(pf2h_del),
-  .out(bpldata[8])  
+  .out(bpldata[8])
 );
 
 

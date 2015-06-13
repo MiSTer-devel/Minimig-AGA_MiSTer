@@ -98,9 +98,9 @@ wire clxdat_read = (reg_address_in[8:1]==CLXDAT[8:1]);// clxdat read
 
 always @(posedge clk)
   if (clk7_en) begin
-    clxdat_read_del <= clxdat_read;  
+    clxdat_read_del <= clxdat_read;
   end
-  
+
 //register detected collisions
 always @(posedge clk)
   if (clk7_en) begin

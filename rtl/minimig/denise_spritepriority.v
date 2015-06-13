@@ -1,7 +1,7 @@
 // sprite priority logic module
 // this module checks the playfields and sprites video status and
 // determines if playfield or sprite data must be sent to the video output
-// sprite/playfield priority is configurable through the bplcon2 bits        
+// sprite/playfield priority is configurable through the bplcon2 bits
 module denise_spritepriority
 (
   input   [5:0] bplcon2,         // playfields vs sprites priority setting
@@ -47,7 +47,7 @@ begin
   else if (pf1front && nplayfield[1]) // else if pf1 in front and valid data, select playfields
     sprsel = 1'b0;
   else if (pf2front && nplayfield[2]) // else if pf2 in front and valid data, select playfields
-    sprsel = 1'b0;   
+    sprsel = 1'b0;
   else // else select sprites
     sprsel = 1'b1;
 end

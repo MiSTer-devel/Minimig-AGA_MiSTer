@@ -17,13 +17,13 @@
 //
 //
 //
-// This is the sprites part of denise 
+// This is the sprites part of denise
 // It supports all OCS sprite modes.
 
 
 module denise_sprites
 (
-  input   clk,          // 28MHz clock  
+  input   clk,          // 28MHz clock
   input clk7_en,
   input   reset,            // reset
   input c1,
@@ -37,11 +37,11 @@ module denise_sprites
   input [3:0] esprm,
   input [3:0] osprm,
   input [1:0] spres,
-  output   [7:0] nsprite,        // sprite data valid signals 
+  output   [7:0] nsprite,        // sprite data valid signals
   output  reg [7:0] sprdata    // sprite data out
 );
 
-//register names and adresses    
+//register names and adresses
 parameter  SPRPOSCTLBASE = 9'h140;  //sprite data, position and control register base address
 parameter FMODE         = 9'h1fc;
 
@@ -306,8 +306,8 @@ begin
   end
   else // all sprites transparant
   begin
-    sprdata[7:0] = 8'b00000000;  
-  end  
+    sprdata[7:0] = 8'b00000000;
+  end
 end
 
 //--------------------------------------------------------------------------------------
