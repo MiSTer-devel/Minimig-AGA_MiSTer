@@ -19,11 +19,12 @@ LINKMAP  = AT91SAM7S256-ROM.ld
 LIBDIR   = 
 
 # Commandline options for each tool.
-DFLAGS  = -I. -Iusb -DMIST
-CFLAGS  = $(DFLAGS) -c -fno-common -O2 -fsigned-char -DVDATE=\"`date +"%y%m%d"`\"
-AFLAGS  = -ahls -mapcs-32
-LFLAGS  = -nostartfiles -Wl,-Map,$(PRJ).map -T$(LINKMAP) $(LIBDIR)
-CPFLAGS = --output-target=ihex
+ARCHFLAGS = -march=armv4t -mcpu=arm7tdmi
+DFLAGS    = -I. -Iusb -DMIST
+CFLAGS    = $(ARCHFLAGS) $(DFLAGS) -c -fno-common -O2 -fsigned-char -DVDATE=\"`date +"%y%m%d"`\"
+AFLAGS    = $(ARCHFLAGS) -ahls -mapcs-32
+LFLAGS    = $(ARCHFLAGS) -nostartfiles -Wl,-Map,$(PRJ).map -T$(LINKMAP) $(LIBDIR)
+CPFLAGS   = --output-target=ihex
 
 MKUPG = mkupg
 
