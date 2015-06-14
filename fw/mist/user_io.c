@@ -59,6 +59,10 @@ static unsigned long mouse_timer;
 // may be in use by an active OSD
 static char osd_is_visible = false;
 
+char user_io_osd_is_visible() {
+  return osd_is_visible;
+}
+
 static void PollOneAdc() {
   static unsigned char adc_cnt = 0xff;
 
