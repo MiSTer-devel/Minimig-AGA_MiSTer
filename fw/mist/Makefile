@@ -9,7 +9,8 @@ TODAY = `date +"%m/%d/%y"`
 
 PRJ = firmware
 SRC = Cstartup_SAM7.c  fat.c  fdd.c  firmware.c  fpga.c  hardware.c spi.c hdd.c  main.c  menu.c  mmc.c  osd.c syscalls.c user_io.c boot.c rafile.c config.c tos.c ikbd.c xmodem.c ini_parser.c mist_cfg.c archie.c
-SRC += usb/max3421e.c usb/usb.c usb/hub.c usb/hid.c usb/hidparser.c usb/timer.c usb/asix.c usb/storage.c usb/usbrtc.c
+SRC += usb/max3421e.c usb/usb.c usb/hub.c usb/hid.c usb/hidparser.c usb/timer.c usb/asix.c usb/pl2303.c usb/usbrtc.c
+# SRC += usb/storage.c
 SRC += cdc_enumerate.c cdc_control.c
 
 OBJ = $(SRC:.c=.o)
@@ -19,12 +20,11 @@ LINKMAP  = AT91SAM7S256-ROM.ld
 LIBDIR   = 
 
 # Commandline options for each tool.
-ARCHFLAGS = -march=armv4t -mcpu=arm7tdmi
-DFLAGS    = -I. -Iusb -DMIST
-CFLAGS    = $(ARCHFLAGS) $(DFLAGS) -c -fno-common -O2 -fsigned-char -DVDATE=\"`date +"%y%m%d"`\"
-AFLAGS    = $(ARCHFLAGS) -ahls -mapcs-32
-LFLAGS    = $(ARCHFLAGS) -nostartfiles -Wl,-Map,$(PRJ).map -T$(LINKMAP) $(LIBDIR)
-CPFLAGS   = --output-target=ihex
+DFLAGS  = -I. -Iusb -DMIST
+CFLAGS  = $(DFLAGS) -c -fno-common -O2 -fsigned-char -DVDATE=\"`date +"%y%m%d"`\"
+AFLAGS  = -ahls -mapcs-32
+LFLAGS  = -nostartfiles -Wl,-Map,$(PRJ).map -T$(LINKMAP) $(LIBDIR)
+CPFLAGS = --output-target=ihex
 
 MKUPG = mkupg
 

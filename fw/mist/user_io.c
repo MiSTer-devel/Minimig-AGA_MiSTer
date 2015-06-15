@@ -309,7 +309,27 @@ void user_io_serial_tx(char *chr, uint16_t cnt) {
   while(cnt--) spi8(*chr++);
   DisableIO();
 }
-  
+
+char user_io_serial_status(serial_status_t *status_in, uint8_t status_out) {
+  uint8_t i, *p = (uint8_t*)status_in;
+
+  spi_uio_cmd_cont(UIO_SERIAL_STAT);
+
+  // first byte returned by core must be "magic". otherwise the
+  // core doesn't support this request
+  if(SPI(status_out) != 0xa5) {
+    DisableIO();
+    return 0;
+  }
+
+  // read the whole structure
+  for(i=0;i<sizeof(serial_status_t);i++)
+    *p++ = spi_in();
+
+  DisableIO();
+  return 1;
+}
+
 // transmit midi data into core
 void user_io_midi_tx(char chr) {
   spi_uio_cmd8(UIO_MIDI_OUT, chr);
@@ -633,17 +653,26 @@ void user_io_poll() {
     // check for incoming serial data. this is directly forwarded to the
     // arm rs232 and mixes with debug output. Useful for debugging only of
     // e.g. the diagnostic cartridge    
-    spi_uio_cmd_cont(UIO_SERIAL_IN);
-    while(spi_in()) {
-      c = spi_in();
-      if(c != 0xff) 
-	putchar(c);
-      
-      // forward to USB if redirection via USB/CDC enabled
-      if(redirect == CDC_REDIRECT_RS232)
-	cdc_control_tx(c);
+    if(!pl2303_is_blocked()) {
+      spi_uio_cmd_cont(UIO_SERIAL_IN);
+      while(spi_in() && !pl2303_is_blocked()) {
+	c = spi_in();
+	
+	// if a serial/usb adapter is connected it has precesence over
+	// any other sink
+	if(pl2303_present()) 
+	  pl2303_tx_byte(c);
+	else {
+	  if(c != 0xff) 
+	    putchar(c);
+	  
+	  // forward to USB if redirection via USB/CDC enabled
+	  if(redirect == CDC_REDIRECT_RS232)
+	    cdc_control_tx(c);
+	}
+      }
+      DisableIO();
     }
-    DisableIO();
     
     // check for incoming parallel/midi data
     if((redirect == CDC_REDIRECT_PARALLEL) || (redirect == CDC_REDIRECT_MIDI)) {

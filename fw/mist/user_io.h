@@ -32,6 +32,7 @@
 #define UIO_ETH_STATUS  0x0a
 #define UIO_ETH_FRM_IN  0x0b
 #define UIO_ETH_FRM_OUT 0x0c
+#define UIO_SERIAL_STAT 0x0d
 
 #define UIO_JOYSTICK2   0x10  // also used by minimig and 8 bit
 #define UIO_JOYSTICK3   0x11  // -"-
@@ -88,6 +89,25 @@
 // user io status bits (currently only used by 8bit)
 #define UIO_STATUS_RESET   0x01
 
+#define UIO_STOP_BIT_1   0
+#define UIO_STOP_BIT_1_5 1
+#define UIO_STOP_BIT_2   2
+
+#define UIO_PARITY_NONE  0
+#define UIO_PARITY_ODD   1
+#define UIO_PARITY_EVEN  2
+#define UIO_PARITY_MARK  3
+#define UIO_PARITY_SPACE 4
+
+// serial status data type returned from the core 
+typedef struct {
+  uint32_t bitrate;        // 300, 600 ... 115200
+  uint8_t datasize;        // 5,6,7,8 ...
+  uint8_t parity;
+  uint8_t stopbits;
+  uint8_t fifo_stat;       // space in cores input fifo
+} __attribute__ ((packed)) serial_status_t;
+
 void user_io_init();
 void user_io_detect_core_type();
 unsigned char user_io_core_type();
@@ -105,6 +125,7 @@ unsigned char user_io_8bit_set_status(unsigned char, unsigned char);
 void user_io_file_tx(fileTYPE *, unsigned char);
 void user_io_sd_set_config(void);
 char user_io_dip_switch1(void);
+char user_io_serial_status(serial_status_t *, uint8_t);
 
 // io controllers interface for FPGA ethernet emulation using usb ethernet
 // devices attached to the io controller (ethernec emulation)
@@ -122,7 +143,5 @@ void user_io_analog_joystick(unsigned char, char, char);
 char user_io_osd_is_visible();
 
 void user_io_key_remap(char *);
-
-
 
 #endif // USER_IO_H
