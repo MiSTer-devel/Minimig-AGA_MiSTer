@@ -18,9 +18,9 @@ IMPORTANT - AGA CHIPSET stuff
 
 IMPORTANT - CPU stuff
 - CPU : add PACK & UNPK imstruction support (TG68KdotC_kernel.vhd, from line 2236 on -- also look at 68000 programmer's reference!) (Till Harbaum working on this, partial fix by Till Harbaum available)
-- CPU really needs chipRAM 'turbo' reads AND writes!
+- CPU really needs chipRAM 'turbo' reads AND writes! DONE, to CHECK
 - CPU compatibility fixes are a must!
-- CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd)
+- CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd); big problems with turbo kickstart - CHECK
 - CPU kickstart turbo - DONE, some problems remain - CHECK
 - CPU chipRAM turbo - DONE, only using fastRAM path, not cached currently
 
@@ -28,7 +28,7 @@ IMPORTANT - CPU stuff
 MEDIUM - mostly firmware stuff
 - fix firmware config, display config, mostly done, CHECK
 - joystick autofire menu ?
-- cpu turbo enable menu
+- cpu turbo enable menu DONE
 - fast kickstart rtl / menu DONE
 - 1MB kickstart
 
