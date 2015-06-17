@@ -14,7 +14,7 @@ IMPORTANT - AGA CHIPSET stuff
 - sprites can be positioned on 35ns pixels - to add! - I think I did this - CHECK
 - sprite scandoubling DONE (and fixed, and fixed the fix)
 - bitplanes scandoubling DONE
-
+- add CD32 gamepad emulation and / or real amiga cd32 gamepad support
 
 IMPORTANT - CPU stuff
 - CPU : add PACK & UNPK imstruction support (TG68KdotC_kernel.vhd, from line 2236 on -- also look at 68000 programmer's reference!) (Till Harbaum working on this, partial fix by Till Harbaum available)
