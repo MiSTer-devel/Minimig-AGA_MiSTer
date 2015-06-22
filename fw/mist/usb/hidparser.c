@@ -163,7 +163,7 @@ bool parse_report_descriptor(uint8_t *rep, uint16_t rep_size, hid_report_t *conf
 	       (conf->type == REPORT_TYPE_MOUSE)) {
 	      // scan for up to four buttons
 	      char b;
-	      for(b=0;b<4;b++) {
+	      for(b=0;b<12;b++) {
 		if(report_count > b) {
 		  uint16_t this_bit = bit_count+b;
 

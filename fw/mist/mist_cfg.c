@@ -11,6 +11,8 @@
 //// mist_ini_parse() ////
 void mist_ini_parse()
 {
+  hid_joystick_button_remap_init();
+  virtual_joystick_remap_init();
   ini_parse(&mist_ini_cfg);
 }
 
@@ -36,8 +38,8 @@ const ini_var_t mist_ini_vars[] = {
   {"JOYSTICK_IGNORE_HAT", (void*)(&(mist_cfg.joystick_ignore_hat)), UINT8, 0, 1, 1},
   {"JOYSTICK_DISABLE_SHORTCUTS", (void*)(&(mist_cfg.joystick_disable_shortcuts)), UINT8, 0, 1, 1},
   {"KEY_REMAP", (void*)user_io_key_remap, CUSTOM_HANDLER, 0, 0, 1},
-  //  {"JOYSTICK_AXIS_REMAP", (void*)user_io_joystick_axis_remap, CUSTOM_HANDLER, 0, 0, 1},
-  {"JOYSTICK_BUTTON_REMAP", (void*)hid_joystick_axis_remap, CUSTOM_HANDLER, 0, 0, 1}
+  {"HID_BUTTON_REMAP", (void*)hid_joystick_button_remap, CUSTOM_HANDLER, 0, 0, 1},
+  {"JOYSTICK_REMAP", (void*)virtual_joystick_remap, CUSTOM_HANDLER, 0, 0, 1}
 }; 
 
 // mist ini config

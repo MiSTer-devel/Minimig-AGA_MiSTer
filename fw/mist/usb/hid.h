@@ -50,6 +50,8 @@
 #define JOYSTICK_AXIS_TRIGGER_MIN   64
 #define JOYSTICK_AXIS_TRIGGER_MAX   192
 
+
+
 typedef struct {
   ep_t ep;    // interrupt endpoint info structure
 
@@ -64,8 +66,8 @@ typedef struct {
   
   // additional info extracted from the report descriptor
   // (currently only used for joysticks) 
-  uint8_t jmap;           // last reported joystick state
-  uint8_t jindex;         // joystick index
+  uint16_t jmap;           // last reported joystick state
+  uint16_t jindex;         // joystick index
   hid_report_t conf;
 
   uint8_t interval;
@@ -96,7 +98,12 @@ extern const usb_device_class_config_t usb_hid_class;
 
 void hid_set_kbd_led(unsigned char led, bool on);
 uint8_t hid_get_joysticks(void);
-void hid_joystick_axis_remap(char *);
 int8_t hid_keyboard_present(void);
+
+void hid_joystick_button_remap_init(void);
+void hid_joystick_button_remap(char *);
+
+void virtual_joystick_remap_init(void);
+void virtual_joystick_remap(char *);
 
 #endif // HID_H

@@ -74,6 +74,20 @@
 #define SWITCH1         0x04
 #define SWITCH2         0x08
 
+// virtual gamepad buttons
+#define JOY_A      JOY_BTN1
+#define JOY_B      JOY_BTN2
+#define JOY_SELECT JOY_BTN3
+#define JOY_START  JOY_BTN4
+#define JOY_X      0x100
+#define JOY_Y      0x200
+#define JOY_L      0x400
+#define JOY_R      0x800
+#define JOY_L2     0x1000
+#define JOY_R2     0x2000
+#define JOY_L3     0x4000
+#define JOY_R3     0x8000
+
 #define CONF_SCANDOUBLER_DISABLE 0x10
 
 // core type value should be unlikely to be returned by broken cores

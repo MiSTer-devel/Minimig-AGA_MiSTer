@@ -26,13 +26,17 @@ typedef struct {
       struct {
 	uint8_t byte_offset;
 	uint8_t bitmask;
-      } button[4];             // 4 buttons
+      } button[12];             // 12 buttons max
 
       struct {
 	uint16_t offset;
 	uint8_t size;
       } hat;                   // 1 hat (joystick only)
 
+      // for downstream mapping
+      uint16_t vid;            
+      uint16_t pid;
+      
     } joystick_mouse;
   };
 } hid_report_t;

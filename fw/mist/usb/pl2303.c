@@ -16,6 +16,20 @@
 #include "max3421e.h"
 #include "user_io.h"
 
+// list of supported vid/pid pairs
+static const supported_devices[][2] = {
+  { 0x067b, 0x2303 }, // Prolific
+  { 0x0557, 0x2008 }, // ATEN International Co., Ltd UC-232A Serial
+  { 0x0547, 0x2008 }, // ATEN 
+  { 0x056e, 0x5003 }, // ELCOM
+  { 0x056e, 0x5004 }, // ELCOM
+  { 0x04bb, 0x0a03 }, // IODATA
+  { 0x04bb, 0x0a0e }, // IODATA
+  { 0x050d, 0x0257 }, // Belkin
+  { 0x05ad, 0x0fba }, // Y.C. Cable
+  {      0,      0 }
+};
+
 // #define TX_TEST
 
 // this needs to be at least 64 bytes (the max packet size), otherwise we might loose data
@@ -270,7 +284,22 @@ static uint8_t pl2303_init(usb_device_t *dev) {
     return rcode;
   }
 
-  pl2303_debugf("vid/pid = %x/%x", buf.dev_desc.idVendor, buf.dev_desc.idProduct);
+  pl2303_debugf("vid/pid = %x/%x", 
+		buf.dev_desc.idVendor, buf.dev_desc.idProduct);
+
+  // scan through list of supported devices
+  for(i=0;(i!=0xff)&&(supported_devices[i][0]!=0);i++) {
+    if((buf.dev_desc.idVendor  == supported_devices[i][0]) &&
+       (buf.dev_desc.idProduct == supported_devices[i][1])) {
+      pl2303_debugf("Found supported vid/pid");
+      i = 0xfe;  // will be increase by 1 at end of for loop
+    }
+  }
+
+  if(i != 0xff) {
+    pl2303_debugf("Unsupported vid/pid");
+    return USB_DEV_CONFIG_ERROR_DEVICE_NOT_SUPPORTED;
+  }
 
   if(buf.dev_desc.bDeviceClass == 0x02 ) {
     info->type = PL2303_TYPE_0;
@@ -284,12 +313,6 @@ static uint8_t pl2303_init(usb_device_t *dev) {
   } else if(buf.dev_desc.bDeviceClass == 0xff) {
     info->type = PL2303_TYPE_1;
     pl2303_debugf("TYPE_1");
-  }
-
-  // TODO: implement list of vids/pids
-  if((buf.dev_desc.idVendor != 0x067b) || (buf.dev_desc.idProduct != 0x2303)) {
-    pl2303_debugf("Not a pl2303 device");
-    return USB_DEV_CONFIG_ERROR_DEVICE_NOT_SUPPORTED;
   }
 
   // use first config (actually there is only one)
