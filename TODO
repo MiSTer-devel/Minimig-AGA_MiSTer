@@ -1,3 +1,9 @@
+FIX FIRST
+- support for 256kB, 1MB ROMs & Cloanto AmigaForever encrypted ROMs
+- fix keyboard / mouse issues
+- implement audio volume control (full, half, quarter?)
+- try to fix clock/sdram issues
+
 IMPORTANT - AGA CHIPSET stuff
 - increment hpos counter in denise by two LSB bits (35ns counter)
 - hdiwstrt & hdiwstop (HDIWHIGH) also have two new high-resolution bits
@@ -35,7 +41,7 @@ MEDIUM - mostly firmware stuff
 
 LOW - waaay down the line
 - turbo blitter
-- ethernet
+- ethernet - this needs to be done sooner
 - RTG
-- AHI audio
+- AHI audio - look into supporting this sooner
 
