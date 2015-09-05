@@ -1,0 +1,3 @@
+[submodule "fw/mist"]
+	path = fw/mist
+	url = git@github.com:mist-devel/mist-firmware.git
