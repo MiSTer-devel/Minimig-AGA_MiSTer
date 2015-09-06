@@ -296,6 +296,7 @@ wire		_led;					//power led
 wire		[3:0] sel_chip;			//chip ram select
 wire		[2:0] sel_slow;			//slow ram select
 wire		sel_kick;				//rom select
+wire    sel_kick1mb;     // 1MB upper rom select
 wire		sel_cia;				//CIA address space
 wire		sel_reg;				//chip register select
 wire		sel_cia_a;				//cia A select
@@ -804,6 +805,7 @@ minimig_bankmapper BMAP1
 	.slow1(sel_slow[1]),
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
+  .kick1mb(sel_kick1mb),
 	.cart(sel_cart),
 	.aron(aron),
   .ecs(|chipset_config[4:3]),
@@ -892,6 +894,7 @@ gary GARY1
 	.sel_chip(sel_chip),
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
+  .sel_kick1mb(sel_kick1mb),
 	.sel_cia(sel_cia),
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),

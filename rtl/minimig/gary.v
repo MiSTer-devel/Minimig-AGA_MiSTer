@@ -81,6 +81,7 @@ module gary
 	output 	reg [3:0] sel_chip, 	//select chip memory
 	output	reg [2:0] sel_slow,		//select slowfast memory ($C0000)
 	output 	reg sel_kick,		    //select kickstart rom
+  output  reg sel_kick1mb, // 1MB kickstart rom 'upper' half
 	output	sel_cia,				//select CIA space
 	output 	sel_cia_a,				//select cia A
 	output 	sel_cia_b, 				//select cia B
@@ -126,6 +127,7 @@ begin
 		sel_slow[1] = 1'b0;
 		sel_slow[2] = 1'b0;
 		sel_kick    = 1'b0;
+    sel_kick1mb = 1'b0;
 	end
 	else
 	begin
@@ -136,8 +138,8 @@ begin
 		sel_slow[0] = t_sel_slow[0];
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
-/* TODO better solution required for loading kickstart - don-t rely on !boot && ovl, address should be 0xf80000, add another signal from osd! (cpu_rd || boot || osd_write) */
 		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt)) || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
+    sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) ? 1'b1 : 1'b0; // $E00000 - $E7FFFF
 	end
 end
 
