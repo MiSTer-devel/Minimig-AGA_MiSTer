@@ -165,6 +165,7 @@ wire [  6-1:0] joya;
 wire [  6-1:0] joyb;
 wire [  8-1:0] kbd_mouse_data;
 wire           kbd_mouse_strobe;
+wire           kms_level;
 wire [  2-1:0] kbd_mouse_type;
 wire [  3-1:0] MOUSE_BUTTONS;
 reg  [  3-1:0] MOUSE_BUTTONS_0;
@@ -474,6 +475,7 @@ user_io user_io(
      .KBD_MOUSE_DATA(kbd_mouse_data),
      .KBD_MOUSE_TYPE(kbd_mouse_type),
      .KBD_MOUSE_STROBE(kbd_mouse_strobe),
+     .KMS_LEVEL(kms_level),
      .CORE_TYPE(8'ha5),    // minimig core id (a1 - old minimig id, a5 - new aga minimig id)
      .CONF(CORE_CONFIG)
   );
@@ -527,6 +529,7 @@ minimig minimig (
   .kbd_mouse_data (kbd_mouse_data ),  // mouse direction data, keycodes
   .kbd_mouse_type (kbd_mouse_type ),  // type of data
   .kbd_mouse_strobe (kbd_mouse_strobe), // kbd/mouse data strobe
+  .kms_level    (kms_level        ),
   ._15khz       (_15khz           ),  // scandoubler disable
   .pwrled       (led              ),  // power led
   .msdat        (                 ),  // PS2 mouse data

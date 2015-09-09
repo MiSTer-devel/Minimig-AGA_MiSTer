@@ -49,6 +49,7 @@ module userio (
   input  wire           _rmb,
   input  wire [  6-1:0] mou_emu,
   input  wire           kbd_mouse_strobe,
+  input  wire           kms_level,
   input  wire [  2-1:0] kbd_mouse_type,
   input  wire [  8-1:0] kbd_mouse_data,
   input  wire [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
@@ -368,33 +369,53 @@ userio_ps2mouse pm1
 
 `else
 
-reg [7:0] xcount;
-reg [7:0] ycount;
-reg [15:0] mouse0dat_0;
-reg [15:0] mouse0dat_1;
+//// MiST mouse ////
+reg  [ 2:0] kms_level_sync;
+wire        kms;
+reg  [ 7:0] kmd_sync[0:1];
+reg  [ 1:0] kmt_sync[0:1];
+reg  [ 7:0] xcount;
+reg  [ 7:0] ycount;
 
+// sync kms_level to clk28
 always @ (posedge clk) begin
-  mouse0dat_0 <= #1 {ycount, xcount};
-  mouse0dat_1 <= #1 mouse0dat_0;
+  kms_level_sync <= #1 {kms_level_sync[1:0], kms_level};
 end
 
-assign mouse0dat[15:0] = mouse0dat_1;
+//recreate kbd_mouse strobe in clk28 domain
+assign kms = kms_level_sync[2] ^ kms_level_sync[1];
 
+// sync kbd_mouse_data to clk28
+always @ (posedge clk) begin
+  kmd_sync[0] <= #1 kbd_mouse_data;
+  kmd_sync[1] <= #1 kmd_sync[0];
+  kmt_sync[0] <= #1 kbd_mouse_type;
+  kmt_sync[1] <= #1 kmt_sync[0];
+end
+
+// mouse counters
+always @(posedge clk) begin
+  if(reset) begin
+      xcount <= #1 8'd0;
+      ycount <= #1 8'd0;
+  end else if (test_load && clk7_en) begin
+    ycount[7:2] <= #1 test_data[15:10];
+    xcount[7:2] <= #1 test_data[7:2];
+  end else if (kms) begin
+    if(kmt_sync[1] == 0)
+      xcount[7:0] <= #1 xcount[7:0] + kmd_sync[1];
+    else if(kmt_sync[1] == 1)
+      ycount[7:0] <= #1 ycount[7:0] + kmd_sync[1];
+  end
+end
+
+// output
+assign mouse0dat = {ycount, xcount};
+
+// mouse buttons
 assign _mleft  = ~mouse_btn[0];
 assign _mright = ~mouse_btn[1];
 assign _mthird = ~mouse_btn[2];
-
-always @(posedge kbd_mouse_strobe) begin
-  if(reset) begin
-      xcount <= #1 8'b00000000;
-      ycount <= #1 8'b00000000;
-  end else begin
-    if(kbd_mouse_type == 0)
-      xcount[7:0] <= #1 xcount[7:0] + kbd_mouse_data[7:0];
-    else if(kbd_mouse_type == 1)
-      ycount[7:0] <= #1 ycount[7:0] + kbd_mouse_data[7:0];
-  end
-end
 
 `endif
 

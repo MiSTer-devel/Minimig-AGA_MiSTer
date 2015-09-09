@@ -10,6 +10,7 @@ module user_io(
 
 		output [2:0] MOUSE_BUTTONS,
 		output       KBD_MOUSE_STROBE,
+    output       KMS_LEVEL,
 		output [1:0] KBD_MOUSE_TYPE,
 		output [7:0] KBD_MOUSE_DATA,
 
@@ -25,7 +26,8 @@ module user_io(
    reg [5:0]         joystick1;
    reg [7:0] 	      but_sw;
 
-	reg               kbd_mouse_strobe;
+	 reg               kbd_mouse_strobe;
+   reg               kbd_mouse_strobe_level;
    reg [1:0]         kbd_mouse_type;
    reg [7:0]         kbd_mouse_data;
    reg [2:0]         mouse_buttons;
@@ -36,6 +38,7 @@ module user_io(
 	assign KBD_MOUSE_DATA = kbd_mouse_data; // 8 bit movement data
 	assign KBD_MOUSE_TYPE = kbd_mouse_type; // 0=mouse x,1=mouse y, 2=keycode, 3=OSD kbd
 	assign KBD_MOUSE_STROBE = kbd_mouse_strobe; // strobe, data valid on rising edge
+  assign KMS_LEVEL = kbd_mouse_strobe_level; // level change of kbd_mouse_strobe
 	assign MOUSE_BUTTONS = mouse_buttons; // state of the two mouse buttons
 
 	assign BUTTONS  = but_sw[1:0];
@@ -48,6 +51,8 @@ module user_io(
 	end
 		
    always@(posedge SPI_CLK) begin
+    kbd_mouse_strobe_level <= #1 kbd_mouse_strobe_level ^ kbd_mouse_strobe;
+    
 		if(SPI_SS_IO == 1) begin
         cnt <= 0;
 		end else begin
