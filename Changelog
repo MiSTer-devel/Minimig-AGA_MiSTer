@@ -10,6 +10,10 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-09-10 - RK - USERIO       - disabled entering the OSD menu with DB9-connected joystick with UP+DOWN combination
+2015-09-10 - RK - FIRMWARE     - fixed loading of Cloanto AmigaForever encrypted ROMs
+2015-09-10 - RK - TG68         - reduced the speed of the CPU core
+2015-09-10 - RK - MIST         - fixed PLL placement and external SDRAM clock routing, hopefully the core will be more stable
 2015-09-10 - RK - MIST         - fixed keyboard problems - fixes game Walker (and probably many other)
 2015-09-09 - RK - MINIMIG      - fixed (USB) mouse clock domain crossing, fixed application of JOYTEST data to (USB) mouse counters - fixes game Rainbow Islands cracktro (and probably many other)
 2015-09-06 - RK - FIRMWARE     - fixed firmware kickstart loading, re-enabled support for 256kB ROMs, added support for 1MB ROMs, added support for AmigaForever encrypted ROMs (these still don't work OK)

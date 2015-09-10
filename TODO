@@ -1,10 +1,13 @@
 FIX FIRST
-- support for 256kB, 1MB ROMs & Cloanto AmigaForever encrypted ROMs - ONGOING
+- support for 256kB, 1MB ROMs - DONE
+- support for Cloanto AmigaForever encrypted ROMs - DONE
 - fix keyboard / mouse issues - DONE
 - add support for AROS ROM - DONE
 - add support for AROS - ONGOING (IDE problems)
 - implement audio volume control (full, half, quarter?)
-- try to fix clock/sdram issues
+- try to fix clock/sdram issues - ONGOING
+- audio sigma-delta needs fixes - to be checked with C model
+- video dithering needs fixed - to be checked with C model
 
 
 IMPORTANT - AGA CHIPSET stuff
