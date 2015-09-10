@@ -544,19 +544,14 @@ assign host_adr  = mem_adr[23:0];
 
 
 // rtl version
-wire [8-1:0] rtl_version [0:4-1];
-assign rtl_version[0] = 8'd0; // BETA / RELEASE flag
-assign rtl_version[1] = 8'd1; // major release
-assign rtl_version[2] = 8'd0; // minor release
-assign rtl_version[3] = 8'd0; // zero flag (like end of string)
-
+`include "minimig_version.vh"
 reg  [8-1:0] rtl_ver;
 always @ (*) begin
   case (dat_cnt[2:0])
-    2'b00   : rtl_ver = rtl_version[0];
-    2'b01   : rtl_ver = rtl_version[1];
-    2'b10   : rtl_ver = rtl_version[2];
-    default : rtl_ver = rtl_version[3];
+    2'b00   : rtl_ver = BETA_FLAG;
+    2'b01   : rtl_ver = MAJOR_VER;
+    2'b10   : rtl_ver = MINOR_VER;
+    default : rtl_ver = SEPARATOR;
   endcase
 end
 
