@@ -67,9 +67,9 @@ assign locked = pll_locked_r;
 amiga_clk_altera amiga_clk_i (
   .areset   (rst      ),
   .inclk0   (clk_in   ),
-  .c0       (clk_114  ),
-  .c1       (clk_28   ),
-  .c2       (clk_sdram),
+  .c0       (clk_sdram),
+  .c1       (clk_114  ),
+  .c2       (clk_28   ),
   .locked   (locked   )
 );
 `endif

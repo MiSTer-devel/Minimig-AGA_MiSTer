@@ -48,7 +48,8 @@ create_clock -name {user_io:user_io|kbd_mouse_strobe} -period 1.000 -waveform { 
 #**************************************************************
 
 derive_pll_clocks
-create_generated_clock -name sdclk_pin -source [get_pins {amiga_clk|amiga_clk_i|altpll_component|pll|clk[2]}] [get_ports {SDRAM_CLK}]
+create_generated_clock -name sdclk_pin -source [get_pins {amiga_clk|amiga_clk_i|altpll_component|auto_generated|pll1|clk[0]}] [get_ports {SDRAM_CLK}]
+
 
 #**************************************************************
 # Set Clock Latency
@@ -91,7 +92,7 @@ set_output_delay -clock sdclk_pin -min -0.8 [get_ports SDRAM_*]
 # Set Multicycle Path
 #**************************************************************
 
-set_multicycle_path -from [get_clocks {sdclk_pin}] -to [get_clocks {amiga_clk|amiga_clk_i|altpll_component|pll|clk[2]}] -setup -end 2
+set_multicycle_path -from [get_clocks {sdclk_pin}] -to [get_clocks {amiga_clk|amiga_clk_i|altpll_component|auto_generated|pll1|clk[0]}] -setup -end 2
 
 
 #**************************************************************
