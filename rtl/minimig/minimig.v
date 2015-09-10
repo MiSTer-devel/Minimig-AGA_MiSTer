@@ -717,6 +717,7 @@ ciaa CIAA1
 	.kbdclk(kbdclk),
   .kbd_mouse_type(kbd_mouse_type),
   .kbd_mouse_strobe(kbd_mouse_strobe),
+  .kms_level(kms_level),
   .kbd_mouse_data(kbd_mouse_data), 
   .keyboard_disabled(keyboard_disabled),
 	.osd_ctrl(osd_ctrl),

@@ -10,6 +10,11 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-09-10 - RK - MIST         - fixed keyboard problems - fixes game Walker (and probably many other)
+2015-09-09 - RK - MINIMIG      - fixed (USB) mouse clock domain crossing, fixed application of JOYTEST data to (USB) mouse counters - fixes game Rainbow Islands cracktro (and probably many other)
+2015-09-06 - RK - FIRMWARE     - fixed firmware kickstart loading, re-enabled support for 256kB ROMs, added support for 1MB ROMs, added support for AmigaForever encrypted ROMs (these still don't work OK)
+2015-09-06 - RK - MINIMIG      - 1MB kickstart ROM support added
+2015-09-05 - RK - MIST         - mist firmware is now a git submodule from git@github.com:mist-devel/mist-firmware.git
 2015-06-12 - RK - USERIO       - chipset config is now applied on reset only
 2015-06-12 - RK - MINIMIG      - added turbo options for chipRAM & kickROM
 2015-06-10 - RK - CACHE        - updated cpu cache; working fastRAM, kickstart cache, chipRAM (non-cached)
