@@ -372,7 +372,7 @@ end process;
 		END IF;	
 		IF rising_edge(clk) THEN
         	IF clkena='1' THEN
-				slower <= "0011"; -- rokk
+				slower <= "0111"; -- rokk
 --				slower <= "0111";
 			ELSE 
 				slower(3 downto 0) <= '0'&slower(3 downto 1); -- enaWRreg&slower(3 downto 1);
