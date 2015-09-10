@@ -239,9 +239,9 @@ always @ (*) begin
     else
       t_osd_ctrl = osd_ctrl;
   else
-    if (~_xjoy2[3] && ~_xjoy2[2])
-      t_osd_ctrl = KEY_MENU;
-    else
+//    if (~_xjoy2[3] && ~_xjoy2[2])
+//      t_osd_ctrl = KEY_MENU;
+//    else
       t_osd_ctrl = osd_ctrl;
 end
 
