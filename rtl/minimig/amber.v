@@ -92,11 +92,15 @@ localparam [  8-1:0] OSD_B = 8'b11110000;
 //// control ////
 reg            _hsync_in_del=0;         // delayed horizontal synchronisation input
 reg            hss=0;                   // horizontal sync start
+reg            _vsync_in_del=0;         // delayed vertical synchronisation input
+reg            vss=0;                   // vertical sync start
 
 // horizontal sync start  (falling edge detection)
 always @ (posedge clk) begin
   _hsync_in_del <= #1 _hsync_in;
-  hss <= #1 ~_hsync_in & _hsync_in_del;
+  hss           <= #1 ~_hsync_in & _hsync_in_del;
+  _vsync_in_del <= #1 _vsync_in;
+  vss           <= #1 ~_vsync_in & _vsync_in_del;
 end
 
 
@@ -210,7 +214,7 @@ assign vi_b = vi_b_tmp[8+2-1:2];
 
 //// dither ////
 reg  [24-1:0] seed=0;
-reg  [24-1:0] rand=0;
+reg  [24-1:0] randval=0;
 reg  [24-1:0] seed_old=0;
 wire [26-1:0] hpf_sum;
 reg           f_cnt=0;
@@ -234,22 +238,22 @@ wire [ 8-1:0] dither_b;
 
 // pseudo random number generator
 always @ (posedge clk) begin
-  if (hss) begin
+  if (vss) begin
     seed <= #1 24'h654321;
     seed_old <= #1 24'd0;
-    rand <= #1 24'd0;
+    randval <= #1 24'd0;
   end else if (|dither) begin
     seed <= #1 {seed[22:0], ~(seed[23] ^ seed[22] ^ seed[21] ^ seed[16])};
     seed_old <= #1 seed;
-    rand <= #1 hpf_sum[25:2];
+    randval <= #1 hpf_sum[25:2];
   end
 end
 
-assign hpf_sum = {2'b00,rand} + {2'b00, seed} - {2'b00, seed_old};
+assign hpf_sum = {2'b00,randval} + {2'b00, seed} - {2'b00, seed_old};
 
 // horizontal / vertical / frame marker
 always @ (posedge clk) begin
-  if (hss) begin
+  if (vss) begin
     f_cnt <= #1 ~f_cnt;
     v_cnt <= #1 1'b0;
     h_cnt <= #1 1'b0;
@@ -270,13 +274,13 @@ assign g_dither_tsp = &g_dither_err[7:2] ? g_dither_err[7:0] : g_dither_err[7:0]
 assign b_dither_tsp = &b_dither_err[7:2] ? b_dither_err[7:0] : b_dither_err[7:0] + {6'b000000, (dither[0] & (f_cnt ^ v_cnt ^ h_cnt) & b_dither_err[1]), 1'b0};
 
 // random dithering
-assign r_dither_rnd = &r_dither_tsp[7:2] ? r_dither_tsp[7:0] : r_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
-assign g_dither_rnd = &g_dither_tsp[7:2] ? g_dither_tsp[7:0] : g_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
-assign b_dither_rnd = &b_dither_tsp[7:2] ? b_dither_tsp[7:0] : b_dither_tsp[7:0] + {7'b0000000, dither[1] & rand[0]};
+assign r_dither_rnd = &r_dither_tsp[7:2] ? r_dither_tsp[7:0] : r_dither_tsp[7:0] + {7'b0000000, dither[1] & randval[0]};
+assign g_dither_rnd = &g_dither_tsp[7:2] ? g_dither_tsp[7:0] : g_dither_tsp[7:0] + {7'b0000000, dither[1] & randval[0]};
+assign b_dither_rnd = &b_dither_tsp[7:2] ? b_dither_tsp[7:0] : b_dither_tsp[7:0] + {7'b0000000, dither[1] & randval[0]};
 
 // dither error
 always @ (posedge clk) begin
-  if (hss) begin
+  if (vss) begin
     r_err <= #1 8'd0;
     g_err <= #1 8'd0;
     b_err <= #1 8'd0;
@@ -297,6 +301,12 @@ reg            sl_en=0;                 // scanline enable
 reg  [  8-1:0] sl_r=0;                  // scanline data output
 reg  [  8-1:0] sl_g=0;                  // scanline data output
 reg  [  8-1:0] sl_b=0;                  // scanline data output
+reg  [  8-1:0] ns_r;
+reg  [  8-1:0] ns_g;
+reg  [  8-1:0] ns_b;
+reg            ns_csync;
+reg            ns_osd_blank;
+reg            ns_osd_pixel;
 
 // scanline enable
 always @ (posedge clk) begin
@@ -306,11 +316,21 @@ always @ (posedge clk) begin
     sl_en <= #1 1'b1;
 end
 
-// scanlines
+// scanlines for scandoubled lines
 always @ (posedge clk) begin
   sl_r <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_r[7:1]} : dither_r));
   sl_g <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_g[7:1]} : dither_g));
   sl_b <= #1 ((sl_en && scanline[1]) ? 8'h00 : ((sl_en && scanline[0]) ? {1'b0, dither_b[7:1]} : dither_b));
+end
+
+// scanlines for non-scandoubled lines
+always @ (posedge clk) begin
+  ns_r          <= #1 ((!dblscan && f_cnt && scanline[1]) ? 8'h00 : ((!dblscan && f_cnt && scanline[0]) ? {1'b0, red_in[7:1]}   : red_in));
+  ns_g          <= #1 ((!dblscan && f_cnt && scanline[1]) ? 8'h00 : ((!dblscan && f_cnt && scanline[0]) ? {1'b0, green_in[7:1]} : green_in));
+  ns_b          <= #1 ((!dblscan && f_cnt && scanline[1]) ? 8'h00 : ((!dblscan && f_cnt && scanline[0]) ? {1'b0, blue_in[7:1]}  : blue_in));
+  ns_csync      <= #1 _csync_in;
+  ns_osd_blank  <= #1 osd_blank;
+  ns_osd_pixel  <= #1 osd_pixel;
 end
 
 
@@ -323,13 +343,13 @@ wire [  8-1:0] bm_b;
 wire           bm_osd_blank;
 wire           bm_osd_pixel;
 
-assign bm_hsync     = dblscan ? sd_lbuf_o_d[29] : _csync_in;
-assign bm_vsync     = dblscan ? _vsync_in : 1'b1;
-assign bm_r         = dblscan ? sl_r : red_in;
-assign bm_g         = dblscan ? sl_g : green_in;
-assign bm_b         = dblscan ? sl_b : blue_in;
-assign bm_osd_blank = dblscan ? sd_lbuf_o_d[28] : osd_blank;
-assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[27] : osd_pixel;
+assign bm_hsync     = dblscan ? sd_lbuf_o_d[29] : ns_csync;
+assign bm_vsync     = dblscan ? _vsync_in       : 1'b1;
+assign bm_r         = dblscan ? sl_r            : ns_r;
+assign bm_g         = dblscan ? sl_g            : ns_g;
+assign bm_b         = dblscan ? sl_b            : ns_b;
+assign bm_osd_blank = dblscan ? sd_lbuf_o_d[28] : ns_osd_blank;
+assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[27] : ns_osd_pixel;
 
 
 //// osd ////
@@ -343,7 +363,6 @@ assign osd_b = (bm_osd_blank ? (bm_osd_pixel ? OSD_B : {2'b10, bm_b[7:2]}) : bm_
 
 
 //// output registers ////
-
 always @ (posedge clk) begin
   _hsync_out <= #1 bm_hsync;
   _vsync_out <= #1 bm_vsync;

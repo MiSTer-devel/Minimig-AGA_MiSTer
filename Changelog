@@ -10,6 +10,8 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2015-09-14 - RK - AMBER        - added scanlines for non-doublescaned config
+2015-09-14 - RK - AMBER        - fixed dithering - both spatial & random dithering weren't working properly
 2015-09-10 - RK - USERIO       - disabled entering the OSD menu with DB9-connected joystick with UP+DOWN combination
 2015-09-10 - RK - FIRMWARE     - fixed loading of Cloanto AmigaForever encrypted ROMs
 2015-09-10 - RK - TG68         - reduced the speed of the CPU core

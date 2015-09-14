@@ -1,13 +1,9 @@
 FIX FIRST
-- support for 256kB, 1MB ROMs - DONE
-- support for Cloanto AmigaForever encrypted ROMs - DONE
-- fix keyboard / mouse issues - DONE
-- add support for AROS ROM - DONE
 - add support for AROS - ONGOING (IDE problems)
 - implement audio volume control (full, half, quarter?)
 - try to fix clock/sdram issues - ONGOING
 - audio sigma-delta needs fixes - to be checked with C model
-- video dithering needs fixed - to be checked with C model
+- video dithering needs fixed - to be checked with C model - DONE
 
 
 IMPORTANT - AGA CHIPSET stuff
@@ -28,7 +24,6 @@ IMPORTANT - AGA CHIPSET stuff
 
 
 IMPORTANT - CPU stuff
-- CPU : add PACK & UNPK instruction support - DONE by Till
 - CPU compatibility fixes are a must!
 - CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd); big problems with turbo kickstart - CHECK
 - CPU kickstart turbo - DONE, some problems remain - CHECK
