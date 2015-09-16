@@ -88,6 +88,7 @@ entity TG68KdotC_Kernel is
 -- for debug
 		skipFetch               : out std_logic;
 		regin                   : buffer std_logic_vector(31 downto 0);
+    CACR_out                : buffer std_logic_vector(3 downto 0);
     VBR_out                 : buffer std_logic_vector(31 downto 0)
 		);
 end TG68KdotC_Kernel;
@@ -3167,6 +3168,7 @@ PROCESS (clk, VBR, CACR, brief)
 		END CASE;
 	END PROCESS;
 
+  CACR_out <= CACR;
   VBR_out <= VBR;
 
 -----------------------------------------------------------------------------

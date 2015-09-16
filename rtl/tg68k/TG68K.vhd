@@ -65,6 +65,7 @@ entity TG68K is
         cpuDMA         : buffer std_logic;
         ramlds        : out std_logic;
         ramuds        : out std_logic;
+        CACR_out      : buffer std_logic_vector(3 downto 0);
         VBR_out       : buffer std_logic_vector(31 downto 0)
         );
 end TG68K;
@@ -98,6 +99,7 @@ COMPONENT TG68KdotC_Kernel
 		busstate	  	  	: out std_logic_vector(1 downto 0);	-- 00-> fetch code 10->read data 11->write data 01->no memaccess
 		skipFetch	  		: out std_logic;
         regin          		: buffer std_logic_vector(31 downto 0);
+        CACR_out          : buffer std_logic_vector(3 downto 0);
         VBR_out           : buffer std_logic_vector(31 downto 0)
         );
 	END COMPONENT;
@@ -231,6 +233,7 @@ pf68K_Kernel_inst: TG68KdotC_Kernel
 		nResetOut => nResetOut,
 		CPU => cpu,
 		skipFetch => skipFetch, 		-- : out std_logic
+    CACR_out => CACR_out,
     VBR_out => VBR_out
         );
  
