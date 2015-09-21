@@ -28,6 +28,7 @@ module sdram_ctrl(
   input  wire           reset_in,
   input  wire           cache_rst,
   input  wire           cache_inhibit,
+  input  wire [  4-1:0] cpu_cache_ctrl,
   output wire           reset_out,
   // sdram
   output reg  [ 13-1:0] sdaddr,
@@ -360,6 +361,7 @@ cpu_cache_new cpu_cache (
   .clk              (sysclk),                       // clock
   .rst              (!reset || !cache_rst),         // cache reset
   .cache_en         (1'b1),                         // cache enable
+  .cpu_cache_ctrl   (cpu_cache_ctrl),               // CPU cache control
   .cache_inhibit    (cache_inhibit),                // cache inhibit
   .cpu_cs           (!cpustate[2]),                 // cpu activity
   .cpu_adr          ({cpuAddr_mangled, 1'b0}),      // cpu address

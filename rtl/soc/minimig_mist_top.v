@@ -115,6 +115,7 @@ wire [  6-1:0] tg68_cpustate;
 wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
+wire [  4-1:0] tg68_CACR_out;
 wire [ 32-1:0] tg68_VBR_out;
 wire           tg68_ovr;
 
@@ -332,6 +333,7 @@ TG68K tg68k (
   .cpuDMA       (tg68_cdma        ),
   .ramlds       (tg68_clds        ),
   .ramuds       (tg68_cuds        ),
+  .CACR_out     (tg68_CACR_out    ),
   .VBR_out      (tg68_VBR_out     )
 );
 
@@ -414,6 +416,7 @@ sdram_ctrl sdram (
 sdram_ctrl sdram (
   .cache_rst    (tg68_rst         ),
   .cache_inhibit(cache_inhibit    ),
+  .cpu_cache_ctrl (tg68_CACR_out    ),
   .sdata        (SDRAM_DQ         ),
   .sdaddr       (SDRAM_A[12:0]    ),
   .dqm          (sdram_dqm        ),

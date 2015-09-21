@@ -13,6 +13,7 @@ module cpu_cache_new (
   input  wire           clk,            // clock
   input  wire           rst,            // cache reset
   input  wire           cache_en,       // cache enable
+  input  wire [  4-1:0] cpu_cache_ctrl, // CPU cache control
   input  wire           cache_inhibit,  // cache inhibit
   // cpu
   input  wire           cpu_cs,         // cpu activity
@@ -74,6 +75,14 @@ reg           sdr_sm_id;
 reg           sdr_sm_ilru;
 reg           sdr_sm_dlru;
 
+// cpu cache control
+reg  [ 2-1:0] cc_clr_r;
+wire          cpu_cache_enable;
+wire          cpu_cache_freeze;
+wire          cpu_cache_clear;
+reg           cc_en;
+reg           cc_fr;
+reg           cc_clr;
 // cpu address
 wire [ 2-1:0] cpu_adr_blk;
 wire [ 8-1:0] cpu_adr_idx;
@@ -197,6 +206,30 @@ localparam [3:0]
 
 //// cpu side ////
 
+// cpu cache control
+always @ (posedge clk) begin
+  if (rst)
+    cc_clr_r <= #1 2'd0;
+  else if (!cpu_cs)
+    cc_clr_r <= #1 {cc_clr_r[0], cpu_cache_ctrl[3]};
+end
+
+assign cpu_cache_enable = cpu_cache_ctrl[0];
+assign cpu_cache_freeze = cpu_cache_ctrl[1];
+assign cpu_cache_clear  = cc_clr_r[0] && !cc_clr_r[1];
+
+always @ (posedge clk) begin
+  if (rst) begin
+    cc_en  <= #1 1'b0;
+    cc_fr  <= #1 1'b0;
+    cc_clr <= #1 1'b0;
+  end else if (!cpu_cs) begin
+    cc_en  <= #1 cpu_cache_enable;
+    cc_fr  <= #1 cpu_cache_freeze;
+    cc_clr <= #1 cpu_cache_clear;
+  end
+end 
+
 // slice up cpu address
 assign cpu_adr_blk = cpu_adr[2:1];    // cache block address (inside cache row), 2 bits for 4x16 rows
 assign cpu_adr_idx = cpu_adr[10:3];   // cache row address, 8 bits
@@ -248,17 +281,20 @@ always @ (posedge clk) begin
             cpu_sm_state <= #1 CPU_SM_READ;
           end
         end else begin
-          cpu_sm_state <= #1 CPU_SM_IDLE;
+          if (cc_clr)
+            cpu_sm_state <= #1 CPU_SM_INIT;
+          else
+            cpu_sm_state <= #1 CPU_SM_IDLE;
         end
       end
       CPU_SM_WRITE : begin
         // on hit update cache, on miss no update neccessary; tags don't get updated on writes
         cpu_sm_bs <= #1 cpu_bs;
         cpu_sm_mem_dat_w <= #1 cpu_dat_w;
-        cpu_sm_iram0_we <= #1 itag0_match && itag0_valid;
-        cpu_sm_iram1_we <= #1 itag1_match && itag1_valid;
-        cpu_sm_dram0_we <= #1 dtag0_match && dtag0_valid;
-        cpu_sm_dram1_we <= #1 dtag1_match && dtag1_valid;
+        cpu_sm_iram0_we <= #1 itag0_match && itag0_valid /*&& !cc_fr*/;
+        cpu_sm_iram1_we <= #1 itag1_match && itag1_valid /*&& !cc_fr*/;
+        cpu_sm_dram0_we <= #1 dtag0_match && dtag0_valid /*&& !cc_fr*/;
+        cpu_sm_dram1_we <= #1 dtag1_match && dtag1_valid /*&& !cc_fr*/;
         cpu_sm_state <= #1 CPU_SM_WB;
       end
       CPU_SM_WB : begin
@@ -267,28 +303,28 @@ always @ (posedge clk) begin
       end
       CPU_SM_READ : begin
         // on hit update LRU flag in tag memory
-        if (itag0_match && itag0_valid) begin
+        if (cc_en && itag0_match && itag0_valid) begin
           // data is already in instruction cache way 0
           cpu_dat_r <= #1 idram0_cpu_dat_r;
           cpu_ack <= #1 1'b1;
           cpu_sm_itag_we <= #1 1'b1;
           cpu_sm_tag_dat_w <= #1 {1'b0, itram_cpu_dat_r[30:0]};
           cpu_sm_state <= #1 CPU_SM_WAIT;
-        end else if (itag1_match && itag1_valid) begin
+        end else if (cc_en && itag1_match && itag1_valid) begin
           // data is already in instruction cache way 1
           cpu_dat_r <= #1 idram1_cpu_dat_r;
           cpu_ack <= #1 1'b1;
           cpu_sm_itag_we <= #1 1'b1;
           cpu_sm_tag_dat_w <= #1 {1'b1, itram_cpu_dat_r[30:0]};
           cpu_sm_state <= #1 CPU_SM_WAIT;
-        end else if (dtag0_match && dtag0_valid) begin
+        end else if (cc_en && dtag0_match && dtag0_valid) begin
           // data is already in data cache way 0
           cpu_dat_r <= #1 ddram0_cpu_dat_r;
           cpu_ack <= #1 1'b1;
           cpu_sm_dtag_we <= #1 1'b1;
           cpu_sm_tag_dat_w <= #1 {1'b0, dtram_cpu_dat_r[30:0]};
           cpu_sm_state <= #1 CPU_SM_WAIT;
-        end else if (dtag1_match && dtag1_valid) begin
+        end else if (cc_en && dtag1_match && dtag1_valid) begin
           // data is already in data cache way 1
           cpu_dat_r <= #1 ddram1_cpu_dat_r;
           cpu_ack <= #1 1'b1;
@@ -442,7 +478,10 @@ always @ (posedge clk) begin
         // wait for action
         cache_init_done <= #1 1'b1;
         sdr_sm_adr <= #1 snoop_adr[10:1];
-        if (1'b0/*snoop_act*/) begin
+        if (cc_clr) begin
+          sdr_sm_state <= #1 SDR_SM_INIT0;
+        end
+        else if (1'b0/*snoop_act*/) begin
           // chip write happening
           sdr_sm_state <= #1 SDR_SM_SNOOP;
         end/* else if (sdr_read_req) begin

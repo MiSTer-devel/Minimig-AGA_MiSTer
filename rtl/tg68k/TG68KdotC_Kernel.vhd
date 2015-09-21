@@ -3160,7 +3160,7 @@ PROCESS (clk, VBR, CACR, brief)
 		END IF;
 		movec_data <= (OTHERS=>'0');
 		CASE brief(11 downto 0) IS
-			WHEN X"002" => movec_data(3 downto 0) <= CACR;
+			WHEN X"002" => movec_data <= "0000000000000000000000000000" & (CACR AND "0011");
 			WHEN X"801" => --IF VBR_Stackframe=1 OR (cpu(0)='1' AND VBR_Stackframe=2) THEN
 								movec_data <= VBR;
 						   --END IF;
