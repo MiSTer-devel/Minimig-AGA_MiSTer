@@ -112,6 +112,7 @@ wire           turbokick;
 wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
+wire           tg68_nrst_out;
 wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
@@ -288,7 +289,7 @@ TG68K_SplitClock tg68k (
   .fastramcfg   ({memcfg[5]&memcfg[4],memcfg[5:4]}),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
-  .nResetOut    (                 ),
+  .nResetOut    (tg68_nrst_out    ),
   .skipFetch    (                 ),
   .ramlds       (tg68_clds        ),
   .ramuds       (tg68_cuds        ),
@@ -328,7 +329,7 @@ TG68K tg68k (
   .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),
-  .nResetOut    (                 ),
+  .nResetOut    (tg68_nrst_out    ),
   .skipFetch    (                 ),
   .cpuDMA       (tg68_cdma        ),
   .ramlds       (tg68_clds        ),
@@ -497,6 +498,7 @@ minimig minimig (
   .cpu_r_w      (tg68_rw          ), // M68K read / write
   ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
   ._cpu_reset   (tg68_rst         ), // M68K reset
+  ._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
   .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
   .ovr          (tg68_ovr         ), // NMI override address decoding
   //sram pins

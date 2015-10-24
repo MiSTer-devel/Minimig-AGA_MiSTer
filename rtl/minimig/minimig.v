@@ -159,6 +159,7 @@ module minimig
 	input	cpu_r_w,			// m68k read / write
 	output	_cpu_dtack,			// m68k data acknowledge
 	output	_cpu_reset,			// m68k reset
+  input _cpu_reset_in,    // m68k reset in
   input [31:0] cpu_vbr, // m68k VBR
   output wire ovr,      // NMI address decoding override
 	//sram pins
@@ -943,7 +944,7 @@ minimig_syscontrol CONTROL1
 	.clk(clk),
   .clk7_en (clk7_en),
 	.cnt(sof),
-	.mrst(kbdrst | usrrst | rst_ext),
+	.mrst(kbdrst | usrrst | rst_ext | ~_cpu_reset_in),
 	.reset(reset)
 );
 
