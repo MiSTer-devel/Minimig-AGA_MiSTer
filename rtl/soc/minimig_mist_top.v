@@ -326,6 +326,10 @@ TG68K tg68k (
   .turbokick    (turbokick        ),
   .cache_inhibit(cache_inhibit    ),
   .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
+  .eth_en       (1'b1), // TODO
+  .sel_eth      (),
+  .frometh      (16'd0),
+  .ethready     (1'b0),
   .ovr          (tg68_ovr         ),
   .ramaddr      (tg68_cad         ),
   .cpustate     (tg68_cpustate    ),

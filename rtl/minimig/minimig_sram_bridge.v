@@ -127,7 +127,7 @@ always @(posedge clk)
 //		_ce[3:0] <= {~|bank[7:6],~|bank[5:4],~|bank[3:2],~|bank[1:0]};
 
 // ram address bus
-assign		address = {bank[7]|bank[6]|bank[5]|bank[4],bank[7]|bank[6]|bank[3]|bank[2],bank[7]|bank[5]|bank[3]|bank[1],address_in[18:1]};
+assign		address = {bank[7]|bank[6]|bank[5]|bank[4],  bank[7]|bank[6]|bank[3]|bank[2],  bank[7]|bank[5]|bank[3]|bank[1],  address_in[18:1]};
 //assign address = {bank[7]|bank[5]|bank[3]|bank[1],address_in[18:1]};
 //always @(posedge clk28m)
 //	if (c1 && !c3 && enable)	// set address in Q1		
