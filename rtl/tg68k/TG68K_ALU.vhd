@@ -416,14 +416,15 @@ begin
   -- Bitfields can have up to four (register) operands, e.g. bfins d0,d1{d2,d3}
   -- the width an offset operands are evaluated while the second opcode word is
   -- evaluated. These values are latched, so the two other registers can be read
-  -- in the next cycle while the ALU is working.
+  -- in the next cycle while the ALU is working since the tg68k can only read
+  -- from two registers at once.
   --
   -- The destination operand is transfered via op1out and bf_ext into the ALU.
   --
   -- bfset, bfclr and bfchg
   -------------------------
   -- bfset, bfclr and bfchg work very similar. A "sign" vector is generated
-  -- having width right aligned 0-bits and the rest ones. 
+  -- having "width" right aligned 0-bits and the rest ones. 
   -- A "copy" vector is generated from this by shifting through copymux so
   -- this contains a 1 for all bits in bf_ext_in & op1out that will not be
   -- affected by the operation.
@@ -432,10 +433,24 @@ begin
   -- vector are overwritten with the original value from bf_ext_in & op1out
   -- The result is returned through bf_ext_out and ALUout
   --
+  -- These instructions only calculate the Z and N flags. Both are derived
+  -- directly from bf_ext_in & op1out with the help of the copy vector and
+  -- the offset/width fields. Thus Z and N are set from the previous contents
+  -- of the bitfield.
+  --
   -- bfins
   --------
   -- bfins reuses most of the functionality of bfset, bfclr and bfchg. But it
-  -- has another 32 bit parameter that's being used for the source.
+  -- has another 32 bit parameter that's being used for the source. This is passed
+  -- to the ALU via op2out. This is moved to the shift register, bits 39-32 of
+  -- the shift register mirror bits 7-0. This is then shifted bf_shift bits to
+  -- the right.
+  -- The input valus is also store in datareg and the lowest "width" bits
+  -- are masked. This is then forwarded to op1in which in turn uses the normal
+  -- mechanisms to generate the flags. A special bf_NFlag is also generated
+  -- from this. Z and N are set from these and not from the previous bitfield
+  -- contents as with bfset, bfclr or bfchg
+  
   
 process (clk, mux, mask, bitnr, bf_ins, bf_bchg, bf_bset, bf_exts, bf_shift, inmux0, inmux1, inmux2, inmux3, bf_set2, OP1out, OP2out, result_tmp, bf_ext_in,
   shift, datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, copymux0, copymux1, copymux2, copymux3, bf_width)
@@ -803,7 +818,9 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 			  Flags(3) <= bf_NFlag;
 
                           --TH TODO: check flag handling of fffo and exts
-                          if bf_fffo = '0' and bf_exts='0' then
+
+                          -- "normal" flags are taken from 
+                          if bf_fffo = '0' and bf_exts='0' and bf_ins='0' then
                             Flags(2) <= bf_flag_z;
                             Flags(3) <= bf_flag_n;
                           end if;
