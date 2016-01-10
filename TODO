@@ -1,8 +1,8 @@
 FIX FIRST
 - mapping CTRL, ALT, ...  keys in mist.ini
 - IDE OSD settings sometimes don't get applied
-- A8 kickstart ROM mirror
-- 512kB ROM mirror (just upload it twice)
+- A8 kickstart ROM mirror - CONSIDERING
+- 512kB ROM mirror (just upload it twice) - DONE
 - add support for AROS - ONGOING (IDE problems)
 - implement audio volume control (full, half, quarter?)
 - try to fix clock/sdram issues - ONGOING

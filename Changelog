@@ -10,6 +10,8 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2016-01-09 - RK - MIST         - fixed keyboard rate
+2016-01-09 - RK - MIST         - kickstart ROM is also uploaded to mirror position (E0)
 2015-10-24 - RK - MINIMIG      - fixed reset problems & fastRAM disappearing
 2015-09-21 - RK - TG68         - added CACR cache control, fixed reading CACR reg
 2015-09-14 - RK - AMBER        - added scanlines for non-doublescaned config
