@@ -61,7 +61,7 @@ entity TG68KdotC_Kernel is
 	extAddr_Mode   : integer := 0; --0=>no,    1=>yes,   2=>switchable with CPU(1)
 	MUL_Mode       : integer := 0; --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no MUL,
 	DIV_Mode       : integer := 0; --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no DIV,
-  BitField       : integer := 0  --0=>no,    1=>yes,   2=>switchable with CPU(1)
+	BitField       : integer := 0  --0=>no,    1=>yes,   2=>switchable with CPU(1)
   );
   port (
 	clk            : in  std_logic;
@@ -114,7 +114,6 @@ architecture logic of TG68KdotC_Kernel is
   signal sndOPC                 : std_logic_vector(15 downto 0);
 
   signal last_opc_read          : std_logic_vector(15 downto 0);
-  signal registerin             : std_logic_vector(31 downto 0);
   signal reg_QA                 : std_logic_vector(31 downto 0);
   signal reg_QB                 : std_logic_vector(31 downto 0);
   signal Wwrena                 : bit;
@@ -1753,7 +1752,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 				  ea_build_now <= '1';
 				  set_exec(opcMOVESR) <= '1';
 				  datatype <= "01";
-				  write_back <= '1'; -- im 68000 wird auch erst gelesen
+				  write_back <= '1'; -- 68000 also reads first
 				  if cpu(0) = '1' and state = "10" then
 					skipFetch <= '1';
 				  end if;
@@ -1785,7 +1784,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 				  set_exec(opcMOVECCR) <= '1';
 				  --datatype <= "00"; -- WRONG, should be WORD zero extended.
 				  datatype <= "01"; -- WRONG, should be WORD zero extended.
-				  write_back <= '1'; -- im 68000 wird auch erst gelesen
+				  write_back <= '1'; -- 68000 also reads first
 				  if opcode(5 downto 4) = "00" then
 					set_exec(Regwrena) <= '1';
 				  end if;
@@ -2536,7 +2535,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 			  set_exec(opcBF) <= '1';
 
 			  if opcode(10) = '1' or opcode(8) = '0' then
-				set_exec(opcBFwb) <= '1';
+                              set_exec(opcBFwb) <= '1';
+                              --TH: TODO: Make sure the following is still needed
+                              -- it seems by now only bfffo needs it when the 
 				if opcode(10 downto 8)/="111" and opcode(4 downto 3) /= "00" THEN
                                   --not bfins and not on register -- TEMP FIX2
 				  set_exec(ea_data_OP2) <= '1'; -- for the flags
@@ -2554,7 +2555,11 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 			  end if;
 														-- register destination
 			  if opcode(4 downto 3) = "00" then
-				set_exec(Regwrena) <= '1';
+                                -- bftst doesn't write
+                                if opcode(10 downto 8) /= "000" then
+                                  set_exec(Regwrena) <= '1';
+                                end if;
+                            
 				if exec(ea_build) = '1' then
 				  dest_2ndHbits <= '1';
 				  source_2ndLbits <= '1';
