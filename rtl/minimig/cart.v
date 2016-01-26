@@ -130,7 +130,7 @@ assign int7_req = /*aron &&*/ freeze_req;
 
 // level7 interrupt ack cycle, on Amiga interrupt vector number is read from kickstart rom
 // A[23:4] all high, A[3:1] vector number
-assign int7_ack = &cpu_address && ~_cpu_as;
+assign int7_ack = &cpu_address_in && ~_cpu_as;
 
 // level 7 interrupt request logic
 // interrupt request lines are sampled during S4->S5 transition (falling cpu clock edge)
