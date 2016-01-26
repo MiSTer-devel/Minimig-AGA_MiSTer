@@ -93,7 +93,7 @@ module ciaa
   input   eclk,          // eclk (counter input for timer A/B)
   output   irq,           // interrupt request out
   input  [7:2] porta_in,   // porta in
-  output   [1:0] porta_out,  // porta out
+  output   [3:0] porta_out,  // porta out
   output  kbdrst,        // keyboard reset out
   inout  kbddat,        // ps2 keyboard data
   inout  kbdclk,        // ps2 keyboard clock
@@ -375,7 +375,7 @@ assign ser_tx_irq = &ser_tx_cnt & tmra_ovf; // signal irq when ser_tx_cnt overfl
 // porta
 //----------------------------------------------------------------------------------
 reg [7:2] porta_in2;
-reg [1:0] regporta;
+reg [3:0] regporta;
 reg [7:0] ddrporta;
 
 // synchronizing of input data
@@ -388,9 +388,9 @@ always @(posedge clk)
 always @(posedge clk)
   if (clk7_en) begin
     if (reset)
-      regporta[1:0] <= 2'd0;
+      regporta[3:0] <= 4'd0;
     else if (wr && pra)
-      regporta[1:0] <= data_in[1:0];
+      regporta[3:0] <= {data_in[7:6], data_in[1:0]};
   end
 
 // writing of ddr register
@@ -414,7 +414,7 @@ begin
 end
 
 // assignment of output port while keeping in mind that the original 8520 uses pull-ups
-assign porta_out[1:0] = (~ddrporta[1:0]) | regporta[1:0];
+assign porta_out[3:0] = {(~ddrporta[7:6] | regporta[3:2]), (~ddrporta[1:0] | regporta[1:0])};
 
 //----------------------------------------------------------------------------------
 // portb
