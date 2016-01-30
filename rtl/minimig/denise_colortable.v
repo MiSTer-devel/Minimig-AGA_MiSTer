@@ -23,7 +23,7 @@ module denise_colortable
 parameter COLORBASE = 9'h180;         // colour table base address
 
 // select xor
-wire [ 8-1:0] select_xored = select ^ bplxor;
+wire [ 8-1:0] select_xored = select;// ^ bplxor;
 
 // color ram
 wire [ 8-1:0] wr_adr = {bank[2:0], reg_address_in[5:1]};

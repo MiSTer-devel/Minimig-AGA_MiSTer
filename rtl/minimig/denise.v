@@ -427,7 +427,7 @@ always @(*) begin
   else if (sprsel) // select sprites
     clut_data = sprdata;
   else // select playfield
-    clut_data = plfdata;
+    clut_data = plfdata ^ bplxor;
 end
 
 reg window_del;
