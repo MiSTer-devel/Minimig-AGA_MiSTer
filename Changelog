@@ -10,6 +10,8 @@ TH - Till Harbaum
 RK - Rok Krajnc
 
 
+2016-02-14 - RK - AGNUS        - added support for undocumented Agnus behaviour when BPL=7 in ECS/OCS mode
+2016-02-14 - RK - DENISE       - added support for undocumented Denise behaviour when BPL=7 in ECS/OCS mode
 2016-02-09 - RK - BLITTER      - blitter line mode fixed (fixes demos like SushiBoyz & Sunglasses by Ghostown)
 2016-01-30 - TH - TG68         - bitfield instructions fixed, barrel shifter implemented
 2016-01-30 - RK - DENISE       - fixed colortable for sprites (bplxor) - fixes Alien Breed 3D (and probably many others)
