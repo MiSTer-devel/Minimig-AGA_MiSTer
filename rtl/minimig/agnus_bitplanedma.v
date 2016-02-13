@@ -251,7 +251,7 @@ always @ (posedge clk) begin
     if (reset)
       bplcon0 <= #1 6'b00_0000;
     else if (reg_address_in[8:1]==BPLCON0_REG[8:1])
-      bplcon0 <= #1 {data_in[6],data_in[15],data_in[4],data_in[14:12]}; //SHRES,HIRES,BPU3,BPU2,BPU1,BPU0
+      bplcon0 <= #1 {data_in[6], data_in[15], aga & data_in[4], data_in[14:12]}; //SHRES,HIRES,BPU3,BPU2,BPU1,BPU0
   end
 end
 
@@ -269,7 +269,7 @@ end
 
 assign shres = ecs & bplcon0_delayed[5];
 assign hires = bplcon0_delayed[4];
-assign bpu = bplcon0_delayed[3:0];
+assign bpu = aga ? bplcon0_delayed[3:0] : {1'b0, &bplcon0_delayed[2:0] ? 3'd4 : bplcon0_delayed[2:0]};
 
 // fmode
 always @ (posedge clk) begin

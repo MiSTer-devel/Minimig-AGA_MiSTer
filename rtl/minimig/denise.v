@@ -157,7 +157,10 @@ assign ecsena   = bplcon0[0];
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (reg_address_in[8:1]==BPL1DAT[8:1])
-      l_bpu <= bpu;
+      if (aga)
+        l_bpu <= #1 bpu;
+      else
+        l_bpu <= #1 bpu == 4'd7 ? 4'd6 : bpu; // Denise thinks this is EHB 6-plane mode
   end
 end
 
@@ -387,7 +390,7 @@ denise_colortable clut0
 
 // instantiate HAM (hold and modify) module
 wire ham8 = ham && (l_bpu == 4'd8);
-wire ham_sel = ham && ((l_bpu == 4'd6) || (l_bpu == 4'd8));
+wire ham_sel = ham;// && ((l_bpu == 4'd6) || (l_bpu == 4'd8));
 
 denise_hamgenerator ham0
 (
