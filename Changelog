@@ -8,11 +8,14 @@ SB - Sascha Boing
 AR - A.M. Robinson
 TH - Till Harbaum
 RK - Rok Krajnc
+MJ - Mike Johnson
 
 
-2016-02-14 - RK - AGNUS        - added support for undocumented Agnus behaviour when BPL=7 in ECS/OCS mode
-2016-02-14 - RK - DENISE       - added support for undocumented Denise behaviour when BPL=7 in ECS/OCS mode
-2016-02-09 - RK - BLITTER      - blitter line mode fixed (fixes demos like SushiBoyz & Sunglasses by Ghostown)
+2016-02-15 - RK - MINIMIG      - proper handling of CPU access to chipRAM & custom regs - CPU waits for free slot when turbo option is disabled
+2016-02-15 - MJ - BLITTER      - some IRQ changes (unknown cause / effect)
+2016-02-14 - RK - AGNUS        - added support for undocumented Agnus behaviour when BPL=7 in ECS/OCS mode (fixes demos like SushiBoyz by Ghostown, Sliced&Diced by Dekadence, etc)
+2016-02-14 - RK - DENISE       - added support for undocumented Denise behaviour when BPL=7 in ECS/OCS mode (fixes demos like SushiBoyz by Ghostown, Sliced&Diced by Dekadence, etc)
+2016-02-09 - RK - BLITTER      - blitter line mode fixed (fixes demos like SushiBoyz & Sunglasses by Ghostown, Vectorize by RSi, etc)
 2016-01-30 - TH - TG68         - bitfield instructions fixed, barrel shifter implemented
 2016-01-30 - RK - DENISE       - fixed colortable for sprites (bplxor) - fixes Alien Breed 3D (and probably many others)
 2016-01-09 - RK - MIST         - fixed keyboard rate
