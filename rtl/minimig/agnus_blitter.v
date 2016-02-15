@@ -311,10 +311,10 @@ always @(posedge clk)
 always @(*)
 	if (first_word && last_word)
 		bltamask[15:0] = bltafwm[15:0] & bltalwm[15:0];
-	else if (last_word)
-		bltamask[15:0] = bltalwm[15:0];
 	else if (first_word)
 		bltamask[15:0] = bltafwm[15:0];	
+	else if (last_word)
+		bltamask[15:0] = bltalwm[15:0];
 	else
 		bltamask[15:0] = 16'hFF_FF;
 		
@@ -480,7 +480,9 @@ always @(posedge clk)
 // channel D 'zero' flag
 always @(posedge clk)
   if (clk7_en) begin
-  	if (enable && init)
+    if (reset)
+      zero <= 1;
+  	else if (enable && init)
   		zero <= 1;
   	else if (store_result && |fill_out[15:0])
   		zero <= 0;
@@ -898,7 +900,11 @@ always @(posedge clk)
 
 // blitter busy flag is cleared immediately after last source data is fetched (if D channel is not enabled) or the last but one result is stored
 // signal 'done' is used to clear the 'busy' and 'start' flags
-assign done = (blt_state==BLT_C && !used || blt_state==BLT_D) && last_word && last_line || blt_state==BLT_L4 && last_line ? enable : 1'b0;
+//assign done = (blt_state==BLT_C && !used || blt_state==BLT_D) && last_word && last_line || blt_state==BLT_L4 && last_line ? enable : 1'b0;
+
+// This is temporary solution. Needs further investigation. With heavy display load and 060 CPU an ISR could run before the last pipelined data write.
+assign done = (blt_state==BLT_C || blt_state==BLT_D) && !used && last_word && last_line || blt_state==BLT_F || blt_state==BLT_L4 && last_line ? enable : 1'b0;
+
 
 always @(posedge clk)
   if (clk7_en) begin
