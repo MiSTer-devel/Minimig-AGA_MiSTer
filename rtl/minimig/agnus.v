@@ -66,6 +66,7 @@ module agnus
   input   [8:1] address_in,      // 256 words (512 bytes) adress input,
   output  reg [20:1] address_out,    // chip address output,
   output   [8:1] reg_address_out,    // 256 words (512 bytes) register address out,
+  output  reg cpu_custom,   // CPU has access to custom chipset (registers and chipRAM / slowRAM)
   output  reg dbr,          // agnus requests data bus
   output  reg dbwe,          // agnus does a memory write cycle (only disk and blitter dma channels may do this)
   output  _hsync,            // horizontal sync
@@ -179,8 +180,9 @@ assign dma_blt = req_blt & blten;
 //first item in this if else if list has highest priority
 always @(*)
 begin
-  if (dma_dsk)//busses allocated to disk dma engine
-  begin
+  if (dma_dsk) begin
+    // bus allocated to disk dma engine
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 0;
@@ -188,9 +190,9 @@ begin
     address_out = address_dsk;
     reg_address = reg_address_dsk;
     dbwe = wr_dsk;
-  end
-  else if (dma_ref) //bus allocated to refresh dma engine
-  begin
+  end else if (dma_ref) begin
+    // bus allocated to refresh dma engine
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 0;
@@ -198,9 +200,9 @@ begin
     address_out = 0;
     reg_address = 8'hFF;
     dbwe = 0;
-  end
-  else if (dma_aud)//busses allocated to audio dma engine
-  begin
+  end else if (dma_aud) begin
+    // bus allocated to audio dma engine
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 0;
@@ -208,9 +210,9 @@ begin
     address_out = address_aud;
     reg_address = reg_address_aud;
     dbwe = 0;
-  end
-  else if (dma_bpl)//busses allocated to bitplane dma engine
-  begin
+  end else if (dma_bpl) begin
+    // bus allocated to bitplane dma engine
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 0;
@@ -218,9 +220,9 @@ begin
     address_out = address_bpl;
     reg_address = reg_address_bpl;
     dbwe = 0;
-  end
-  else if (dma_spr)//busses allocated to sprite dma engine
-  begin
+  end else if (dma_spr) begin
+    // bus allocated to sprite dma engine
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 0;
@@ -228,9 +230,9 @@ begin
     address_out = address_spr;
     reg_address = reg_address_spr;
     dbwe = 0;
-  end
-  else if (dma_cop)//busses allocated to copper
-  begin
+  end else if (dma_cop) begin
+    // bus allocated to copper
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 1;
     ack_blt = 0;
@@ -238,9 +240,9 @@ begin
     address_out = address_cop;
     reg_address = reg_address_cop;
     dbwe = 0;
-  end
-  else if (dma_blt && bls_cnt!=BLS_CNT_MAX)//busses allocated to blitter
-  begin
+  end else if (dma_blt && bls_cnt!=BLS_CNT_MAX) begin
+    // bus allocated to blitter
+    cpu_custom = 0;
     dbr = 1;
     ack_cop = 0;
     ack_blt = 1;
@@ -248,15 +250,15 @@ begin
     address_out = address_blt;
     reg_address = reg_address_blt;
     dbwe = we_blt;
-  end
-  else//busses not allocated by agnus
-  begin
+  end else begin
+    // bus not allocated by agnus
+    cpu_custom = 1;
     dbr = 0;
     ack_cop = 0;
     ack_blt = 0;
     ack_spr = 0;
     address_out = 0;
-    reg_address = reg_address_cpu;//pass register addresses from cpu address bus
+    reg_address = reg_address_cpu; // pass register addresses from cpu address bus
     dbwe = 0;
   end
 end
