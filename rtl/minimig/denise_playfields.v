@@ -70,7 +70,10 @@ begin
     if (pf2pri) //playfield 2 (2,4,6) has priority
     begin
       if (nplayfield[2])
-        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val;
+        if (aga)
+          plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val;
+        else
+          plfdata[7:0] = {4'b0000,1'b1,bpldata[6],bpldata[4],bpldata[2]};
       else if (nplayfield[1])
         plfdata[7:0] = {4'b0000,bpldata[7],bpldata[5],bpldata[3],bpldata[1]};
       else //both planes transparant, select background color
@@ -81,7 +84,10 @@ begin
       if (nplayfield[1])
         plfdata[7:0] = {4'b0000,bpldata[7],bpldata[5],bpldata[3],bpldata[1]};
       else if (nplayfield[2])
-        plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val; // TODO pf2of_val needed here too?
+        if (aga)
+          plfdata[7:0] = {4'b0000,bpldata[8],bpldata[6],bpldata[4],bpldata[2]} + pf2of_val;
+        else
+          plfdata[7:0] = {4'b0000,1'b1,bpldata[6],bpldata[4],bpldata[2]};
       else //both planes transparent, select background color
         plfdata[7:0] = 8'b00000000;
     end
