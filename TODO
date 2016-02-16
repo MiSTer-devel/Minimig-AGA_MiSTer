@@ -1,14 +1,15 @@
 FIX FIRST
-- mapping CTRL, ALT, ...  keys in mist.ini
-- IDE OSD settings sometimes don't get applied
-- A8 kickstart ROM mirror - CONSIDERING
+- HELP key / HRTMON (NMI) button fix - DONE (OSD HRTmon disabled - F11 is HELP key)
 - 512kB ROM mirror (just upload it twice) - DONE
-- add support for AROS - ONGOING (IDE problems)
-- implement audio volume control (full, half, quarter?)
-- try to fix clock/sdram issues - ONGOING
-- audio sigma-delta needs fixes - to be checked with C model
 - video dithering needs fixed - to be checked with C model - DONE
 - fix reset problems, fastRAM problems - DONE
+- try to fix clock/sdram issues - ONGOING
+- add support for AROS - ONGOING (IDE problems)
+- audio sigma-delta needs fixes - to be checked with C model
+- implement audio volume control (full, half, quarter?)
+- mapping CTRL, ALT, ...  keys in mist.ini
+- IDE OSD settings sometimes don't get applied
+- A8 kickstart ROM mirror - WONTFIX (memory block is partly occupied by HRTmon, besides it is very rarely used)
 
 
 IMPORTANT - AGA CHIPSET stuff
@@ -25,14 +26,15 @@ IMPORTANT - AGA CHIPSET stuff
   * Writing to BPLxPT when exactly next cycle has DMA to matching BPLxDAT: write goes nowhere. (Same happens with sprites and blitter registers too, I assume all DMA channels have similar internal 2 cycle pipeline)
   * Another similar special feature is bitplane modulos, writing to BPLxMOD when exactly next cycle is matching BPLxDAT write and it also does modulo add, _old_ modulo value is used! (Write to BPLxMOD is still accepted, next time BPLxMOD value is needed it is used normally)
 - sprites can be positioned on 35ns pixels - to add! - I think I did this - CHECK
-- add CD32 gamepad emulation and / or real amiga cd32 gamepad support (http://gerdkautzmann.de/cd32gamepad/cd32gamepad.html)
+- add CD32 gamepad emulation and / or real amiga cd32 gamepad support (http://gerdkautzmann.de/cd32gamepad/cd32gamepad.html) - ONGOING
+- reimplement blitter - CONSIDERING
 
 
 IMPORTANT - CPU stuff
-- CPU compatibility fixes are a must!
-- CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd); big problems with turbo kickstart - CHECK
-- CPU kickstart turbo - DONE, some problems remain - CHECK
-- CPU chipRAM turbo - DONE, need to enable cache for chipRAM
+- CPU chipRAM turbo - DONE, need to enable cache for chipRAM - CHECK
+- CPU kickstart turbo - DONE, some problems remain - ONGOING
+- CPU compatibility fixes are a must! - ONGOING (Till fixed most of the instructions, still need to check stack frames)
+- CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd); big problems with turbo kickstart - ONGOING
 
 
 MEDIUM - mostly firmware stuff
@@ -40,8 +42,8 @@ MEDIUM - mostly firmware stuff
 
 
 LOW - waaay down the line
+- ethernet - ONGOING
 - turbo blitter
-- ethernet - this needs to be done sooner
 - RTG
-- AHI audio - look into supporting this sooner
+- AHI audio
 
