@@ -41,8 +41,10 @@ module userio (
   inout  wire           ps2mclk,            // mouse PS/2 clk
   output wire           _fire0,             // joystick 0 fire output (to CIA)
   output wire           _fire1,             // joystick 1 fire output (to CIA)
-  input  wire [  6-1:0] _joy1,              // joystick 1 in (default mouse port)
-  input  wire [  6-1:0] _joy2,              // joystick 2 in (default joystick port)
+  input  wire           _fire0_dat,
+  input  wire           _fire1_dat,
+  input  wire [  8-1:0] _joy1,              // joystick 1 in (default mouse port)
+  input  wire [  8-1:0] _joy2,              // joystick 2 in (default joystick port)
   input  wire           aflock,             // auto fire lock
   input  wire [  3-1:0] mouse_btn,
   input  wire           _lmb,
@@ -62,7 +64,7 @@ module userio (
   output wire           osd_pixel,          // osd video pixel
   output wire [  2-1:0] lr_filter,
   output wire [  2-1:0] hr_filter,
-  output wire [  6-1:0] memory_config,
+  output wire [  7-1:0] memory_config,
   output wire [  5-1:0] chipset_config,
   output wire [  4-1:0] floppy_config,
   output wire [  2-1:0] scanline,
@@ -103,11 +105,11 @@ parameter KEY_PGDOWN  = 8'h6d;
 
 
 // local signals
-reg   [5:0] _sjoy1;       // synchronized joystick 1 signals
-reg   [5:0] _djoy1;       // synchronized joystick 1 signals
+reg   [7:0] _sjoy1;       // synchronized joystick 1 signals
+reg   [7:0] _djoy1;       // synchronized joystick 1 signals
 reg   [5:0] _xjoy2;       // synchronized joystick 2 signals
-reg   [5:0] _tjoy2;       // synchronized joystick 2 signals
-reg   [5:0] _djoy2;       // synchronized joystick 2 signals
+reg   [7:0] _tjoy2;       // synchronized joystick 2 signals
+reg   [7:0] _djoy2;       // synchronized joystick 2 signals
 wire  [5:0] _sjoy2;       // synchronized joystick 2 signals
 reg   [15:0] potreg;      // POTGO write
 wire  [15:0] mouse0dat;      //mouse counters
@@ -126,6 +128,7 @@ wire  test_load;          //load test value to mouse counter
 wire  [15:0] test_data;      //mouse counter test value
 wire  [1:0] autofire_config;
 reg   [1:0] autofire_cnt;
+wire  cd32pad;
 reg   autofire;
 reg   sel_autofire;     // select autofire and permanent fire
 
@@ -150,14 +153,70 @@ always @ (posedge clk) begin
     if (reset)
       potcap <= #1 4'h0;
     else begin
-      if (!_sjoy2[5]) potcap[3] <= #1 1'b0;
-      else if (potreg[15] & potreg[14]) potcap[3] <= #1 1'b1;
+      if (cd32pad && (potreg[15] && !potreg[14])) begin
+        potcap[3] <= #1 cd32pad2_reg[7];
+      end else begin
+        if (!_sjoy2[5]) potcap[3] <= #1 1'b0;
+        else if (potreg[15] & potreg[14]) potcap[3] <= #1 1'b1;
+      end
       if (potreg[13]) potcap[2] <= #1 potreg[12];
-      if (!(_mright&_djoy1[5]&_rmb)) potcap[1] <= #1 1'b0;
-      else if (potreg[11] & potreg[10]) potcap[1] <= #1 1'b1;
+      if (cd32pad && (potreg[11] && !potreg[10])) begin
+        potcap[1] <= #1 cd32pad1_reg[7];
+      end else begin
+        if (!(_mright&_djoy1[5]&_rmb)) potcap[1] <= #1 1'b0;
+        else if (potreg[11] & potreg[10]) potcap[1] <= #1 1'b1;
+      end
       if (!_mthird) potcap[0] <= #1 1'b0;
       else if (potreg[ 9] & potreg[ 8]) potcap[0] <= #1 1'b1;
     end
+  end
+end
+
+// cd32pad1 reg
+reg fire1_d;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      fire1_d <= #1 1'b1;
+    else
+      fire1_d <= #1 _fire0_dat;
+  end
+end
+wire cd32pad1_reg_load  = !(potreg[9] && !potreg[8]);
+wire cd32pad1_reg_shift = _fire0_dat && !fire1_d;
+reg [8-1:0] cd32pad1_reg;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      cd32pad1_reg <= #1 8'hff;
+    else if (cd32pad1_reg_load)
+      cd32pad1_reg <= #1 {_djoy1[5], _djoy1[4], _djoy1[6], _djoy1[7], 3'b111, 1'b1};
+    else if (cd32pad1_reg_shift)
+      cd32pad1_reg <= #1 {cd32pad1_reg[6:0], 1'b0};
+  end
+end
+
+// cd32pad2 reg
+reg fire2_d;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      fire2_d <= #1 1'b1;
+    else
+      fire2_d <= #1 _fire1_dat;
+  end
+end
+wire cd32pad2_reg_load  = !(potreg[13] && !potreg[12]);
+wire cd32pad2_reg_shift = _fire1_dat && !fire2_d;
+reg [8-1:0] cd32pad2_reg;
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      cd32pad2_reg <= #1 8'hff;
+    else if (cd32pad2_reg_load)
+      cd32pad2_reg <= #1 {_djoy2[5], _djoy2[4], _djoy2[6], _djoy2[7], 3'b111, 1'b1};
+    else if (cd32pad2_reg_shift)
+      cd32pad2_reg <= #1 {cd32pad2_reg[6:0], 1'b0};
   end
 end
 
@@ -196,10 +255,10 @@ always @ (*) keyboard_disabled = key_disable;
 // input synchronization of external signals
 always @ (posedge clk) begin
   if (clk7_en) begin
-    _sjoy1[5:0] <= #1 _joy1[5:0];
-    _djoy1[5:0] <= #1 _sjoy1[5:0];
-    _tjoy2[5:0] <= #1 _joy2[5:0];
-    _djoy2[5:0] <= #1 _tjoy2[5:0];
+    _sjoy1[7:0] <= #1 _joy1[7:0];
+    _djoy1[7:0] <= #1 _sjoy1[7:0];
+    _tjoy2[7:0] <= #1 _joy2[7:0];
+    _djoy2[7:0] <= #1 _tjoy2[7:0];
     if (sof)
       _xjoy2[5:0] <= #1 _joy2[5:0];
   end
@@ -333,8 +392,8 @@ always @(*) begin
 end
 
 // assign fire outputs to cia A
-assign _fire0 = _sjoy1[4] & _mleft & _lmb;
-assign _fire1 = _sjoy2[4];
+assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft & _lmb;
+assign _fire1 = cd32pad && !cd32pad2_reg_load ? fire2_d : _sjoy2[4];
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1'b1 : 1'b0;
@@ -454,6 +513,7 @@ userio_osd osd1
   .ide_config       (ide_config),
   .cpu_config       (cpu_config),
   .autofire_config  (autofire_config),
+  .cd32pad          (cd32pad),
   .usrrst           (usrrst),
   .cpurst           (cpurst),
   .cpuhlt           (cpuhlt),

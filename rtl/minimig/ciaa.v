@@ -110,7 +110,8 @@ module ciaa
   output  freeze,        // Action Replay freeze key
   input  disk_led,      // floppy disk activity LED
   output [5:0] mou_emu,
-  output [5:0] joy_emu
+  output [5:0] joy_emu,
+  input hrtmon_en
 );
 
 // local signals
@@ -175,6 +176,8 @@ reg    [7:0] sdr_latch;
 
 `ifdef MINIMIG_PS2_KEYBOARD
 
+wire freeze_out;
+
 ciaa_ps2keyboard  kbd1
 (
   .clk(clk),
@@ -193,10 +196,12 @@ ciaa_ps2keyboard  kbd1
   ._lmb(_lmb),
   ._rmb(_rmb),
   ._joy2(_joy2),
-  .freeze(freeze),
+  .freeze(freeze_out),
   .mou_emu(mou_emu),
   .joy_emu(joy_emu)
 );
+
+assign freeze = hrtmon_en && freeze_out;
 
 // sdr register
 // !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
@@ -257,7 +262,7 @@ always @ (posedge clk) begin
       freeze_reg <= #1 1'b0;
     end else if (kms && (kmt == 2) && ~keyboard_disabled) begin
       sdr_latch[7:0] <= ~{kmd[6:0],kmd[7]};
-      if (kmd == 8'h5f) freeze_reg <= #1 1'b1;
+      if (hrtmon_en && (kmd == 8'h5f)) freeze_reg <= #1 1'b1;
       else freeze_reg <= #1 1'b0;
     end else if (wr & sdr) begin
         sdr_latch[7:0] <= data_in[7:0];
@@ -328,7 +333,7 @@ always @(posedge clk) begin
      end else begin
       if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled) begin
         sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
-        if (kbd_mouse_data == 8'h5f) freeze_reg <= #1 1'b1;
+        if (hrtmon_en && (kbd_mouse_data == 8'h5f)) freeze_reg <= #1 1'b1;
         else freeze_reg <= #1 1'b0;
       end else if (wr & sdr)
         sdr_latch[7:0] <= data_in[7:0];

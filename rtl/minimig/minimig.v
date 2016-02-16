@@ -375,7 +375,7 @@ wire	hires;					//hires signal from Denise for interpolation filter enable in Am
 wire	aron;					//Action Replay is enabled
 wire	cpu_speed;				//requests CPU to switch speed mode
 wire	turbo;					//CPU is working in turbo mode
-wire	[5:0] memory_config;	//memory configuration
+wire	[6:0] memory_config;	//memory configuration
 wire	[3:0] floppy_config;	//floppy drives configuration (drive number and speed)
 wire	[4:0] chipset_config;	//chipset features selection
 wire	[2:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
@@ -434,7 +434,7 @@ assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-sta
 
 
 
-assign memcfg = memory_config;
+assign memcfg = memory_config[5:0];
 
 // turbo chipram only when in AGA mode, no overlay is active, cpu_config[2] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
 assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] || cpu_custom) && (&memory_config[1:0]);
@@ -734,7 +734,8 @@ ciaa CIAA1
   .aflock(aflock),
 	.freeze(freeze),
 	.disk_led(disk_led),
-  .mou_emu (mou_emu)
+  .mou_emu (mou_emu),
+  .hrtmon_en (memory_config[6])
 );
 
 //instantiate cia B
