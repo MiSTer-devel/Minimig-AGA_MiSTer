@@ -11,6 +11,7 @@ module userio_osd
 	input	c3,
 	input	sol,				//start of video line
 	input	sof,				//start of video frame 
+  input varbeamen,
 	input	[7:0] osd_ctrl,		//keycode for OSD control (Amiga keyboard codes + additional keys coded as values > 80h)
 	input	_scs,				//SPI enable
 	input	sdi,		  		//SPI data in
@@ -124,16 +125,21 @@ always @(posedge clk)
 
 
 //horizontal part..
+wire hframe_normal;
+wire hframe_varbeam;
 wire hframe;
 
-assign hframe = (horbeam[7] & horbeam[8] & horbeam[9] & ~horbeam[10]) | (~horbeam[8] & ~horbeam[9] & horbeam[10]) | (~horbeam[7] & horbeam[8] & ~horbeam[9] & horbeam[10]);
+assign hframe_normal = (horbeam[7] & horbeam[8] & horbeam[9] & ~horbeam[10]) | (~horbeam[8] & ~horbeam[9] & horbeam[10]) | (~horbeam[7] & horbeam[8] & ~horbeam[9] & horbeam[10]);
+assign hframe_varbeam = ~horbeam[10] & ~horbeam[9];
+//assign hframe = varbeamen ? hframe_varbeam : hframe_normal;
+assign hframe = hframe_normal;
 
 //vertical part..
 reg vframe;
 
 always @(posedge clk)
   if (clk7_en) begin
-  	if (verbeam[7] && !verbeam[6])
+  	if (!verbeam[8] && verbeam[7] && !verbeam[6])
   		vframe <= 1;
   	else if (verbeam[0])
   		vframe <= 0;

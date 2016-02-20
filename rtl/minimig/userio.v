@@ -34,6 +34,7 @@ module userio (
   input  wire           c3,
   input  wire           sol,                // start of video line
   input  wire           sof,                // start of video frame
+  input  wire           varbeamen,
   input  wire [  9-1:1] reg_address_in,     // register adress inputs
   input  wire [ 16-1:0] data_in,            // bus data in
   output reg  [ 16-1:0] data_out,           // bus data out
@@ -494,6 +495,7 @@ userio_osd osd1
   .c3               (c3),
   .sol              (sol),
   .sof              (sof),
+  .varbeamen        (varbeamen),
   .osd_ctrl         (t_osd_ctrl),
   ._scs             (_scs),
   .sdi              (sdi),

@@ -241,7 +241,7 @@ assign dmastate = dmastate_mem[sprsel];
 always @ (*) begin
   if (vbl || ({ecs&vstop[9],vstop[8:0]}==vpos[9:0]))
     dmastate_in = 0;
-  else if ( ({ecs&vstart[9],vstart[8:0]}==vpos[9:0]) && ((fmode[15] && spr_sscan2) ? (vpos[0] == vstart[0]) : 1'b1) )
+  else if ( ({ecs&vstart[9],vstart[8:0]}==vpos[9:0]) && ((fmode[15] && spr_sscan2) ? (vpos[0] == vstart[0]) : 1'b1) ) // TODO fix needed!
     dmastate_in = 1;
   else
     dmastate_in = dmastate;

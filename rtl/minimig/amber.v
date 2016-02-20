@@ -57,12 +57,13 @@ module amber
   input  wire           clk,            // 28MHz clock
   // config
   input  wire           dblscan,        // enable VGA output (enable scandoubler)
+  input  wire           varbeamen,      // variable beam enabled
   input  wire [  2-1:0] lr_filter,      // interpolation filter settings for low resolution
   input  wire [  2-1:0] hr_filter,      // interpolation filter settings for high resolution
   input  wire [  2-1:0] scanline,       // scanline effect enable
   input  wire [  2-1:0] dither,         // dither enable (00 = off, 01 = temporal, 10 = random, 11 = temporal + random)
   // control
-  input  wire [  9-1:1] htotal,         // video line length
+  input  wire [  9-1:0] htotal,         // video line length
   input  wire           hires,          // display is in hires mode (from bplcon0)
   // osd
   input  wire           osd_blank,      // OSD overlay enable (blank normal video)
@@ -343,13 +344,13 @@ wire [  8-1:0] bm_b;
 wire           bm_osd_blank;
 wire           bm_osd_pixel;
 
-assign bm_hsync     = dblscan ? sd_lbuf_o_d[29] : ns_csync;
-assign bm_vsync     = dblscan ? _vsync_in       : 1'b1;
-assign bm_r         = dblscan ? sl_r            : ns_r;
-assign bm_g         = dblscan ? sl_g            : ns_g;
-assign bm_b         = dblscan ? sl_b            : ns_b;
-assign bm_osd_blank = dblscan ? sd_lbuf_o_d[28] : ns_osd_blank;
-assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[27] : ns_osd_pixel;
+assign bm_hsync     = dblscan ? sd_lbuf_o_d[29] : varbeamen ? _hsync_in : ns_csync;
+assign bm_vsync     = dblscan ? _vsync_in       : varbeamen ? _vsync_in : 1'b1;
+assign bm_r         = dblscan ? sl_r            : varbeamen ? red_in    : ns_r;
+assign bm_g         = dblscan ? sl_g            : varbeamen ? green_in  : ns_g;
+assign bm_b         = dblscan ? sl_b            : varbeamen ? blue_in   : ns_b;
+assign bm_osd_blank = dblscan ? sd_lbuf_o_d[28] : varbeamen ? osd_blank : ns_osd_blank;
+assign bm_osd_pixel = dblscan ? sd_lbuf_o_d[27] : varbeamen ? osd_pixel : ns_osd_pixel;
 
 
 //// osd ////

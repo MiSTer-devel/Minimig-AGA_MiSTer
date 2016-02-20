@@ -78,7 +78,9 @@ module agnus
   output  vbl_int,          // vertical blanking interrupt request for Paula
   output  strhor_denise,        // horizontal strobe for Denise (due to not cycle exact implementation of Denise it must be delayed by one CCK)
   output  strhor_paula,        // horizontal strobe for Paula
-  output  [8:1] htotal,        // video line length
+  output  [8:0] htotal,        // video line length
+  output harddis,
+  output varbeamen,
   output  int3,            // blitter finished interrupt (to Paula)
   input  [3:0] audio_dmal,      // audio dma data transfer request (from Paula)
   input  [3:0] audio_dmas,      // audio dma location pointer restart (from Paula)
@@ -354,6 +356,7 @@ agnus_bitplanedma bpd1
   .clk(clk),
   .clk7_en(clk7_en),
   .reset(reset),
+  .harddis(harddis),
   .aga(aga),
   .ecs(ecs),
   .a1k(a1k),
@@ -472,7 +475,9 @@ agnus_beamcounter  bc1
   .eol(sol),
   .eof(sof),
   .vbl_int(vbl_int),
-  .htotal(htotal)
+  .htotal_out(htotal),
+  .harddis_out(harddis),
+  .varbeamen_out(varbeamen)
 );
 
 //horizontal strobe for Denise

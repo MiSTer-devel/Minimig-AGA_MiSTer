@@ -337,7 +337,9 @@ wire		osd_pixel;				//osd pixel(video) data
 wire		_hsync_i;				//horizontal sync (internal)
 wire		_vsync_i;				//vertical sync (internal)
 wire		_csync_i;				//composite sync (internal)
-wire		[8:1] htotal;			//video line length (140ns units)
+wire		[8:0] htotal;			//video line length (140ns units)
+wire    harddis;
+wire    varbeamen;
 
 //local floppy signals (CIA<-->Paula)
 wire		_step;					//step heads of disk
@@ -498,6 +500,8 @@ agnus AGNUS1
 	.strhor_denise(strhor_denise),
 	.strhor_paula(strhor_paula),
 	.htotal(htotal),
+  .harddis(harddis),
+  .varbeamen(varbeamen),
 	.int3(int3),
 	.audio_dmal(audio_dmal),
 	.audio_dmas(audio_dmas),
@@ -588,6 +592,7 @@ userio USERIO1
 	.c3(c3),
 	.sol(sol),
 	.sof(sof),
+  .varbeamen(varbeamen),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
 	.data_out(user_data_out),
@@ -679,7 +684,8 @@ denise DENISE1
 amber AMBER1
 (		
 	.clk(clk),
-	.dblscan(_15khz),
+	.dblscan(_15khz && !varbeamen),
+  .varbeamen(varbeamen),
 	.lr_filter(lr_filter),
 	.hr_filter(hr_filter),
 	.scanline(scanline),

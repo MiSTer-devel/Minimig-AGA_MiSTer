@@ -30,6 +30,7 @@ module agnus_bitplanedma (
   input  wire           clk,              // 28MHz clock
   input  wire           clk7_en,          // 7MHz clock enable
   input  wire           reset,            // reset
+  input  wire           harddis,
   input  wire           aga,              // aga config
   input  wire           ecs,              // ddfstrt/ddfstop ECS bits enable
   input  wire           a1k,              // DIP Agnus feature
@@ -372,7 +373,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0]) begin
-      ddfena_0 <= #1 hardena & softena;
+      ddfena_0 <= #1 (hardena || harddis) && softena;
       ddfena <= #1 ddfena_0;
     end
   end
