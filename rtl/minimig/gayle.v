@@ -110,8 +110,10 @@ wire 	sel_tfr;		// HDD task file registers select
 wire 	sel_fifo;		// HDD data port select (FIFO buffer)
 wire 	sel_status;		// HDD status register select
 wire 	sel_command;	// HDD command register select
+wire  sel_cs;         // Gayle IDE CS
 wire 	sel_intreq;		// Gayle interrupt request status register select
 wire 	sel_intena;		// Gayle interrupt enable register select
+wire  sel_cfg;      // Gayle CFG
 
 // internal registers
 reg		intena;			// Gayle IDE interrupt enable bit
@@ -120,6 +122,9 @@ reg		busy;			// busy status (command processing state)
 reg		pio_in;			// pio in command type is being processed
 reg		pio_out;		// pio out command type is being processed
 reg		error;			// error status (command processing failed)
+reg   [3:0] cfg;
+reg   [1:0] cs;
+reg   [5:0] cs_mask;
 
 reg		dev;			// drive select (Master/Slave)
 wire 	bsy;			// busy
@@ -149,21 +154,51 @@ assign hd_frd = fifo_rd;
 // HDD status register
 assign status = {bsy,drdy,2'b00,drq,2'b00,err};
 
+// status debug
+reg [7:0] status_dbg /* synthesis syn_noprune */;
+always @ (posedge clk) status_dbg <= #1 status;
+
 // HDD status register bits
 assign bsy = busy & ~drq;
 assign drdy = ~(bsy|drq);
 assign err = error;
 
 // address decoding
-assign sel_gayleid = sel_gayle && address_in[15:12]==4'b0001 ? VCC : GND;	//$DE1xxx
-assign sel_tfr = sel_ide && address_in[15:14]==2'b00 && !address_in[12] ? VCC : GND;
+assign sel_gayleid = sel_gayle && address_in[15:12]==4'b0001 ? VCC : GND;	  // GAYLEID, $DE1xxx
+assign sel_tfr = sel_ide && address_in[15:14]==2'b00 && !address_in[12] ? VCC : GND; // $DA0xxx, $DA2xxx
 assign sel_status = rd && sel_tfr && address_in[4:2]==3'b111 ? VCC : GND;
 assign sel_command = hwr && sel_tfr && address_in[4:2]==3'b111 ? VCC : GND;
 assign sel_fifo = sel_tfr && address_in[4:2]==3'b000 ? VCC : GND;
-assign sel_intreq = sel_ide && address_in[15:12]==4'b1001 ? VCC : GND;	//INTREQ
-assign sel_intena = sel_ide && address_in[15:12]==4'b1010 ? VCC : GND;	//INTENA
+assign sel_cs     = sel_ide && address_in[15:12]==4'b1000 ? VCC : GND;      // GAYLE_CS_1200,  $DA8xxx
+assign sel_intreq = sel_ide && address_in[15:12]==4'b1001 ? VCC : GND;	    // GAYLE_IRQ_1200, $DA9xxx
+assign sel_intena = sel_ide && address_in[15:12]==4'b1010 ? VCC : GND;	    // GAYLE_INT_1200, $DAAxxx
+assign sel_cfg    = sel_ide && address_in[15:12]==4'b1011 ? VCC : GND;      // GAYLE_CFG_1200, $DABxxx
 
 //===============================================================================================//
+
+// gayle cs
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset) begin
+      cs_mask <= #1 6'd0;
+      cs      <= #1 2'd0;
+    end else if (hwr && sel_cs) begin
+      cs_mask <= #1 data_in[15:10];
+      cs      <= #1 data_in[9:8];
+    end
+  end
+end
+
+// gayle cfg
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset)
+      cfg <= #1 4'd0;
+    if (hwr && sel_cfg) begin
+      cfg <= #1 data_in[15:12];
+    end
+  end
+end
 
 // task file registers
 reg		[7:0] tfr [7:0];
@@ -247,7 +282,7 @@ always @(posedge clk)
   if (clk7_en) begin
   	if (reset)
   		busy <= GND;
-  	else if (hdd_status_wr && hdd_data_out[7] || sector_count_dec && sector_count == 8'h01)	// reset by SPI host (by clearing BSY status bit)
+  	else if (hdd_status_wr && hdd_data_out[7] || (sector_count_dec && sector_count == 8'h01))	// reset by SPI host (by clearing BSY status bit)
   		busy <= GND;
   	else if (sel_command)	// set when the CPU writes command register
   		busy <= VCC;
@@ -326,16 +361,16 @@ gayle_fifo SECBUF1
 );
 
 // fifo is not ready for reading
-
 assign nrdy = pio_in & sel_fifo & fifo_empty;
 
 //data_out multiplexer
 assign data_out = (sel_fifo && rd ? fifo_data_out : sel_status ? (!dev && hdd_ena[0]) || (dev && hdd_ena[1]) ? {status,8'h00} : 16'h00_00 : sel_tfr && rd ? {tfr_out,8'h00} : 16'h00_00)
-			   | (sel_intreq && rd ? {intreq,15'b000_0000_0000_0000} : 16'h00_00)				
-			   | (sel_intena && rd ? {intena,15'b000_0000_0000_0000} : 16'h00_00)				
-			   | (sel_gayleid && rd ? {gayleid,15'b000_0000_0000_0000} : 16'h00_00);
- 
-//===============================================================================================//
+         | (sel_cs      && rd  ? {(cs_mask[5] || intreq), cs_mask[4:0], cs, 8'h0} : 16'h00_00)				
+			   | (sel_intreq  && rd  ? {intreq, 15'b000_0000_0000_0000}                 : 16'h00_00)				
+			   | (sel_intena  && rd  ? {intena, 15'b000_0000_0000_0000}                 : 16'h00_00)				
+			   | (sel_gayleid && rd  ? {gayleid,15'b000_0000_0000_0000}                 : 16'h00_00)
+ 			   | (sel_cfg     && rd  ? {cfg,    12'b0000_0000_0000}                     : 16'h00_00);
+
 
 //===============================================================================================//
 
