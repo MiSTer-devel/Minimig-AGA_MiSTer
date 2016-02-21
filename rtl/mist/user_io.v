@@ -5,8 +5,8 @@ module user_io(
 	   input      SPI_MOSI,
 	   input [7:0] CORE_TYPE,
 
-		output [5:0] JOY0,
-		output [5:0] JOY1,
+		output [7:0] JOY0,
+		output [7:0] JOY1,
 
 		output [2:0] MOUSE_BUTTONS,
 		output       KBD_MOUSE_STROBE,
@@ -22,8 +22,8 @@ module user_io(
    reg [6:0]         sbuf;
    reg [7:0]         cmd;
    reg [5:0] 	      cnt;
-   reg [5:0]         joystick0;
-   reg [5:0]         joystick1;
+   reg [7:0]         joystick0;
+   reg [7:0]         joystick1;
    reg [7:0] 	      but_sw;
 
 	 reg               kbd_mouse_strobe;
@@ -85,11 +85,11 @@ module user_io(
 					 but_sw[0] <= SPI_MOSI; 
 				end
 			   if(cmd == 2) begin
-					 joystick0[5:1] <= sbuf[4:0]; 
+					 joystick0[7:1] <= sbuf[6:0]; 
 					 joystick0[0] <= SPI_MOSI; 
 				end
 			   if(cmd == 3) begin
-					 joystick1[5:1] <= sbuf[4:0]; 
+					 joystick1[7:1] <= sbuf[6:0]; 
 					 joystick1[0] <= SPI_MOSI; 
 			   end
 		           // mouse, keyboard or OSD
