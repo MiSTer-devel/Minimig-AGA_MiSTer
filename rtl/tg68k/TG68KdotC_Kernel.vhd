@@ -36,11 +36,10 @@
 -- CAS, CAS2
 -- CHK2
 -- CMP2
--- cpXXX coprocessor stuff
+-- cpXXX Coprozessor stuff
 -- TRAPcc
 
 -- done 020:
--- barrel shifter
 -- PACK, UNPK
 -- Bitfields
 -- address modes
@@ -62,8 +61,7 @@ entity TG68KdotC_Kernel is
 	extAddr_Mode   : integer := 0; --0=>no,    1=>yes,   2=>switchable with CPU(1)
 	MUL_Mode       : integer := 0; --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no MUL,
 	DIV_Mode       : integer := 0; --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no DIV,
-	BitField       : integer := 0; --0=>no,    1=>yes,   2=>switchable with CPU(1)
-	BarrelShifter  : integer := 0  --0=>no,    1=>yes,   2=>switchable with CPU(1)
+	BitField       : integer := 0  --0=>no,    1=>yes,   2=>switchable with CPU(1)
   );
   port (
 	clk            : in  std_logic;
@@ -191,8 +189,6 @@ architecture logic of TG68KdotC_Kernel is
   signal dest_hbits             : bit;
   signal rot_bits               : std_logic_vector(1 downto 0);
   signal set_rot_bits           : std_logic_vector(1 downto 0);
-  signal alu_rot_cnt            : std_logic_vector(5 downto 0);
-  signal set_alu_rot_cnt        : std_logic_vector(5 downto 0);
   signal rot_cnt                : std_logic_vector(5 downto 0);
   signal set_rot_cnt            : std_logic_vector(5 downto 0);
   signal movem_actiond          : bit;
@@ -229,6 +225,9 @@ architecture logic of TG68KdotC_Kernel is
   signal trap_vector            : std_logic_vector(31 downto 0);
   signal trap_vector_vbr        : std_logic_vector(31 downto 0);
   signal USP                    : std_logic_vector(31 downto 0);
+  signal illegal_write_mode     : bit;
+  signal illegal_read_mode      : bit;
+  signal illegal_byteaddr       : bit;
 
   signal IPL_nr                 : std_logic_vector(2 downto 0);
   signal rIPL_nr                : std_logic_vector(2 downto 0);
@@ -283,6 +282,7 @@ architecture logic of TG68KdotC_Kernel is
   signal set                    : bit_vector(lastOpcBit downto 0);
   signal set_exec               : bit_vector(lastOpcBit downto 0);
   signal exec                   : bit_vector(lastOpcBit downto 0);
+  signal exec_d                 : rTG68K_opc;
 
   signal micro_state            : micro_states;
   signal next_micro_state       : micro_states;
@@ -294,13 +294,11 @@ begin
   ALU : TG68K_ALU
   generic map(
 	MUL_Mode => MUL_Mode, --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no MUL,
-	DIV_Mode => DIV_Mode,  --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no DIV,
-	BarrelShifter => BarrelShifter --0=>no,    1=>yes,   2=>switchable with CPU(1)
+	DIV_Mode => DIV_Mode  --0=>16Bit, 1=>32Bit, 2=>switchable with CPU(1), 3=>no DIV,
   )
   port map(
 	clk            => clk,              --: in std_logic;
 	Reset          => Reset,            --: in std_logic;
-	cpu            => cpu,              --: in std_logic_vector(1 downto 0);
 	clkena_lw      => clkena_lw,        --: in std_logic:='1';
 	execOPC        => execOPC,          --: in bit;
 	exe_condition  => exe_condition,    --: in std_logic;
@@ -311,7 +309,6 @@ begin
 	set_stop       => set_stop,         --: in bit;
 	Z_error        => Z_error,          --: in bit;
 	rot_bits       => rot_bits,         --: in std_logic_vector(1 downto 0);
-        rot_cnt        => alu_rot_cnt,      --: in std_logic_vector(5 downto 0);
 	exec           => exec,             --: in bit_vector(lastOpcBit downto 0);
 	OP1out         => OP1out,           --: in std_logic_vector(31 downto 0);
 	OP2out         => OP2out,           --: in std_logic_vector(31 downto 0);
@@ -577,7 +574,7 @@ begin
   -----------------------------------------------------------------------------
   -- set OP1out
   -----------------------------------------------------------------------------
-  process (reg_QA, store_in_tmp, ea_data, long_start, addr, exec, memmaskmux, data_write_tmp)
+  process (reg_QA, store_in_tmp, ea_data, long_start, addr, exec, memmaskmux)
   begin
 	OP1out <= reg_QA;
 	if exec(OP1out_zero) = '1' then
@@ -899,7 +896,7 @@ begin
   -----------------------------------------------------------------------------
   -- PC Calc + fetch opcode
   -----------------------------------------------------------------------------
-PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro_state, stop, make_trace, make_berr, IPL_nr, FlagsSR, set_rot_cnt, set_alu_rot_cnt, opcode, writePCbig, set_exec, exec,
+PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro_state, stop, make_trace, make_berr, IPL_nr, FlagsSR, set_rot_cnt, opcode, writePCbig, set_exec, exec,
 		 PC_dataa, PC_datab, setnextpass, last_data_read, TG68_PC_brw, TG68_PC_word, Z_error, trap_trap, trap_trapv, interrupt, tmp_TG68_PC, TG68_PC)
   begin
 	PC_dataa <= TG68_PC;
@@ -1102,11 +1099,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		  if decodeOPC = '1' or exec(ld_rot_cnt) = '1' or rot_cnt /= "000001" then
 			rot_cnt <= set_rot_cnt;
 		  end if;
-		  if decodeOPC = '1' or exec(ld_rot_cnt) = '1' then
-                        alu_rot_cnt <= set_alu_rot_cnt;
-                  end if;
-
-                  if setstate(1) = '1' and set_datatype = "00" then
+		  if setstate(1) = '1' and set_datatype = "00" then
 			byte <= '1';
 		  end if;
 
@@ -1295,7 +1288,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
   process(clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state, decodeOPC, state, setexecOPC, Flags, FlagsSR, direct_data, build_logical,
 	build_bcd, set_Z_error, trapd, movem_run, last_data_read, set, set_V_Flag, z_error, trap_trace, trap_interrupt,
 	SVmode, preSVmode, stop, long_done, ea_only, setstate, execOPC, exec_write_back, exe_datatype,
-	datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, last_data_in,
+	datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr,
 	long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr)
   begin
 	TG68_PC_brw        <= '0';
@@ -1316,7 +1309,6 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	ea_build_now       <= '0';
 	set_rot_bits       <= "XX";
 	set_rot_cnt        <= "000001";
-	set_alu_rot_cnt    <= "XXXXXX";
 	dest_hbits         <= '0';
 	source_lowbits     <= '0';
 	source_2ndHbits    <= '0';
@@ -1336,6 +1328,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	set_vectoraddr     <= '0';
 	writeSR            <= '0';
 	set_stop           <= '0';
+	illegal_write_mode <= '0';
+	illegal_read_mode  <= '0';
+	illegal_byteaddr   <= '0';
 	set_Z_error        <= '0';
 
 	next_micro_state   <= idle;
@@ -1347,7 +1342,6 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	set_Suppress_Base  <= '0';
 	set_PCbase         <= '0';
 
-        -- decrement xyz
 	if rot_cnt /= "000001" then
 	  set_rot_cnt <= rot_cnt - 1;
 	end if;
@@ -2589,37 +2583,22 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 			end if;
 		  end if;
 		else
-                  -- register rotation/shift 
 		  set_exec(opcROT) <= '1';
 		  set_rot_bits <= opcode(4 downto 3);
 		  data_is_source <= '1';
 		  set_exec(Regwrena) <= '1';
 		  if decodeOPC = '1' then
 			if opcode(5) = '1' then
-                          -- load rotation count from register
 			  next_micro_state <= rota1;
 			  set(ld_rot_cnt) <= '1';
 			  setstate <= "01";
-			else -- xyz
-                          set_alu_rot_cnt <= (others => '0');
-                          set_alu_rot_cnt(2 downto 0) <= opcode(11 downto 9);
-			  if opcode(11 downto 9) = "000" then set_alu_rot_cnt(3) <= '1';
-			  else 			              set_alu_rot_cnt(3) <= '0';
-			  end if;
-
-                          -- take rotation count from opcode
+			else
 			  set_rot_cnt(2 downto 0) <= opcode(11 downto 9);
 			  if opcode(11 downto 9) = "000" then
 				set_rot_cnt(3) <= '1';
 			  else
 				set_rot_cnt(3) <= '0';
 			  end if;
-                          
-                          -- use barrel shifter
-                          if BarrelShifter = 1 or (cpu(1) = '1' and BarrelShifter = 2) then
-                            set_rot_cnt <= "000001";
-                          end if;
-                          
 			end if;
 		  end if;
 		end if;
@@ -3262,15 +3241,10 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		set(opcDIVU) <= '1';
 
 	  when rota1 =>
-                -- load rot_cnt from register, use barrel shifter
-                if BarrelShifter = 1 or (cpu(1) = '1' and BarrelShifter = 2) then
-                  set_alu_rot_cnt <= OP2out(5 downto 0);
-                else 
-                  if OP2out(5 downto 0) /= "000000" then
-                    set_rot_cnt <= OP2out(5 downto 0);
-                  else
-                    set_exec(rot_nop) <= '1';
-                  end if;
+		if OP2out(5 downto 0) /= "000000" then
+		  set_rot_cnt <= OP2out(5 downto 0);
+		else
+		  set_exec(rot_nop) <= '1';
 		end if;
 
 	  when bf1 =>
@@ -3443,6 +3417,85 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	end if;
   end process;
 
+  exec_d.opcMOVE        <= exec(opcMOVE);
+  exec_d.opcMOVEQ       <= exec(opcMOVEQ);
+  exec_d.opcMOVESR      <= exec(opcMOVESR);
+  exec_d.opcMOVECCR     <= exec(opcMOVECCR);
+  exec_d.opcADD         <= exec(opcADD);
+  exec_d.opcADDQ        <= exec(opcADDQ);
+  exec_d.opcor          <= exec(opcor);
+  exec_d.opcand         <= exec(opcand);
+  exec_d.opcEor         <= exec(opcEor);
+  exec_d.opcCMP         <= exec(opcCMP);
+  exec_d.opcROT         <= exec(opcROT);
+  exec_d.opcCPMAW       <= exec(opcCPMAW);
+  exec_d.opcEXT         <= exec(opcEXT);
+  exec_d.opcABCD        <= exec(opcABCD);
+  exec_d.opcSBCD        <= exec(opcSBCD);
+  exec_d.opcBITS        <= exec(opcBITS);
+  exec_d.opcSWAP        <= exec(opcSWAP);
+  exec_d.opcScc         <= exec(opcScc);
+  exec_d.andisR         <= exec(andisR);
+  exec_d.eorisR         <= exec(eorisR);
+  exec_d.orisR          <= exec(orisR);
+  exec_d.opcMULU        <= exec(opcMULU);
+  exec_d.opcDIVU        <= exec(opcDIVU);
+  exec_d.dispouter      <= exec(dispouter);
+  exec_d.rot_nop        <= exec(rot_nop);
+  exec_d.ld_rot_cnt     <= exec(ld_rot_cnt);
+  exec_d.writePC_add    <= exec(writePC_add);
+  exec_d.ea_data_OP1    <= exec(ea_data_OP1);
+  exec_d.ea_data_OP2    <= exec(ea_data_OP2);
+  exec_d.use_XZFlag     <= exec(use_XZFlag);
+  exec_d.get_bfoffset   <= exec(get_bfoffset);
+  exec_d.save_memaddr   <= exec(save_memaddr);
+  exec_d.opcCHK         <= exec(opcCHK);
+  exec_d.movec_rd       <= exec(movec_rd);
+  exec_d.movec_wr       <= exec(movec_wr);
+  exec_d.Regwrena       <= exec(Regwrena);
+  exec_d.update_FC      <= exec(update_FC);
+  exec_d.linksp         <= exec(linksp);
+  exec_d.movepl         <= exec(movepl);
+  exec_d.update_ld      <= exec(update_ld);
+  exec_d.OP1addr        <= exec(OP1addr);
+  exec_d.write_reg      <= exec(write_reg);
+  exec_d.changeMode     <= exec(changeMode);
+  exec_d.ea_build       <= exec(ea_build);
+  exec_d.trap_chk       <= exec(trap_chk);
+  exec_d.store_ea_data  <= exec(store_ea_data);
+  exec_d.addrlong       <= exec(addrlong);
+  exec_d.postadd        <= exec(postadd);
+  exec_d.presub         <= exec(presub);
+  exec_d.subidx         <= exec(subidx);
+  exec_d.no_Flags       <= exec(no_Flags);
+  exec_d.use_SP         <= exec(use_SP);
+  exec_d.to_CCR         <= exec(to_CCR);
+  exec_d.to_SR          <= exec(to_SR);
+  exec_d.OP2out_one     <= exec(OP2out_one);
+  exec_d.OP1out_zero    <= exec(OP1out_zero);
+  exec_d.mem_addsub     <= exec(mem_addsub);
+  exec_d.addsub         <= exec(addsub);
+  exec_d.directPC       <= exec(directPC);
+  exec_d.direct_delta   <= exec(direct_delta);
+  exec_d.directSR       <= exec(directSR);
+  exec_d.directCCR      <= exec(directCCR);
+  exec_d.exg            <= exec(exg);
+  exec_d.get_ea_now     <= exec(get_ea_now);
+  exec_d.ea_to_pc       <= exec(ea_to_pc);
+  exec_d.hold_dwr       <= exec(hold_dwr);
+  exec_d.to_USP         <= exec(to_USP);
+  exec_d.from_USP       <= exec(from_USP);
+  exec_d.write_lowlong  <= exec(write_lowlong);
+  exec_d.write_reminder <= exec(write_reminder);
+  exec_d.movem_action   <= exec(movem_action);
+  exec_d.briefext       <= exec(briefext);
+  exec_d.get_2ndOPC     <= exec(get_2ndOPC);
+  exec_d.mem_byte       <= exec(mem_byte);
+  exec_d.longaktion     <= exec(longaktion);
+  exec_d.opcRESET       <= exec(opcRESET);
+  exec_d.opcBF          <= exec(opcBF);
+  exec_d.opcBFwb        <= exec(opcBFwb);
+  exec_d.opcPACK        <= exec(opcPACK);
   --when the instruction has completed, the decremented address
   --register contains the address of the last operand stored. For
   --the MC68020, MC68030, and MC68040, if the addressing

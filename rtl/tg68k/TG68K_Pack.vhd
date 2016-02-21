@@ -199,13 +199,11 @@ package TG68K_Pack is
 	component TG68K_ALU
 	generic(
 		MUL_Mode : integer := 0;           --0=>16Bit,  1=>32Bit,  2=>switchable with CPU(1),  3=>no MUL,
-		DIV_Mode : integer := 0;           --0=>16Bit,  1=>32Bit,  2=>switchable with CPU(1),  3=>no DIV,
-                BarrelShifter  : integer := 0  --0=>no,    1=>yes,   2=>switchable with CPU(1)
+		DIV_Mode : integer := 0            --0=>16Bit,  1=>32Bit,  2=>switchable with CPU(1),  3=>no DIV,
 		);
 	port(
 		clk                     : in  std_logic;
 		Reset                   : in  std_logic;
-		cpu                     : in  std_logic_vector(1 downto 0);
 		clkena_lw               : in  std_logic:='1';
 		execOPC                 : in  bit;
 		exe_condition           : in  std_logic;
@@ -216,7 +214,6 @@ package TG68K_Pack is
 		set_stop                : in  bit;
 		Z_error                 : in  bit;
 		rot_bits                : in  std_logic_vector(1 downto 0);
-		rot_cnt                 : in  std_logic_vector(5 downto 0);
 		exec                    : in  bit_vector(lastOpcBit downto 0);
 		OP1out                  : in  std_logic_vector(31 downto 0);
 		OP2out                  : in  std_logic_vector(31 downto 0);
