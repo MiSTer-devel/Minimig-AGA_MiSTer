@@ -11,6 +11,7 @@ RK - Rok Krajnc
 MJ - Mike Johnson
 
 
+2016-02-20 - RK - MINIMIG      - initial implementation of programmable display modes
 2016-02-16 - RK - MINIMIG      - OSD HRTmon enable / disable switch is working (ON - F11 acts as NMI and enters HRTmon, OFF - F11 is HELP key)
 2016-02-15 - RK - MINIMIG      - proper handling of CPU access to chipRAM & custom regs - CPU waits for free slot when turbo option is disabled
 2016-02-15 - RK - DENISE       - fixed playfield 2 color lut offset when playfield 2 has priority for OCS/ECS modes
