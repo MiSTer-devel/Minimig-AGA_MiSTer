@@ -157,14 +157,14 @@ wire [  2-1:0] sdram_ba;
 // mist
 wire           user_io_sdo;
 wire           minimig_sdo;
-wire [  6-1:0] JOYA;
-wire [  6-1:0] JOYB;
-reg  [  6-1:0] JOYA_0;
-reg  [  6-1:0] JOYB_0;
-reg  [  6-1:0] JOYA_1;
-reg  [  6-1:0] JOYB_1;
-wire [  6-1:0] joya;
-wire [  6-1:0] joyb;
+wire [  8-1:0] JOYA;
+wire [  8-1:0] JOYB;
+reg  [  8-1:0] JOYA_0;
+reg  [  8-1:0] JOYB_0;
+reg  [  8-1:0] JOYA_1;
+reg  [  8-1:0] JOYB_1;
+wire [  8-1:0] joya;
+wire [  8-1:0] joyb;
 wire [  8-1:0] kbd_mouse_data;
 wire           kbd_mouse_strobe;
 wire           kms_level;
@@ -530,8 +530,8 @@ minimig minimig (
   .cts          (1'b0             ),  // RS232 clear to send
   .rts          (                 ),  // RS232 request to send
   //I/O
-  ._joy1        (~joya            ),  // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (~joyb            ),  // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+  ._joy1        (~joya            ),  // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
+  ._joy2        (~joyb            ),  // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
   .mouse_btn1   (1'b1             ), // mouse button 1
   .mouse_btn2   (1'b1             ), // mouse button 2
   .mouse_btn    (mouse_buttons    ),  // mouse buttons
