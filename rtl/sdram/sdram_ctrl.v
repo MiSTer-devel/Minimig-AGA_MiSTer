@@ -645,6 +645,7 @@ always @ (posedge sysclk) begin
     refresh_pending           <= #1 1'b0;
     slot1_type                <= #1 IDLE;
     slot2_type                <= #1 IDLE;
+    refreshcnt                <= #1 'd50;
   end
   sd_cs                       <= #1 4'b1111;
   sd_ras                      <= #1 1'b1;
@@ -737,7 +738,7 @@ always @ (posedge sysclk) begin
           sd_cs               <= #1 4'b0000; // AUTOREFRESH
           sd_ras              <= #1 1'b0;
           sd_cas              <= #1 1'b0;
-          refreshcnt          <= #1 9'b111111111;
+          refreshcnt          <= #1 'd50;
           slot1_type          <= #1 REFRESH;
           refresh_pending     <= #1 1'b0;
         end
