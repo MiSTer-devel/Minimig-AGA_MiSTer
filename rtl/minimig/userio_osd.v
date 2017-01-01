@@ -565,7 +565,7 @@ always @ (*) begin
     2'b00   : rtl_ver = BETA_FLAG;
     2'b01   : rtl_ver = MAJOR_VER;
     2'b10   : rtl_ver = MINOR_VER;
-    default : rtl_ver = SEPARATOR;
+    default : rtl_ver = MINION_VER;
   endcase
 end
 
