@@ -62,6 +62,8 @@ reg		invert;					//invertion of highlighted line
 reg		[5:0] vpos;
 reg		vena;
 
+wire  [8:0] verbeam_osdclk;
+
 reg 	[6:0] t_memory_config = 7'b0_00_01_01;
 reg		[2:0] t_ide_config = 0;
 reg   [3:0] t_cpu_config = 0;
@@ -116,7 +118,7 @@ always @(posedge clk)
 always @(posedge clk)
   if (clk7_en) begin
   	if (sol)
-  		vpos[5:0] <= verbeam[5:0];
+  		vpos[5:0] <= verbeam_osdclk[5:0];
   end
 
 
@@ -125,21 +127,24 @@ always @(posedge clk)
 
 
 //horizontal part..
-wire hframe_normal;
-wire hframe_varbeam;
-wire hframe;
 
-assign hframe_normal = (horbeam[7] & horbeam[8] & horbeam[9] & ~horbeam[10]) | (~horbeam[8] & ~horbeam[9] & horbeam[10]) | (~horbeam[7] & horbeam[8] & ~horbeam[9] & horbeam[10]);
-assign hframe_varbeam = ~horbeam[10] & ~horbeam[9];
-//assign hframe = varbeamen ? hframe_varbeam : hframe_normal;
-assign hframe = hframe_normal;
+// in normal mode the OSD is output at clk/2
+wire [9:0] horbeam_osdclk = varbeamen?horbeam[9:0]:horbeam[10:1];
+
+// left OSD border is at horbeam == 448 (== 896 in normal mode)
+wire hframe = (horbeam_osdclk >= 10'd448) && (horbeam_osdclk < 10'd448 + 10'd256);
+
+// horizontal beam position inside OSD
+wire [7:0] horbeam_osd = horbeam_osdclk[7:0] - (varbeamen?8'd191:8'd192);
 
 //vertical part..
 reg vframe;
 
+assign verbeam_osdclk = varbeamen?{1'b0, verbeam[8:1]}:verbeam;
+
 always @(posedge clk)
   if (clk7_en) begin
-  	if (!verbeam[8] && verbeam[7] && !verbeam[6])
+    if (!verbeam_osdclk[8] && verbeam_osdclk[7] && !verbeam_osdclk[6])
   		vframe <= 1;
   	else if (verbeam[0])
   		vframe <= 0;
@@ -164,7 +169,7 @@ assign osdframe = vframe & hframe & osd_enabled;
 
 always @(posedge clk)
   if (clk7_en) begin
-  	if (~highlight[3] && verbeam[5:3]==highlight[2:0] && !verbeam[6])
+    if (~highlight[3] && verbeam_osdclk[5:3]==highlight[2:0] && !verbeam_osdclk[6])
   		invert <= 1;
   	else if (verbeam[0])
   		invert <= 0;
@@ -193,7 +198,7 @@ always @(posedge clk) begin//input part
 end
 
 always @(posedge clk)//output part
-	bufout[7:0] <= osdbuf[{vpos[5:3],horbeam[8]^horbeam[7],~horbeam[7],horbeam[6:1]}];
+	bufout[7:0] <= osdbuf[{vpos[5:3],horbeam_osd}];
 
 
 //--------------------------------------------------------------------------------------
