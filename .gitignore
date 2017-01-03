@@ -25,5 +25,5 @@ fpga/*/db/
 fpga/*/incremental_db/
 
 # build script shouldn't be in repo
-./build.sh
+build.sh
 
