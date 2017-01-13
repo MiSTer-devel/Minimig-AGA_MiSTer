@@ -142,11 +142,6 @@ wire           hs;
 wire [  8-1:0] red;
 wire [  8-1:0] green;
 wire [  8-1:0] blue;
-reg            vs_reg;
-reg            hs_reg;
-reg  [  6-1:0] red_reg;
-reg  [  6-1:0] green_reg;
-reg  [  6-1:0] blue_reg;
 
 // sdram
 wire           reset_out;
@@ -222,21 +217,28 @@ assign joy_emu_en       = 1'b1;
 
 assign LED              = ~led;
 
-// VGA data
-always @ (posedge clk_28) begin
-  vs_reg    <= #1 vs;
-  hs_reg    <= #1 hs;
-  red_reg   <= #1 red[7:2];
-  green_reg <= #1 green[7:2];
-  blue_reg  <= #1 blue[7:2];
-end
+wire   ypbpr            = core_config[1];
 
-assign VGA_VS           = vs_reg;
-assign VGA_HS           = hs_reg;
-assign VGA_R[5:0]       = red_reg[5:0];
-assign VGA_G[5:0]       = green_reg[5:0];
-assign VGA_B[5:0]       = blue_reg[5:0];
+// Final video mixer
+// Not all functions of mixer are used due to some signals are pre-mixed already
+video_mixer video_mixer
+(
+	.scandoubler_disable(0),
+	.ypbpr(ypbpr),
+	.ypbpr_full(1),
 
+	.r_p(red),
+	.g_p(green),
+	.b_p(blue),
+	.hsync_p(~hs),
+	.vsync_p(~vs),
+
+	.VGA_HS(VGA_HS),
+	.VGA_VS(VGA_VS),
+	.VGA_R(VGA_R),
+	.VGA_G(VGA_G),
+	.VGA_B(VGA_B)
+);
 
 //// amiga clocks ////
 amiga_clk amiga_clk (

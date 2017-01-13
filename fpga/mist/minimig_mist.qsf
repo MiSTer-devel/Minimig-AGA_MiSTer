@@ -337,6 +337,7 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_VS
 
 
 
+set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/mist/video_mixer.sv
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/rga_decode.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/debug.v
 set_global_assignment -name VERILOG_FILE ../../rtl/sdram/dpram_be_1024x16.v
