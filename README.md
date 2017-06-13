@@ -1,12 +1,12 @@
 # minimig-mist
 
-This is a port of the minimig core to the [MiST board](http://harbaum.org/till/mist/index.shtml).
+This is a port of the minimig core to the [MiSTer board](https://github.com/MiSTer-devel).
 
 [minimig](http://en.wikipedia.org/wiki/Minimig) (short for Mini Amiga) is an open source re-implementation of an Amiga using a field-programmable gate array (FPGA). Original minimig author is Dennis van Weeren.
 
 [Amiga](http://en.wikipedia.org/wiki/Amiga_500) was - in my opinion - an amazing personal computer, announced around 1984, which - at the time - far surpassed any other personal computer on the market, with advanced graphic & sound capabilities, not to mention its great OS with preemptive multitasking capabilities.
 
-The minimig-mist variant in this repository has been upgraded with [AGA chipset](http://en.wikipedia.org/wiki/Amiga_Advanced_Graphics_Architecture) capabilites, which allows it to emulate the latest Amiga models ([Amiga 1200](http://en.wikipedia.org/wiki/Amiga_1200), [Amiga 4000](http://en.wikipedia.org/wiki/Amiga_4000) and (partially) [Amiga CD32](http://en.wikipedia.org/wiki/Amiga_CD32)). Ofcourse it also supports previous OCS/ECS Amigas like [Amiga 500](http://en.wikipedia.org/wiki/Amiga_500), [Amiga 600](http://en.wikipedia.org/wiki/Amiga_600) etc.
+The minimig-MiSTer variant in this repository has been upgraded with [AGA chipset](http://en.wikipedia.org/wiki/Amiga_Advanced_Graphics_Architecture) capabilites, which allows it to emulate the latest Amiga models ([Amiga 1200](http://en.wikipedia.org/wiki/Amiga_1200), [Amiga 4000](http://en.wikipedia.org/wiki/Amiga_4000) and (partially) [Amiga CD32](http://en.wikipedia.org/wiki/Amiga_CD32)). Ofcourse it also supports previous OCS/ECS Amigas like [Amiga 500](http://en.wikipedia.org/wiki/Amiga_500), [Amiga 600](http://en.wikipedia.org/wiki/Amiga_600) etc.
 
 
 ## Core features supported
@@ -73,11 +73,11 @@ See Changelog [here](https://raw.githubusercontent.com/rkrajnc/minimig-mist/mast
 See TODO list [here](https://raw.githubusercontent.com/rkrajnc/minimig-mist/master/TODO).
 
 
-## Building minimig-mist from sources
+## Building Minimig-AGA_MiSTer from sources
 
-* checkout the source using this [link](https://github.com/rkrajnc/minimig-mist.git) (or alternatively, download source [zip file](https://github.com/rkrajnc/minimig-mist/archive/master.zip))
+* checkout the source using this [link](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer)
 * download / install / build an ARM GCC toolchain (install script [here](http://mist-board.googlecode.com/svn/trunk/tools/install_arm-none-eabi-gcc.sh), or alternatively, download an already build arm-none-eabi-gcc package for you operating system - requires support for ARM7TDMI)
-* download / install [Altera Quartus II](https://dl.altera.com/?edition=web) (latest supported version for Cyclone III FPGA device used on the MiST board is 13.1; I'm still using version 10.1SP1)
+* download / install [Altera Quartus II](https://dl.altera.com/?edition=web) v16.1
 * if you are using linux and have the $PATH variable properly set up, you can use the Makefile in the root of the project, otherwise build the ARM firmware using your favourite tool / GUI (firmware is in fw/mist), and build the core using Quartus GUI (project file in fpga/mist)
 * place the firmware.upg & minimig-mist.rbf files on the root of your SD card (optionally, rename minimig-mist.rbf to core.rbf to make it the default core)
 * don't forget to place kickstart ROM of your choosing on the root of the SD card (these are still copyrighted, so either copy the ROM from your real Amiga, or buy AmigaForever)
@@ -96,7 +96,8 @@ Some minimig updates are published on the [Minimig Discussion Forum](http://www.
 
 ARM firmware updates and minimig-tc64 port changes by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
 
-MiST board & firmware by Till Harbaum ([MiST](https://code.google.com/p/mist-board/)).
+MiSTer project by Sorgelig ([MiSTer](https://github.com/MiSTer-devel)).
+
 
 TG68K.C core by Tobias Gubener.
 
@@ -107,7 +108,7 @@ My page [somuch.guru](http://somuch.guru/).
 
 Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/).
 
-MiST board support & other cores on the [MiST Project Page](https://code.google.com/p/mist-board/).
+MiSTer board support & other cores on the [MiSTer Project Page](https://github.com/MiSTer-devel).
 
 
 ## License
@@ -116,6 +117,7 @@ Copyright © 2011 - 2016 Rok Krajnc (rok.krajnc@gmail.com)
 
 Copyright © 2005 - 2015 Dennis van Weeren, Jakub Bednarski, Sascha Boing, A.M. Robinson, Tobias Gubener, Till Harbaum
 
+Copyright © 2017 Sorgelig (mister.devel@gmail.com)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
