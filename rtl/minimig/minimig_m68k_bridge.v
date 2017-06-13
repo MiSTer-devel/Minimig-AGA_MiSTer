@@ -111,7 +111,7 @@ DOUT   -------------------------------------------------<___________________>---
           .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
 */
 
-wire	doe;					// data buffer output enable
+//wire	doe;					// data buffer output enable
 reg		[15:0] ldata_in;		// latched data_in
 wire	enable;					// enable
 reg		lr_w,l_as,l_dtack;  	// synchronised inputs
@@ -143,8 +143,8 @@ always @(posedge clk)
   		turbo <= cpu_speed;
   end
 
-wire  turbo_cpu;
-assign turbo_cpu = 1'b0;
+//wire  turbo_cpu;
+//assign turbo_cpu = 1'b0;
 	
 //latched valid peripheral address
 always @(posedge clk)
@@ -226,7 +226,7 @@ assign bls = dbs & ~l_as & l_dtack;
 //assign bls = dbs & ~_as & _dtack;
 
 // generate data buffer output enable
-assign doe = r_w & ~_as;
+//assign doe = r_w & ~_as;
 
 // --------------------------------------------------------------------------------------
 

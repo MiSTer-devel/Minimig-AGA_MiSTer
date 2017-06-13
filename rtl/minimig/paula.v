@@ -94,12 +94,14 @@ module paula
 	output	_ready,					//disk is ready
 	output	_wprot,					//disk is write-protected
   output  index,          // disk index pulse
-	output	disk_led,				//disk activity LED
+	output        fdd_led,				//disk activity LED, active when DMA is on
+	output        hdd_led,
 	//flash drive host controller interface	(SPI)
-	input	_scs,					//async. serial data enable
-	input	sdi,					//async. serial data input
-	output	sdo,					//async. serial data output
-	input	sck,					//async. serial data clock
+	input         IO_ENA,
+	input         IO_STROBE,
+	output        IO_WAIT,
+	input  [15:0] IO_DIN,
+	output [15:0] IO_DOUT,
 	//audio outputs
 	output	left,					//audio bitstream left
 	output	right,					//audio bitstream right
@@ -107,9 +109,6 @@ module paula
 	output	[14:0]rdata, 			//right DAC data
   // system configuration
 	input	[1:0] floppy_drives,	//number of extra floppy drives
-  // direct sector read from SD card
-	input	direct_scs,				//spi select line for direct transfers from SD card
-	input	direct_sdi,				//spi data line for direct transfers from SD card
   // emulated Hard Disk Drive signals
 	input	hdd_cmd_req,      // command request
 	input	hdd_dat_req,     // data request
@@ -274,16 +273,15 @@ paula_floppy pf1
 	.blckint(blckint),
 	.syncint(syncint),
 	.wordsync(adkcon[10]),
-	._scs(_scs),
-	.sdi(sdi),
-	.sdo(sdo),
-	.sck(sck),
-	
-	.disk_led(disk_led),
+	.IO_ENA(IO_ENA),
+	.IO_STROBE(IO_STROBE),
+	.IO_WAIT(IO_WAIT),
+	.IO_DIN(IO_DIN),
+	.IO_DOUT(IO_DOUT),
+	.fdd_led(fdd_led),
+	.hdd_led(hdd_led),
 	.floppy_drives(floppy_drives),
 
-	.direct_scs(direct_scs),
-	.direct_sdi(direct_sdi),
 	.hdd_cmd_req(hdd_cmd_req),
 	.hdd_dat_req(hdd_dat_req),
 	.hdd_addr(hdd_addr),

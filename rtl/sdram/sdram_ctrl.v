@@ -161,9 +161,6 @@ reg  [ 8-1:0] hostslot_cnt;
 reg  [ 8-1:0] reset_cnt;
 reg           reset;
 reg           reset_sdstate;
-reg           c_7md;
-reg           c_7mdd;
-reg           c_7mdr;
 reg  [ 9-1:0] refreshcnt;
 reg           refresh_pending;
 reg  [ 4-1:0] sdram_state;
@@ -481,18 +478,6 @@ assign chip48 = {chip48_1, chip48_2, chip48_3};
 // SDRAM control
 ////////////////////////////////////////
 
-//// clock mangling ////
-// TODO this is some weird code - it's a 7MHz clock enable on 118MHz clock, used to 'reset' the sdram state machine, to state ph2 ???
-always @ (negedge sysclk) begin
-  c_7md <= c_7m;
-end
-
-always @ (posedge sysclk) begin
-  c_7mdd <= c_7md;
-  c_7mdr <= c_7md &  ~c_7mdd;
-end
-
-
 //// sdram data I/O ////
 assign sdata = (sdwrite) ? datawr : 16'bzzzzzzzzzzzzzzzz;
 
@@ -610,28 +595,31 @@ end
 
 //// sdram state ////
 always @ (posedge sysclk) begin
-  if(c_7mdr) begin
-    sdram_state   <= #1 ph2;
-  end else begin
-    case(sdram_state) // LATENCY=3
-      ph0     : sdram_state <= #1 ph1;
-      ph1     : sdram_state <= #1 ph2;
-      ph2     : sdram_state <= #1 ph3;
-      ph3     : sdram_state <= #1 ph4;
-      ph4     : sdram_state <= #1 ph5;
-      ph5     : sdram_state <= #1 ph6;
-      ph6     : sdram_state <= #1 ph7;
-      ph7     : sdram_state <= #1 ph8;
-      ph8     : sdram_state <= #1 ph9;
-      ph9     : sdram_state <= #1 ph10;
-      ph10    : sdram_state <= #1 ph11;
-      ph11    : sdram_state <= #1 ph12;
-      ph12    : sdram_state <= #1 ph13;
-      ph13    : sdram_state <= #1 ph14;
-      ph14    : sdram_state <= #1 ph15;
-      default : sdram_state <= #1 ph0;
-    endcase
-  end
+	reg old_7m;
+	old_7m <= c_7m;
+
+	if(~old_7m & c_7m) begin
+		sdram_state <= #1 ph2;
+	end else begin
+		case(sdram_state) // LATENCY=3
+			ph0     : sdram_state <= #1 ph1;
+			ph1     : sdram_state <= #1 ph2;
+			ph2     : sdram_state <= #1 ph3;
+			ph3     : sdram_state <= #1 ph4;
+			ph4     : sdram_state <= #1 ph5;
+			ph5     : sdram_state <= #1 ph6;
+			ph6     : sdram_state <= #1 ph7;
+			ph7     : sdram_state <= #1 ph8;
+			ph8     : sdram_state <= #1 ph9;
+			ph9     : sdram_state <= #1 ph10;
+			ph10    : sdram_state <= #1 ph11;
+			ph11    : sdram_state <= #1 ph12;
+			ph12    : sdram_state <= #1 ph13;
+			ph13    : sdram_state <= #1 ph14;
+			ph14    : sdram_state <= #1 ph15;
+			default : sdram_state <= #1 ph0;
+		endcase
+	end
 end
 
 

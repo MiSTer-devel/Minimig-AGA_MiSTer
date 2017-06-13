@@ -60,7 +60,7 @@ localparam ID=4; // counter size, also 2^ID = interpolation rate
 reg  [ID+0-1:0] int_cnt = 0;
 always @ (posedge clk) begin
   if (clk7_en) begin
-    int_cnt <= #1 int_cnt + 'd1;
+    int_cnt <= #1 int_cnt + 1'd1;
   end
 end
 
@@ -78,11 +78,11 @@ always @ (posedge clk) begin
       ldata_cur  <= #1 ldatasum; //{~ldatasum[DW-1], ldatasum[DW-2:0]}; // convert to offset binary, samples no longer signed!
       rdata_prev <= #1 rdata_cur;
       rdata_cur  <= #1 rdatasum; //{~rdatasum[DW-1], rdatasum[DW-2:0]}; // convert to offset binary, samples no longer signed!
-      ldata_int  <= #1 {ldata_cur[DW-1], ldata_cur, {ID{1'b0}}};
-      rdata_int  <= #1 {rdata_cur[DW-1], rdata_cur, {ID{1'b0}}};
+      ldata_int  <= #1 {ldata_cur, {ID{1'b0}}};
+      rdata_int  <= #1 {rdata_cur, {ID{1'b0}}};
     end else begin
-      ldata_int  <= #1 ldata_int + {{ID{ldata_step[DW+1-1]}}, ldata_step};
-      rdata_int  <= #1 rdata_int + {{ID{rdata_step[DW+1-1]}}, rdata_step};
+      ldata_int  <= #1 ldata_int + {{(ID-1){ldata_step[DW+1-1]}}, ldata_step};
+      rdata_int  <= #1 rdata_int + {{(ID-1){rdata_step[DW+1-1]}}, rdata_step};
     end
   end
 end
@@ -131,8 +131,8 @@ assign sd_l_er0 = sd_l_quant[DW+A2W+3-1] ? {1'b1, {(DW+2-1){1'b0}}} : {1'b0, {(D
 assign sd_r_er0 = sd_r_quant[DW+A2W+3-1] ? {1'b1, {(DW+2-1){1'b0}}} : {1'b0, {(DW+2-1){1'b1}}};
 always @ (posedge clk) begin
   if (clk7_en) begin
-    sd_l_er0_prev <= #1 (&sd_l_er0) ? sd_l_er0 : sd_l_er0+1;
-    sd_r_er0_prev <= #1 (&sd_r_er0) ? sd_r_er0 : sd_r_er0+1;
+    sd_l_er0_prev <= #1 (&sd_l_er0) ? sd_l_er0 : sd_l_er0+1'd1;
+    sd_r_er0_prev <= #1 (&sd_r_er0) ? sd_r_er0 : sd_r_er0+1'd1;
   end
 end
 

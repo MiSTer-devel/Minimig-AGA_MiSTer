@@ -38,6 +38,7 @@ module agnus_bitplanedma (
   input  wire           dmaena,           // enable dma input
   input  wire [ 11-1:0] vpos,             // vertical position counter
   input  wire [  9-1:0] hpos,             // agnus internal horizontal position counter (advanced by 4 CCK)
+  output reg            hde,              // video data enable (horizontal)
   output wire           dma,              // true if bitplane dma engine uses it's cycle
   input  wire [  9-1:1] reg_address_in,   // register address inputs
   output reg  [  9-1:1] reg_address_out,  // register address outputs
@@ -99,6 +100,9 @@ reg  [10: 0] vdiwstrt;            // vertical display window start position
 reg  [10: 0] vdiwstop;            // vertical display window stop position
 reg          vdiwena;             // vertical display window enable
 
+reg    [8:0] hdiwstrt;
+reg    [8:0] hdiwstop;
+
 wire [ 2: 0] bplptr_sel;          // bitplane pointer select
 wire [20:16] bplpth_in;
 wire [15: 1] bplptl_in;
@@ -143,44 +147,67 @@ wire         ddfseq_match;
 // ECS: DDFSTOP = $E4 display data fetch not stopped
 
 
-// vdiwstart
 always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reg_address_in[8:1]==DIWSTRT_REG[8:1])
-      vdiwstrt[7:0] <= #1 data_in[15:8];
-  end
+	reg [8:0] best_hdiwstrt, cur_hdiwstrt, prev_hdiwstrt;
+	reg [8:0] best_hdiwstop, cur_hdiwstop, prev_hdiwstop;
+	reg [10:0] d_hde;
+
+	if (clk7_en) begin
+		if(!hpos) begin
+			if((hdiwstrt < hdiwstop) && ((best_hdiwstop-best_hdiwstrt)<(hdiwstop-hdiwstrt))) begin
+				best_hdiwstrt <= hdiwstrt;
+				best_hdiwstop <= hdiwstop;
+			end
+			if(!vpos) begin
+				if(best_hdiwstrt || best_hdiwstop) begin
+					cur_hdiwstrt <= best_hdiwstrt;
+					cur_hdiwstop <= best_hdiwstop;
+				end
+				best_hdiwstrt <= 0;
+				best_hdiwstop <= 0;
+			end
+		end
+
+		if(hpos == cur_hdiwstrt) d_hde[0] <= 1;
+		if(hpos == cur_hdiwstop || !hpos) d_hde[0] <= 0;
+
+		//delay DE. Why??
+		d_hde[10:1] <= d_hde[9:0];
+		hde <= d_hde[10];
+	end
 end
 
+
+// vdiwstart
 always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reg_address_in[8:1]==DIWSTRT_REG[8:1])
-      vdiwstrt[10:8] <= #1 3'b000; // reset V10-V9 when writing DIWSTRT_REG
-    else if (reg_address_in[8:1]==DIWHIGH_REG[8:1] && ecs) // ECS
-      vdiwstrt[10:8] <= #1 data_in[2:0];
-  end
+	if (clk7_en) begin
+		if (reg_address_in[8:1]==DIWSTRT_REG[8:1]) begin
+			vdiwstrt <= {3'b000, data_in[15:8]}; // reset V10-V9 when writing DIWSTRT_REG
+			hdiwstrt <= {1'b0, data_in[7:0]};
+		end else if (reg_address_in[8:1]==DIWHIGH_REG[8:1] && ecs) begin // ECS
+			vdiwstrt[10:8] <= data_in[2:0];
+			hdiwstrt[8]    <= data_in[5];
+		end
+	end
 end
 
 // vdiwstop
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (reg_address_in[8:1]==DIWSTOP_REG[8:1])
-      vdiwstop[7:0] <= #1 data_in[15:8];
-  end
-end
-
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reg_address_in[8:1]==DIWSTOP_REG[8:1])
-      vdiwstop[10:8] <= #1 {2'b00,~data_in[15]}; // V8 = ~V7
-    else if (reg_address_in[8:1]==DIWHIGH_REG[8:1] && ecs) // ECS
-      vdiwstop[10:8] <= #1 data_in[10:8];
+    if (reg_address_in[8:1]==DIWSTOP_REG[8:1]) begin
+      vdiwstop <= {2'b00,~data_in[15], data_in[15:8]}; // V8 = ~V7
+		hdiwstop <= {1'b1, data_in[7:0]};
+    end else if (reg_address_in[8:1]==DIWHIGH_REG[8:1] && ecs) begin // ECS
+      vdiwstop[10:8] <= data_in[10:8];
+		hdiwstop[8]    <= data_in[13];
+	 end
   end
 end
 
 // vertical display window enable
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (sof && ~a1k || vpos[10:0]==0 && a1k || vpos[10:0]==vdiwstop[10:0]) // DIP Agnus can't start display DMA at scanline 0
+    if ((sof && ~a1k) || (vpos[10:0]==0 && a1k) || (vpos[10:0]==vdiwstop[10:0])) // DIP Agnus can't start display DMA at scanline 0
       vdiwena <= #1 1'b0;
     else if (vpos[10:0]==vdiwstrt[10:0])
       vdiwena <= #1 1'b1;

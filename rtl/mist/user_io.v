@@ -1,125 +1,106 @@
-module user_io( 
-	   input      SPI_CLK,
-	   input      SPI_SS_IO,
-	   output     reg SPI_MISO,
-	   input      SPI_MOSI,
-	   input [7:0] CORE_TYPE,
+module user_io
+( 
+	input        clk,
 
-		output [7:0] JOY0,
-		output [7:0] JOY1,
+	input        IO_ENA,
+	input        IO_STROBE,
+	input [15:0] IO_DIN,
+	output reg   IO_WAIT,
 
-		output [2:0] MOUSE_BUTTONS,
-		output       KBD_MOUSE_STROBE,
-    output       KMS_LEVEL,
-		output [1:0] KBD_MOUSE_TYPE,
-		output [7:0] KBD_MOUSE_DATA,
+	output [7:0] JOY0,
+	output [7:0] JOY1,
 
-		output [1:0] BUTTONS,
-		output [1:0] SWITCHES,
-    output [3:0] CONF
-	   );
+	output [2:0] MOUSE_BUTTONS,
+	output       KBD_MOUSE_STROBE,
+	output       KMS_LEVEL,
+	output [1:0] KBD_MOUSE_TYPE,
+	output [7:0] KBD_MOUSE_DATA,
 
-   reg [6:0]         sbuf;
-   reg [7:0]         cmd;
-   reg [5:0] 	      cnt;
-   reg [7:0]         joystick0;
-   reg [7:0]         joystick1;
-   reg [7:0] 	      but_sw;
+	output [1:0] BUTTONS,
+	output [3:0] CONF
+);
 
-	 reg               kbd_mouse_strobe;
-   reg               kbd_mouse_strobe_level;
-   reg [1:0]         kbd_mouse_type;
-   reg [7:0]         kbd_mouse_data;
-   reg [2:0]         mouse_buttons;
+reg [7:0] joystick0;
+reg [7:0] joystick1;
+reg [7:0] but_sw;
 
-	assign JOY0 = joystick0;
-	assign JOY1 = joystick1;
+reg       kbd_mouse_strobe;
+reg       kbd_mouse_strobe_level;
+reg [1:0] kbd_mouse_type;
+reg [7:0] kbd_mouse_data;
+reg [2:0] mouse_buttons;
 
-	assign KBD_MOUSE_DATA = kbd_mouse_data; // 8 bit movement data
-	assign KBD_MOUSE_TYPE = kbd_mouse_type; // 0=mouse x,1=mouse y, 2=keycode, 3=OSD kbd
-	assign KBD_MOUSE_STROBE = kbd_mouse_strobe; // strobe, data valid on rising edge
-  assign KMS_LEVEL = kbd_mouse_strobe_level; // level change of kbd_mouse_strobe
-	assign MOUSE_BUTTONS = mouse_buttons; // state of the two mouse buttons
+assign JOY0 = joystick0;
+assign JOY1 = joystick1;
 
-	assign BUTTONS  = but_sw[1:0];
-	assign SWITCHES = but_sw[3:2];
-  assign CONF     = but_sw[7:4];
-   
-   always@(negedge SPI_CLK) begin
-      if(cnt < 8)
-		  SPI_MISO <= CORE_TYPE[7-cnt];
+assign KBD_MOUSE_DATA = kbd_mouse_data; // 8 bit movement data
+assign KBD_MOUSE_TYPE = kbd_mouse_type; // 0=mouse x,1=mouse y, 2=keycode, 3=OSD kbd
+assign KMS_LEVEL = kbd_mouse_strobe_level; // level change of kbd_mouse_strobe
+assign KBD_MOUSE_STROBE = kbd_mouse_strobe;
+assign MOUSE_BUTTONS = mouse_buttons; // state of the two mouse buttons
+
+assign BUTTONS  = but_sw[1:0];
+assign CONF     = but_sw[7:4];
+
+always@(posedge clk) begin
+	reg [7:0] cmd;
+	reg [5:0] cnt;
+	reg [4:0] timeout;
+
+	if(timeout) timeout <= timeout - 1'd1;
+	else begin
+		IO_WAIT <= 0;
+		kbd_mouse_strobe <= 0;
 	end
-		
-   always@(posedge SPI_CLK) begin
-    kbd_mouse_strobe_level <= #1 kbd_mouse_strobe_level ^ kbd_mouse_strobe;
-    
-		if(SPI_SS_IO == 1) begin
-        cnt <= 0;
-		end else begin
-			sbuf[6:1] <= sbuf[5:0];
-			sbuf[0] <= SPI_MOSI;
 
-			cnt <= cnt + 1;
+	if(~IO_ENA) begin
+		cnt <= 0;
+		IO_WAIT <= 0;
+		timeout <= 0;
+	end
+	else if(IO_STROBE) begin
+		timeout <= 8;
+		IO_WAIT <= 1;
 
-	      if(cnt == 7) begin
-			   cmd[7:1] <= sbuf; 
-				cmd[0] <= SPI_MOSI;
-		   end	
+		if(~&cnt) cnt <= cnt + 1'd1;
 
-	      if(cnt == 8) begin
-				if(cmd == 4)
-				  kbd_mouse_type <= 2'b00;  // first mouse axis
-				else if(cmd == 5)
-				  kbd_mouse_type <= 2'b10;  // keyboard
-		 		else if(cmd == 6)
-				  kbd_mouse_type <= 2'b11;  // OSD keyboard	
-		   end
-				
-			// strobe is set whenever a valid byte has been received
-	      kbd_mouse_strobe <= 0;
-	
-				// first payload byte
-	      if(cnt == 15) begin
-			   if(cmd == 1) begin
-					 but_sw[7:1] <= sbuf[6:0];
-					 but_sw[0] <= SPI_MOSI; 
-				end
-			   if(cmd == 2) begin
-					 joystick0[7:1] <= sbuf[6:0]; 
-					 joystick0[0] <= SPI_MOSI; 
-				end
-			   if(cmd == 3) begin
-					 joystick1[7:1] <= sbuf[6:0]; 
-					 joystick1[0] <= SPI_MOSI; 
-			   end
-		           // mouse, keyboard or OSD
-			   if((cmd == 4)||(cmd == 5)||(cmd == 6)) begin
-					 kbd_mouse_data[7:1] <= sbuf[6:0]; 
-					 kbd_mouse_data[0] <= SPI_MOSI; 
-					 kbd_mouse_strobe <= 1;		
-				end
-			end	
-			
-			// mouse handling
-			if(cmd == 4) begin
+		if(cnt == 0) begin
+			cmd <= IO_DIN[7:0];
+			if(IO_DIN[7:0] == 4) kbd_mouse_type <= 2'b00;  // first mouse axis
+			if(IO_DIN[7:0] == 5) kbd_mouse_type <= 2'b10;  // keyboard
+			if(IO_DIN[7:0] == 6) kbd_mouse_type <= 2'b11;  // OSD keyboard	
+		end
 
-				// second byte contains movement data
-				if(cnt == 23) begin
-					 kbd_mouse_data[7:1] <= sbuf[6:0]; 
-					 kbd_mouse_data[0] <= SPI_MOSI; 
-					 kbd_mouse_strobe <= 1;		
-					 kbd_mouse_type <= 2'b01;
-				end
-				
-				// third byte contains the buttons
-				if(cnt == 31) begin
-					 mouse_buttons[2:1] <= sbuf[1:0]; 
-					 mouse_buttons[0] <= SPI_MOSI; 
-				end
+		// first payload byte
+		if(cnt == 1) begin
+			if(cmd == 1) but_sw <= IO_DIN[7:0];
+			if(cmd == 2) joystick0 <= IO_DIN[7:0]; 
+			if(cmd == 3) joystick1 <= IO_DIN[7:0]; 
+
+			// mouse, keyboard or OSD
+			if((cmd == 4)||(cmd == 5)||(cmd == 6)) begin
+				kbd_mouse_data <= IO_DIN[7:0];
+				kbd_mouse_strobe_level <= ~kbd_mouse_strobe_level;
+				kbd_mouse_strobe <= 1;
+			end
+		end	
+
+		// mouse handling
+		if(cmd == 4) begin
+			// second byte contains movement data
+			if(cnt == 2) begin
+				kbd_mouse_data <= IO_DIN[7:0];
+				kbd_mouse_type <= 2'b01;
+				kbd_mouse_strobe_level <= ~kbd_mouse_strobe_level; 
+				kbd_mouse_strobe <= 1;
+			end
+
+			// third byte contains the buttons
+			if(cnt == 3) begin
+				mouse_buttons <= IO_DIN[2:0];
 			end
 		end
 	end
+end
 
-      
 endmodule
-

@@ -5,45 +5,48 @@ module userio_osd
 (
 	input 	clk,		    	// 28MHz clock
 	input	clk7_en,
-  input clk7n_en,
+	input clk7n_en,
 	input	reset,				//reset
 	input	c1,					//clk28m domain clock enable
 	input	c3,
 	input	sol,				//start of video line
 	input	sof,				//start of video frame 
-  input varbeamen,
+	input varbeamen,
 	input	[7:0] osd_ctrl,		//keycode for OSD control (Amiga keyboard codes + additional keys coded as values > 80h)
-	input	_scs,				//SPI enable
-	input	sdi,		  		//SPI data in
-	output	sdo,	 			//SPI data out
-	input	sck,	  			//SPI clock
+	input         IO_ENA,
+	input         IO_STROBE,
+	output reg    IO_WAIT,
+	input  [15:0] IO_DIN,
+	output [15:0] IO_DOUT,
 	output	osd_blank,			//osd overlay, normal video blank output
 	output	osd_pixel,			//osd video pixel
 	output	reg osd_enable = 0,			//osd enable
-  output  reg key_disable = 0,      // keyboard disable
+	output  reg key_disable = 0,      // keyboard disable
 	output	reg [1:0] lr_filter = 0,
 	output	reg [1:0] hr_filter = 0,
 	output	reg [6:0] memory_config = 7'b0_00_01_01,
 	output	reg [4:0] chipset_config = 0,
 	output	reg [3:0] floppy_config = 0,
 	output	reg [1:0] scanline = 0,
-  output  reg [1:0] dither = 0,
+	output  reg [1:0] dither = 0,
+	output  reg [1:0] ar = 0,
+	output   reg [1:0] blver,
 	output	reg	[2:0] ide_config = 0,		//enable hard disk support
-  output  reg [3:0] cpu_config = 0,
-  output  reg [1:0] autofire_config = 0,
-  output  reg       cd32pad = 0,
+	output  reg [3:0] cpu_config = 0,
+	output  reg [1:0] autofire_config = 0,
+	output         cd32pad,
 	output	reg usrrst=1'b0,
-  output reg cpurst=1'b1,
-  output reg cpuhlt=1'b1,
-  output wire fifo_full,
-  // host
-  output reg            host_cs,
-  output wire [ 24-1:0] host_adr,
-  output reg            host_we,
-  output reg  [  2-1:0] host_bs,
-  output wire [ 16-1:0] host_wdat,
-  input  wire [ 16-1:0] host_rdat,
-  input  wire           host_ack
+	output reg cpurst=1'b1,
+	output reg cpuhlt=1'b1,
+	output wire fifo_full,
+	// host
+	output reg            host_cs,
+	output wire [ 24-1:0] host_adr,
+	output reg            host_we,
+	output reg  [  2-1:0] host_bs,
+	output wire [ 16-1:0] host_wdat,
+	input  wire [ 16-1:0] host_rdat,
+	input  wire           host_ack
 );
 
 
@@ -54,7 +57,7 @@ reg		[7:0] osdbuf [0:2048-1];	//osd video buffer
 wire	osdframe;				//true if beamcounters within osd frame
 reg		[7:0] bufout;			//osd buffer read data
 reg 	[10:0] wraddr;			//osd buffer write address
-wire	[7:0] wrdat;			//osd buffer write data
+reg	[15:0] wrdat;			//osd buffer write data
 wire	wren;					//osd buffer write enable
 
 reg		[3:0] highlight;		//highlighted line number
@@ -69,6 +72,7 @@ reg		[2:0] t_ide_config = 0;
 reg   [3:0] t_cpu_config = 0;
 reg   [4:0] t_chipset_config = 0;
 
+assign cd32pad = 0;
 
 //--------------------------------------------------------------------------------------
 // memory configuration select signal
@@ -204,37 +208,50 @@ always @(posedge clk)//output part
 //--------------------------------------------------------------------------------------
 //interface to host
 //--------------------------------------------------------------------------------------
-wire	rx;
-wire	cmd;
-reg   wrcmd;    // spi write command
-wire  vld;
-reg   vld_d;
-wire  spi_invalidate;
+
+
+assign IO_DOUT = IO_ENA ? {8'd0, io_dout} : 16'd0;
+
+reg	     rx;
+reg	     cmd;
 wire [7:0] rddat;
+reg  [7:0] io_dout;
 
-//instantiate spi interface
-userio_osd_spi spi0
-(
-	.clk(clk),
-  .clk7_en(clk7_en),
-  .clk7n_en(clk7n_en),
-	._scs(_scs),
-	.sdi(sdi),
-	.sdo(sdo),
-	.sck(sck),
-	.in(rddat),
-	.out(wrdat),
-	.rx(rx),
-	.cmd(cmd),
-  .vld(vld)
-);
+always @(posedge clk) begin
+	reg first;
+	reg mrx;
+	reg  [2:0] timeout;
+	reg [15:0] data;
 
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    vld_d <= #1 vld;
-  end
+	if(~IO_ENA) begin
+		first   <= 1;
+		IO_WAIT <= 0;
+		rx      <= 0;
+		mrx     <= 0;
+		io_dout <= 0;
+		cmd     <= 0;
+		timeout <= 0;
+	end
+	else if(IO_STROBE) begin
+		cmd     <= first;
+		IO_WAIT <= 1;
+		first   <= 0;
+		mrx     <= 1;
+		timeout <= 4;
+		data    <= IO_DIN;
+	end
+	else if(clk7_en) begin
+		if(mrx) begin
+			wrdat   <= data;
+			io_dout <= rddat;
+		end
+		rx  <= mrx;
+		mrx <= 0;
+		if(timeout) timeout <= timeout - 1'd1;
+			else IO_WAIT <= 0;
+	end
 end
-assign spi_invalidate = ~vld && vld_d;
+
 
 // !!! OLD !!! OSD SPI commands:
  // 8'b00000000  NOP
@@ -315,7 +332,7 @@ end
 
 // reg selects
 reg spi_reset_ctrl_sel    = 1'b0;
-reg spi_clock_ctrl_sel    = 1'b0;
+//reg spi_clock_ctrl_sel    = 1'b0;
 reg spi_osd_ctrl_sel      = 1'b0;
 reg spi_chip_cfg_sel      = 1'b0;
 reg spi_cpu_cfg_sel       = 1'b0;
@@ -330,7 +347,7 @@ reg spi_version_sel       = 1'b0;
 reg spi_mem_read_sel      = 1'b0;
 always @ (*) begin
   spi_reset_ctrl_sel   = 1'b0;
-  spi_clock_ctrl_sel   = 1'b0;
+  //spi_clock_ctrl_sel   = 1'b0;
   spi_osd_ctrl_sel     = 1'b0;
   spi_chip_cfg_sel     = 1'b0;
   spi_cpu_cfg_sel      = 1'b0;
@@ -345,7 +362,7 @@ always @ (*) begin
   spi_mem_read_sel     = 1'b0;
   case (cmd_dat)
     SPI_RESET_CTRL_ADR   : spi_reset_ctrl_sel   = 1'b1;
-    SPI_CLOCK_CTRL_ADR   : spi_clock_ctrl_sel   = 1'b1;
+    //SPI_CLOCK_CTRL_ADR   : spi_clock_ctrl_sel   = 1'b1;
     SPI_OSD_CTRL_ADR     : spi_osd_ctrl_sel     = 1'b1;
     SPI_CHIP_CFG_ADR     : spi_chip_cfg_sel     = 1'b1;
     SPI_CPU_CFG_ADR      : spi_cpu_cfg_sel      = 1'b1;
@@ -360,7 +377,7 @@ always @ (*) begin
     SPI_MEM_READ_ADR     : spi_mem_read_sel     = 1'b1;
     default: begin
       spi_reset_ctrl_sel   = 1'b0;
-      spi_clock_ctrl_sel   = 1'b0;
+      //spi_clock_ctrl_sel   = 1'b0;
       spi_osd_ctrl_sel     = 1'b0;
       spi_chip_cfg_sel     = 1'b0;
       spi_cpu_cfg_sel      = 1'b0;
@@ -402,7 +419,7 @@ always @ (posedge clk) begin
       if (spi_chip_cfg_sel)     begin if (dat_cnt == 0) t_chipset_config <= #1 wrdat[4:0]; end
       if (spi_cpu_cfg_sel)      begin if (dat_cnt == 0) t_cpu_config <= #1 wrdat[3:0]; end
       if (spi_memory_cfg_sel)   begin if (dat_cnt == 0) t_memory_config <= #1 wrdat[6:0]; end
-      if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {dither, hr_filter, lr_filter, scanline} <= #1 wrdat[7:0]; end
+      if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {blver, ar, dither, hr_filter, lr_filter, scanline} <= #1 wrdat[11:0]; end
       if (spi_floppy_cfg_sel)   begin if (dat_cnt == 0) floppy_config <= #1 wrdat[3:0]; end
       if (spi_harddisk_cfg_sel) begin if (dat_cnt == 0) t_ide_config <= #1 wrdat[2:0]; end 
       //if (spi_joystick_cfg_sel) begin if (dat_cnt == 0) {cd32pad, autofire_config} <= #1 wrdat[2:0]; end
@@ -458,15 +475,15 @@ end
 
 
 // memory write
-reg mem_toggle = 1'b0, mem_toggle_d = 1'b0;
+reg mem_toggle = 1'b0; //mem_toggle_d = 1'b0;
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (cmd) begin
       mem_toggle <= #1 1'b0;
-      mem_toggle_d <= #1 1'b0;
+      //mem_toggle_d <= #1 1'b0;
     end else if (rx && !cmd && spi_mem_write_sel && (dat_cnt == 4)) begin
       mem_toggle <= #1 ~mem_toggle;
-      mem_toggle_d <= #1 mem_toggle;
+      //mem_toggle_d <= #1 mem_toggle;
     end
   end
 end
@@ -489,7 +506,7 @@ sync_fifo #(
   .clk          (clk),
   .clk7_en      (clk7_en),
   .rst          (reset/* || cmd*/), // TODO possible problem (cmd)!
-  .fifo_in      ({mem_dat_r, wrdat}),
+  .fifo_in      ({mem_dat_r, wrdat[7:0]}),
   .fifo_out     (host_wdat),
   .fifo_wr_en   (rx && !cmd && mem_toggle),
   .fifo_rd_en   (wr_fifo_rd_en),
@@ -561,12 +578,12 @@ assign host_adr  = mem_adr[23:0];
 `include "minimig_version.vh"
 reg  [8-1:0] rtl_ver;
 always @ (*) begin
-  case (dat_cnt[2:0])
-    2'b00   : rtl_ver = BETA_FLAG;
-    2'b01   : rtl_ver = MAJOR_VER;
-    2'b10   : rtl_ver = MINOR_VER;
-    default : rtl_ver = MINION_VER;
-  endcase
+	case (dat_cnt[2:0])
+			0 : rtl_ver = BETA_FLAG;
+			1 : rtl_ver = MAJOR_VER;
+			2 : rtl_ver = MINOR_VER;
+	default : rtl_ver = MINION_VER;
+	endcase
 end
 
 

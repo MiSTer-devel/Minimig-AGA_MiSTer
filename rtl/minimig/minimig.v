@@ -149,98 +149,107 @@
 module minimig
 (
 	//m68k pins
-	input	[23:1] cpu_address,	// m68k address bus
-	output 	[15:0] cpu_data,	// m68k data bus
-	input	[15:0] cpudata_in,	// m68k data in
-	output	[2:0] _cpu_ipl,		// m68k interrupt request
-	input	_cpu_as,			// m68k address strobe
-	input	_cpu_uds,			// m68k upper data strobe
-	input	_cpu_lds,			// m68k lower data strobe
-	input	cpu_r_w,			// m68k read / write
-	output	_cpu_dtack,			// m68k data acknowledge
-	output	_cpu_reset,			// m68k reset
-  input _cpu_reset_in,    // m68k reset in
-  input [31:0] cpu_vbr, // m68k VBR
-  output wire ovr,      // NMI address decoding override
+	input	 [23:1] cpu_address,		// m68k address bus
+	output [15:0] cpu_data,			// m68k data bus
+	input	 [15:0] cpudata_in,		// m68k data in
+	output  [2:0] _cpu_ipl,			// m68k interrupt request
+	input	        _cpu_as,			// m68k address strobe
+	input	        _cpu_uds,			// m68k upper data strobe
+	input	        _cpu_lds,			// m68k lower data strobe
+	input	        cpu_r_w,			// m68k read / write
+	output        _cpu_dtack,		// m68k data acknowledge
+	output        _cpu_reset,		// m68k reset
+	input         _cpu_reset_in,  // m68k reset in
+	input  [31:0] cpu_vbr, 			// m68k VBR
+	output        ovr,      		// NMI address decoding override
+
 	//sram pins
-	output	[15:0] ram_data,	//sram data bus
-	input	[15:0] ramdata_in,		//sram data bus in
-	output	[21:1] ram_address,	//sram address bus
-	output	_ram_bhe,			//sram upper byte select
-	output	_ram_ble,			//sram lower byte select
-	output	_ram_we,			//sram write enable
-	output	_ram_oe,			//sram output enable
-  input [48-1:0] chip48,         // big chipram read
+	output [15:0] ram_data,			//sram data bus
+	input	 [15:0] ramdata_in,		//sram data bus in
+	output [21:1] ram_address,		//sram address bus
+	output        _ram_bhe,			//sram upper byte select
+	output        _ram_ble,			//sram lower byte select
+	output        _ram_we,			//sram write enable
+	output        _ram_oe,			//sram output enable
+	input [48-1:0] chip48,        // big chipram read
+
 	//system	pins
-  input rst_ext,      // reset from ctrl block
-  output rst_out,     // minimig reset status
-	input	clk,				// 28.37516 MHz clock
-  input clk7_en,      // 7MHz clock enable
-  input clk7n_en, // 7MHz negedge clock enable
-	input c1,			// clock enable signal
-	input c3,			// clock enable signal
-	input cck,			// colour clock enable
-	input [9:0] eclk,			// ECLK enable (1/10th of CLK)
+	input         rst_ext,      	// reset from ctrl block
+	output        rst_out,     	// minimig reset status
+	input	        clk,				// 28.37516 MHz clock
+	input         clk7_en,      	// 7MHz clock enable
+	input         clk7n_en, 		// 7MHz negedge clock enable
+	input         c1,					// clock enable signal
+	input         c3,					// clock enable signal
+	input         cck,				// colour clock enable
+	input   [9:0] eclk,				// ECLK enable (1/10th of CLK)
+
 	//rs232 pins
-	input	rxd,				//rs232 receive
-	output	txd,				//rs232 send
-	input	cts,				//rs232 clear to send
-	output	rts,				//rs232 request to send
+	input         rxd,				//rs232 receive
+	output        txd,				//rs232 send
+	input	        cts,				//rs232 clear to send
+	output        rts,				//rs232 request to send
+
 	//I/O
-	input	[7:0]_joy1,			//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-	input	[7:0]_joy2,			//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-  input mouse_btn1, // mouse button 1
-  input mouse_btn2, // mouse button 2
-  input [2:0] mouse_btn, // mouse buttons
-  input kbd_mouse_strobe,
-  input kms_level,
-  input [1:0] kbd_mouse_type,
-  input [7:0] kbd_mouse_data,
-	input	_15khz,				//scandoubler disable
-	output pwrled,				//power led
-  inout	msdat,				//PS2 mouse data
-	inout	msclk,				//PS2 mouse clk
-	inout	kbddat,				//PS2 keyboard data
-	inout	kbdclk,				//PS2 keyboard clk
+	input	  [7:0] _joy1,				//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+	input	  [7:0] _joy2,				//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+	input         mouse_btn1, 		// mouse button 1
+	input         mouse_btn2, 		// mouse button 2
+	input   [2:0] mouse_btn, 		// mouse buttons
+	input         kbd_mouse_strobe,
+	input         kms_level,
+	input   [1:0] kbd_mouse_type,
+	input   [7:0] kbd_mouse_data,
+	output        pwr_led,			//power led
+	output        fdd_led,				//disk activity LED, active when DMA is on
+	output        hdd_led,
+	inout	        msdat,				//PS2 mouse data
+	inout	        msclk,				//PS2 mouse clk
+	inout	        kbddat,			//PS2 keyboard data
+	inout	        kbdclk,			//PS2 keyboard clk
+
 	//host controller interface (SPI)
-	input	[2:0]_scs,			//SPI chip select
-	input	direct_sdi,			//SD Card direct in
-	input	sdi,				//SPI data input
-	inout	sdo,				//SPI data output
-	input	sck,				//SPI clock
- // // host
- // output wire           host_cs,
- // output wire [ 24-1:0] host_adr,
- // output wire           host_we,
- // output wire [  2-1:0] host_bs,
- // output wire [ 16-1:0] host_wdat,
- // input  wire [ 16-1:0] host_rdat,
- // input  wire           host_ack,
+	input         IO_OSD,
+	input         IO_FPGA,
+	input         IO_STROBE,
+	output        IO_WAIT,
+	input  [15:0] IO_DIN,
+	output [15:0] IO_DOUT,
+
 	//video
-	output	_hsync,				//horizontal sync
-	output	_vsync,				//vertical sync
-	output	[7:0] red,			//red
-	output	[7:0] green,		//green
-	output	[7:0] blue,			//blue
+	output        _hsync,				//horizontal sync
+	output        _vsync,				//vertical sync
+	output        _csync,				//composite sync
+	output        field1,
+	output        de,            // video data enable
+	output  [7:0] red,			//red
+	output  [7:0] green,		//green
+	output  [7:0] blue,			//blue
+	output        ce_pix,
+	output  [1:0] ar,
+	output  [1:0] scanline,
+
 	//audio
-	output	left,				//audio bitstream left
-	output	right,				//audio bitstream right
-	output	[14:0]ldata,			//left DAC data
-	output	[14:0]rdata, 			//right DAC data
+	output        left,				//audio bitstream left
+	output        right,				//audio bitstream right
+	output [14:0] ldata,			//left DAC data
+	output [14:0] rdata, 			//right DAC data
+
 	//user i/o
-  output  [3:0] cpu_config,
-  output  [5:0] memcfg,
-  output  turbochipram,
-  output  turbokick,
-  output  init_b,       // vertical sync for MCU (sync OSD update)
-  output wire fifo_full,
-  // fifo / track display
-	output  [7:0]trackdisp,
-	output  [13:0]secdisp,
-  output  floppy_fwr,
-  output  floppy_frd,
-  output  hd_fwr,
-  output  hd_frd
+	output  [3:0] cpu_config,
+	output  [5:0] memcfg,
+	output        turbochipram,
+	output        turbokick,
+	output        init_b,       // vertical sync for MCU (sync OSD update)
+	output        fifo_full,
+
+	// fifo / track display
+	output  [7:0] trackdisp,
+	output [13:0] secdisp,
+	output        floppy_fwr,
+	output        floppy_frd,
+	output        hd_fwr,
+	output        hd_frd
 );
 
 //--------------------------------------------------------------------------------------
@@ -265,10 +274,6 @@ wire		[15:0] gayle_data_out;	//Gayle data out
 wire		[15:0] cia_data_out;	//cia A+B data bus out
 wire		[15:0] ar3_data_out;	//Action Replay data out
 
-//local signals for spi bus
-wire		paula_sdo; 				//paula spi data out
-wire		user_sdo;				//userio spi data out
-
 //local signals for address bus
 wire		[23:1] cpu_address_out;	//cpu address out
 wire		[20:1] dma_address_out;	//agnus address out
@@ -288,8 +293,8 @@ wire		[8:1] reg_address; 		//main register address bus
 //rest of local signals
 wire		kbdrst;					//keyboard reset
 wire		reset;					//global reset
-wire    aflock;
-wire    cpu_custom;
+wire  	aflock;
+wire		cpu_custom;
 wire		dbr;					//data bus request, Agnus tells CPU that she is using the bus
 wire		dbwe;					//data bus write enable, Agnus tells the RAM it's writing data
 wire		dbs;					//data bus slow down, used for slowing down CPU access to chip, slow and custor register address space
@@ -299,7 +304,7 @@ wire		_led;					//power led
 wire		[3:0] sel_chip;			//chip ram select
 wire		[2:0] sel_slow;			//slow ram select
 wire		sel_kick;				//rom select
-wire    sel_kick1mb;     // 1MB upper rom select
+wire  	sel_kick1mb;     // 1MB upper rom select
 wire		sel_cia;				//CIA address space
 wire		sel_reg;				//chip register select
 wire		sel_cia_a;				//cia A select
@@ -308,14 +313,14 @@ wire		int2;					//intterrupt 2
 wire		int3;					//intterrupt 3 
 wire		int6;					//intterrupt 6
 wire		[7:0] osd_ctrl;			//OSD control
-wire    kb_lmb;
-wire    kb_rmb;
-wire    [5:0] kb_joy2;
+wire		kb_lmb;
+wire		kb_rmb;
+wire		[5:0] kb_joy2;
 wire		freeze;					//Action Replay freeze button
 wire		_fire0;					//joystick 1 fire signal to cia A
 wire		_fire1;					//joystick 2 fire signal to cia A
-wire    _fire0_dat;
-wire    _fire1_dat;
+wire		_fire0_dat;
+wire		_fire1_dat;
 wire		[3:0] audio_dmal;		//audio dma data transfer request from Paula to Agnus
 wire		[3:0] audio_dmas;		//audio dma location pointer restart from Paula to Agnus
 wire		disk_dmal;				//disk dma data transfer request from Paula to Agnus
@@ -323,23 +328,16 @@ wire		disk_dmas;				//disk dma special request from Paula to Agnus
 wire		index;					//disk index interrupt
 
 //local video signals
-wire		blank;					//blanking signal
 wire		sol;					//start of video line
 wire		sof;					//start of video frame
-wire    vbl_int;        // vertical blanking interrupt
+wire		vbl_int;        // vertical blanking interrupt
 wire		strhor_denise;			//horizontal strobe for Denise
 wire		strhor_paula;			//horizontal strobe for Paula
-wire		[7:0]red_i;				//denise red (internal)
-wire		[7:0]green_i;			//denise green (internal)
-wire		[7:0]blue_i;			//denise blue (internal)
 wire		osd_blank;				//osd blanking 
 wire		osd_pixel;				//osd pixel(video) data
-wire		_hsync_i;				//horizontal sync (internal)
-wire		_vsync_i;				//vertical sync (internal)
-wire		_csync_i;				//composite sync (internal)
 wire		[8:0] htotal;			//video line length (140ns units)
-wire    harddis;
-wire    varbeamen;
+wire		harddis;
+wire		varbeamen;
 
 //local floppy signals (CIA<-->Paula)
 wire		_step;					//step heads of disk
@@ -354,6 +352,16 @@ wire		_track0;				//track zero detect
 wire		_change;				//disk has been removed from drive
 wire		_ready;					//disk is ready
 wire		_wprot;					//disk is write-protected
+
+wire [1:0] blver;
+wire       blank, hde;
+assign     de = blver ? (~blank & hde) : ~blank;
+
+wire        IO_WAIT_PAULA, IO_WAIT_OSD;
+wire [15:0] IO_DOUT_PAULA, IO_DOUT_OSD;
+
+assign      IO_DOUT = IO_DOUT_PAULA | IO_DOUT_OSD;
+assign      IO_WAIT = IO_WAIT_PAULA | IO_WAIT_OSD;
 
 //--------------------------------------------------------------------------------------
 
@@ -371,7 +379,6 @@ wire  [16-1:0] cart_data_out;
 wire	usrrst;					//user reset from osd interface
 wire	[1:0] lr_filter;		//lowres interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
 wire	[1:0] hr_filter;		//hires interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
-wire	[1:0] scanline;			//scanline effect configuration
 wire  [1:0] dither;   // video output dither
 wire	hires;					//hires signal from Denise for interpolation filter enable in Amber
 wire	aron;					//Action Replay is enabled
@@ -401,7 +408,6 @@ wire	hdd_data_rd;			//data port read strobe
 wire	[7:0] bank;				//memory bank select
 
 wire	keyboard_disabled;		//disables Amiga keyboard while OSD is active
-wire	disk_led;				//floppy disk activity LED
 
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
@@ -427,14 +433,12 @@ reg led_dim;
 
 always @ (posedge clk) begin
   if (_hsync) begin
-    led_cnt <= led_cnt + 1;
+    led_cnt <= led_cnt + 1'd1;
     led_dim <= |led_cnt;
   end
 end
 
-assign pwrled = (_led & (led_dim | ~turbo)) ? 1'b0 : 1'b1; // led dim at off-state and active turbo mode
-
-
+assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = memory_config[5:0];
 
@@ -457,12 +461,12 @@ reg vsync_t = 1'b0;   // toggled vsync output
 
 always @(posedge clk)
   if (clk7_en) begin
-    vsync_del <= _vsync_i;
+    vsync_del <= _vsync;
   end
   
 always @(posedge clk)
   if (clk7_en) begin
-    if (~_vsync_i && vsync_del)
+    if (~_vsync && vsync_del)
       vsync_t <= ~vsync_t;
   end
 
@@ -487,21 +491,23 @@ agnus AGNUS1
 	.address_in(cpu_address_out[8:1]),
 	.address_out(dma_address_out),
 	.reg_address_out(reg_address),
-  .cpu_custom(cpu_custom),
+	.cpu_custom(cpu_custom),
 	.dbr(dbr),
 	.dbwe(dbwe),
-	._hsync(_hsync_i),
-	._vsync(_vsync_i),
-	._csync(_csync_i),
+	._hsync(_hsync),
+	._vsync(_vsync),
+	._csync(_csync),
+	.hde(hde),
+	.field1(field1),
 	.blank(blank),
 	.sol(sol),
 	.sof(sof),
-  .vbl_int(vbl_int),
+	.vbl_int(vbl_int),
 	.strhor_denise(strhor_denise),
 	.strhor_paula(strhor_paula),
 	.htotal(htotal),
-  .harddis(harddis),
-  .varbeamen(varbeamen),
+	.harddis(harddis),
+	.varbeamen(varbeamen),
 	.int3(int3),
 	.audio_dmal(audio_dmal),
 	.audio_dmas(audio_dmas),
@@ -509,9 +515,9 @@ agnus AGNUS1
 	.disk_dmas(disk_dmas),
 	.bls(bls),
 	.ntsc(ntsc),
-  .a1k(chipset_config[2]),
+	.a1k(chipset_config[2]),
 	.ecs(|chipset_config[4:3]),
-  .aga(chipset_config[4]),
+	.aga(chipset_config[4]),
 	.floppy_speed(floppy_config[0]),
 	.turbo(turbo)
 );
@@ -519,9 +525,9 @@ agnus AGNUS1
 //instantiate paula
 paula PAULA1
 (
-  .clk(clk),
-  .clk7_en (clk7_en),
-  .clk7n_en (clk7n_en),
+	.clk(clk),
+	.clk7_en (clk7_en),
+	.clk7n_en (clk7n_en),
 	.cck(cck),
 	.reset(reset),
 	.reg_address_in(reg_address),
@@ -529,10 +535,10 @@ paula PAULA1
 	.data_out(paula_data_out),
 	.txd(txd),
 	.rxd(rxd),
-  .ntsc(ntsc),
+	.ntsc(ntsc),
 	.sof(sof),
-  .strhor(strhor_paula),
-  .vblint(vbl_int),
+	.strhor(strhor_paula),
+	.vblint(vbl_int),
 	.int2(int2|gayle_irq),
 	.int3(int3),
 	.int6(int6),
@@ -550,12 +556,14 @@ paula PAULA1
 	._change(_change),
 	._ready(_ready),
 	._wprot(_wprot),
-  .index(index),
-	.disk_led(disk_led),
-	._scs(_scs[0]),
-	.sdi(sdi),
-	.sdo(paula_sdo),
-	.sck(sck),
+	.index(index),
+	.fdd_led(fdd_led),
+	.hdd_led(hdd_led),
+	.IO_ENA(IO_FPGA),
+	.IO_STROBE(IO_STROBE),
+	.IO_WAIT(IO_WAIT_PAULA),
+	.IO_DIN(IO_DIN),
+	.IO_DOUT(IO_DOUT_PAULA),
 	.left(left),
 	.right(right),
 	.ldata(ldata),
@@ -563,8 +571,6 @@ paula PAULA1
 
 	.floppy_drives(floppy_config[3:2]),
 	//ide stuff
-	.direct_scs(~_scs[2]),
-	.direct_sdi(direct_sdi),
 	.hdd_cmd_req(hdd_cmd_req),	
 	.hdd_dat_req(hdd_dat_req),
 	.hdd_addr(hdd_addr),
@@ -574,25 +580,25 @@ paula PAULA1
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
 	.hdd_data_rd(hdd_data_rd),
-  // fifo / track display
+	// fifo / track display
 	.trackdisp(trackdisp),
 	.secdisp(secdisp),
-  .floppy_fwr (floppy_fwr),
-  .floppy_frd (floppy_frd)
+	.floppy_fwr (floppy_fwr),
+	.floppy_frd (floppy_frd)
 );
 
 //instantiate user IO
 userio USERIO1 
 (	
 	.clk(clk),
-  .clk7_en(clk7_en),
-  .clk7n_en(clk7n_en),
+	.clk7_en(clk7_en),
+	.clk7n_en(clk7n_en),
 	.reset(reset),
 	.c1(c1),
 	.c3(c3),
 	.sol(sol),
 	.sof(sof),
-  .varbeamen(varbeamen),
+	.varbeamen(varbeamen),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
 	.data_out(user_data_out),
@@ -600,25 +606,26 @@ userio USERIO1
 	.ps2mclk(msclk),
 	._fire0(_fire0),
 	._fire1(_fire1),
-  ._fire0_dat(_fire0_dat),
-  ._fire1_dat(_fire1_dat),
-  .aflock(aflock),
+	._fire0_dat(_fire0_dat),
+	._fire1_dat(_fire1_dat),
+	.aflock(aflock),
 	._joy1(_joy1),
 	._joy2(_joy2 & {2'b11,kb_joy2}),
-  .mouse_btn(mouse_btn),
-  ._lmb(kb_lmb & mouse_btn1),
-  ._rmb(kb_rmb & mouse_btn2),
-  .mou_emu (mou_emu),
-  .kbd_mouse_type(kbd_mouse_type),
-  .kbd_mouse_strobe(kbd_mouse_strobe),
-  .kms_level(kms_level),
-  .kbd_mouse_data(kbd_mouse_data), 
+	.mouse_btn(mouse_btn),
+	._lmb(kb_lmb & mouse_btn1),
+	._rmb(kb_rmb & mouse_btn2),
+	.mou_emu (mou_emu),
+	.kbd_mouse_type(kbd_mouse_type),
+	.kbd_mouse_strobe(kbd_mouse_strobe),
+	.kms_level(kms_level),
+	.kbd_mouse_data(kbd_mouse_data), 
 	.osd_ctrl(osd_ctrl),
 	.keyboard_disabled(keyboard_disabled),
-	._scs(_scs[1]),
-	.sdi(sdi),
-	.sdo(user_sdo),
-	.sck(sck),
+	.IO_ENA(IO_OSD),
+	.IO_STROBE(IO_STROBE),
+	.IO_WAIT(IO_WAIT_OSD),
+	.IO_DIN(IO_DIN),
+	.IO_DOUT(IO_DOUT_OSD),
 	.osd_blank(osd_blank),
 	.osd_pixel(osd_pixel),
 	.lr_filter(lr_filter),
@@ -627,20 +634,22 @@ userio USERIO1
 	.chipset_config(chipset_config),
 	.floppy_config(floppy_config),
 	.scanline(scanline),
-  .dither(dither),
+	.dither(dither),
+	.ar(ar),
+	.blver(blver),
 	.ide_config(ide_config),
-  .cpu_config(cpu_config),
+	.cpu_config(cpu_config),
 	.usrrst(usrrst),
-  .cpurst(cpurst),
-  .cpuhlt(cpuhlt),
-  .fifo_full(fifo_full),
-  .host_cs      (host_cs          ),
-  .host_adr     (host_adr         ),
-  .host_we      (host_we          ),
-  .host_bs      (host_bs          ),
-  .host_wdat    (host_wdat        ),
-  .host_rdat    (host_rdat        ),
-  .host_ack     (host_ack         )
+	.cpurst(cpurst),
+	.cpuhlt(cpuhlt),
+	.fifo_full(fifo_full),
+	.host_cs      (host_cs          ),
+	.host_adr     (host_adr         ),
+	.host_we      (host_we          ),
+	.host_bs      (host_bs          ),
+	.host_wdat    (host_wdat        ),
+	.host_rdat    (host_rdat        ),
+	.host_ack     (host_ack         )
 );
 
 //assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
@@ -659,60 +668,34 @@ debug DEBUG1 (
 //instantiate Denise
 denise DENISE1
 (		
-  .clk(clk),
-  .clk7_en(clk7_en),
-  .c1(c1),
-  .c3(c3),
-  .cck(cck),
+	.clk(clk),
+	.clk7_en(clk7_en),
+	.c1(c1),
+	.c3(c3),
+	.cck(cck),
 	.reset(reset),
 	.strhor(strhor_denise),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
-  .chip48(chip48),
+	.chip48(chip48),
 	.data_out(denise_data_out),
 	.blank(blank),
-	.red(red_i),
-	.green(green_i),
-	.blue(blue_i),
-  .a1k(chipset_config[2]),
-  .ecs(|chipset_config[4:3]),
-  .aga(chipset_config[4]),
+	.red(red),
+	.green(green),
+	.blue(blue),
+	.a1k(chipset_config[2]),
+	.ecs(|chipset_config[4:3]),
+	.aga(chipset_config[4]),
+	.ce_pix(ce_pix),
 	.hires(hires)
-);
-
-//instantiate Amber
-amber AMBER1
-(		
-	.clk(clk),
-	.dblscan(_15khz && !varbeamen),
-  .varbeamen(varbeamen),
-	.lr_filter(lr_filter),
-	.hr_filter(hr_filter),
-	.scanline(scanline),
-  .dither(dither),
-	.htotal(htotal),
-	.hires(hires),
-	.osd_blank(osd_blank),
-	.osd_pixel(osd_pixel),
-	.red_in(red_i),
-	.blue_in(blue_i),
-	.green_in(green_i),
-	._hsync_in(_hsync_i),
-	._vsync_in(_vsync_i),
-	._csync_in(_csync_i),
-	.red_out(red),
-	.blue_out(blue),
-	.green_out(green),
-	._hsync_out(_hsync),
-	._vsync_out(_vsync)
 );
 
 //instantiate cia A
 ciaa CIAA1
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
-  .clk7n_en(clk7n_en),
+	.clk7_en(clk7_en),
+	.clk7n_en(clk7n_en),
 	.aen(sel_cia_a),
 	.rd(cpu_rd),
 	.wr(cpu_lwr|cpu_hwr),
@@ -720,7 +703,7 @@ ciaa CIAA1
 	.rs(cpu_address_out[11:8]),
 	.data_in(cpu_data_out[7:0]),
 	.data_out(cia_data_out[7:0]),
-	.tick(_vsync_i),
+	.tick(_vsync),
 	.eclk(eclk[8]),
 	.irq(int2),
 	.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),
@@ -728,27 +711,27 @@ ciaa CIAA1
 	.kbdrst(kbdrst),
 	.kbddat(kbddat),
 	.kbdclk(kbdclk),
-  .kbd_mouse_type(kbd_mouse_type),
-  .kbd_mouse_strobe(kbd_mouse_strobe),
-  .kms_level(kms_level),
-  .kbd_mouse_data(kbd_mouse_data), 
-  .keyboard_disabled(keyboard_disabled),
+	.kbd_mouse_type(kbd_mouse_type),
+	.kbd_mouse_strobe(kbd_mouse_strobe),
+	.kms_level(kms_level),
+	.kbd_mouse_data(kbd_mouse_data), 
+	.keyboard_disabled(keyboard_disabled),
 	.osd_ctrl(osd_ctrl),
-  ._lmb(kb_lmb),
-  ._rmb(kb_rmb),
-  ._joy2(kb_joy2),
-  .aflock(aflock),
+	._lmb(kb_lmb),
+	._rmb(kb_rmb),
+	._joy2(kb_joy2),
+	.aflock(aflock),
 	.freeze(freeze),
-	.disk_led(disk_led),
-  .mou_emu (mou_emu),
-  .hrtmon_en (memory_config[6])
+	.disk_led(fdd_led),
+	.mou_emu (mou_emu),
+	.hrtmon_en (memory_config[6])
 );
 
 //instantiate cia B
 ciab CIAB1 
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
+	.clk7_en(clk7_en),
 	.aen(sel_cia_b),
 	.rd(cpu_rd),
 	.wr(cpu_hwr|cpu_lwr),
@@ -756,7 +739,7 @@ ciab CIAB1
 	.rs(cpu_address_out[11:8]),
 	.data_in(cpu_data_out[15:8]),
 	.data_out(cia_data_out[15:8]),
-	.tick(_hsync_i),
+	.tick(_hsync),
 	.eclk(eclk[8]),
 	.irq(int6),
 	.flag(index),
@@ -770,9 +753,9 @@ ciab CIAB1
 minimig_m68k_bridge CPU1 
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
-  .clk7n_en(clk7n_en),
-  .blk(scanline[1]),
+	.clk7_en(clk7_en),
+	.clk7n_en(clk7n_en),
+	.blk(scanline[1]),
 	.c1(c1),
 	.c3(c3),
 	.cck(cck),
@@ -781,10 +764,10 @@ minimig_m68k_bridge CPU1
 	.dbr(dbr),
 	.dbs(dbs),
 	.xbs(xbs),
-  .nrdy(gayle_nrdy),
+	.nrdy(gayle_nrdy),
 	.bls(bls),
 	.cpu_speed(cpu_speed & ~int7 & ~ovr & ~usrrst),
-  .memory_config(memory_config[3:0]),
+	.memory_config(memory_config[3:0]),
 	.turbo(turbo),
 	._as(_cpu_as),
 	._lds(_cpu_lds),
@@ -800,15 +783,15 @@ minimig_m68k_bridge CPU1
 	.data(cpu_data),
 	.data_out(cpu_data_out),
 	.data_in(cpu_data_in),
-  ._cpu_reset (_cpu_reset),
-  .cpu_halt (cpuhlt),
-  .host_cs (host_cs),
-  .host_adr (host_adr[23:1]),
-  .host_we (host_we),
-  .host_bs (host_bs),
-  .host_wdat (host_wdat),
-  .host_rdat (host_rdat),
-  .host_ack (host_ack)
+	._cpu_reset (_cpu_reset),
+	.cpu_halt (cpuhlt),
+	.host_cs (host_cs),
+	.host_adr (host_adr[23:1]),
+	.host_we (host_we),
+	.host_bs (host_bs),
+	.host_wdat (host_wdat),
+	.host_rdat (host_rdat),
+	.host_ack (host_ack)
 );
 
 //instantiate RAM banks mapper
@@ -822,10 +805,10 @@ minimig_bankmapper BMAP1
 	.slow1(sel_slow[1]),
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
-  .kick1mb(sel_kick1mb),
+	.kick1mb(sel_kick1mb),
 	.cart(sel_cart),
 	.aron(aron),
-  .ecs(|chipset_config[4:3]),
+	.ecs(|chipset_config[4:3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
 );
@@ -895,7 +878,7 @@ gary GARY1
 	.cpu_rd(cpu_rd),
 	.cpu_hwr(cpu_hwr),
 	.cpu_lwr(cpu_lwr),
-  .cpu_hlt(cpuhlt),
+	.cpu_hlt(cpuhlt),
 	.ovl(ovl),
 	.dbr(dbr),
 	.dbwe(dbwe),
@@ -906,12 +889,12 @@ gary GARY1
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
-  .ecs(|chipset_config[4:3]),
-  .a1k(chipset_config[2]),
+	.ecs(|chipset_config[4:3]),
+	.a1k(chipset_config[2]),
 	.sel_chip(sel_chip),
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
-  .sel_kick1mb(sel_kick1mb),
+	.sel_kick1mb(sel_kick1mb),
 	.sel_cia(sel_cia),
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),
@@ -923,7 +906,7 @@ gary GARY1
 gayle GAYLE1
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
+	.clk7_en(clk7_en),
 	.reset(reset),
 	.address_in(cpu_address_out),
 	.data_in(cpu_data_out),
@@ -934,7 +917,7 @@ gayle GAYLE1
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.irq(gayle_irq),
-  .nrdy(gayle_nrdy),
+	.nrdy(gayle_nrdy),
 	.hdd_ena(ide_config[2:1]),
 
 	.hdd_cmd_req(hdd_cmd_req),
@@ -946,8 +929,8 @@ gayle GAYLE1
 	.hdd_status_wr(hdd_status_wr),
 	.hdd_data_wr(hdd_data_wr),
 	.hdd_data_rd(hdd_data_rd),
-  .hd_fwr(hd_fwr),
-  .hd_frd(hd_frd)
+	.hd_fwr(hd_fwr),
+	.hd_frd(hd_frd)
 );
 	
 
@@ -974,13 +957,6 @@ assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]
 							 | denise_data_out[15:0]
 							 | user_data_out[15:0];
-
-//--------------------------------------------------------------------------------------
-
-//spi multiplexer
-//assign sdo = _scs[1] ? paula_sdo : user_sdo;
-assign sdo = paula_sdo | user_sdo;
-//assign sdo = (!_scs[0] || !_scs[1]) ? (paula_sdo | user_sdo) : 1'bz;
 
 //--------------------------------------------------------------------------------------
 

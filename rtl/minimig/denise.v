@@ -47,6 +47,7 @@ module denise (
   input  wire           a1k,            // control EHB chipset feature
   input  wire           ecs,            // enables ECS chipset features
   input  wire           aga,            // enables AGA features
+  output wire           ce_pix,
   output wire           hires           // hires
 );
 
@@ -120,14 +121,14 @@ reg  [16-1:0] bplcon0;    // bplcon0 register
 wire [ 4-1:0] bpu;        // bit planes used
 wire          ham;        // hold and modify mode
 wire          dpf;        // double playfield mode
-wire          color;      // color burst output signal
-wire          gaud;       // genlock audio enable
-wire          uhres;      // ultra-hires enables the UHRES pointers; needs bits in DMACON also
+//wire          color;      // color burst output signal
+//wire          gaud;       // genlock audio enable
+//wire          uhres;      // ultra-hires enables the UHRES pointers; needs bits in DMACON also
 wire          shres;      // super-hires mode
-wire          bypass;     // bypass color table; 8-bit wide data appears on r[7:0]
-wire          lpen;       // light pen enable
-wire          lace;       // interlace enable
-wire          ersy;       // external resync
+//wire          bypass;     // bypass color table; 8-bit wide data appears on r[7:0]
+//wire          lpen;       // light pen enable
+//wire          lace;       // interlace enable
+//wire          ersy;       // external resync
 wire          ecsena;     // disables BRDRBLNK,BRDNTRAN,ZDCLKEN,BRDSPRT, and EXTBLKEN bits in BPLCON3
 
 always @ (posedge clk) begin
@@ -143,14 +144,14 @@ assign hires    = bplcon0[15];
 assign bpu      = {bplcon0[4] & aga, bplcon0[14:12]};
 assign ham      = bplcon0[11];
 assign dpf      = bplcon0[10];
-assign color    = bplcon0[9];
-assign gaud     = bplcon0[8];
-assign uhres    = bplcon0[7];
+//assign color    = bplcon0[9];
+//assign gaud     = bplcon0[8];
+//assign uhres    = bplcon0[7];
 assign shres    = bplcon0[6];
-assign bypass   = bplcon0[5];
-assign lpen     = bplcon0[3];
-assign lace     = bplcon0[2];
-assign ersy     = bplcon0[1];
+//assign bypass   = bplcon0[5];
+//assign lpen     = bplcon0[3];
+//assign lace     = bplcon0[2];
+//assign ersy     = bplcon0[1];
 assign ecsena   = bplcon0[0];
 
 // bpu is updated when bpl1dat register is written
@@ -186,10 +187,10 @@ wire [ 3-1:0] pf2of;      // bitplane color table offset when playfield 2 has pr
 wire          loct;       // 12-bit color palette select
 wire [ 2-1:0] spres;      // sprite resolution select
 wire          brdrblnk;   // border blank enable; disabled when ECSENA is low
-wire          brdntran;   // border area is non-transparent; disabled when ECSENA is low
-wire          zdclken;    // zd pin ??
+//wire          brdntran;   // border area is non-transparent; disabled when ECSENA is low
+//wire          zdclken;    // zd pin ??
 wire          brdsprt;    // enable srpites outside the display window; disabled when ECSENA is low
-wire          extblken;   // causes blank output to be programmable; disabled when ECSENA is low
+//wire          extblken;   // causes blank output to be programmable; disabled when ECSENA is low
 
 always @(posedge clk) begin
   if (clk7_en) begin
@@ -205,10 +206,10 @@ assign pf2of    = bplcon3[12:10];
 assign loct     = bplcon3[9] & aga;
 assign spres    = bplcon3[7:6] & {2{aga}};
 assign brdrblnk = bplcon3[5] & ecsena;
-assign brdntran = bplcon3[4] & ecsena;
-assign zdclken  = bplcon3[2] & ecsena;
+//assign brdntran = bplcon3[4] & ecsena;
+//assign zdclken  = bplcon3[2] & ecsena;
 assign brdsprt  = bplcon3[1] & ecsena;
-assign extblken = bplcon3[0] & ecsena;
+//assign extblken = bplcon3[0] & ecsena;
 
 // BPLCON4 register
 reg  [16-1:0] bplcon4;    // bplcon3 register
@@ -310,6 +311,7 @@ denise_bitplanes bplm0
   .hires(hires),
   .shres(shres & ecs),
   .hpos(hpos),
+  .ce_pix(ce_pix),
   .bpldata(bpldata_out)
 );
 

@@ -37,6 +37,7 @@ module denise_bitplanes
   input   hires,             // high resolution mode select
   input   shres,             // super high resolution mode select
   input  [8:0] hpos,        // horizontal position (70ns resolution)
+  output         ce_pix,
   output   [8:1] bpldata      // bitplane data out
 );
 
@@ -244,6 +245,7 @@ denise_bitplane_shifter bplshft1
   .fmode(fmode[1:0]),
   .data_in(bpl1dat),
   .scroll(pf1h_del),
+  .ce_pix(ce_pix),
   .out(bpldata[1])
 );
 

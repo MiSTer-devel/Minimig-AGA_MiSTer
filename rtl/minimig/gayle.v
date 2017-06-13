@@ -155,8 +155,8 @@ assign hd_frd = fifo_rd;
 assign status = {bsy,drdy,2'b00,drq,2'b00,err};
 
 // status debug
-reg [7:0] status_dbg /* synthesis syn_noprune */;
-always @ (posedge clk) status_dbg <= #1 status;
+//reg [7:0] status_dbg /* synthesis syn_noprune */;
+//always @ (posedge clk) status_dbg <= #1 status;
 
 // HDD status register bits
 assign bsy = busy & ~drq;

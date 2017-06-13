@@ -36,7 +36,7 @@ reg    [2:0] audio_state;    //audio current state
 reg    [2:0] audio_next;     //audio next state
 
 wire  datwrite;        //data register is written
-reg    volcntrld;        //not used
+//reg    volcntrld;        //not used
 
 reg    pbufld1;        //load output sample from sample buffer
 
@@ -148,7 +148,7 @@ always @(posedge clk) begin
       if(audlen==1 || audlen==0)
          silence<=1'b1;
     end else if (lencount && cck)//length counter count down
-      lencnt[15:0] <= (lencnt[15:0] - 1);
+      lencnt[15:0] <= (lencnt[15:0] - 1'd1);
     // Silence fix
     dmaena_d<=dmaena;
     if(dmaena_d==1'b1 && dmaena==1'b0) begin
@@ -253,7 +253,7 @@ always @(*) begin
         dmasen = 1'b1;
         lencntrld = 1'b1;
         pbufld1 = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
       else if (AUDxDAT && !AUDxON && !AUDxIP)  //CPU driven audio playback
       begin
@@ -263,7 +263,7 @@ always @(*) begin
         dmasen = 1'b0;
         lencntrld = 1'b0;
         pbufld1 = 1'b1;
-        volcntrld = 1'b1;
+        //volcntrld = 1'b1;
       end
       else
       begin
@@ -273,7 +273,7 @@ always @(*) begin
         dmasen = 1'b0;
         lencntrld = 1'b0;
         pbufld1 = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
     end
 
@@ -294,7 +294,7 @@ always @(*) begin
         lencount = ~lenfin;
         pbufld1 = 1'b0;  //first data received, discard it since first data access is used to reload pointer
         percntrld = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
       else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
       begin
@@ -304,7 +304,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
       else
       begin
@@ -314,7 +314,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
     end
 
@@ -335,7 +335,7 @@ always @(*) begin
         lencount = ~lenfin;
         pbufld1 = 1'b1;  //new data has been just received so put it in the output buffer
         percntrld = 1'b1;
-        volcntrld = 1'b1;
+        //volcntrld = 1'b1;
       end
       else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
       begin
@@ -345,7 +345,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
       else
       begin
@@ -355,7 +355,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        volcntrld = 1'b0;
+        //volcntrld = 1'b0;
       end
     end
 
@@ -370,7 +370,7 @@ always @(*) begin
       lencntrld = lenfin & AUDxON & AUDxDAT;
       pbufld1 = 1'b0;
       penhi = 1'b1;
-      volcntrld = 1'b0;
+      //volcntrld = 1'b0;
 
       if (perfin) //if period counter expired output other sample from buffer
       begin
@@ -393,7 +393,7 @@ always @(*) begin
       lencount = ~lenfin & AUDxON & AUDxDAT;
       lencntrld = lenfin & AUDxON & AUDxDAT;
       penhi = 1'b0;
-      volcntrld = 1'b0;
+      //volcntrld = 1'b0;
 
       if (perfin && (AUDxON || !AUDxIP)) //period counter expired and audio DMA active
       begin
@@ -441,7 +441,7 @@ always @(*) begin
       penhi = 1'b0;
       percount = 1'b0;
       percntrld = 1'b0;
-      volcntrld = 1'b0;
+      //volcntrld = 1'b0;
     end
 
   endcase

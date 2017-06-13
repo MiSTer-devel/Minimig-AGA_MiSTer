@@ -41,6 +41,7 @@ module agnus_beamcounter
 	output	reg [10:0] vpos,		// vertical beam counter
 	output	reg _hsync,				// horizontal sync
 	output	reg _vsync,				// vertical sync
+	output       field1,          // 
 	output	_csync,					// composite sync
 	output	reg blank,				// video blanking
 	output	vbl,					// vertical blanking
@@ -138,20 +139,20 @@ always @ (posedge clk) begin
 end
 
 wire harddis      = beamcon0_reg[14];
-wire lpendis      = beamcon0_reg[13];
+//wire lpendis      = beamcon0_reg[13];
 wire varvben      = beamcon0_reg[12];
 wire loldis       = beamcon0_reg[11];
-wire cscben       = beamcon0_reg[10];
+//wire cscben       = beamcon0_reg[10];
 wire varvsyen     = beamcon0_reg[ 9];
 wire varhsyen     = beamcon0_reg[ 8];
 wire varbeamen    = beamcon0_reg[ 7];
-wire displaydual  = beamcon0_reg[ 6];
-wire displaypal   = beamcon0_reg[ 5];
-wire varcsyen     = beamcon0_reg[ 4];
-wire blanken      = beamcon0_reg[ 3];
-wire csynctrue    = beamcon0_reg[ 2];
-wire vsynctrue    = beamcon0_reg[ 1];
-wire hsynctrue    = beamcon0_reg[ 0];
+//wire displaydual  = beamcon0_reg[ 6];
+//wire displaypal   = beamcon0_reg[ 5];
+//wire varcsyen     = beamcon0_reg[ 4];
+//wire blanken      = beamcon0_reg[ 3];
+//wire csynctrue    = beamcon0_reg[ 2];
+//wire vsynctrue    = beamcon0_reg[ 1];
+//wire hsynctrue    = beamcon0_reg[ 0];
 
 
 
@@ -192,22 +193,22 @@ reg [ 8:0] hbstop_reg;
 reg [10:0] vtotal_reg;
 reg [10:0] vsstrt_reg;
 reg [10:0] vsstop_reg;
-reg [10:0] vbstrt_reg;
+//reg [10:0] vbstrt_reg;
 reg [10:0] vbstop_reg;
 
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (reset) begin
       htotal_reg  <= #1 HTOTAL_VAL << 1;
-      hsstrt_reg  <= #1 HSSTRT_VAL;
-      hsstop_reg  <= #1 HSSTOP_VAL;
-      hcenter_reg <= #1 HCENTER_VAL;
-      hbstrt_reg  <= #1 HBSTRT_VAL;
-      hbstop_reg  <= #1 HBSTOP_VAL;
+      hsstrt_reg  <= #1 HSSTRT_VAL[8:0];
+      hsstop_reg  <= #1 HSSTOP_VAL[8:0];
+      hcenter_reg <= #1 HCENTER_VAL[8:0];
+      hbstrt_reg  <= #1 HBSTRT_VAL[8:0];
+      hbstop_reg  <= #1 HBSTOP_VAL[8:0];
       vtotal_reg  <= #1 pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
-      vsstrt_reg  <= #1 VSSTRT_VAL;
-      vsstop_reg  <= #1 VSSTOP_VAL;
-      vbstrt_reg  <= #1 VBSTRT_VAL;
+      vsstrt_reg  <= #1 VSSTRT_VAL[10:0];
+      vsstop_reg  <= #1 VSSTOP_VAL[10:0];
+      //vbstrt_reg  <= #1 VBSTRT_VAL[10:0];
       vbstop_reg  <= #1 pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL;
     end else begin
       case (reg_address_in[8:1])
@@ -220,7 +221,7 @@ always @ (posedge clk) begin
         VTOTAL [8:1] : vtotal_reg  <= #1 {data_in[10:0]};
         VSSTRT [8:1] : vsstrt_reg  <= #1 {data_in[10:0]};
         VSSTOP [8:1] : vsstop_reg  <= #1 {data_in[10:0]};
-        VBSTRT [8:1] : vbstrt_reg  <= #1 {data_in[10:0]};
+        //VBSTRT [8:1] : vbstrt_reg  <= #1 {data_in[10:0]};
         VBSTOP [8:1] : vbstop_reg  <= #1 {data_in[10:0]};
       endcase
     end
@@ -237,19 +238,19 @@ wire [ 8:0] hbstop;
 wire [10:0] vtotal;
 wire [10:0] vsstrt;
 wire [10:0] vsstop;
-wire [10:0] vbstrt;
+//wire [10:0] vbstrt;
 wire [10:0] vbstop;
 
 assign htotal  =             varbeamen ? htotal_reg  : HTOTAL_VAL << 1;
-assign hsstrt  = varhsyen && varbeamen ? hsstrt_reg  : HSSTRT_VAL;
-assign hsstop  = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL;
-assign hcenter = varhsyen && varbeamen ? hcenter_reg : HCENTER_VAL;
-assign hbstrt  =             varbeamen ? hbstrt_reg  : HBSTRT_VAL;
-assign hbstop  =             varbeamen ? hbstop_reg  : HBSTOP_VAL;
+assign hsstrt  = varhsyen && varbeamen ? hsstrt_reg  : HSSTRT_VAL[8:0];
+assign hsstop  = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL[8:0];
+assign hcenter = varhsyen && varbeamen ? hcenter_reg : HCENTER_VAL[8:0];
+assign hbstrt  =             varbeamen ? hbstrt_reg  : HBSTRT_VAL[8:0];
+assign hbstop  =             varbeamen ? hbstop_reg  : HBSTOP_VAL[8:0];
 assign vtotal  =             varbeamen ? vtotal_reg  : pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
-assign vsstrt  = varvsyen && varbeamen ? vsstrt_reg  : VSSTRT_VAL;
-assign vsstop  = varvsyen && varbeamen ? vsstop_reg  : VSSTOP_VAL;
-assign vbstrt  = varvben  && varbeamen ? vbstrt_reg  : VBSTRT_VAL;
+assign vsstrt  = varvsyen && varbeamen ? vsstrt_reg  : VSSTRT_VAL[10:0];
+assign vsstop  = varvsyen && varbeamen ? vsstop_reg  : VSSTOP_VAL[10:0];
+//assign vbstrt  = varvben  && varbeamen ? vbstrt_reg  : VBSTRT_VAL[10:0];
 assign vbstop  = varvben  && varbeamen ? vbstop_reg  : pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL;
 
 assign htotal_out    = htotal;
@@ -357,6 +358,8 @@ always @(posedge clk)
 //in interlaced mode every second frame is vtotal+1 long
 assign last_line = long_frame ? extra_line : vpos_equ_vtotal;
 
+assign field1 = ~long_frame;
+
 //generate end of frame signal
 assign end_of_frame = vpos_inc & last_line;
 
@@ -411,20 +414,22 @@ assign _csync = _hsync & _vsync | vser; //composite sync with serration pulses
 //                                                                                      //
 //--------------------------------------------------------------------------------------//
 
-
+/*
 //vertical blanking
 reg vbl_reg;
 always @ (posedge clk) begin
   if (reset)
-    vbl_reg <= #1 1'b0;
+    vbl_reg <= 1'b0;
   else if (vpos == vbstrt)
-    vbl_reg <= #1 1'b1;
+    vbl_reg <= 1'b1;
   else if (vpos == vbstop)
-    vbl_reg <= #1 1'b0;
+    vbl_reg <= 1'b0;
 end
 
+assign vbl = vbl_reg; // TODO
+*/
+
 assign vbl = (vpos <= vbstop) ? 1'b1 : 1'b0;
-//assign vbl = vbl_reg; // TODO
 
 //vertical blanking end (last line)
 assign vblend = vpos==vbstop ? 1'b1 : 1'b0;
@@ -435,8 +440,7 @@ always @(posedge clk)
   	if (hpos==hbstrt)//start of blanking (active line=51.88us)
   		blank <= 1'b1;
   	else if (hpos==hbstop)//end of blanking (back porch=5.78us)
-// TODO 		blank <= vbl_reg;
-    blank <= vbl;
+		blank <= vbl;
   end
 
 

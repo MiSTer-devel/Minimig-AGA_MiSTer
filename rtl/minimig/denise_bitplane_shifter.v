@@ -36,6 +36,7 @@ module denise_bitplane_shifter
   input  wire [  2-1:0] fmode,    // AGA fetch mode
   input  wire [ 64-1:0] data_in,  // parallel load data input
   input  wire [  8-1:0] scroll,   // scrolling value
+  output wire           ce_pix,
   output wire           out       // shift register output
 );
 
@@ -61,6 +62,7 @@ always @ (*) begin
   endcase
 end
 
+assign ce_pix = shift;
 
 // main shifter and scroller control
 always @ (*) begin

@@ -68,7 +68,7 @@ doe			_________/                 \_____/                 \_____/            (dat
 */
 
 wire	enable;				// indicates memory access cycle
-reg		doe;				// data output enable (activates ram data bus buffers during write cycle)
+//reg		doe;				// data output enable (activates ram data bus buffers during write cycle)
 
 // generate enable signal if any of the banks is selected
 //assign enable = |bank[7:0];
@@ -110,13 +110,15 @@ assign _ble = !lwr | !enable;
 //		_ble <= 1'b0;	
 //	else if (c1 && c3 && enable && lwr) // assert lower byte enable in Q2 during write cycle
 //		_ble <= 1'b0;
-			
+
+/*
 //generate data buffer output enable
 always @(posedge clk)
 	if (!c1 && !c3)  // deassert output enable in Q0
 		doe <= 1'b0;
 	else if (c1 && !c3 && enable && !rd) // assert output enable in Q1 during write cycle
 		doe <= 1'b1;	
+*/
 
 // generate sram chip selects (every sram chip is 512K x 16bits)
 //assign		_ce[3:0] = {~|bank[7:6],~|bank[5:4],~|bank[3:2],~|bank[1:0]};

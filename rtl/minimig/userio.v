@@ -57,10 +57,11 @@ module userio (
   input  wire [  8-1:0] kbd_mouse_data,
   input  wire [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
   output reg            keyboard_disabled,  // disables Amiga keyboard while OSD is active
-  input  wire           _scs,               // SPI enable
-  input  wire           sdi,                // SPI data in
-  output wire           sdo,                // SPI data out
-  input  wire           sck,                // SPI clock
+  input  wire           IO_ENA,
+  input  wire           IO_STROBE,
+  output wire           IO_WAIT,
+  input  wire    [15:0] IO_DIN,
+  output wire    [15:0] IO_DOUT,
   output wire           osd_blank,          // osd overlay, normal video blank output
   output wire           osd_pixel,          // osd video pixel
   output wire [  2-1:0] lr_filter,
@@ -70,6 +71,8 @@ module userio (
   output wire [  4-1:0] floppy_config,
   output wire [  2-1:0] scanline,
   output wire [  2-1:0] dither,
+  output wire [  2-1:0] ar,
+  output wire [  2-1:0] blver,
   output wire [  3-1:0] ide_config,
   output wire [  4-1:0] cpu_config,
   output                usrrst,             // user reset from osd module
@@ -114,7 +117,7 @@ reg   [7:0] _djoy2;       // synchronized joystick 2 signals
 wire  [5:0] _sjoy2;       // synchronized joystick 2 signals
 reg   [15:0] potreg;      // POTGO write
 wire  [15:0] mouse0dat;      //mouse counters
-wire  [7:0]  mouse0scr;   // mouse scroller
+wire  [7:0]  mouse0scr = 0;   // mouse scroller
 reg   [15:0] dmouse0dat;      // docking mouse counters
 reg   [15:0] dmouse1dat;      // docking mouse counters
 wire  _mleft;            //left mouse button
@@ -321,9 +324,9 @@ always @ (posedge clk) begin
     if (test_load)
       dmouse0dat[7:0] <= #1 8'h00;
     else if ((!_djoy1[0] && _sjoy1[0] && _sjoy1[2]) || (_djoy1[0] && !_sjoy1[0] && !_sjoy1[2]) || (!_djoy1[2] && _sjoy1[2] && !_sjoy1[0]) || (_djoy1[2] && !_sjoy1[2] && _sjoy1[0]))
-      dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1;
+      dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;
     else if ((!_djoy1[0] && _sjoy1[0] && !_sjoy1[2]) || (_djoy1[0] && !_sjoy1[0] && _sjoy1[2]) || (!_djoy1[2] && _sjoy1[2] && _sjoy1[0]) || (_djoy1[2] && !_sjoy1[2] && !_sjoy1[0]))
-      dmouse0dat[7:0] <= #1 dmouse0dat[7:0] - 1;
+      dmouse0dat[7:0] <= #1 dmouse0dat[7:0] - 1'd1;
     else
       dmouse0dat[1:0] <= #1 {!_djoy1[0], _djoy1[0] ^ _djoy1[2]};
   end
@@ -334,9 +337,9 @@ always @ (posedge clk) begin
     if (test_load)
       dmouse0dat[15:8] <= #1 8'h00;
     else if ((!_djoy1[1] && _sjoy1[1] && _sjoy1[3]) || (_djoy1[1] && !_sjoy1[1] && !_sjoy1[3]) || (!_djoy1[3] && _sjoy1[3] && !_sjoy1[1]) || (_djoy1[3] && !_sjoy1[3] && _sjoy1[1]))
-      dmouse0dat[15:8] <= #1 dmouse0dat[15:8] + 1;
+      dmouse0dat[15:8] <= #1 dmouse0dat[15:8] + 1'd1;
     else if ((!_djoy1[1] && _sjoy1[1] && !_sjoy1[3]) || (_djoy1[1] && !_sjoy1[1] && _sjoy1[3]) || (!_djoy1[3] && _sjoy1[3] && _sjoy1[1]) || (_djoy1[3] && !_sjoy1[3] && !_sjoy1[1]))
-      dmouse0dat[15:8] <= #1 dmouse0dat[15:8] - 1;
+      dmouse0dat[15:8] <= #1 dmouse0dat[15:8] - 1'd1;
     else
       dmouse0dat[9:8] <= #1 {!_djoy1[1], _djoy1[1] ^ _djoy1[3]};
   end
@@ -348,9 +351,9 @@ always @ (posedge clk) begin
     if (test_load)
       dmouse1dat[7:2] <= #1 test_data[7:2];
     else if ((!_djoy2[0] && _tjoy2[0] && _tjoy2[2]) || (_djoy2[0] && !_tjoy2[0] && !_tjoy2[2]) || (!_djoy2[2] && _tjoy2[2] && !_tjoy2[0]) || (_djoy2[2] && !_tjoy2[2] && _tjoy2[0]))
-      dmouse1dat[7:0] <= #1 dmouse1dat[7:0] + 1;
+      dmouse1dat[7:0] <= #1 dmouse1dat[7:0] + 1'd1;
     else if ((!_djoy2[0] && _tjoy2[0] && !_tjoy2[2]) || (_djoy2[0] && !_tjoy2[0] && _tjoy2[2]) || (!_djoy2[2] && _tjoy2[2] && _tjoy2[0]) || (_djoy2[2] && !_tjoy2[2] && !_tjoy2[0]))
-      dmouse1dat[7:0] <= #1 dmouse1dat[7:0] - 1;
+      dmouse1dat[7:0] <= #1 dmouse1dat[7:0] - 1'd1;
     else
       dmouse1dat[1:0] <= #1 {!_djoy2[0], _djoy2[0] ^ _djoy2[2]};
   end
@@ -361,9 +364,9 @@ always @ (posedge clk) begin
     if (test_load)
       dmouse1dat[15:10] <= #1 test_data[15:10];
     else if ((!_djoy2[1] && _tjoy2[1] && _tjoy2[3]) || (_djoy2[1] && !_tjoy2[1] && !_tjoy2[3]) || (!_djoy2[3] && _tjoy2[3] && !_tjoy2[1]) || (_djoy2[3] && !_tjoy2[3] && _tjoy2[1]))
-      dmouse1dat[15:8] <= #1 dmouse1dat[15:8] + 1;
+      dmouse1dat[15:8] <= #1 dmouse1dat[15:8] + 1'd1;
     else if ((!_djoy2[1] && _tjoy2[1] && !_tjoy2[3]) || (_djoy2[1] && !_tjoy2[1] && _tjoy2[3]) || (!_djoy2[3] && _tjoy2[3] && _tjoy2[1]) || (_djoy2[3] && !_tjoy2[3] && !_tjoy2[1]))
-      dmouse1dat[15:8] <= #1 dmouse1dat[15:8] - 1;
+      dmouse1dat[15:8] <= #1 dmouse1dat[15:8] - 1'd1;
     else
       dmouse1dat[9:8] <= #1 {!_djoy2[1], _djoy2[1] ^ _djoy2[3]};
   end
@@ -497,10 +500,11 @@ userio_osd osd1
   .sof              (sof),
   .varbeamen        (varbeamen),
   .osd_ctrl         (t_osd_ctrl),
-  ._scs             (_scs),
-  .sdi              (sdi),
-  .sdo              (sdo),
-  .sck              (sck),
+  .IO_ENA           (IO_ENA),
+  .IO_STROBE        (IO_STROBE),
+  .IO_WAIT          (IO_WAIT),
+  .IO_DIN           (IO_DIN),
+  .IO_DOUT          (IO_DOUT),
   .osd_blank        (osd_blank),
   .osd_pixel        (osd_pixel),
   .osd_enable       (osd_enable),
@@ -512,6 +516,8 @@ userio_osd osd1
   .floppy_config    (floppy_config),
   .scanline         (scanline),
   .dither           (dither),
+  .ar               (ar),
+  .blver            (blver),
   .ide_config       (ide_config),
   .cpu_config       (cpu_config),
   .autofire_config  (autofire_config),

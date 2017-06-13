@@ -72,7 +72,9 @@ module agnus
   output  _hsync,            // horizontal sync
   output  _vsync,            // vertical sync
   output  _csync,            // composite sync
+  output  field1,
   output  blank,            // video blanking
+  output  hde,              // video horizontal data enable
   output  sol,            // start of video line (active during last pixel of previous line)
   output  sof,            // start of video frame (active during last pixel of previous frame)
   output  vbl_int,          // vertical blanking interrupt request for Paula
@@ -364,6 +366,7 @@ agnus_bitplanedma bpd1
   .dmaena(bplen),
   .vpos(vpos),
   .hpos(hpos),
+  .hde(hde),
   .dma(dma_bpl),
   .reg_address_in(reg_address),
   .reg_address_out(reg_address_bpl),
@@ -469,6 +472,7 @@ agnus_beamcounter  bc1
   ._hsync(_hsync),
   ._vsync(_vsync),
   ._csync(_csync),
+  .field1(field1),
   .blank(blank),
   .vbl(vbl),
   .vblend(vblend),

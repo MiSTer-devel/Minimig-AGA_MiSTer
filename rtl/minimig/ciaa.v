@@ -169,14 +169,17 @@ assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | 
 // instantiate keyboard module
 //----------------------------------------------------------------------------------
 wire  keystrobe;
-wire  keyack;
 wire  [7:0] keydat;
 reg    [7:0] sdr_latch;
 
 
 `ifdef MINIMIG_PS2_KEYBOARD
 
+wire keyack;
 wire freeze_out;
+
+// keyboard acknowledge
+assign keyack = (!wr && sdr) ? 1'b1 : 1'b0;
 
 ciaa_ps2keyboard  kbd1
 (
@@ -309,18 +312,14 @@ assign keystrobe = keystrobe_reg && ((kbd_mouse_type == 2) || (kbd_mouse_type ==
 assign osd_ctrl = osd_ctrl_reg;
 
 // generate a keystrobe which is valid exactly one clk cycle
-reg kbd_mouse_strobeD, kbd_mouse_strobeD2;
-always @(posedge clk)
-  if (clk7_en) begin
-    kbd_mouse_strobeD <= kbd_mouse_strobe;
-  end
-
 always @(posedge clk) begin
-  if (clk7n_en) begin
-    kbd_mouse_strobeD2 <= kbd_mouse_strobeD;
-    keystrobe_reg <= kbd_mouse_strobeD && !kbd_mouse_strobeD2;
-  end
+	reg kbd_mouse_strobeD;
+	if (clk7n_en) begin
+		kbd_mouse_strobeD <= kbd_mouse_strobe;
+		keystrobe_reg <= kbd_mouse_strobe && !kbd_mouse_strobeD;
+	end
 end
+
 
 // sdr register
 // !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
@@ -351,8 +350,6 @@ end
 
 // sdr register read
 assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;
-// keyboard acknowledge
-assign keyack = (!wr && sdr) ? 1'b1 : 1'b0;
 
 // serial port transmision in progress
 always @(posedge clk)

@@ -96,10 +96,10 @@ always @ (posedge clk or posedge rst) begin
   // read & no write
   else if (clk7_en) begin
     if (fifo_rd_en && !fifo_wr_en && (fifo_cnt != 'd0))
-      fifo_cnt <= #1 fifo_cnt - 'd1;
+      fifo_cnt <= #1 fifo_cnt - 1'd1;
     // write & no read
     else if (fifo_wr_en && !fifo_rd_en && (fifo_cnt != FD))
-      fifo_cnt <= #1 fifo_cnt + 'd1;
+      fifo_cnt <= #1 fifo_cnt + 1'd1;
   end
 end
 

@@ -21,9 +21,18 @@
 bin/
 rel/
 fpga/*/out/
+fpga/*/output_files/
+fpga/*/vip/
 fpga/*/db/
 fpga/*/incremental_db/
 
 # build script shouldn't be in repo
 build.sh
 
+build_id.v
+c5_pin_model_dump.txt
+*.sopcinfo
+PLLJ_PLLSPE_INFO.txt
+*.qws
+.qsys_edit
+vip
