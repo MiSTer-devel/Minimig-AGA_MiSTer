@@ -36,3 +36,11 @@ PLLJ_PLLSPE_INFO.txt
 *.qws
 .qsys_edit
 vip
+*_sim
+*.bsf
+*.cmp
+*.sip
+*.spd
+*.xml
+*.f
+*.ppf
