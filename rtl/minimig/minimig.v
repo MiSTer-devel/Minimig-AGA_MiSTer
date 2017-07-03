@@ -191,8 +191,8 @@ module minimig
 	output        rts,				//rs232 request to send
 
 	//I/O
-	input	  [7:0] _joy1,				//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-	input	  [7:0] _joy2,				//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+	input	 [15:0] _joy1,				//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+	input	 [15:0] _joy2,				//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
 	input         mouse_btn1, 		// mouse button 1
 	input         mouse_btn2, 		// mouse button 2
 	input   [2:0] mouse_btn, 		// mouse buttons

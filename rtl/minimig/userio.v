@@ -44,8 +44,8 @@ module userio (
   output wire           _fire1,             // joystick 1 fire output (to CIA)
   input  wire           _fire0_dat,
   input  wire           _fire1_dat,
-  input  wire [  8-1:0] _joy1,              // joystick 1 in (default mouse port)
-  input  wire [  8-1:0] _joy2,              // joystick 2 in (default joystick port)
+  input  wire [   15:0] _joy1,              // joystick 1 in (default mouse port)
+  input  wire [   15:0] _joy2,              // joystick 2 in (default joystick port)
   input  wire           aflock,             // auto fire lock
   input  wire [  3-1:0] mouse_btn,
   input  wire           _lmb,
@@ -109,11 +109,11 @@ parameter KEY_PGDOWN  = 8'h6d;
 
 
 // local signals
-reg   [7:0] _sjoy1;       // synchronized joystick 1 signals
-reg   [7:0] _djoy1;       // synchronized joystick 1 signals
+reg  [15:0] _sjoy1;       // synchronized joystick 1 signals
+reg  [15:0] _djoy1;       // synchronized joystick 1 signals
 reg   [5:0] _xjoy2;       // synchronized joystick 2 signals
-reg   [7:0] _tjoy2;       // synchronized joystick 2 signals
-reg   [7:0] _djoy2;       // synchronized joystick 2 signals
+reg  [15:0] _tjoy2;       // synchronized joystick 2 signals
+reg  [15:0] _djoy2;       // synchronized joystick 2 signals
 wire  [5:0] _sjoy2;       // synchronized joystick 2 signals
 reg   [15:0] potreg;      // POTGO write
 wire  [15:0] mouse0dat;      //mouse counters
@@ -194,7 +194,7 @@ always @ (posedge clk) begin
     if (reset)
       cd32pad1_reg <= #1 8'hff;
     else if (cd32pad1_reg_load)
-      cd32pad1_reg <= #1 {_djoy1[5], _djoy1[4], _djoy1[6], _djoy1[7], 3'b111, 1'b1};
+      cd32pad1_reg <= #1 {_djoy1[5], _djoy1[4], _djoy1[6], _djoy1[7], _djoy1[8], _djoy1[9], _djoy1[10], 1'b1};
     else if (cd32pad1_reg_shift)
       cd32pad1_reg <= #1 {cd32pad1_reg[6:0], 1'b0};
   end
@@ -218,7 +218,7 @@ always @ (posedge clk) begin
     if (reset)
       cd32pad2_reg <= #1 8'hff;
     else if (cd32pad2_reg_load)
-      cd32pad2_reg <= #1 {_djoy2[5], _djoy2[4], _djoy2[6], _djoy2[7], 3'b111, 1'b1};
+      cd32pad2_reg <= #1 {_djoy2[5], _djoy2[4], _djoy2[6], _djoy2[7], _djoy2[8], _djoy2[9], _djoy2[10], 1'b1};
     else if (cd32pad2_reg_shift)
       cd32pad2_reg <= #1 {cd32pad2_reg[6:0], 1'b0};
   end
@@ -259,12 +259,12 @@ always @ (*) keyboard_disabled = key_disable;
 // input synchronization of external signals
 always @ (posedge clk) begin
   if (clk7_en) begin
-    _sjoy1[7:0] <= #1 _joy1[7:0];
-    _djoy1[7:0] <= #1 _sjoy1[7:0];
-    _tjoy2[7:0] <= #1 _joy2[7:0];
-    _djoy2[7:0] <= #1 _tjoy2[7:0];
+    _sjoy1 <= _joy1;
+    _djoy1 <= _sjoy1;
+    _tjoy2 <= _joy2;
+    _djoy2 <= _tjoy2;
     if (sof)
-      _xjoy2[5:0] <= #1 _joy2[5:0];
+      _xjoy2[5:0] <= _joy2[5:0];
   end
 end
 

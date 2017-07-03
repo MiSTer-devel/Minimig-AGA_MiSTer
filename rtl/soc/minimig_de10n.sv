@@ -170,8 +170,8 @@ wire           hs;
 wire     [1:0] ar;
 
 // mist
-wire [  8-1:0] joya;
-wire [  8-1:0] joyb;
+wire [   15:0] joya;
+wire [   15:0] joyb;
 wire [  8-1:0] kbd_mouse_data;
 wire           kbd_mouse_strobe;
 wire           kms_level;

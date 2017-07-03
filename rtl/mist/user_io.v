@@ -7,8 +7,8 @@ module user_io
 	input [15:0] IO_DIN,
 	output reg   IO_WAIT,
 
-	output [7:0] JOY0,
-	output [7:0] JOY1,
+	output [15:0] JOY0,
+	output [15:0] JOY1,
 
 	output [2:0] MOUSE_BUTTONS,
 	output       KBD_MOUSE_STROBE,
@@ -20,8 +20,8 @@ module user_io
 	output [3:0] CONF
 );
 
-reg [7:0] joystick0;
-reg [7:0] joystick1;
+reg [15:0] joystick0;
+reg [15:0] joystick1;
 reg [7:0] but_sw;
 
 reg       kbd_mouse_strobe;
@@ -74,8 +74,8 @@ always@(posedge clk) begin
 		// first payload byte
 		if(cnt == 1) begin
 			if(cmd == 1) but_sw <= IO_DIN[7:0];
-			if(cmd == 2) joystick0 <= IO_DIN[7:0]; 
-			if(cmd == 3) joystick1 <= IO_DIN[7:0]; 
+			if(cmd == 2) joystick0 <= IO_DIN; 
+			if(cmd == 3) joystick1 <= IO_DIN; 
 
 			// mouse, keyboard or OSD
 			if((cmd == 4)||(cmd == 5)||(cmd == 6)) begin
