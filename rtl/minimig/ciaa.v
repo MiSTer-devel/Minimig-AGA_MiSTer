@@ -105,7 +105,6 @@ module ciaa
   output  [7:0] osd_ctrl,    // osd control
   output  _lmb,
   output  _rmb,
-  output  [5:0] _joy2,
   output  aflock,       // auto fire lock
   output  freeze,        // Action Replay freeze key
   input  disk_led,      // floppy disk activity LED
@@ -198,7 +197,7 @@ ciaa_ps2keyboard  kbd1
   .osd_ctrl(osd_ctrl),
   ._lmb(_lmb),
   ._rmb(_rmb),
-  ._joy2(_joy2),
+  ._joy2(),
   .freeze(freeze_out),
   .mou_emu(mou_emu),
   .joy_emu(joy_emu)
@@ -285,7 +284,6 @@ end
 assign kbdrst = 1'b0;
 assign _lmb = 1'b1;
 assign _rmb = 1'b1;
-assign _joy2 = 6'b11_1111;
 assign joy_emu = 6'b11_1111;
 assign mou_emu = 6'b11_1111;
 assign freeze = freeze_reg;
@@ -297,7 +295,6 @@ assign osd_ctrl = osd_ctrl_reg;
 assign kbdrst = 1'b0;
 assign _lmb = 1'b1;
 assign _rmb = 1'b1;
-assign _joy2 = 6'b11_1111;
 assign joy_emu = 6'b11_1111;
 assign mou_emu = 6'b11_1111;
 reg freeze_reg=0;

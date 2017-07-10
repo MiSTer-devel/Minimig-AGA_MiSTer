@@ -135,7 +135,7 @@ reg   [1:0] autofire_cnt;
 wire  cd32pad;
 reg   autofire;
 reg   sel_autofire;     // select autofire and permanent fire
-
+wire  joy_swap;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -259,9 +259,9 @@ always @ (*) keyboard_disabled = key_disable;
 // input synchronization of external signals
 always @ (posedge clk) begin
   if (clk7_en) begin
-    _sjoy1 <= _joy1;
+    _sjoy1 <= joy_swap ? _joy2 : _joy1;
     _djoy1 <= _sjoy1;
-    _tjoy2 <= _joy2;
+    _tjoy2 <= joy_swap ? _joy1 : _joy2;
     _djoy2 <= _tjoy2;
     if (sof)
       _xjoy2[5:0] <= _joy2[5:0];
@@ -522,6 +522,7 @@ userio_osd osd1
   .cpu_config       (cpu_config),
   .autofire_config  (autofire_config),
   .cd32pad          (cd32pad),
+  .joy_swap         (joy_swap),
   .usrrst           (usrrst),
   .cpurst           (cpurst),
   .cpuhlt           (cpuhlt),

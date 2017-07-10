@@ -315,7 +315,6 @@ wire		int6;					//intterrupt 6
 wire		[7:0] osd_ctrl;			//OSD control
 wire		kb_lmb;
 wire		kb_rmb;
-wire		[5:0] kb_joy2;
 wire		freeze;					//Action Replay freeze button
 wire		_fire0;					//joystick 1 fire signal to cia A
 wire		_fire1;					//joystick 2 fire signal to cia A
@@ -610,7 +609,7 @@ userio USERIO1
 	._fire1_dat(_fire1_dat),
 	.aflock(aflock),
 	._joy1(_joy1),
-	._joy2(_joy2 & {2'b11,kb_joy2}),
+	._joy2(_joy2),
 	.mouse_btn(mouse_btn),
 	._lmb(kb_lmb & mouse_btn1),
 	._rmb(kb_rmb & mouse_btn2),
@@ -719,7 +718,6 @@ ciaa CIAA1
 	.osd_ctrl(osd_ctrl),
 	._lmb(kb_lmb),
 	._rmb(kb_rmb),
-	._joy2(kb_joy2),
 	.aflock(aflock),
 	.freeze(freeze),
 	.disk_led(fdd_led),

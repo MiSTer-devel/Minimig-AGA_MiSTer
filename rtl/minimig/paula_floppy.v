@@ -200,7 +200,7 @@ assign      floppy_frd = fifo_rd;
 // current disk i/o (paula & gayle) works at 7Mhz pace, so wait states are required
 // TODO: move to 28MHz pace (at least for fifo)
 assign     IO_WAIT = ss;
-localparam SPI_WIDTH = 5;
+localparam SPI_WIDTH = 10;
 
 reg        spi_rx_flag;
 reg        rx_flag_sync;

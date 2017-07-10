@@ -35,6 +35,7 @@ module userio_osd
 	output  reg [3:0] cpu_config = 0,
 	output  reg [1:0] autofire_config = 0,
 	output  reg       cd32pad = 0,
+	output  reg       joy_swap = 0,
 	output	reg usrrst=1'b0,
 	output reg cpurst=1'b1,
 	output reg cpuhlt=1'b1,
@@ -420,7 +421,7 @@ always @ (posedge clk) begin
       if (spi_video_cfg_sel)    begin if (dat_cnt == 0) {blver, ar, dither, hr_filter, lr_filter, scanline} <= #1 wrdat[11:0]; end
       if (spi_floppy_cfg_sel)   begin if (dat_cnt == 0) floppy_config <= #1 wrdat[3:0]; end
       if (spi_harddisk_cfg_sel) begin if (dat_cnt == 0) t_ide_config <= #1 wrdat[2:0]; end 
-      if (spi_joystick_cfg_sel) begin if (dat_cnt == 0) {cd32pad, autofire_config} <= #1 wrdat[2:0]; end
+      if (spi_joystick_cfg_sel) begin if (dat_cnt == 0) {joy_swap, cd32pad, autofire_config} <= #1 wrdat[3:0]; end
       //if (spi_joystick_cfg_sel) begin if (dat_cnt == 0) {autofire_config} <= #1 wrdat[1:0]; end
   //    if (spi_osd_buffer_sel)   begin if (dat_cnt == 3) highlight <= #1 wrdat[3:0]; end
   //    if (spi_mem_write_sel)    begin if (dat_cnt == 0) end
