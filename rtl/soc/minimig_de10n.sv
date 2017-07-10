@@ -185,27 +185,28 @@ wire [  4-1:0] core_config;
 ////////////////////////////////////////
 
 // SDRAM
-assign SDRAM_CKE        = 1;
+assign SDRAM_CKE    = 1;
 
 // AUDIO
-assign AUDIO_L          = {ldata, 1'b0};
-assign AUDIO_R          = {rdata, 1'b0};
-assign AUDIO_S          = 1;
+assign AUDIO_L      = {ldata, 1'b0};
+assign AUDIO_R      = {rdata, 1'b0};
+assign AUDIO_S      = 1;
 
-assign LED_POWER[1]     = 1;
-assign LED_DISK[1]      = 1;
+assign LED_POWER[1] = 1;
+assign LED_DISK[1]  = 1;
 
-assign VGA_HS           = ~hs;
-assign VGA_VS           = ~vs;
-assign VIDEO_ARX        = ar[0] ? 8'd16 : 8'd4;
-assign VIDEO_ARY        = ar[0] ? 8'd9  : 8'd3;
+assign VGA_HS       = ~hs;
+assign VGA_VS       = ~vs;
+assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
+assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
+assign CLK_VIDEO    = clk_28;
+assign CE_PIXEL     = 1;
 
 wire   IO_WAIT_UIO;
 wire   IO_WAIT_MM;
-assign IO_WAIT          = IO_WAIT_UIO | IO_WAIT_MM;
+assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 
-assign CLK_VIDEO        = clk_28;
-assign CLK_SYS          = clk_28;
+assign CLK_SYS      = clk_28;
 
 //// amiga clocks ////
 amiga_clk amiga_clk (
@@ -453,7 +454,6 @@ minimig minimig (
   .green        (VGA_G            ), // green
   .blue         (VGA_B            ), // blue
   .de           (VGA_DE           ),
-  .ce_pix       (CE_PIXEL         ),
   .ar           (ar               ),
   .scanline     (SCANLINE         ),
   //audio

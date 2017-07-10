@@ -346,7 +346,7 @@ set_global_assignment -name ALM_REGISTER_PACKING_EFFORT LOW
 set_global_assignment -name ALLOW_SYNCH_CTRL_USAGE OFF
 
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
-set_global_assignment -name SEED 5
+set_global_assignment -name SEED 8
 set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name SYSTEMVERILOG_FILE ../../rtl/soc/minimig_de10n.sv
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/rga_decode.v

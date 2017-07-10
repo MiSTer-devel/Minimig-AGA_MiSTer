@@ -47,7 +47,6 @@ module denise (
   input  wire           a1k,            // control EHB chipset feature
   input  wire           ecs,            // enables ECS chipset features
   input  wire           aga,            // enables AGA features
-  output wire           ce_pix,
   output wire           hires           // hires
 );
 
@@ -311,7 +310,6 @@ denise_bitplanes bplm0
   .hires(hires),
   .shres(shres & ecs),
   .hpos(hpos),
-  .ce_pix(ce_pix),
   .bpldata(bpldata_out)
 );
 

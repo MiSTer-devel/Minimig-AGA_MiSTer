@@ -225,7 +225,6 @@ module minimig
 	output  [7:0] red,			//red
 	output  [7:0] green,		//green
 	output  [7:0] blue,			//blue
-	output        ce_pix,
 	output  [1:0] ar,
 	output  [1:0] scanline,
 
@@ -685,7 +684,6 @@ denise DENISE1
 	.a1k(chipset_config[2]),
 	.ecs(|chipset_config[4:3]),
 	.aga(chipset_config[4]),
-	.ce_pix(ce_pix),
 	.hires(hires)
 );
 
