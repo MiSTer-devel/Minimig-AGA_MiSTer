@@ -56,7 +56,7 @@ module userio (
   input  wire [  2-1:0] kbd_mouse_type,
   input  wire [  8-1:0] kbd_mouse_data,
   input  wire [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
-  output reg            keyboard_disabled,  // disables Amiga keyboard while OSD is active
+  output wire           keyboard_disabled,  // disables Amiga keyboard while OSD is active
   input  wire           IO_ENA,
   input  wire           IO_STROBE,
   output wire           IO_WAIT,
@@ -109,33 +109,29 @@ parameter KEY_PGDOWN  = 8'h6d;
 
 
 // local signals
-reg  [15:0] _sjoy1;       // synchronized joystick 1 signals
-reg  [15:0] _djoy1;       // synchronized joystick 1 signals
-reg   [5:0] _xjoy2;       // synchronized joystick 2 signals
-reg  [15:0] _tjoy2;       // synchronized joystick 2 signals
-reg  [15:0] _djoy2;       // synchronized joystick 2 signals
-wire  [5:0] _sjoy2;       // synchronized joystick 2 signals
-reg   [15:0] potreg;      // POTGO write
-wire  [15:0] mouse0dat;      //mouse counters
-wire  [7:0]  mouse0scr = 0;   // mouse scroller
-reg   [15:0] dmouse0dat;      // docking mouse counters
-reg   [15:0] dmouse1dat;      // docking mouse counters
-wire  _mleft;            //left mouse button
-wire  _mthird;          //middle mouse button
-wire  _mright;          //right mouse buttons
-reg    joy1enable;          //joystick 1 enable (mouse/joy switch)
-reg    joy2enable;          //joystick 2 enable when no osd
-wire  osd_enable;          // OSD display enable
-wire  key_disable;        // Amiga keyboard disable
-reg    [7:0] t_osd_ctrl;      //JB: osd control lines
-wire  test_load;          //load test value to mouse counter
-wire  [15:0] test_data;      //mouse counter test value
-wire  [1:0] autofire_config;
-reg   [1:0] autofire_cnt;
-wire  cd32pad;
-reg   autofire;
-reg   sel_autofire;     // select autofire and permanent fire
-wire  joy_swap;
+reg   [15:0] _sjoy1;        // synchronized joystick 1 signals
+reg   [15:0] _djoy1;        // synchronized joystick 1 signals
+reg   [15:0] _xjoy2;        // synchronized joystick 2 signals
+reg   [15:0] _tjoy2;        // synchronized joystick 2 signals
+reg   [15:0] _djoy2;        // synchronized joystick 2 signals
+wire  [15:0] _sjoy2;        // synchronized joystick 2 signals
+reg   [15:0] potreg;        // POTGO write
+wire  [15:0] mouse0dat;     //mouse counters
+wire   [7:0] mouse0scr = 0; // mouse scroller
+reg   [15:0] dmouse0dat;    // docking mouse counters
+reg   [15:0] dmouse1dat;    // docking mouse counters
+wire         _mleft;        //left mouse button
+wire         _mthird;       //middle mouse button
+wire         _mright;       //right mouse buttons
+reg           joy1enable;   //joystick 1 enable (mouse/joy switch)
+wire         test_load;     //load test value to mouse counter
+wire  [15:0] test_data;     //mouse counter test value
+wire   [1:0] autofire_config;
+reg    [1:0] autofire_cnt;
+wire         cd32pad;
+reg          autofire;
+reg          sel_autofire;  // select autofire and permanent fire
+wire         joy_swap;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -253,9 +249,6 @@ always @ (posedge clk) begin
   end
 end
 
-// disable keyboard when OSD is displayed
-always @ (*) keyboard_disabled = key_disable;
-
 // input synchronization of external signals
 always @ (posedge clk) begin
   if (clk7_en) begin
@@ -264,49 +257,12 @@ always @ (posedge clk) begin
     _tjoy2 <= joy_swap ? _joy1 : _joy2;
     _djoy2 <= _tjoy2;
     if (sof)
-      _xjoy2[5:0] <= _joy2[5:0];
-  end
-end
-
-// port 2 joystick disable in osd
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (key_disable)
-      joy2enable <= #1 0;
-    else if (_xjoy2[5:0] == 6'b11_1111)
-      joy2enable <= #1 1;
+      _xjoy2 <= joy_swap ? _joy1 : _joy2;
   end
 end
 
 // autofire is permanent active if enabled, can be overwritten any time by normal fire button
-assign _sjoy2[5:0] = joy2enable ? {_xjoy2[5], sel_autofire ^ _xjoy2[4], _xjoy2[3:0]} : 6'b11_1111;
-
-always @ (*) begin
-  if (~joy2enable)
-    if (~_xjoy2[5] || (~_xjoy2[3] && ~_xjoy2[2]))
-      t_osd_ctrl = KEY_MENU;
-    else if (~_xjoy2[4])
-      t_osd_ctrl = KEY_ENTER;
-    else if (~_xjoy2[3])
-      t_osd_ctrl = KEY_UP;
-    else if (~_xjoy2[2])
-      t_osd_ctrl = KEY_DOWN;
-    else if (~_xjoy2[1])
-      t_osd_ctrl = KEY_LEFT;
-    else if (~_xjoy2[0])
-      t_osd_ctrl = KEY_RIGHT;
-    else if (~_xjoy2[1] && ~_xjoy2[3])
-      t_osd_ctrl = KEY_PGUP;
-    else if (~_xjoy2[0] && ~_xjoy2[2])
-      t_osd_ctrl = KEY_PGDOWN;
-    else
-      t_osd_ctrl = osd_ctrl;
-  else
-//    if (~_xjoy2[3] && ~_xjoy2[2])
-//      t_osd_ctrl = KEY_MENU;
-//    else
-      t_osd_ctrl = osd_ctrl;
-end
+assign _sjoy2 = {_xjoy2[15:5], sel_autofire ^ _xjoy2[4], _xjoy2[3:0]};
 
 // port 1 automatic mouse/joystick switch
 always @ (posedge clk) begin
@@ -499,7 +455,7 @@ userio_osd osd1
   .sol              (sol),
   .sof              (sof),
   .varbeamen        (varbeamen),
-  .osd_ctrl         (t_osd_ctrl),
+  .osd_ctrl         (osd_ctrl),
   .IO_ENA           (IO_ENA),
   .IO_STROBE        (IO_STROBE),
   .IO_WAIT          (IO_WAIT),
@@ -508,7 +464,7 @@ userio_osd osd1
   .osd_blank        (osd_blank),
   .osd_pixel        (osd_pixel),
   .osd_enable       (osd_enable),
-  .key_disable      (key_disable),
+  .key_disable      (keyboard_disabled),
   .lr_filter        (lr_filter),
   .hr_filter        (hr_filter),
   .memory_config    (memory_config),
