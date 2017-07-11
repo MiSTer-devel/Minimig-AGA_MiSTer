@@ -540,7 +540,7 @@ vga_out vga_out
 	.ypbpr_en(ypbpr_en),
 	.dout(vga_o),
 `ifdef LITE
-	.din(vga_q),
+	.din(vga_q)
 `else
 	.din(vga_scaler ? HDMI_TX_D : vga_q)
 `endif
