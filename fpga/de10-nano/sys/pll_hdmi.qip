@@ -1,5 +1,5 @@
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_TOOL_NAME "altera_pll"
-set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_TOOL_VERSION "16.1"
+set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_TOOL_VERSION "17.0"
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_TOOL_ENV "mwpim"
 set_global_assignment -library "pll_hdmi" -name MISC_FILE [file join $::quartus(qip_path) "pll_hdmi.cmp"]
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_TARGETED_DEVICE_FAMILY "Cyclone V"
@@ -11,14 +11,14 @@ set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_INTERNAL "Off"
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
-set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_VERSION "MTYuMQ=="
+set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_VERSION "MTcuMA=="
 set_global_assignment -entity "pll_hdmi" -library "pll_hdmi" -name IP_COMPONENT_DESCRIPTION "QWx0ZXJhIFBoYXNlLUxvY2tlZCBMb29wIChBTFRFUkFfUExMKQ=="
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_NAME "cGxsX2hkbWlfMDAwMg=="
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_DISPLAY_NAME "QWx0ZXJhIFBMTA=="
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_REPORT_HIERARCHY "Off"
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_INTERNAL "Off"
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_AUTHOR "QWx0ZXJhIENvcnBvcmF0aW9u"
-set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_VERSION "MTYuMQ=="
+set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_VERSION "MTcuMA=="
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_DESCRIPTION "QWx0ZXJhIFBoYXNlLUxvY2tlZCBMb29wIChBTFRFUkFfUExMKQ=="
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_PARAMETER "ZGVidWdfcHJpbnRfb3V0cHV0::ZmFsc2U=::ZGVidWdfcHJpbnRfb3V0cHV0"
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_COMPONENT_PARAMETER "ZGVidWdfdXNlX3JiY190YWZfbWV0aG9k::ZmFsc2U=::ZGVidWdfdXNlX3JiY190YWZfbWV0aG9k"
@@ -333,5 +333,5 @@ set_global_assignment -library "pll_hdmi" -name VERILOG_FILE [file join $::quart
 set_global_assignment -library "pll_hdmi" -name QIP_FILE [file join $::quartus(qip_path) "pll_hdmi/pll_hdmi_0002.qip"]
 
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_TOOL_NAME "altera_pll"
-set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_TOOL_VERSION "16.1"
+set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_TOOL_VERSION "17.0"
 set_global_assignment -entity "pll_hdmi_0002" -library "pll_hdmi" -name IP_TOOL_ENV "mwpim"
