@@ -207,6 +207,7 @@ module minimig
 	inout	        msclk,				//PS2 mouse clk
 	inout	        kbddat,			//PS2 keyboard data
 	inout	        kbdclk,			//PS2 keyboard clk
+	input  [63:0] rtc,
 
 	//host controller interface (SPI)
 	input         IO_OSD,
@@ -306,6 +307,7 @@ wire		sel_kick;				//rom select
 wire  	sel_kick1mb;     // 1MB upper rom select
 wire		sel_cia;				//CIA address space
 wire		sel_reg;				//chip register select
+wire		sel_rtc;
 wire		sel_cia_a;				//cia A select
 wire		sel_cia_b;				//cia B select
 wire		int2;					//intterrupt 2
@@ -896,7 +898,8 @@ gary GARY1
 	.sel_cia_a(sel_cia_a),
 	.sel_cia_b(sel_cia_b),
 	.sel_ide(sel_ide),
-	.sel_gayle(sel_gayle)
+	.sel_gayle(sel_gayle),
+	.sel_rtc(sel_rtc)
 );
 
 gayle GAYLE1
@@ -943,11 +946,14 @@ minimig_syscontrol CONTROL1
 
 //-------------------------------------------------------------------------------------
 
+wire [15:0] rtc_out = (sel_rtc && cpu_rd) ? {12'h000, rtc[{cpu_address_out[5:2], 2'b00} +:4]} : 16'h0000;
+
 //data multiplexer
-assign cpu_data_in[15:0] = gary_data_out[15:0]
-						 | cia_data_out[15:0]
-						 | gayle_data_out[15:0]
-             | cart_data_out[15:0];
+assign cpu_data_in[15:0]= gary_data_out[15:0]
+								| cia_data_out[15:0]
+								| gayle_data_out[15:0]
+								| cart_data_out[15:0]
+								| rtc_out;
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]

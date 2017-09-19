@@ -178,6 +178,7 @@ wire           kms_level;
 wire [  2-1:0] kbd_mouse_type;
 wire [  3-1:0] mouse_buttons;
 wire [  4-1:0] core_config;
+wire [   63:0] rtc;
 
 
 ////////////////////////////////////////
@@ -376,7 +377,8 @@ user_io user_io
 	.KBD_MOUSE_DATA(kbd_mouse_data),
 	.KBD_MOUSE_TYPE(kbd_mouse_type),
 	.KBD_MOUSE_STROBE(kbd_mouse_strobe),
-	.KMS_LEVEL(kms_level)
+	.KMS_LEVEL(kms_level),
+	.RTC(rtc)
 	//.CONF(core_config)
 );
 
@@ -438,6 +440,7 @@ minimig minimig (
   .msclk        (                 ), // PS2 mouse clk
   .kbddat       (                 ), // PS2 keyboard data
   .kbdclk       (                 ), // PS2 keyboard clk
+  .rtc          (rtc              ),
   //host controller interface (SPI)
   .IO_OSD       (IO_OSD           ),
   .IO_FPGA      (IO_FPGA          ),

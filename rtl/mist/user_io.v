@@ -17,7 +17,9 @@ module user_io
 	output [7:0] KBD_MOUSE_DATA,
 
 	output [1:0] BUTTONS,
-	output [3:0] CONF
+	output [3:0] CONF,
+
+	output reg [63:0] RTC
 );
 
 reg [15:0] joystick0;
@@ -100,6 +102,8 @@ always@(posedge clk) begin
 				mouse_buttons <= IO_DIN[2:0];
 			end
 		end
+
+		if(cmd == 'h22 && cnt > 0) RTC[(cnt-6'd1)<<4 +:16] <= IO_DIN;
 	end
 end
 
