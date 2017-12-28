@@ -15,13 +15,7 @@
 { "" "" "" "Verilog HDL or VHDL warning at de10_top.v(102): object \"io_sdd\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Overwriting existing clock: vip\|hps\|fpga_interfaces\|clocks_resets\|h2f_user0_clk" {  } {  } 0 332043 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Variable or input pin \"data_a\" is defined but never used." {  } {  } 0 287013 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|minimig:minimig\|userio:USERIO1\|userio_osd:osd1\|sync_fifo:wr_fifo\|fifo_mem_rtl_0\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|minimig:minimig\|agnus:AGNUS1\|agnus_spritedma:spr1\|sprptl_rtl_0\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|minimig:minimig\|agnus:AGNUS1\|agnus_spritedma:spr1\|sprpos_rtl_0\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|minimig:minimig\|agnus:AGNUS1\|agnus_spritedma:spr1\|sprctl_rtl_0\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|TG68K:tg68k\|TG68KdotC_Kernel:pf68K_Kernel_inst\|regfile_rtl_0\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Inferred RAM node \"emu:emu\|TG68K:tg68k\|TG68KdotC_Kernel:pf68K_Kernel_inst\|regfile_rtl_1\" from synchronous design logic.  Pass-through logic has been added to match the read-during-write behavior of the original design." {  } {  } 0 276020 "" 0 0 "Design Software" 0 -1 0 ""}
-{ "" "" "" "Verilog HDL or VHDL warning at cpu_cache_new.v(484): conditional expression evaluates to a constant" {  } {  } 0 10037 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Port \"extclk\" on the entity instantiation of \"cyclonev_pll\" is connected to a signal of width 1. The formal width of the signal in the module is 2.  The extra bits will be left dangling without any fan-out logic." {  } {  } 0 12030 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 169085 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 174073 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}
@@ -55,6 +49,9 @@
 { "" "" "" "cvo_core" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "vip_HPS_fpga_interfaces.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "alt_vip_dil_vof_scheduler.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_pll.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_cyclonev_pll.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_pll_reconfig_core.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68KdotC_Kernel.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K_ALU.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}

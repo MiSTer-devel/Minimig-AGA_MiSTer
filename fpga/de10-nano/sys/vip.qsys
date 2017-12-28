@@ -29,7 +29,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "4";
          type = "int";
       }
    }
@@ -45,7 +45,7 @@
    {
       datum _sortIndex
       {
-         value = "5";
+         value = "6";
          type = "int";
       }
    }
@@ -61,7 +61,7 @@
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "5";
          type = "int";
       }
    }
@@ -539,7 +539,7 @@
    internal="Reset_Source.reset_ctl"
    type="conduit"
    dir="end" />
- <module name="Controller" kind="avalon_combiner" version="1.0" enabled="1" />
+ <module name="Controller" kind="avalon_combiner" version="17.0" enabled="1" />
  <module name="Deinterlacer" kind="alt_vip_cl_dil" version="17.0" enabled="1">
   <parameter name="AUTO_DEVICE" value="5CSEBA6U23I7" />
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="7" />
@@ -618,7 +618,7 @@
   <parameter name="WRITE_BURST_TARGET" value="32" />
   <parameter name="WRITE_FIFO_DEPTH" value="512" />
  </module>
- <module name="HPS" kind="altera_hps_lite" version="16.1" enabled="1">
+ <module name="HPS" kind="altera_hps_lite" version="17.0" enabled="1">
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="7" />
   <parameter name="BONDING_OUT_ENABLED" value="false" />
   <parameter name="BOOTFROMFPGA_Enable" value="false" />
@@ -856,7 +856,7 @@
   <parameter name="USER_PACKET_FIFO_DEPTH" value="0" />
   <parameter name="USER_PACKET_SUPPORT" value="DISCARD" />
  </module>
- <module name="Reset_Source" kind="reset_source" version="1.0" enabled="1" />
+ <module name="Reset_Source" kind="reset_source" version="17.0" enabled="1" />
  <module name="Scaler" kind="alt_vip_cl_scl" version="17.0" enabled="1">
   <parameter name="ALGORITHM_NAME" value="BICUBIC" />
   <parameter name="ALWAYS_DOWNSCALE" value="0" />
@@ -1073,17 +1073,17 @@
  <connection
    kind="avalon_streaming"
    version="17.0"
-   start="Frame_Buffer.dout"
+   start="Mixer.dout"
    end="Video_Output.din" />
  <connection
    kind="avalon_streaming"
    version="17.0"
-   start="Mixer.dout"
+   start="Deinterlacer.dout"
    end="Frame_Buffer.din" />
  <connection
    kind="avalon_streaming"
    version="17.0"
-   start="Deinterlacer.dout"
+   start="Frame_Buffer.dout"
    end="Scaler.din" />
  <connection
    kind="avalon_streaming"

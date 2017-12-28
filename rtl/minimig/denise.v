@@ -47,7 +47,8 @@ module denise (
   input  wire           a1k,            // control EHB chipset feature
   input  wire           ecs,            // enables ECS chipset features
   input  wire           aga,            // enables AGA features
-  output wire           hires           // hires
+  output wire           hires,          // hires
+  output wire           shres           // shres
 );
 
 
@@ -123,7 +124,7 @@ wire          dpf;        // double playfield mode
 //wire          color;      // color burst output signal
 //wire          gaud;       // genlock audio enable
 //wire          uhres;      // ultra-hires enables the UHRES pointers; needs bits in DMACON also
-wire          shres;      // super-hires mode
+//wire          shres;      // super-hires mode
 //wire          bypass;     // bypass color table; 8-bit wide data appears on r[7:0]
 //wire          lpen;       // light pen enable
 //wire          lace;       // interlace enable

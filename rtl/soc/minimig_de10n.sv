@@ -28,6 +28,7 @@ module emu
 
    //Used as clock for IO_* signals in top module
    output        CLK_SYS,
+	input         CLK_100,
 	
    //Base video clock. Usually equals to CLK_SYS.
    output        CLK_VIDEO,
@@ -360,6 +361,11 @@ sdram_ctrl sdram (
   .ena7WRreg    (tg68_ena7WR      )
 );
 
+assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
+
+wire [15:0] uio_dout;
+wire [15:0] fpga_dout;
+wire        ce_pix;
 
 //// user io has an extra spi channel outside minimig core ////
 user_io user_io
@@ -370,6 +376,7 @@ user_io user_io
 	.IO_STROBE(IO_STROBE),
 	.IO_WAIT(IO_WAIT_UIO),
 	.IO_DIN(IO_DIN),
+	.IO_DOUT(uio_dout),
 
 	.JOY0(joya),
 	.JOY1(joyb),
@@ -378,10 +385,16 @@ user_io user_io
 	.KBD_MOUSE_TYPE(kbd_mouse_type),
 	.KBD_MOUSE_STROBE(kbd_mouse_strobe),
 	.KMS_LEVEL(kms_level),
-	.RTC(rtc)
-	//.CONF(core_config)
-);
+	.RTC(rtc),
 
+	.clk_100(CLK_100),
+	.clk_vid(CLK_VIDEO),
+	.ce_pix(ce_pix),
+	.de(VGA_DE),
+	.hs(~hs),
+	.vs(~vs),
+	.f1(VGA_F1)
+);
 
 //// minimig top ////
 minimig minimig (
@@ -447,7 +460,7 @@ minimig minimig (
   .IO_STROBE    (IO_STROBE        ),
   .IO_WAIT      (IO_WAIT_MM       ),
   .IO_DIN       (IO_DIN           ),
-  .IO_DOUT      (IO_DOUT          ),
+  .IO_DOUT      (fpga_dout        ),
   //video
   ._hsync       (hs               ), // horizontal sync
   ._vsync       (vs               ), // vertical sync
@@ -459,6 +472,7 @@ minimig minimig (
   .de           (VGA_DE           ),
   .ar           (ar               ),
   .scanline     (SCANLINE         ),
+  .ce_pix       (ce_pix           ),
   //audio
   .left         (                 ), // audio bitstream left
   .right        (                 ), // audio bitstream right

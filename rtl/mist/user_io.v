@@ -5,6 +5,7 @@ module user_io
 	input        IO_ENA,
 	input        IO_STROBE,
 	input [15:0] IO_DIN,
+	output[15:0] IO_DOUT,
 	output reg   IO_WAIT,
 
 	output [15:0] JOY0,
@@ -19,8 +20,91 @@ module user_io
 	output [1:0] BUTTONS,
 	output [3:0] CONF,
 
+	input        clk_100,
+	input        clk_vid,
+	input        ce_pix,
+	input        de,
+	input        hs,
+	input        vs,
+	input        f1,
+	
 	output reg [63:0] RTC
 );
+
+
+///////////////// calc video parameters //////////////////
+
+reg [31:0] vid_hcnt = 0;
+reg [31:0] vid_vcnt = 0;
+reg  [7:0] vid_nres = 0;
+integer hcnt;
+
+always @(posedge clk_vid) begin
+	integer vcnt;
+	reg old_vs= 0, old_de = 0;
+	reg calch = 0;
+
+	if(ce_pix) begin
+		old_vs <= vs;
+		old_de <= de;
+
+		if(~vs & ~old_de & de) vcnt <= vcnt + 1;
+		if(calch & de) hcnt <= hcnt + 1;
+		if(old_de & ~de) calch <= 0;
+
+		if(old_vs & ~vs & ~f1) begin
+			if(hcnt && vcnt) begin
+				if(vid_hcnt != hcnt || vid_vcnt != vcnt) vid_nres <= vid_nres + 1'd1;
+				vid_hcnt <= hcnt;
+				vid_vcnt <= vcnt;
+			end
+			vcnt <= 0;
+			hcnt <= 0;
+			calch <= 1;
+		end
+	end
+end
+
+reg [31:0] vid_htime = 0;
+reg [31:0] vid_vtime = 0;
+reg [31:0] vid_pix = 0;
+
+always @(posedge clk_100) begin
+	integer vtime, htime, hcnt;
+	reg old_vs, old_hs, old_vs2, old_hs2, old_de, old_de2;
+	reg calch = 0;
+
+	old_vs <= vs;
+	old_hs <= hs;
+
+	old_vs2 <= old_vs;
+	old_hs2 <= old_hs;
+
+	vtime <= vtime + 1'd1;
+	htime <= htime + 1'd1;
+
+	if(~old_vs2 & old_vs) begin
+		vid_pix <= hcnt;
+		vid_vtime <= vtime;
+		vtime <= 0;
+		hcnt <= 0;
+	end
+
+	if(old_vs2 & ~old_vs) calch <= 1;
+
+	if(~old_hs2 & old_hs) begin
+		vid_htime <= htime;
+		htime <= 0;
+	end
+
+	old_de   <= de;
+	old_de2  <= old_de;
+
+	if(calch & old_de) hcnt <= hcnt + 1;
+	if(old_de2 & ~old_de) calch <= 0;
+end
+
+//////////////////////////////////////////////////////////
 
 reg [15:0] joystick0;
 reg [15:0] joystick1;
@@ -43,6 +127,9 @@ assign MOUSE_BUTTONS = mouse_buttons; // state of the two mouse buttons
 
 assign BUTTONS  = but_sw[1:0];
 assign CONF     = but_sw[7:4];
+
+reg [15:0] io_dout;
+assign IO_DOUT = io_dout;
 
 always@(posedge clk) begin
 	reg [7:0] cmd;
@@ -104,6 +191,23 @@ always@(posedge clk) begin
 		end
 
 		if(cmd == 'h22 && cnt > 0) RTC[(cnt-6'd1)<<4 +:16] <= IO_DIN;
+		
+		if(cmd == 'h23) begin
+			case(cnt)
+				1: io_dout <= vid_nres;
+				2: io_dout <= vid_hcnt[15:0];
+				3: io_dout <= vid_hcnt[31:16];
+				4: io_dout <= vid_vcnt[15:0];
+				5: io_dout <= vid_vcnt[31:16];
+				6: io_dout <= vid_htime[15:0];
+				7: io_dout <= vid_htime[31:16];
+				8: io_dout <= vid_vtime[15:0];
+				9: io_dout <= vid_vtime[31:16];
+			  10: io_dout <= vid_pix[15:0];
+			  11: io_dout <= vid_pix[31:16];
+			endcase
+		end
+		
 	end
 end
 

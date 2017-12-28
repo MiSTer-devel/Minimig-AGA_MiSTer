@@ -228,6 +228,7 @@ module minimig
 	output  [7:0] blue,			//blue
 	output  [1:0] ar,
 	output  [1:0] scanline,
+	output        ce_pix,
 
 	//audio
 	output        left,				//audio bitstream left
@@ -665,6 +666,13 @@ debug DEBUG1 (
 );
 */
 
+
+reg [1:0] phase;
+always @(posedge clk) phase <= {phase[0], clk7_en};
+assign ce_pix = (shres & |chipset_config[4:3]) | (hires & phase[1]) | clk7_en;
+
+wire shres;
+
 //instantiate Denise
 denise DENISE1
 (		
@@ -686,7 +694,8 @@ denise DENISE1
 	.a1k(chipset_config[2]),
 	.ecs(|chipset_config[4:3]),
 	.aga(chipset_config[4]),
-	.hires(hires)
+	.hires(hires),
+	.shres(shres)
 );
 
 //instantiate cia A
