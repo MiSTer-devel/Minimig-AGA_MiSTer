@@ -56,3 +56,4 @@
 { "" "" "" "TG68KdotC_Kernel.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K_ALU.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "alt_vip_dil_scheduler.sdc" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "cpu_cache_new.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}

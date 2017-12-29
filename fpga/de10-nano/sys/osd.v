@@ -13,7 +13,9 @@ module osd
 	input  [23:0] din,
 	output [23:0] dout,
 	input         de,
-	input         f1
+	input         f1,
+
+	output reg [1:0] amix
 );
 
 parameter  OSD_COLOR    =  3'd4;
@@ -62,6 +64,11 @@ always@(posedge clk_sys) begin
 					// OSD_CMD_OSD_WR: set write address
 					if(cmd == 'h0c && pcnt == 3) begin
 						bcnt <= {io_din[3:0], 8'h00};
+						if(io_din[3]) highres <= 1;
+					end
+
+					if(cmd == 'h74) begin
+						amix <= io_din[1:0];
 						if(io_din[3]) highres <= 1;
 					end
 				end else begin

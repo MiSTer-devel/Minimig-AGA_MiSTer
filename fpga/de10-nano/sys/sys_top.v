@@ -660,6 +660,7 @@ scanlines scanlines
 	.vs(HDMI_TX_VS)
 );
 
+wire  [1:0] amix;
 wire [23:0] hdmi_data2;
 osd hdmi_osd
 (
@@ -673,7 +674,8 @@ osd hdmi_osd
 	.din(hdmi_data2),
 	.dout(HDMI_TX_D),
 	.de(HDMI_TX_DE),
-	.f1(0)
+	.f1(0),
+	.amix(amix)
 );
 
 assign HDMI_MCLK = 0;
@@ -773,10 +775,28 @@ spdif toslink
 	.spdif_o(AUDIO_SPDIF)
 );
 
+reg [15:0] audio_l; 
+reg [15:0] audio_r;
+
+always @(*) begin
+	case(amix)
+		0: audio_l = audio_ls;
+		1: audio_l = audio_ls - (audio_ls >>> 3) + (audio_rs >>> 3);
+		2: audio_l = audio_ls - (audio_ls >>> 2) + (audio_rs >>> 2);
+		3: audio_l = (audio_ls >>> 1) + (audio_rs >>> 1);
+	endcase
+
+	case(amix)
+		0: audio_r = audio_rs;
+		1: audio_r = audio_rs - (audio_rs >>> 3) + (audio_ls >>> 3);
+		2: audio_r = audio_rs - (audio_rs >>> 2) + (audio_ls >>> 2);
+		3: audio_r = (audio_rs >>> 1) + (audio_ls >>> 1);
+	endcase
+end
 
 ///////////////////  User module connection ////////////////////////////
 
-wire [15:0] audio_l, audio_r;
+wire signed [15:0] audio_ls, audio_rs;
 wire        audio_s;
 wire  [7:0] r_out, g_out, b_out;
 wire        vs, hs, de, f1, _cs;
@@ -829,8 +849,8 @@ emu emu
 	.VIDEO_ARY(ARY),
 `endif
 
-	.AUDIO_L(audio_l),
-	.AUDIO_R(audio_r),
+	.AUDIO_L(audio_ls),
+	.AUDIO_R(audio_rs),
 	.AUDIO_S(audio_s),
 	.TAPE_IN(0),
 
