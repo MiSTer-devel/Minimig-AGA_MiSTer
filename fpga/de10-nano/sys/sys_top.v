@@ -608,12 +608,11 @@ always @(posedge FPGA_CLK1_50) begin
 	
 	cfg_write <= 0;
 	if(~gotd2 & gotd) begin
-		if(~cfg_custom) begin
-			cfg_address <= 31;
-			cfg_data <= 0;
-			cfg_write <= 1;
-		end
 		stage <= stage + 1'd1;
+		if(~cfg_custom) begin
+			stage <= 3;
+			cfg_ready <= 1;
+		end
 	end
 	
 	custd <= cfg_custom_t;
@@ -779,18 +778,26 @@ reg [15:0] audio_l;
 reg [15:0] audio_r;
 
 always @(*) begin
-	case(amix)
-		0: audio_l = audio_ls;
-		1: audio_l = audio_ls - (audio_ls >>> 3) + (audio_rs >>> 3);
-		2: audio_l = audio_ls - (audio_ls >>> 2) + (audio_rs >>> 2);
-		3: audio_l = (audio_ls >>> 1) + (audio_rs >>> 1);
+	case({audio_s,amix})
+		'b000: audio_l = audio_ls;
+		'b001: audio_l = audio_ls - (audio_ls >> 3) + (audio_rs >> 3);
+		'b010: audio_l = audio_ls - (audio_ls >> 2) + (audio_rs >> 2);
+		'b011: audio_l = (audio_ls >> 1) + (audio_rs >> 1);
+		'b100: audio_l = audio_ls;
+		'b101: audio_l = audio_ls - (audio_ls >>> 3) + (audio_rs >>> 3);
+		'b110: audio_l = audio_ls - (audio_ls >>> 2) + (audio_rs >>> 2);
+		'b111: audio_l = (audio_ls >>> 1) + (audio_rs >>> 1);
 	endcase
 
-	case(amix)
-		0: audio_r = audio_rs;
-		1: audio_r = audio_rs - (audio_rs >>> 3) + (audio_ls >>> 3);
-		2: audio_r = audio_rs - (audio_rs >>> 2) + (audio_ls >>> 2);
-		3: audio_r = (audio_rs >>> 1) + (audio_ls >>> 1);
+	case({audio_s,amix})
+		'b000: audio_r = audio_rs;
+		'b001: audio_r = audio_rs - (audio_rs >> 3) + (audio_ls >> 3);
+		'b010: audio_r = audio_rs - (audio_rs >> 2) + (audio_ls >> 2);
+		'b011: audio_r = (audio_rs >> 1) + (audio_ls >> 1);
+		'b100: audio_r = audio_rs;
+		'b101: audio_r = audio_rs - (audio_rs >>> 3) + (audio_ls >>> 3);
+		'b110: audio_r = audio_rs - (audio_rs >>> 2) + (audio_ls >>> 2);
+		'b111: audio_r = (audio_rs >>> 1) + (audio_ls >>> 1);
 	endcase
 end
 
