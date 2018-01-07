@@ -10,6 +10,10 @@
 { "" "" "" "LOCKED port on the PLL is not properly connected on instance \"pll_hdmi:pll_hdmi\|pll_hdmi_0002:pll_hdmi_inst\|altera_pll:altera_pll_i\|general\[0\].gpll\". The LOCKED port on the PLL should be connected when the FBOUTCLK port is connected. Although it is unnecessary to connect the LOCKED signal, any logic driven off of an output clock of the PLL will not know when the PLL is locked and ready." {  } {  } 0 21300 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Verilog HDL or VHDL warning at cpu_cache_new.v(484): conditional expression evaluates to a constant" {  } {  } 0 10037 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Verilog HDL or VHDL warning at ciaa.v(172): object \"keyack\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Port \"extclk\" on the entity instantiation of \"cyclonev_pll\" is connected to a signal of width 1. The formal width of the signal in the module is 2.  The extra bits will be left dangling without any fan-out logic." {  } {  } 0 12030 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68KdotC_Kernel.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K_ALU.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_pll.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_cyclonev_pll.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "altera_pll_reconfig_core.v" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}

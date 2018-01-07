@@ -395,7 +395,6 @@ set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gayle.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gayle_fifo.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/gary.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/userio.v
-set_global_assignment -name VERILOG_FILE ../../rtl/minimig/userio_osd.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_uart.v
 set_global_assignment -name VERILOG_FILE ../../rtl/minimig/paula_intcontroller.v

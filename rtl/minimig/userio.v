@@ -26,67 +26,56 @@
 
 
 module userio (
-	input  wire           clk,                // bus clock
-	input  wire           reset,              // reset
-	input  wire           clk7_en,
-	input  wire           clk7n_en,
-	input  wire           c1,
-	input  wire           c3,
-	input  wire           sol,                // start of video line
-	input  wire           sof,                // start of video frame
-	input  wire           varbeamen,
-	input  wire [  9-1:1] reg_address_in,     // register adress inputs
-	input  wire [ 16-1:0] data_in,            // bus data in
-	output reg  [ 16-1:0] data_out,           // bus data out
-	inout  wire           ps2mdat,            // mouse PS/2 data
-	inout  wire           ps2mclk,            // mouse PS/2 clk
-	output wire           _fire0,             // joystick 0 fire output (to CIA)
-	output wire           _fire1,             // joystick 1 fire output (to CIA)
-	input  wire           _fire0_dat,
-	input  wire           _fire1_dat,
-	input  wire [   15:0] _joy1,              // joystick 1 in (default mouse port)
-	input  wire [   15:0] _joy2,              // joystick 2 in (default joystick port)
-	input  wire           aflock,             // auto fire lock
-	input  wire [  3-1:0] mouse_btn,
-	input  wire           _lmb,
-	input  wire           _rmb,
-	input  wire [  6-1:0] mou_emu,
-	input  wire           kbd_mouse_strobe,
-	input  wire           kms_level,
-	input  wire [  2-1:0] kbd_mouse_type,
-	input  wire [  8-1:0] kbd_mouse_data,
-	input  wire [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
-	output wire           keyboard_disabled,  // disables Amiga keyboard while OSD is active
-	input  wire           IO_ENA,
-	input  wire           IO_STROBE,
-	output wire           IO_WAIT,
-	input  wire    [15:0] IO_DIN,
-	output wire    [15:0] IO_DOUT,
-	output wire           osd_blank,          // osd overlay, normal video blank output
-	output wire           osd_pixel,          // osd video pixel
-	output wire [  2-1:0] lr_filter,
-	output wire [  2-1:0] hr_filter,
-	output wire [  7-1:0] memory_config,
-	output wire [  5-1:0] chipset_config,
-	output wire [  4-1:0] floppy_config,
-	output wire [  2-1:0] scanline,
-	output wire [  2-1:0] dither,
-	output wire [  2-1:0] ar,
-	output wire [  2-1:0] blver,
-	output wire [  3-1:0] ide_config,
-	output wire [  4-1:0] cpu_config,
-	output                usrrst,             // user reset from osd module
-	output                cpurst,
-	output                cpuhlt,
-	output wire           fifo_full,
+	input                clk,                // bus clock
+	input                reset,              // reset
+	input                clk7_en,
+
+	input      [  9-1:1] reg_address_in,     // register adress inputs
+	input      [ 16-1:0] data_in,            // bus data in
+	output reg [ 16-1:0] data_out,           // bus data out
+	inout                ps2mdat,            // mouse PS/2 data
+	inout                ps2mclk,            // mouse PS/2 clk
+	output               _fire0,             // joystick 0 fire output (to CIA)
+	output               _fire1,             // joystick 1 fire output (to CIA)
+	input                _fire0_dat,
+	input                _fire1_dat,
+	input      [   15:0] _joy1,              // joystick 1 in (default mouse port)
+	input      [   15:0] _joy2,              // joystick 2 in (default joystick port)
+	input                aflock,             // auto fire lock
+	input      [  3-1:0] mouse_btn,
+	input                _lmb,
+	input                _rmb,
+	input      [  6-1:0] mou_emu,
+	input                kbd_mouse_strobe,
+	input                kms_level,
+	input      [  2-1:0] kbd_mouse_type,
+	input      [  8-1:0] kbd_mouse_data,
+	input      [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
+	output reg           keyboard_disabled,  // disables Amiga keyboard while OSD is active
+	input                IO_ENA,
+	input                IO_STROBE,
+	output reg           IO_WAIT,
+	input         [15:0] IO_DIN,
+	output reg    [15:0] IO_DOUT,
+	output reg [  7-1:0] memory_config,
+	output reg [  5-1:0] chipset_config,
+	output reg [  4-1:0] floppy_config,
+	output reg [  2-1:0] scanline,
+	output reg [  2-1:0] ar,
+	output reg [  2-1:0] blver,
+	output reg [  3-1:0] ide_config,
+	output reg [  4-1:0] cpu_config,
+	output reg           usrrst,             // user reset from osd module
+	output reg           cpurst,
+	output reg           cpuhlt,
 	// host
-	output wire           host_cs,
-	output wire [ 24-1:0] host_adr,
-	output wire           host_we,
-	output wire [  2-1:0] host_bs,
-	output wire [ 16-1:0] host_wdat,
-	input  wire [ 16-1:0] host_rdat,
-	input  wire           host_ack
+	output reg           host_cs,
+	output reg [ 24-1:0] host_adr,
+	output reg           host_we,
+	output     [  2-1:0] host_bs,
+	output reg [ 16-1:0] host_wdat,
+	input      [ 16-1:0] host_rdat,
+	input                host_ack
 );
 
 
@@ -124,8 +113,8 @@ wire         _mright;       //right mouse buttons
 reg           joy1enable;   //joystick 1 enable (mouse/joy switch)
 wire         test_load;     //load test value to mouse counter
 wire  [15:0] test_data;     //mouse counter test value
-wire         cd32pad;
-wire         joy_swap;
+reg          cd32pad;
+reg          joy_swap;
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -405,55 +394,124 @@ assign _mthird = ~mouse_btn[2];
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
+assign host_bs = 2'b11;
 
-//instantiate osd controller
-userio_osd osd1
-(
-	.clk              (clk),
-	.clk7_en          (clk7_en),
-	.clk7n_en         (clk7n_en),
-	.reset            (reset),
-	.c1               (c1),
-	.c3               (c3),
-	.sol              (sol),
-	.sof              (sof),
-	.varbeamen        (varbeamen),
-	.osd_ctrl         (osd_ctrl),
-	.IO_ENA           (IO_ENA),
-	.IO_STROBE        (IO_STROBE),
-	.IO_WAIT          (IO_WAIT),
-	.IO_DIN           (IO_DIN),
-	.IO_DOUT          (IO_DOUT),
-	.osd_blank        (osd_blank),
-	.osd_pixel        (osd_pixel),
-	.key_disable      (keyboard_disabled),
-	.lr_filter        (lr_filter),
-	.hr_filter        (hr_filter),
-	.memory_config    (memory_config),
-	.chipset_config   (chipset_config),
-	.floppy_config    (floppy_config),
-	.scanline         (scanline),
-	.dither           (dither),
-	.ar               (ar),
-	.blver            (blver),
-	.ide_config       (ide_config),
-	.cpu_config       (cpu_config),
-	.autofire_config  (),
-	.cd32pad          (cd32pad),
-	.joy_swap         (joy_swap),
-	.usrrst           (usrrst),
-	.cpurst           (cpurst),
-	.cpuhlt           (cpuhlt),
-	.fifo_full        (fifo_full),
-	.host_cs          (host_cs),
-	.host_adr         (host_adr),
-	.host_we          (host_we),
-	.host_bs          (host_bs),
-	.host_wdat        (host_wdat),
-	.host_rdat        (host_rdat),
-	.host_ack         (host_ack)
-);
+reg [6:0] t_memory_config = 7'b0_00_01_01;
+reg	[2:0] t_ide_config = 0;
+reg [3:0] t_cpu_config = 0;
+reg [4:0] t_chipset_config = 0;
 
+// configuration changes only while reset is active
+always @(posedge clk) begin
+	if (clk7_en) begin
+		if (reset) begin
+			chipset_config <= t_chipset_config;
+			ide_config <= t_ide_config;
+			cpu_config[1:0] <= t_cpu_config[1:0];
+			memory_config[5:0] <= t_memory_config[5:0];
+		end
+	end
+end
+
+always @(posedge clk) begin
+	if (clk7_en) begin
+		cpu_config[3:2] <= t_cpu_config[3:2];
+		memory_config[6] <= t_memory_config[6];
+	end
+end
+
+reg [5:0] cmd;
+
+// reg selects
+wire reset_ctrl_sel   = (cmd == 6'b0000_10); // XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
+wire osd_ctrl_sel     = (cmd == 6'b0010_10); // XXXXXXKE || osd control     | K - disable Amiga keyboard, E - enable OSD
+wire chip_cfg_sel     = (cmd == 6'b0000_01); // XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
+wire cpu_cfg_sel      = (cmd == 6'b0001_01); // XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
+wire memory_cfg_sel   = (cmd == 6'b0010_01); // XHFFSSCC || memory config   | H - HRTmon, FF - fast, SS - slow, CC - chip
+wire video_cfg_sel    = (cmd == 6'b0011_01); // DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
+wire floppy_cfg_sel   = (cmd == 6'b0100_01); // XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
+wire harddisk_cfg_sel = (cmd == 6'b0101_01); // XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
+wire joystick_cfg_sel = (cmd == 6'b0110_01); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
+wire mem_write_sel    = (cmd == 6'b0001_11); // A_A_A_A B,B,... || write system memory, A - 32 bit memory address, B - variable number of bytes
+wire version_sel      = (cmd == 6'b1000_10); // read RTL version
+
+`include "minimig_version.vh"
+
+always @(posedge clk) begin
+	reg       has_cmd;
+	reg       mrx;
+	reg       btoggle;
+	reg       old_ack;
+	reg [2:0] bcnt;
+	
+	old_ack <= host_ack;
+   if (old_ack & ~host_ack) begin
+		IO_WAIT  <= 0;
+		host_adr <= host_adr + 24'd2;
+	end
+
+	if(~IO_ENA) begin
+		IO_WAIT <= 0;
+		IO_DOUT <= 0;
+		has_cmd <= 0;
+		mrx     <= 0;
+		bcnt    <= 0;
+      btoggle <= 0;
+	end
+	else if(IO_STROBE) begin
+		has_cmd <= 1;
+		if(~has_cmd) cmd <= IO_DIN[7:2];
+		else begin
+			if(~bcnt[2]) bcnt <= bcnt + 1'd1;
+
+			IO_DOUT <= osd_ctrl;
+			if(version_sel) begin
+				IO_DOUT <= 0;
+				case (bcnt)
+					0 : IO_DOUT <= BETA_FLAG;
+					1 : IO_DOUT <= MAJOR_VER;
+					2 : IO_DOUT <= MINOR_VER;
+					3 : IO_DOUT <= MINION_VER;
+				endcase
+			end
+
+			if(!bcnt) begin
+				if (reset_ctrl_sel)   {cpuhlt, cpurst, usrrst} <= IO_DIN[2:0];
+				if (osd_ctrl_sel)     keyboard_disabled <= IO_DIN[1];
+				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[4:0];
+				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[3:0];
+				if (memory_cfg_sel)   t_memory_config <= IO_DIN[6:0];
+				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[1:0]};
+				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
+				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[2:0];
+				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
+			end
+			
+			if (mem_write_sel) begin
+				case (bcnt)
+				  0 : host_adr[ 7: 0] <= IO_DIN[7:0];
+				  1 : host_adr[15: 8] <= IO_DIN[7:0];
+				  2 : host_adr[23:16] <= IO_DIN[7:0];
+				  //3 : mem_page[ 7: 0] <= IO_DIN[7:0];
+				endcase
+
+				if(bcnt[2]) begin
+					btoggle <= ~btoggle;
+					if(btoggle) begin
+						host_wdat[7:0] <= IO_DIN[7:0];
+						mrx <= 1;
+						IO_WAIT <= 1;
+					end
+					else host_wdat[15:8] <= IO_DIN[7:0];
+				end
+			end;
+		end
+	end
+	else if(clk7_en) begin
+		host_cs <= mrx;
+		host_we <= mrx;
+		if(host_ack) mrx <= 0;
+	end
+end
 
 endmodule
-

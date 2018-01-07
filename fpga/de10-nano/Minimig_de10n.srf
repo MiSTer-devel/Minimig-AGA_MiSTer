@@ -16,6 +16,15 @@
 { "" "" "" "Overwriting existing clock: vip\|hps\|fpga_interfaces\|clocks_resets\|h2f_user0_clk" {  } {  } 0 332043 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Variable or input pin \"data_a\" is defined but never used." {  } {  } 0 287013 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Port \"extclk\" on the entity instantiation of \"cyclonev_pll\" is connected to a signal of width 1. The formal width of the signal in the module is 2.  The extra bits will be left dangling without any fan-out logic." {  } {  } 0 12030 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.vip: Module dependency loop involving: \"HPS\" (altera_hps_lite 17.0)" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Mixer: The MixerII register map changed in ACDS v16.0. Please refer to the VIP User Guide for details." {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Reset_Source.reset_sys: Associated reset sinks not declared" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Reset_Source.reset_warm: Associated reset sinks not declared" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Reset_Source.reset_cold: Associated reset sinks not declared" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Video_Output.control: Interrupt sender control.av_mm_control_interrupt is not connected to an interrupt receiver" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.Video_Output: Interrupt sender Video_Output.status_update_irq is not connected to an interrupt receiver" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.: You have exported the interface HPS.f2h_sdram1_data but not its associated reset interface.  Export the driver(s) of HPS.h2f_reset" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Vip.: You have exported the interface HPS.f2h_sdram2_data but not its associated reset interface.  Export the driver(s) of HPS.h2f_reset" {  } {  } 0 12251 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 169085 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 174073 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}

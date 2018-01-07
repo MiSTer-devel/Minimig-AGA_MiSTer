@@ -484,8 +484,7 @@ minimig minimig (
   .turbochipram (turbochipram     ), // turbo chipRAM
   .turbokick    (turbokick        ), // turbo kickstart
   .init_b       (                 ), // vertical sync for MCU (sync OSD update)
-  .fifo_full    (                 ),
-  // fifo / track display
+
   .trackdisp    (                 ), // floppy track number
   .secdisp      (                 ), // sector
   .floppy_fwr   (                 ), // floppy fifo writing

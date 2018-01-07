@@ -242,7 +242,6 @@ module minimig
 	output        turbochipram,
 	output        turbokick,
 	output        init_b,       // vertical sync for MCU (sync OSD update)
-	output        fifo_full,
 
 	// fifo / track display
 	output  [7:0] trackdisp,
@@ -334,8 +333,6 @@ wire		sof;					//start of video frame
 wire		vbl_int;        // vertical blanking interrupt
 wire		strhor_denise;			//horizontal strobe for Denise
 wire		strhor_paula;			//horizontal strobe for Paula
-wire		osd_blank;				//osd blanking 
-wire		osd_pixel;				//osd pixel(video) data
 wire		[8:0] htotal;			//video line length (140ns units)
 wire		harddis;
 wire		varbeamen;
@@ -378,9 +375,6 @@ wire	sel_cart;				//Action Replay RAM select
 wire  [16-1:0] cart_data_out;
 
 wire	usrrst;					//user reset from osd interface
-wire	[1:0] lr_filter;		//lowres interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
-wire	[1:0] hr_filter;		//hires interpolation filter mode: bit 0 - horizontal, bit 1 - vertical
-wire  [1:0] dither;   // video output dither
 wire	hires;					//hires signal from Denise for interpolation filter enable in Amber
 wire	aron;					//Action Replay is enabled
 wire	cpu_speed;				//requests CPU to switch speed mode
@@ -593,13 +587,7 @@ userio USERIO1
 (	
 	.clk(clk),
 	.clk7_en(clk7_en),
-	.clk7n_en(clk7n_en),
 	.reset(reset),
-	.c1(c1),
-	.c3(c3),
-	.sol(sol),
-	.sof(sof),
-	.varbeamen(varbeamen),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
 	.data_out(user_data_out),
@@ -627,15 +615,10 @@ userio USERIO1
 	.IO_WAIT(IO_WAIT_OSD),
 	.IO_DIN(IO_DIN),
 	.IO_DOUT(IO_DOUT_OSD),
-	.osd_blank(osd_blank),
-	.osd_pixel(osd_pixel),
-	.lr_filter(lr_filter),
-	.hr_filter(hr_filter),
 	.memory_config(memory_config),
 	.chipset_config(chipset_config),
 	.floppy_config(floppy_config),
 	.scanline(scanline),
-	.dither(dither),
 	.ar(ar),
 	.blver(blver),
 	.ide_config(ide_config),
@@ -643,7 +626,6 @@ userio USERIO1
 	.usrrst(usrrst),
 	.cpurst(cpurst),
 	.cpuhlt(cpuhlt),
-	.fifo_full(fifo_full),
 	.host_cs      (host_cs          ),
 	.host_adr     (host_adr         ),
 	.host_we      (host_we          ),
