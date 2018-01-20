@@ -53,7 +53,7 @@ set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 set_global_assignment -name ROUTER_CLOCKING_TOPOLOGY_ANALYSIS OFF
 set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
-set_global_assignment -name SEED 5
+set_global_assignment -name SEED 3
 
 #============================================================
 # ADC
