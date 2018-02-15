@@ -1,7 +1,7 @@
 //============================================================================
 //
 //  DE10-nano HAL top module
-//  (c)2017 Sorgelig
+//  (c)2017,2018 Sorgelig
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -19,7 +19,6 @@
 //
 //============================================================================
 
-
 module sys_top
 (
 	/////////// CLOCK //////////
@@ -31,9 +30,9 @@ module sys_top
 	output  [5:0] VGA_R,
 	output  [5:0] VGA_G,
 	output  [5:0] VGA_B,
-	output		  VGA_HS,
+	inout		  VGA_HS,  // VGA_HS is secondary SD card detect when VGA_EN = 1 (inactive)
 	output		  VGA_VS,
-	input         VGA_EN,
+	input         VGA_EN,  // active low
 
 	/////////// AUDIO //////////
 	output		  AUDIO_L,
@@ -86,6 +85,9 @@ module sys_top
 
 	////////// MB KEY ///////////
 	input   [1:0] KEY,
+
+	////////// MB SWITCH ////////
+	input   [3:0] SW,
 
 	////////// MB LED ///////////
 	output  [7:0] LED
@@ -193,9 +195,9 @@ reg [15:0] cfg;
 reg        cfg_got   = 0;
 //wire [2:0] hdmi_res  = cfg[10:8];
 wire       dvi_mode  = cfg[7];
-wire audio_96k = cfg[6];
-wire ypbpr_en  = cfg[5];
-wire csync     = cfg[3];
+wire       audio_96k = cfg[6];
+wire       ypbpr_en  = cfg[5];
+wire       csync     = cfg[3];
 `ifndef LITE
 wire vga_scaler= cfg[2];
 `endif
@@ -261,7 +263,6 @@ always@(posedge clk_sys) begin
 		end
 	end
 end
-
 
 ///////////////////////////  RESET  ///////////////////////////////////
 
@@ -676,7 +677,7 @@ assign HDMI_MCLK = 0;
 i2s i2s
 (
 	.reset(~cfg_ready),
-	.clk_sys(FPGA_CLK1_50),
+	.clk_sys(FPGA_CLK3_50),
 	.half_rate(~audio_96k),
 
 	.sclk(HDMI_SCLK),
@@ -735,17 +736,19 @@ assign VGA_VS = VGA_EN ? 1'bZ      : csync ? 1'b1 : ~vs1;
 assign VGA_HS = VGA_EN ? 1'bZ      : csync ? _cs1 : ~hs1;
 assign VGA_R  = VGA_EN ? 6'bZZZZZZ : vga_o[23:18];
 assign VGA_G  = VGA_EN ? 6'bZZZZZZ : vga_o[15:10];
-assign VGA_B  = VGA_EN ? {3'bZZZ, HDMI_I2S, HDMI_LRCLK, HDMI_SCLK} : vga_o[7:2];
+assign VGA_B  = VGA_EN ? 6'bZZZZZZ : vga_o[7:2];
 
 
 /////////////////////////  Audio output  ////////////////////////////////
+
+wire al, ar, aspdif;
 
 sigma_delta_dac #(15) dac_l
 (
 	.CLK(FPGA_CLK3_50),
 	.RESET(reset),
 	.DACin({audio_l[15] ^ audio_s, audio_l[14:0]}),
-	.DACout(AUDIO_L)
+	.DACout(al)
 );
 
 sigma_delta_dac #(15) dac_r
@@ -753,7 +756,7 @@ sigma_delta_dac #(15) dac_r
 	.CLK(FPGA_CLK3_50),
 	.RESET(reset),
 	.DACin({audio_r[15] ^ audio_s, audio_r[14:0]}),
-	.DACout(AUDIO_R)
+	.DACout(ar)
 );
 
 spdif toslink
@@ -766,8 +769,12 @@ spdif toslink
 	.audio_l(audio_l >> !audio_s),
 	.audio_r(audio_r >> !audio_s),
 
-	.spdif_o(AUDIO_SPDIF)
+	.spdif_o(aspdif)
 );
+
+assign AUDIO_SPDIF = SW[0] ? HDMI_LRCLK : aspdif;
+assign AUDIO_R     = SW[0] ? HDMI_I2S   : ar;
+assign AUDIO_L     = SW[0] ? HDMI_SCLK  : al;
 
 reg [15:0] audio_l; 
 reg [15:0] audio_r;
