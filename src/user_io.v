@@ -27,7 +27,8 @@ module user_io
 	input        hs,
 	input        vs,
 	input        f1,
-	
+	input        vs_hdmi,
+
 	output reg [63:0] RTC
 );
 
@@ -102,6 +103,22 @@ always @(posedge clk_100) begin
 
 	if(calch & old_de) hcnt <= hcnt + 1;
 	if(old_de2 & ~old_de) calch <= 0;
+end
+
+reg [31:0] vid_vtime_hdmi;
+always @(posedge clk_100) begin
+	integer vtime;
+	reg old_vs, old_vs2;
+
+	old_vs <= vs_hdmi;
+	old_vs2 <= old_vs;
+
+	vtime <= vtime + 1'd1;
+
+	if(~old_vs2 & old_vs) begin
+		vid_vtime_hdmi <= vtime;
+		vtime <= 0;
+	end
 end
 
 //////////////////////////////////////////////////////////
@@ -205,6 +222,8 @@ always@(posedge clk) begin
 				9: io_dout <= vid_vtime[31:16];
 			  10: io_dout <= vid_pix[15:0];
 			  11: io_dout <= vid_pix[31:16];
+			  12: io_dout <= vid_vtime_hdmi[15:0];
+			  13: io_dout <= vid_vtime_hdmi[31:16];
 			endcase
 		end
 		

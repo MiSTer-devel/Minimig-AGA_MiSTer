@@ -967,13 +967,13 @@
   <parameter name="F_FALLING_EDGE" value="0" />
   <parameter name="F_RISING_EDGE" value="0" />
   <parameter name="GENERATE_SYNC" value="0" />
-  <parameter name="H_ACTIVE_PIXELS" value="1280" />
-  <parameter name="H_BACK_PORCH" value="220" />
+  <parameter name="H_ACTIVE_PIXELS" value="1920" />
+  <parameter name="H_BACK_PORCH" value="148" />
   <parameter name="H_BLANK" value="0" />
-  <parameter name="H_FRONT_PORCH" value="110" />
-  <parameter name="H_SYNC_LENGTH" value="40" />
+  <parameter name="H_FRONT_PORCH" value="88" />
+  <parameter name="H_SYNC_LENGTH" value="44" />
   <parameter name="INTERLACED" value="0" />
-  <parameter name="LOW_LATENCY" value="0" />
+  <parameter name="LOW_LATENCY" value="1" />
   <parameter name="NO_OF_CHANNELS" value="1" />
   <parameter name="NO_OF_MODES" value="1" />
   <parameter name="NUMBER_OF_COLOUR_PLANES" value="3" />
@@ -984,10 +984,10 @@
   <parameter name="THRESHOLD" value="1999" />
   <parameter name="USE_CONTROL" value="1" />
   <parameter name="USE_EMBEDDED_SYNCS" value="0" />
-  <parameter name="V_ACTIVE_LINES" value="720" />
-  <parameter name="V_BACK_PORCH" value="20" />
+  <parameter name="V_ACTIVE_LINES" value="1080" />
+  <parameter name="V_BACK_PORCH" value="15" />
   <parameter name="V_BLANK" value="0" />
-  <parameter name="V_FRONT_PORCH" value="5" />
+  <parameter name="V_FRONT_PORCH" value="2" />
   <parameter name="V_SYNC_LENGTH" value="5" />
  </module>
  <connection

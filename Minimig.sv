@@ -11,13 +11,13 @@ module emu
    //Master input clock
    input         CLK_50M,
 	
-	//Async reset from top-level module.
-	//Can be used as initial reset.
-	input         RESET,
+   //Async reset from top-level module.
+   //Can be used as initial reset.
+   input         RESET,
 
    //Used as clock for IO_* signals in top module
    output        CLK_SYS,
-	input         CLK_100,
+   input         CLK_100,
 	
    //Base video clock. Usually equals to CLK_SYS.
    output        CLK_VIDEO,
@@ -26,7 +26,7 @@ module emu
    //Must be based on CLK_VIDEO
    output        CE_PIXEL,
 
-	output  [1:0] SCANLINE,
+   output  [1:0] SCANLINE,
 
    //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
    output  [7:0] VIDEO_ARX,
@@ -38,21 +38,22 @@ module emu
    output        VGA_HS,
    output        VGA_VS,
    output        VGA_CS,
-	output        VGA_F1,
+   output        VGA_F1,
+   input         HDMI_VS,
 	
-	//NOTE: Scaler measures the frame width by first line.
-	//So, make sure DE is stable during the first active line!
+   //NOTE: Scaler measures the frame width by first line.
+   //So, make sure DE is stable during the first active line!
    output        VGA_DE,    // = ~(VBlank | HBlank)
 
    output        LED_USER,  // 1 - ON, 0 - OFF.
 
-	// b[1]: 0 - LED status is system status ORed with b[0]
-	//       1 - LED status is controled solely by b[0]
-	// hint: supply 2'b00 to let the system control the LED.
-	output  [1:0] LED_POWER,
-	output  [1:0] LED_DISK,
+   // b[1]: 0 - LED status is system status ORed with b[0]
+   //       1 - LED status is controled solely by b[0]
+   // hint: supply 2'b00 to let the system control the LED.
+   output  [1:0] LED_POWER,
+   output  [1:0] LED_DISK,
 
-	input         BTN_USER,
+   input         BTN_USER,
 
    output [15:0] AUDIO_L,
    output [15:0] AUDIO_R,
@@ -67,20 +68,20 @@ module emu
    input  [15:0] IO_DIN,
    output [15:0] IO_DOUT,
 
-	//High latency DDR3 RAM interface
-	//Use for non-critical time purposes
-	output        DDRAM_CLK,
-	input         DDRAM_BUSY,
-	output  [7:0] DDRAM_BURSTCNT,
-	output [28:0] DDRAM_ADDR,
-	input  [63:0] DDRAM_DOUT,
-	input         DDRAM_DOUT_READY,
-	output        DDRAM_RD,
-	output [63:0] DDRAM_DIN,
-	output  [7:0] DDRAM_BE,
-	output        DDRAM_WE,
+   //High latency DDR3 RAM interface
+   //Use for non-critical time purposes
+   output        DDRAM_CLK,
+   input         DDRAM_BUSY,
+   output  [7:0] DDRAM_BURSTCNT,
+   output [28:0] DDRAM_ADDR,
+   input  [63:0] DDRAM_DOUT,
+   input         DDRAM_DOUT_READY,
+   output        DDRAM_RD,
+   output [63:0] DDRAM_DIN,
+   output  [7:0] DDRAM_BE,
+   output        DDRAM_WE,
 
-	//SDRAM interface with lower latency
+   //SDRAM interface with lower latency
    output        SDRAM_CLK,
    output        SDRAM_CKE,
    output [12:0] SDRAM_A,
@@ -338,6 +339,7 @@ user_io user_io
 	.de(VGA_DE),
 	.hs(~hs),
 	.vs(~vs),
+	.vs_hdmi(HDMI_VS),
 	.f1(VGA_F1)
 );
 
