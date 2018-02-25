@@ -680,7 +680,7 @@ osd hdmi_osd
 
 	.io_osd(io_osd),
 	.io_strobe(io_strobe),
-	.io_din(io_din[7:0]),
+	.io_din(io_din),
 
 	.clk_video(iHdmiClk),
 	.din(hdmi_data2),
@@ -717,7 +717,7 @@ osd vga_osd
 
 	.io_osd(io_osd),
 	.io_strobe(io_strobe),
-	.io_din(io_din[7:0]),
+	.io_din(io_din),
 
 	.clk_video(clk_vid),
 	.din(de ? {r_out, g_out, b_out} : 24'd0),
