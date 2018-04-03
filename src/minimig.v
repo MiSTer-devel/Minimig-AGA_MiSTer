@@ -189,6 +189,10 @@ module minimig
 	output        txd,				//rs232 send
 	input	        cts,				//rs232 clear to send
 	output        rts,				//rs232 request to send
+	output        dtr,				//rs232 Data Terminal Ready
+	input	        dsr,				//rs232 Data Set Ready
+	input	        cd,					//rs232 Carrier Detect
+	input	        ri,					//rs232 Ring Indicator
 
 	//I/O
 	input	 [15:0] _joy1,				//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
@@ -407,8 +411,6 @@ wire	keyboard_disabled;		//disables Amiga keyboard while OSD is active
 reg		ntsc = NTSC;			//PAL/NTSC video mode selection
 
 wire  [5:0] mou_emu;
-
-wire  dtr;
 
 // host interface
 wire           host_cs;
@@ -732,7 +734,7 @@ ciab CIAB1
 	.eclk(eclk[8]),
 	.irq(int6),
 	.flag(index),
-	.porta_in({1'b0,cts,1'b0}),
+	.porta_in({cd,cts,dsr,ri}),
 	.porta_out({dtr,rts}),
 	.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
 );

@@ -92,7 +92,16 @@ module emu
    output        SDRAM_nCS,
    output        SDRAM_nCAS,
    output        SDRAM_nRAS,
-   output        SDRAM_nWE
+   output        SDRAM_nWE,
+
+   input         UART_CTS,
+   output        UART_RTS,
+   input         UART_RXD,
+   output        UART_TXD,
+	output        UART_DTR,
+	input	        UART_DSR,
+	input	        UART_CD,
+	input	        UART_RI 
 );
 
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
@@ -344,7 +353,8 @@ user_io user_io
 );
 
 //// minimig top ////
-minimig minimig (
+minimig minimig
+(
   //m68k pins
   .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
   .cpu_data     (tg68_dat_in      ), // M68K data bus
@@ -359,6 +369,7 @@ minimig minimig (
   ._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
   .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
   .ovr          (tg68_ovr         ), // NMI override address decoding
+
   //sram pins
   .ram_data     (ram_data         ), // SRAM data bus
   .ramdata_in   (ramdata_in       ), // SRAM data bus in
@@ -368,6 +379,7 @@ minimig minimig (
   ._ram_we      (_ram_we          ), // SRAM write enable
   ._ram_oe      (_ram_oe          ), // SRAM output enable
   .chip48       (chip48           ), // big chipram read
+
   //system  pins
   .rst_ext      (BTN_USER         ), // reset from ctrl block
   .rst_out      (                 ), // minimig reset status
@@ -378,11 +390,17 @@ minimig minimig (
   .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   .cck          (cck              ), // colour clock output (3.54 MHz)
   .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
+
   //rs232 pins
-  .rxd          (0                ), // RS232 receive
-  .txd          (                 ), // RS232 send
-  .cts          (1'b0             ), // RS232 clear to send
-  .rts          (                 ), // RS232 request to send
+  .rxd          (UART_RXD         ), // RS232 receive
+  .txd          (UART_TXD         ), // RS232 send
+  .cts          (UART_CTS         ), // RS232 clear to send
+  .rts          (UART_RTS         ), // RS232 request to send
+  .dtr          (UART_DTR         ), // RS232 Data Terminal Ready
+  .dsr          (UART_DSR         ), // RS232 Data Set Ready
+  .cd           (UART_CD          ), // RS232 Carrier Detect
+  .ri           (UART_RI          ), // RS232 Ring Indicator
+
   //I/O
   ._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
   ._joy2        (~joyb            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
@@ -401,6 +419,7 @@ minimig minimig (
   .kbddat       (                 ), // PS2 keyboard data
   .kbdclk       (                 ), // PS2 keyboard clk
   .rtc          (rtc              ),
+
   //host controller interface (SPI)
   .IO_OSD       (IO_OSD           ),
   .IO_FPGA      (IO_FPGA          ),
@@ -408,6 +427,7 @@ minimig minimig (
   .IO_WAIT      (IO_WAIT_MM       ),
   .IO_DIN       (IO_DIN           ),
   .IO_DOUT      (fpga_dout        ),
+
   //video
   ._hsync       (hs               ), // horizontal sync
   ._vsync       (vs               ), // vertical sync
@@ -420,11 +440,13 @@ minimig minimig (
   .ar           (ar               ),
   .scanline     (SCANLINE         ),
   .ce_pix       (ce_pix           ),
+
   //audio
   .left         (                 ), // audio bitstream left
   .right        (                 ), // audio bitstream right
   .ldata        (ldata            ), // left DAC data
   .rdata        (rdata            ), // right DAC data
+
   //user i/o
   .cpu_config   (cpu_config       ), // CPU config
   .memcfg       (memcfg           ), // memory config

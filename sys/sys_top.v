@@ -353,6 +353,16 @@ vip vip
 	.ram2_byteenable(0),
 	.ram2_write(0),
 
+	.uart_ri(0),
+	.uart_dsr(uart_dtr),
+	.uart_dcd(uart_dtr),
+	.uart_dtr(uart_dtr),
+
+	.uart_cts(uart_cts),
+	.uart_rts(uart_rts),
+	.uart_rxd(uart_rxd),
+	.uart_txd(uart_txd), 
+
 	//Video input
 	.in_clk(clk_vid),
 	.in_data({r_out, g_out, b_out}),
@@ -864,6 +874,15 @@ wire        led_user;
 wire  [1:0] led_power;
 wire  [1:0] led_disk;
 
+wire        uart_dtr;
+wire        uart_cts;
+wire        uart_rts;
+wire        uart_rxd;
+wire        uart_txd;
+
+wire        RTS,DTR;
+
+
 emu emu
 (
 	.CLK_50M(FPGA_CLK3_50),
@@ -930,7 +949,16 @@ emu emu
 	.SDRAM_nRAS(SDRAM_nRAS),
 	.SDRAM_nCAS(SDRAM_nCAS),
 	.SDRAM_CLK(SDRAM_CLK),
-	.SDRAM_CKE(SDRAM_CKE)
+	.SDRAM_CKE(SDRAM_CKE),
+
+   .UART_CTS(uart_rts),
+   .UART_RTS(uart_cts),
+   .UART_RXD(uart_txd),
+   .UART_TXD(uart_rxd),
+	.UART_DTR(DTR),
+	.UART_DSR(DTR),
+	.UART_CD(DTR),
+	.UART_RI(1) 
 );
 
 endmodule
