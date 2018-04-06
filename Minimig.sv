@@ -99,9 +99,7 @@ module emu
    input         UART_RXD,
    output        UART_TXD,
 	output        UART_DTR,
-	input	        UART_DSR,
-	input	        UART_CD,
-	input	        UART_RI 
+	input	        UART_DSR
 );
 
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
@@ -398,8 +396,8 @@ minimig minimig
   .rts          (UART_RTS         ), // RS232 request to send
   .dtr          (UART_DTR         ), // RS232 Data Terminal Ready
   .dsr          (UART_DSR         ), // RS232 Data Set Ready
-  .cd           (UART_CD          ), // RS232 Carrier Detect
-  .ri           (UART_RI          ), // RS232 Ring Indicator
+  .cd           (UART_DSR         ), // RS232 Carrier Detect
+  .ri           (1                ), // RS232 Ring Indicator
 
   //I/O
   ._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)

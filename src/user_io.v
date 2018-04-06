@@ -226,7 +226,9 @@ always@(posedge clk) begin
 			  13: io_dout <= vid_vtime_hdmi[31:16];
 			endcase
 		end
-		
+
+		//UART flags
+		if(cmd == 'h28) io_dout <= 16'b000_11111_000_11111;
 	end
 end
 

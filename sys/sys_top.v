@@ -354,8 +354,8 @@ vip vip
 	.ram2_write(0),
 
 	.uart_ri(0),
-	.uart_dsr(uart_dtr),
-	.uart_dcd(uart_dtr),
+	.uart_dsr(uart_dsr),
+	.uart_dcd(uart_dsr),
 	.uart_dtr(uart_dtr),
 
 	.uart_cts(uart_cts),
@@ -519,6 +519,16 @@ sysmem_lite sysmem
 	.ram2_writedata(0),
 	.ram2_byteenable(0),
 	.ram2_write(0),
+
+	.uart_ri(0),
+	.uart_dsr(uart_dsr),
+	.uart_dcd(uart_dsr),
+	.uart_dtr(uart_dtr),
+
+	.uart_cts(uart_cts),
+	.uart_rts(uart_rts),
+	.uart_rxd(uart_rxd),
+	.uart_txd(uart_txd), 
 
 	// HDMI frame buffer
 	.vbuf_clk(clk_ctl),
@@ -746,7 +756,7 @@ vga_out vga_out
 `ifdef LITE
 	.din(vga_q)
 `else
-	.din(vga_scaler ? HDMI_TX_D : vga_q)
+	.din(vga_scaler ? (HDMI_TX_DE ? HDMI_TX_D : 24'd0) : vga_q)
 `endif
 );
 
@@ -875,13 +885,11 @@ wire  [1:0] led_power;
 wire  [1:0] led_disk;
 
 wire        uart_dtr;
+wire        uart_dsr;
 wire        uart_cts;
 wire        uart_rts;
 wire        uart_rxd;
 wire        uart_txd;
-
-wire        RTS,DTR;
-
 
 emu emu
 (
@@ -955,10 +963,8 @@ emu emu
    .UART_RTS(uart_cts),
    .UART_RXD(uart_txd),
    .UART_TXD(uart_rxd),
-	.UART_DTR(DTR),
-	.UART_DSR(DTR),
-	.UART_CD(DTR),
-	.UART_RI(1) 
+	.UART_DTR(uart_dsr),
+	.UART_DSR(uart_dtr)
 );
 
 endmodule
