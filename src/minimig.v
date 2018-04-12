@@ -440,7 +440,7 @@ assign pwr_led = ~(_led & led_dim);
 assign memcfg = memory_config[5:0];
 
 // turbo chipram only when in AGA mode, no overlay is active, cpu_config[2] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
-assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] || cpu_custom) && (&memory_config[1:0]);
+assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] && cpu_custom) && (&memory_config[1:0]);
 
 // turbo kickstart only when no overlay is active and cpu_config[3] (fast kick) enabled or AGA mode is enabled
 assign turbokick = !ovl && (cpu_config[3] || chipset_config[4]);
