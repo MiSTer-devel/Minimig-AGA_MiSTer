@@ -79,60 +79,50 @@
 /*cia a*/
 module ciaa
 (
-  input   clk,          // clock
-  input clk7_en,
-  input clk7n_en,
-  input   aen,          // adress enable
-  input  rd,          // read enable
-  input  wr,          // write enable
-  input   reset,         // reset
-  input   [3:0] rs,         // register select (address)
-  input   [7:0] data_in,    // bus data in
-  output   [7:0] data_out,    // bus data out
-  input   tick,        // tick (counter input for TOD timer)
-  input   eclk,          // eclk (counter input for timer A/B)
-  output   irq,           // interrupt request out
-  input  [7:2] porta_in,   // porta in
-  output   [3:0] porta_out,  // porta out
-  output  kbdrst,        // keyboard reset out
-  inout  kbddat,        // ps2 keyboard data
-  inout  kbdclk,        // ps2 keyboard clock
-  input  keyboard_disabled,  // disable keystrokes
-  input kbd_mouse_strobe,
-  input kms_level,
-  input [1:0] kbd_mouse_type,
-  input [7:0] kbd_mouse_data,
-  output  [7:0] osd_ctrl,    // osd control
-  output  _lmb,
-  output  _rmb,
-  output  aflock,       // auto fire lock
-  output  freeze,        // Action Replay freeze key
-  input  disk_led,      // floppy disk activity LED
-  output [5:0] mou_emu,
-  output [5:0] joy_emu,
-  input hrtmon_en
+	input        clk,           // clock
+	input        clk7_en,
+	input        clk7n_en,
+	input        aen,           // adress enable
+	input        rd,            // read enable
+	input        wr,            // write enable
+	input        reset,         // reset
+	input  [3:0] rs,            // register select (address)
+	input  [7:0] data_in,       // bus data in
+	output [7:0] data_out,      // bus data out
+	input        tick,          // tick (counter input for TOD timer)
+	input        eclk,          // eclk (counter input for timer A/B)
+	output       irq,           // interrupt request out
+	input  [7:2] porta_in,      // porta in
+	output [3:0] porta_out,     // porta out
+	input        keyboard_disabled,  // disable keystrokes
+	input        kbd_mouse_strobe,
+	input        kms_level,
+	input  [1:0] kbd_mouse_type,
+	input  [7:0] kbd_mouse_data,
+	output       freeze,        // Action Replay freeze key
+	input        hrtmon_en
 );
 
 // local signals
-wire   [7:0] icr_out;
-wire  [7:0] tmra_out;
-wire  [7:0] tmrb_out;
-wire  [7:0] tmrd_out;
-wire  [7:0] sdr_out;
-reg    [7:0] pa_out;
-reg    [7:0] pb_out;
-wire  [7:0] portb_out;
-wire  alrm;        // TOD interrupt
-wire  ta;          // TIMER A interrupt
-wire  tb;          // TIMER B interrupt
-wire  tmra_ovf;      // TIMER A underflow (for Timer B)
+wire [7:0] icr_out;
+wire [7:0] tmra_out;
+wire [7:0] tmrb_out;
+wire [7:0] tmrd_out;
+wire [7:0] sdr_out;
+reg  [7:0] pa_out;
+reg  [7:0] pb_out;
+wire [7:0] portb_out;
+wire       alrm;        // TOD interrupt
+wire       ta;          // TIMER A interrupt
+wire       tb;          // TIMER B interrupt
+wire       tmra_ovf;      // TIMER A underflow (for Timer B)
 
-wire  spmode;        // TIMER A Serial Port Mode (0-input, 1-output)
-wire  ser_tx_irq;      // serial port transmit interrupt request
-reg    [3:0] ser_tx_cnt;   // serial port transmit bit counter
-reg    ser_tx_run;      // serial port is transmitting
+wire       spmode;        // TIMER A Serial Port Mode (0-input, 1-output)
+wire       ser_tx_irq;      // serial port transmit interrupt request
+reg  [3:0] ser_tx_cnt;   // serial port transmit bit counter
+reg        ser_tx_run;      // serial port is transmitting
 
-reg    tick_del;      // required for edge detection
+reg        tick_del;      // required for edge detection
 
 //----------------------------------------------------------------------------------
 // address decoder
@@ -167,146 +157,15 @@ assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | 
 //----------------------------------------------------------------------------------
 // instantiate keyboard module
 //----------------------------------------------------------------------------------
-wire  keystrobe;
+wire        keystrobe;
 wire  [7:0] keydat;
-reg    [7:0] sdr_latch;
+reg   [7:0] sdr_latch;
 
-
-`ifdef MINIMIG_PS2_KEYBOARD
-
-wire keyack;
-wire freeze_out;
-
-// keyboard acknowledge
-assign keyack = (!wr && sdr) ? 1'b1 : 1'b0;
-
-ciaa_ps2keyboard  kbd1
-(
-  .clk(clk),
-  .clk7_en(clk7_en),
-  .reset(reset),
-  .ps2kdat(kbddat),
-  .ps2kclk(kbdclk),
-  .leda(~porta_out[1]),  // keyboard joystick LED - num lock
-  .ledb(disk_led),    // disk activity LED - scroll lock
-  .aflock(aflock),
-  .kbdrst(kbdrst),
-  .keydat(keydat[7:0]),
-  .keystrobe(keystrobe),
-  .keyack(keyack),
-  .osd_ctrl(osd_ctrl),
-  ._lmb(_lmb),
-  ._rmb(_rmb),
-  ._joy2(),
-  .freeze(freeze_out),
-  .mou_emu(mou_emu),
-  .joy_emu(joy_emu)
-);
-
-assign freeze = hrtmon_en && freeze_out;
-
-// sdr register
-// !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
-always @(posedge clk)
-  if (clk7_en) begin
-    if (reset)
-      sdr_latch[7:0] <= 8'h00;
-    else if (keystrobe & ~keyboard_disabled)
-      sdr_latch[7:0] <= ~{keydat[6:0],keydat[7]};
-    else if (wr & sdr)
-      sdr_latch[7:0] <= data_in[7:0];
-  end
-
-`else
-
-//`define NEW_KEYB
-`ifdef NEW_KEYB
-// MiST keyboard
-reg  [ 2:0] kms_level_sync;
-wire        kms;
-reg  [ 7:0] kmd_sync[0:1];
-wire [ 7:0] kmd;
-reg  [ 1:0] kmt_sync[0:1];
-wire [ 1:0] kmt;
-reg  [ 7:0] osd_ctrl_reg;
-reg         freeze_reg=0;
-
-// sync kms_level to clk28
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    kms_level_sync <= #1 {kms_level_sync[1:0], kms_level};
-  end
-end
-
-//recreate kbd_mouse strobe in clk28 domain
-assign kms = kms_level_sync[2] ^ kms_level_sync[1];
-
-// synced data
-assign kmt = kmt_sync[1];
-assign kmd = kmd_sync[1];
-
-// sync kbd_mouse_data to clk28
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    kmd_sync[0] <= #1 kbd_mouse_data;
-    kmd_sync[1] <= #1 kmd_sync[0];
-    kmt_sync[0] <= #1 kbd_mouse_type;
-    kmt_sync[1] <= #1 kmt_sync[0];
-  end
-end
-
-// sdr register
-// !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reset) begin
-      sdr_latch[7:0] <= 8'h00;
-      freeze_reg <= #1 1'b0;
-    end else if (kms && (kmt == 2) && ~keyboard_disabled) begin
-      sdr_latch[7:0] <= ~{kmd[6:0],kmd[7]};
-      if (hrtmon_en && (kmd == 8'h5f)) freeze_reg <= #1 1'b1;
-      else freeze_reg <= #1 1'b0;
-    end else if (wr & sdr) begin
-        sdr_latch[7:0] <= data_in[7:0];
-    end
-  end
-end
-
-always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reset)
-      osd_ctrl_reg[7:0] <= 8'd0;
-    else if (kms && ((kmt == 2) || (kmt == 3)))
-      osd_ctrl_reg[7:0] <= kbd_mouse_data;
-  end
-end
-
-assign kbdrst = 1'b0;
-assign _lmb = 1'b1;
-assign _rmb = 1'b1;
-assign joy_emu = 6'b11_1111;
-assign mou_emu = 6'b11_1111;
+reg    freeze_reg=0;
 assign freeze = freeze_reg;
-assign aflock = 1'b0;
-assign keystrobe = kms && ((kmt == 2));
-assign osd_ctrl = osd_ctrl_reg;
-
-`else
-assign kbdrst = 1'b0;
-assign _lmb = 1'b1;
-assign _rmb = 1'b1;
-assign joy_emu = 6'b11_1111;
-assign mou_emu = 6'b11_1111;
-reg freeze_reg=0;
-assign freeze = freeze_reg;
-assign aflock = 1'b0;
-
-reg [7:0] osd_ctrl_reg;
 
 reg keystrobe_reg;
 assign keystrobe = keystrobe_reg && ((kbd_mouse_type == 2) || (kbd_mouse_type == 3));
-
-assign osd_ctrl = osd_ctrl_reg;
 
 // generate a keystrobe which is valid exactly one clk cycle
 always @(posedge clk) begin
@@ -324,7 +183,6 @@ always @(posedge clk) begin
   if (clk7_en) begin
     if (reset) begin
       sdr_latch[7:0] <= 8'h00;
-      osd_ctrl_reg[7:0] <= 8'd0;
       freeze_reg <= #1 1'b0;
      end else begin
       if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled) begin
@@ -333,17 +191,9 @@ always @(posedge clk) begin
         else freeze_reg <= #1 1'b0;
       end else if (wr & sdr)
         sdr_latch[7:0] <= data_in[7:0];
-
-      if(keystrobe && ((kbd_mouse_type == 2) || (kbd_mouse_type == 3)))
-        osd_ctrl_reg[7:0] <= kbd_mouse_data;
     end
   end
 end
-
-`endif
-
-`endif
-
 
 // sdr register read
 assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;

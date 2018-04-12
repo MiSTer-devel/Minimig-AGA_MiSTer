@@ -33,24 +33,17 @@ module userio (
 	input      [  9-1:1] reg_address_in,     // register adress inputs
 	input      [ 16-1:0] data_in,            // bus data in
 	output reg [ 16-1:0] data_out,           // bus data out
-	inout                ps2mdat,            // mouse PS/2 data
-	inout                ps2mclk,            // mouse PS/2 clk
 	output               _fire0,             // joystick 0 fire output (to CIA)
 	output               _fire1,             // joystick 1 fire output (to CIA)
 	input                _fire0_dat,
 	input                _fire1_dat,
 	input      [   15:0] _joy1,              // joystick 1 in (default mouse port)
 	input      [   15:0] _joy2,              // joystick 2 in (default joystick port)
-	input                aflock,             // auto fire lock
 	input      [  3-1:0] mouse_btn,
-	input                _lmb,
-	input                _rmb,
-	input      [  6-1:0] mou_emu,
 	input                kbd_mouse_strobe,
 	input                kms_level,
 	input      [  2-1:0] kbd_mouse_type,
 	input      [  8-1:0] kbd_mouse_data,
-	input      [  8-1:0] osd_ctrl,           // OSD control (minimig->host, [menu,select,down,up])
 	output reg           keyboard_disabled,  // disables Amiga keyboard while OSD is active
 	input                IO_ENA,
 	input                IO_STROBE,
@@ -149,7 +142,7 @@ always @ (posedge clk) begin
 			if(joy1enable & cd32pad & ~joy1_pin5) begin
 				potcap[1] <= cd32pad1_reg[7];
 			end else begin
-				potcap[1] <= _mright & _rmb & _djoy1[5] & ~(potreg[11] & ~potreg[10]);
+				potcap[1] <= _mright & _djoy1[5] & ~(potreg[11] & ~potreg[10]);
 			end
 			potcap[0] <= _mthird & joy1_pin5;
 		end
@@ -304,7 +297,7 @@ always @(*) begin
 end
 
 // assign fire outputs to cia A
-assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft & _lmb;
+assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft;
 assign _fire1 = cd32pad && !cd32pad2_reg_load ? fire2_d : _sjoy2[4];
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
@@ -316,31 +309,7 @@ assign test_data = data_in[15:0];
 //--------------------------------------------------------------------------------------
 
 
-`ifdef MINIMIG_PS2_MOUSE
-
-//instantiate mouse controller
-userio_ps2mouse pm1
-(
-	.clk        (clk),
-	.clk7_en    (clk7_en),
-	.reset      (reset),
-	.ps2mdat    (ps2mdat),
-	.ps2mclk    (ps2mclk),
-	.mou_emu    (mou_emu),
-	.sof        (sof),
-	.zcount     (mouse0scr),
-	.ycount     (mouse0dat[15:8]),
-	.xcount     (mouse0dat[7:0]),
-	._mleft     (_mleft),
-	._mthird    (_mthird),
-	._mright    (_mright),
-	.test_load  (test_load),
-	.test_data  (test_data)
-);
-
-`else
-
-//// MiST mouse ////
+//// mouse ////
 reg  [ 2:0] kms_level_sync;
 wire        kms;
 reg  [ 7:0] kmd_sync[0:1];
@@ -387,8 +356,6 @@ assign mouse0dat = {ycount, xcount};
 assign _mleft  = ~mouse_btn[0];
 assign _mright = ~mouse_btn[1];
 assign _mthird = ~mouse_btn[2];
-
-`endif
 
 
 //--------------------------------------------------------------------------------------
@@ -464,7 +431,7 @@ always @(posedge clk) begin
 		else begin
 			if(~bcnt[2]) bcnt <= bcnt + 1'd1;
 
-			IO_DOUT <= osd_ctrl;
+			IO_DOUT <= 0;
 			if(version_sel) begin
 				IO_DOUT <= 0;
 				case (bcnt)

@@ -120,8 +120,6 @@ module paula_audio
   input  wire [  4-1:0] audpen,         // audio interrupt pending
   output reg  [  4-1:0] dmal,           // dma request
   output reg  [  4-1:0] dmas,           // dma special
-  output wire           left,           // audio bitstream out left
-  output wire           right,          // audio bitstream out right
   output wire [ 15-1:0] ldata,          // left DAC data
   output wire [ 15-1:0] rdata           // right DAC data
 );
@@ -269,19 +267,6 @@ paula_audio_mixer mix (
   .ldatasum (ldata),
   .rdatasum (rdata)
 );
-
-
-//instantiate sigma/delta modulator
-paula_audio_sigmadelta dac
-(
-  .clk(clk),
-  .clk7_en (clk7_en),
-  .ldatasum(ldata),
-  .rdatasum(rdata),
-  .left(left),
-  .right(right)
-);
-
 
 endmodule
 

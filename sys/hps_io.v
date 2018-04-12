@@ -1,4 +1,4 @@
-module user_io
+module hps_io
 ( 
 	input        clk,
 
@@ -8,8 +8,8 @@ module user_io
 	output[15:0] IO_DOUT,
 	output reg   IO_WAIT,
 
-	output [15:0] JOY0,
-	output [15:0] JOY1,
+	output[15:0] JOY0,
+	output[15:0] JOY1,
 
 	output [2:0] MOUSE_BUTTONS,
 	output       KBD_MOUSE_STROBE,

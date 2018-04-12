@@ -1,8 +1,6 @@
 /* amiga_clk.v */
 /* 2012, rok.krajnc@gmail.com */
 
-`include "minimig_defines.vh"
-
 module amiga_clk (
   input  wire           rst,        // asynhronous reset input
   input  wire           clk_in,     // input clock        ( 27.000000MHz)
@@ -62,29 +60,17 @@ assign locked = pll_locked_r;
 
 
 //// hardware clocks ////
-
 // device-specific PLL/DCM
-`ifdef MINIMIG_ALTERA
-amiga_clk_altera amiga_clk_i (
-  .areset   (rst      ),
-  .inclk0   (clk_in   ),
-  .c0       (clk_sdram),
-  .c1       (clk_114  ),
-  .c2       (clk_28   ),
-  .locked   (locked   )
-);
-`endif
 
-`ifdef MINIMIG_XILINX
-amiga_clk_xilinx amiga_clk_i (
-  .areset   (rst      ),
-  .inclk0   (clk_in   ),
-  .c0       (clk_114  ),
-  .c1       (clk_28   ),
-  .c2       (clk_sdram),
-  .locked   (locked   )
+pll pll
+(
+	.refclk(clk_in),
+	.rst(rst),
+	.outclk_0(clk_114),
+	.outclk_1(clk_sdram),
+	.outclk_2(clk_28),
+	.locked(locked)
 );
-`endif
 
 `endif
 

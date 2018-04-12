@@ -1,7 +1,6 @@
 /********************************************/
 /* minimig.sv                               */
-/* MiSTer version                           */
-/*                                          */
+/* MiSTer glue logic                        */
 /* 2017,2018 Sorgelig                       */
 /********************************************/
 
@@ -270,9 +269,15 @@ TG68K tg68k (
 );
 
 sdram_ctrl sdram (
+  .sysclk       (clk_114          ),
+  .reset_in     (pll_locked       ),
+  .c_7m         (clk_7            ),
+  .reset_out    (                 ),
+
   .cache_rst    (tg68_rst         ),
   .cache_inhibit(cache_inhibit    ),
   .cpu_cache_ctrl (tg68_CACR_out  ),
+
   .sdata        (SDRAM_DQ         ),
   .sdaddr       (SDRAM_A[12:0]    ),
   .dqm          ({SDRAM_DQMH, SDRAM_DQML}),
@@ -281,37 +286,27 @@ sdram_ctrl sdram (
   .sd_we        (SDRAM_nWE        ),
   .sd_ras       (SDRAM_nRAS       ),
   .sd_cas       (SDRAM_nCAS       ),
-  .sysclk       (clk_114          ),
-  .reset_in     (pll_locked       ),
-  .hostWR       (16'h0            ),
-  .hostAddr     (24'h0            ),
-  .hostState    ({1'b0, 2'b01}    ),
-  .hostL        (1'b1             ),
-  .hostU        (1'b1             ),
+
   .cpuWR        (tg68_dat_out     ),
   .cpuAddr      (tg68_cad[24:1]   ),
   .cpuU         (tg68_cuds        ),
   .cpuL         (tg68_clds        ),
   .cpustate     (tg68_cpustate    ),
   .cpu_dma      (tg68_cdma        ),
+  .cpuRD        (tg68_cout        ),
+  .cpuena       (tg68_cpuena      ),
+  .enaWRreg     (tg68_enaWR       ),
+  .ena7RDreg    (tg68_ena7RD      ),
+  .ena7WRreg    (tg68_ena7WR      ),
+
   .chipWR       (ram_data         ),
   .chipAddr     ({2'b00, ram_address[21:1]}),
   .chipU        (_ram_bhe         ),
   .chipL        (_ram_ble         ),
   .chipRW       (_ram_we          ),
   .chip_dma     (_ram_oe          ),
-  .c_7m         (clk_7            ),
-  .hostRD       (                 ),
-  .hostena      (                 ),
-  .cpuRD        (tg68_cout        ),
-  .cpuena       (tg68_cpuena      ),
   .chipRD       (ramdata_in       ),
-  .chip48       (chip48           ),
-  .reset_out    (                 ),
-  .enaRDreg     (                 ),
-  .enaWRreg     (tg68_enaWR       ),
-  .ena7RDreg    (tg68_ena7RD      ),
-  .ena7WRreg    (tg68_ena7WR      )
+  .chip48       (chip48           )
 );
 
 assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
@@ -320,8 +315,7 @@ wire [15:0] uio_dout;
 wire [15:0] fpga_dout;
 wire        ce_pix;
 
-//// user io has an extra spi channel outside minimig core ////
-user_io user_io
+hps_io hps_io
 (
 	.clk(clk_28),
 
@@ -353,111 +347,102 @@ user_io user_io
 //// minimig top ////
 minimig minimig
 (
-  //m68k pins
-  .cpu_address  (tg68_adr[23:1]   ), // M68K address bus
-  .cpu_data     (tg68_dat_in      ), // M68K data bus
-  .cpudata_in   (tg68_dat_out     ), // M68K data in
-  ._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
-  ._cpu_as      (tg68_as          ), // M68K address strobe
-  ._cpu_uds     (tg68_uds         ), // M68K upper data strobe
-  ._cpu_lds     (tg68_lds         ), // M68K lower data strobe
-  .cpu_r_w      (tg68_rw          ), // M68K read / write
-  ._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
-  ._cpu_reset   (tg68_rst         ), // M68K reset
-  ._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
-  .cpu_vbr      (tg68_VBR_out     ), // M68K VBR
-  .ovr          (tg68_ovr         ), // NMI override address decoding
+	//m68k pins
+	.cpu_address  (tg68_adr[23:1]   ), // M68K address bus
+	.cpu_data     (tg68_dat_in      ), // M68K data bus
+	.cpudata_in   (tg68_dat_out     ), // M68K data in
+	._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
+	._cpu_as      (tg68_as          ), // M68K address strobe
+	._cpu_uds     (tg68_uds         ), // M68K upper data strobe
+	._cpu_lds     (tg68_lds         ), // M68K lower data strobe
+	.cpu_r_w      (tg68_rw          ), // M68K read / write
+	._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
+	._cpu_reset   (tg68_rst         ), // M68K reset
+	._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
+	.cpu_vbr      (tg68_VBR_out     ), // M68K VBR
+	.ovr          (tg68_ovr         ), // NMI override address decoding
 
-  //sram pins
-  .ram_data     (ram_data         ), // SRAM data bus
-  .ramdata_in   (ramdata_in       ), // SRAM data bus in
-  .ram_address  (ram_address[21:1]), // SRAM address bus
-  ._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
-  ._ram_ble     (_ram_ble         ), // SRAM lower byte select
-  ._ram_we      (_ram_we          ), // SRAM write enable
-  ._ram_oe      (_ram_oe          ), // SRAM output enable
-  .chip48       (chip48           ), // big chipram read
+	//sram pins
+	.ram_data     (ram_data         ), // SRAM data bus
+	.ramdata_in   (ramdata_in       ), // SRAM data bus in
+	.ram_address  (ram_address[21:1]), // SRAM address bus
+	._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
+	._ram_ble     (_ram_ble         ), // SRAM lower byte select
+	._ram_we      (_ram_we          ), // SRAM write enable
+	._ram_oe      (_ram_oe          ), // SRAM output enable
+	.chip48       (chip48           ), // big chipram read
 
-  //system  pins
-  .rst_ext      (BTN_USER         ), // reset from ctrl block
-  .rst_out      (                 ), // minimig reset status
-  .clk          (clk_28           ), // output clock c1 ( 28.687500MHz)
-  .clk7_en      (clk7_en          ), // 7MHz clock enable
-  .clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
-  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
-  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
-  .cck          (cck              ), // colour clock output (3.54 MHz)
-  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
+	//system  pins
+	.rst_ext      (BTN_USER         ), // reset from ctrl block
+	.rst_out      (                 ), // minimig reset status
+	.clk          (clk_28           ), // output clock c1 ( 28.687500MHz)
+	.clk7_en      (clk7_en          ), // 7MHz clock enable
+	.clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
+	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+	.c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+	.cck          (cck              ), // colour clock output (3.54 MHz)
+	.eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
 
-  //rs232 pins
-  .rxd          (UART_RXD         ), // RS232 receive
-  .txd          (UART_TXD         ), // RS232 send
-  .cts          (UART_CTS         ), // RS232 clear to send
-  .rts          (UART_RTS         ), // RS232 request to send
-  .dtr          (UART_DTR         ), // RS232 Data Terminal Ready
-  .dsr          (UART_DSR         ), // RS232 Data Set Ready
-  .cd           (UART_DSR         ), // RS232 Carrier Detect
-  .ri           (1                ), // RS232 Ring Indicator
+	//rs232 pins
+	.rxd          (UART_RXD         ), // RS232 receive
+	.txd          (UART_TXD         ), // RS232 send
+	.cts          (UART_CTS         ), // RS232 clear to send
+	.rts          (UART_RTS         ), // RS232 request to send
+	.dtr          (UART_DTR         ), // RS232 Data Terminal Ready
+	.dsr          (UART_DSR         ), // RS232 Data Set Ready
+	.cd           (UART_DSR         ), // RS232 Carrier Detect
+	.ri           (1                ), // RS232 Ring Indicator
 
-  //I/O
-  ._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
-  ._joy2        (~joyb            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
-  .mouse_btn1   (1'b1             ), // mouse button 1
-  .mouse_btn2   (1'b1             ), // mouse button 2
-  .mouse_btn    (mouse_buttons    ), // mouse buttons
-  .kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
-  .kbd_mouse_type (kbd_mouse_type ), // type of data
-  .kbd_mouse_strobe (kbd_mouse_strobe), // kbd/mouse data strobe
-  .kms_level    (kms_level        ),
-  .pwr_led      (LED_POWER[0]     ), // power led
-  .fdd_led      (LED_USER         ),
-  .hdd_led      (LED_DISK[0]      ),
-  .msdat        (                 ), // PS2 mouse data
-  .msclk        (                 ), // PS2 mouse clk
-  .kbddat       (                 ), // PS2 keyboard data
-  .kbdclk       (                 ), // PS2 keyboard clk
-  .rtc          (rtc              ),
+	//I/O
+	._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
+	._joy2        (~joyb            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
+	.mouse_btn    (mouse_buttons    ), // mouse buttons
+	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
+	.kbd_mouse_type (kbd_mouse_type ), // type of data
+	.kbd_mouse_strobe (kbd_mouse_strobe), // kbd/mouse data strobe
+	.kms_level    (kms_level        ),
+	.pwr_led      (LED_POWER[0]     ), // power led
+	.fdd_led      (LED_USER         ),
+	.hdd_led      (LED_DISK[0]      ),
+	.rtc          (rtc              ),
 
-  //host controller interface (SPI)
-  .IO_OSD       (IO_OSD           ),
-  .IO_FPGA      (IO_FPGA          ),
-  .IO_STROBE    (IO_STROBE        ),
-  .IO_WAIT      (IO_WAIT_MM       ),
-  .IO_DIN       (IO_DIN           ),
-  .IO_DOUT      (fpga_dout        ),
+	//host controller interface (SPI)
+	.IO_OSD       (IO_OSD           ),
+	.IO_FPGA      (IO_FPGA          ),
+	.IO_STROBE    (IO_STROBE        ),
+	.IO_WAIT      (IO_WAIT_MM       ),
+	.IO_DIN       (IO_DIN           ),
+	.IO_DOUT      (fpga_dout        ),
 
-  //video
-  ._hsync       (hs               ), // horizontal sync
-  ._vsync       (vs               ), // vertical sync
-  ._csync       (VGA_CS           ),
-  .field1       (VGA_F1           ),
-  .red          (VGA_R            ), // red
-  .green        (VGA_G            ), // green
-  .blue         (VGA_B            ), // blue
-  .de           (VGA_DE           ),
-  .ar           (ar               ),
-  .scanline     (SCANLINE         ),
-  .ce_pix       (ce_pix           ),
+	//video
+	._hsync       (hs               ), // horizontal sync
+	._vsync       (vs               ), // vertical sync
+	._csync       (VGA_CS           ),
+	.field1       (VGA_F1           ),
+	.red          (VGA_R            ), // red
+	.green        (VGA_G            ), // green
+	.blue         (VGA_B            ), // blue
+	.de           (VGA_DE           ),
+	.ar           (ar               ),
+	.scanline     (SCANLINE         ),
+	.ce_pix       (ce_pix           ),
 
-  //audio
-  .left         (                 ), // audio bitstream left
-  .right        (                 ), // audio bitstream right
-  .ldata        (ldata            ), // left DAC data
-  .rdata        (rdata            ), // right DAC data
+	//audio
+	.ldata        (ldata            ), // left DAC data
+	.rdata        (rdata            ), // right DAC data
 
-  //user i/o
-  .cpu_config   (cpu_config       ), // CPU config
-  .memcfg       (memcfg           ), // memory config
-  .turbochipram (turbochipram     ), // turbo chipRAM
-  .turbokick    (turbokick        ), // turbo kickstart
-  .init_b       (                 ), // vertical sync for MCU (sync OSD update)
+	//user i/o
+	.cpu_config   (cpu_config       ), // CPU config
+	.memcfg       (memcfg           ), // memory config
+	.turbochipram (turbochipram     ), // turbo chipRAM
+	.turbokick    (turbokick        ), // turbo kickstart
 
-  .trackdisp    (                 ), // floppy track number
-  .secdisp      (                 ), // sector
-  .floppy_fwr   (                 ), // floppy fifo writing
-  .floppy_frd   (                 ), // floppy fifo reading
-  .hd_fwr       (                 ), // hd fifo writing
-  .hd_frd       (                 )  // hd fifo  ading
+	.trackdisp    (                 ), // floppy track number
+	.secdisp      (                 ), // sector
+	.floppy_fwr   (                 ), // floppy fifo writing
+	.floppy_frd   (                 ), // floppy fifo reading
+	.hd_fwr       (                 ), // hd fifo writing
+	.hd_frd       (                 )  // hd fifo reading
 );
 
 
