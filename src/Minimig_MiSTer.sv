@@ -207,106 +207,106 @@ assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 assign CLK_SYS      = clk_28;
 
 //// amiga clocks ////
-amiga_clk amiga_clk (
-  .rst          (0                ), // async reset input
-  .clk_in       (CLK_50M          ), // input clock     ( 50.000000MHz)
-  .clk_114      (clk_114          ), // output clock c0 (114.750000MHz)
-  .clk_sdram    (SDRAM_CLK        ), // output clock c2 (114.750000MHz, -146.25 deg)
-  .clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
-  .clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
-  .clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
-  .clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
-  .c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
-  .c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
-  .cck          (cck              ), // colour clock output (3.54 MHz)
-  .eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
-  .locked       (pll_locked       )  // pll locked output
+amiga_clk amiga_clk
+(
+	.rst          (0                ), // async reset input
+	.clk_in       (CLK_50M          ), // input clock     ( 50.000000MHz)
+	.clk_114      (clk_114          ), // output clock c0 (114.750000MHz)
+	.clk_sdram    (SDRAM_CLK        ), // output clock c2 (114.750000MHz, -146.25 deg)
+	.clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
+	.clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
+	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
+	.clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
+	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
+	.c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+	.cck          (cck              ), // colour clock output (3.54 MHz)
+	.eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
+	.locked       (pll_locked       )  // pll locked output
 );
 
 
-TG68K tg68k (
-  .clk          (clk_114          ),
-  .reset        (tg68_rst         ),
-  .clkena_in    (1'b1             ),
-  .IPL          (tg68_IPL         ),
-  .dtack        (tg68_dtack       ),
-  .vpa          (1'b1             ),
-  .ein          (1'b1             ),
-  .addr         (tg68_adr         ),
-  .data_read    (tg68_dat_in      ),
-  .data_write   (tg68_dat_out     ),
-  .as           (tg68_as          ),
-  .uds          (tg68_uds         ),
-  .lds          (tg68_lds         ),
-  .rw           (tg68_rw          ),
-  .e            (                 ),
-  .vma          (                 ),
-  .wrd          (                 ),
-  .ena7RDreg    (tg68_ena7RD      ),
-  .ena7WRreg    (tg68_ena7WR      ),
-  .enaWRreg     (tg68_enaWR       ),
-  .fromram      (tg68_cout        ),
-  .ramready     (tg68_cpuena      ),
-  .cpu          (cpu_config[1:0]  ),
-  .turbochipram (turbochipram     ),
-  .turbokick    (turbokick        ),
-  .cache_inhibit(cache_inhibit    ),
-  .fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
-  .eth_en       (1'b1             ), // TODO
-  .sel_eth      (                 ),
-  .frometh      (16'd0            ),
-  .ethready     (1'b0             ),
-  .ovr          (tg68_ovr         ),
-  .ramaddr      (tg68_cad         ),
-  .cpustate     (tg68_cpustate    ),
-  .nResetOut    (tg68_nrst_out    ),
-  .skipFetch    (                 ),
-  .cpuDMA       (tg68_cdma        ),
-  .ramlds       (tg68_clds        ),
-  .ramuds       (tg68_cuds        ),
-  .CACR_out     (tg68_CACR_out    ),
-  .VBR_out      (tg68_VBR_out     )
+TG68K tg68k
+(
+	.clk          (clk_114          ),
+	.reset        (tg68_rst         ),
+	.clkena_in    (1'b1             ),
+	.IPL          (tg68_IPL         ),
+	.dtack        (tg68_dtack       ),
+	.vpa          (1'b1             ),
+	.ein          (1'b1             ),
+	.addr         (tg68_adr         ),
+	.data_read    (tg68_dat_in      ),
+	.data_write   (tg68_dat_out     ),
+	.as           (tg68_as          ),
+	.uds          (tg68_uds         ),
+	.lds          (tg68_lds         ),
+	.rw           (tg68_rw          ),
+	.e            (                 ),
+	.vma          (                 ),
+	.wrd          (                 ),
+	.ena7RDreg    (tg68_ena7RD      ),
+	.ena7WRreg    (tg68_ena7WR      ),
+	.enaWRreg     (tg68_enaWR       ),
+	.fromram      (tg68_cout        ),
+	.ramready     (tg68_cpuena      ),
+	.cpu          (cpu_config[1:0]  ),
+	.turbochipram (turbochipram     ),
+	.turbokick    (turbokick        ),
+	.cache_inhibit(cache_inhibit    ),
+	.fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
+	.ovr          (tg68_ovr         ),
+	.ramaddr      (tg68_cad         ),
+	.nResetOut    (tg68_nrst_out    ),
+	.cpuDMA       (tg68_cdma        ),
+	.ramlds       (tg68_clds        ),
+	.ramuds       (tg68_cuds        ),
+
+	//custom CPU signals
+	.cpustate     (tg68_cpustate    ),
+	.CACR_out     (tg68_CACR_out    ),
+	.VBR_out      (tg68_VBR_out     )
 );
 
-sdram_ctrl sdram (
-  .sysclk       (clk_114          ),
-  .reset_in     (pll_locked       ),
-  .c_7m         (clk_7            ),
-  .reset_out    (                 ),
+sdram_ctrl sdram
+(
+	.sysclk       (clk_114          ),
+	.reset_in     (pll_locked       ),
+	.c_7m         (clk_7            ),
+	.reset_out    (                 ),
 
-  .cache_rst    (tg68_rst         ),
-  .cache_inhibit(cache_inhibit    ),
-  .cpu_cache_ctrl (tg68_CACR_out  ),
+	.cache_rst    (tg68_rst         ),
+	.cache_inhibit(cache_inhibit    ),
+	.cpu_cache_ctrl (tg68_CACR_out  ),
 
-  .sdata        (SDRAM_DQ         ),
-  .sdaddr       (SDRAM_A[12:0]    ),
-  .dqm          ({SDRAM_DQMH, SDRAM_DQML}),
-  .sd_cs        (SDRAM_nCS        ),
-  .ba           (SDRAM_BA         ),
-  .sd_we        (SDRAM_nWE        ),
-  .sd_ras       (SDRAM_nRAS       ),
-  .sd_cas       (SDRAM_nCAS       ),
+	.sdata        (SDRAM_DQ         ),
+	.sdaddr       (SDRAM_A[12:0]    ),
+	.dqm          ({SDRAM_DQMH, SDRAM_DQML}),
+	.sd_cs        (SDRAM_nCS        ),
+	.ba           (SDRAM_BA         ),
+	.sd_we        (SDRAM_nWE        ),
+	.sd_ras       (SDRAM_nRAS       ),
+	.sd_cas       (SDRAM_nCAS       ),
 
-  .cpuWR        (tg68_dat_out     ),
-  .cpuAddr      (tg68_cad[24:1]   ),
-  .cpuU         (tg68_cuds        ),
-  .cpuL         (tg68_clds        ),
-  .cpustate     (tg68_cpustate    ),
-  .cpu_dma      (tg68_cdma        ),
-  .cpuRD        (tg68_cout        ),
-  .cpuena       (tg68_cpuena      ),
-  .enaWRreg     (tg68_enaWR       ),
-  .ena7RDreg    (tg68_ena7RD      ),
-  .ena7WRreg    (tg68_ena7WR      ),
+	.cpuWR        (tg68_dat_out     ),
+	.cpuAddr      (tg68_cad[24:1]   ),
+	.cpuU         (tg68_cuds        ),
+	.cpuL         (tg68_clds        ),
+	.cpustate     (tg68_cpustate    ),
+	.cpu_dma      (tg68_cdma        ),
+	.cpuRD        (tg68_cout        ),
+	.cpuena       (tg68_cpuena      ),
+	.enaWRreg     (tg68_enaWR       ),
+	.ena7RDreg    (tg68_ena7RD      ),
+	.ena7WRreg    (tg68_ena7WR      ),
 
-  .chipWR       (ram_data         ),
-  .chipAddr     ({2'b00, ram_address[21:1]}),
-  .chipU        (_ram_bhe         ),
-  .chipL        (_ram_ble         ),
-  .chipRW       (_ram_we          ),
-  .chip_dma     (_ram_oe          ),
-  .chipRD       (ramdata_in       ),
-  .chip48       (chip48           )
+	.chipWR       (ram_data         ),
+	.chipAddr     ({2'b00, ram_address[21:1]}),
+	.chipU        (_ram_bhe         ),
+	.chipL        (_ram_ble         ),
+	.chipRW       (_ram_we          ),
+	.chip_dma     (_ram_oe          ),
+	.chipRD       (ramdata_in       ),
+	.chip48       (chip48           )
 );
 
 assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
