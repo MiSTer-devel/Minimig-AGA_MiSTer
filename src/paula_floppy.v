@@ -67,55 +67,55 @@
 module paula_floppy
 (
 	// system bus interface
-	input         clk,		    		//bus clock
+	input         clk,		    	// bus clock
 	input         clk7_en,
 	input         clk7n_en,
-	input         reset,			   		//reset 
-	input         ntsc,         // ntsc mode
-	input         sof,          // start of frame
-	input	        enable,					//dma enable
-	input   [8:1] reg_address_in,	//register address inputs
-	input  [15:0] data_in,			//bus data in
-	output [15:0] data_out,		//bus data out
-	output        dmal,					//dma request output
-	output        dmas,					//dma special output 
+	input         reset,			   // reset 
+	input         ntsc,         	// ntsc mode
+	input         sof,          	// start of frame
+	input	        enable,			// dma enable
+	input   [8:1] reg_address_in,	// register address inputs
+	input  [15:0] data_in,			// bus data in
+	output [15:0] data_out,			// bus data out
+	output        dmal,				// dma request output
+	output        dmas,				// dma special output 
 	//disk control signals from cia and user
-	input	        _step,					//step heads of disk
-	input	        direc,					//step heads direction
-	input   [3:0] _sel,				//disk select 	
-	input	        side,					//upper/lower disk head
-	input	        _motor,					//disk motor control
-	output        _track0,				//track zero detect
-	output        _change,				//disk has been removed from drive
-	output        _ready,					//disk is ready
-	output        _wprot,					//disk is write-protected
+	input	        _step,				// step heads of disk
+	input	        direc,				// step heads direction
+	input   [3:0] _sel,				// disk select 	
+	input	        side,				// upper/lower disk head
+	input	        _motor,			// disk motor control
+	output        _track0,			// track zero detect
+	output        _change,			// disk has been removed from drive
+	output        _ready,			// disk is ready
+	output        _wprot,			// disk is write-protected
 	output        index,          // disk index pulse
 
 	//interrupt request and misc. control
-	output reg    blckint,			//disk dma has finished interrupt
-	output        syncint,				//disk syncword found
-	input         wordsync,				//wordsync enable
+	output reg    blckint,			// disk dma has finished interrupt
+	output        syncint,			// disk syncword found
+	input         wordsync,			// wordsync enable
 
 	//HPS I/O interface
 	input         IO_ENA,
 	input         IO_STROBE,
-	output        IO_WAIT,
+	output reg    IO_WAIT,
 	input  [15:0] IO_DIN,
 	output reg [15:0] IO_DOUT,
 
-	output        fdd_led,				//disk activity LED, active when DMA is on
+	output        fdd_led,			//disk activity LED, active when DMA is on
 	output        hdd_led,
 	input	[1:0]   floppy_drives,	//floppy drive number
 
-	input	        hdd_cmd_req,			//HDD requests service (command register has been written)
-	input	        hdd_dat_req,			//HDD requests data tansfer
+	input	        hdd_cmd_req,		//HDD requests service (command register has been written)
+	input	        hdd_dat_req,		//HDD requests data tansfer
 	output  [2:0] hdd_addr,			//task file register address
 	output [15:0] hdd_data_out,	//data from HDD to HDC
 	input	 [15:0] hdd_data_in,		//data from HDC to HDD
-	output        hdd_wr,					//task file register write strobe
-	output        hdd_status_wr,			//status register write strobe (MCU->HDD)
-	output        hdd_data_wr,			//data write strobe
-	output        hdd_data_rd,			//data read strobe
+	output        hdd_wr,			//task file register write strobe
+	output        hdd_status_wr,	//status register write strobe (MCU->HDD)
+	output        hdd_data_wr,		//data write strobe
+	output        hdd_data_rd,		//data read strobe
 
 	// fifo / track display
 	output  [7:0] trackdisp,
@@ -176,164 +176,101 @@ reg   [8:0] step_ena_cnt;
 wire        step_ena;
 
 // drive motor control
-reg   [3:0] _sel_del;     // deleyed drive select signals for edge detection
-reg   [3:0] motor_on;     // drive motor on
+reg  [3:0] _sel_del;     // deleyed drive select signals for edge detection
+reg  [3:0] motor_on;     // drive motor on
 
-//decoded SPI commands
-reg         cmd_fdd;				//SPI host accesses floppy drive buffer
-reg         cmd_hdd_rd;				//SPI host reads task file registers		
-reg         cmd_hdd_wr;				//SPI host writes task file registers
-reg         cmd_hdd_data_wr;		//SPI host writes data to HDD buffer
-reg         cmd_hdd_data_rd;		//SPI host reads data from HDD buffer
+//decoded commands
+reg        cmd_fdd;				//HPS accesses floppy drive buffer
+reg        cmd_hdd_rd;			//HPS reads task file registers		
+reg        cmd_hdd_wr;			//HPS writes task file registers
+reg        cmd_hdd_data_wr;	//HPS writes data to HDD buffer
+reg        cmd_hdd_data_rd;	//HPS reads data from HDD buffer
 
-assign      trackdisp = track;
-assign      secdisp = dsklen[13:0];
+assign     trackdisp = track;
+assign     secdisp = dsklen[13:0];
 
-assign      floppy_fwr = fifo_wr;
-assign      floppy_frd = fifo_rd;
+assign     floppy_fwr = fifo_wr;
+assign     floppy_frd = fifo_rd;
 
-//-----------------------------------------------------------------------------------------------//
-// JB: SPI interface
-// Sorg: SPI interface is mostly removed. Only wait state is currently used.
-//-----------------------------------------------------------------------------------------------//
+reg  [1:0] cmd_cnt;
+wire       body = &cmd_cnt;
 
-// current disk i/o (paula & gayle) works at 7Mhz pace, so wait states are required
-// TODO: move to 28MHz pace (at least for fifo)
-assign     IO_WAIT = ss;
-localparam SPI_WIDTH = 10;
+reg  [2:0] data_cnt; //trnsmitted words counter (0-7) used for transfer of IDE task file registers
 
-reg        spi_rx_flag;
-reg        rx_flag_sync;
-reg        rx_flag;
-wire       spi_rx_flag_clr;
-
-reg        spi_tx_flag;
-reg        tx_flag_sync;
-reg        tx_flag;
-wire       spi_tx_flag_clr;
-
-reg  [1:0] spi_tx_cnt;		//transmitted SPI words counter
-reg  [1:0] spi_tx_cnt_del;	//delayed transmitted SPI words counter
-reg  [1:0] tx_cnt;			//transmitted SPI words counter
-reg  [2:0] tx_data_cnt;
-reg  [2:0] rx_data_cnt;
-
-reg  [1:0] rx_cnt;
-reg  [1:0] spi_rx_cnt;		//received SPI words counter (counts form 0 to 3 and stops there)
-reg        spi_rx_cnt_rst;	//indicates reception of the first spi word after activation of the chip select
-
-reg  [3:0] spi_bit_cnt;		//received bit counter - incremented on rising edge of SCK
-wire       spi_bit_max = (ss && spi_bit_cnt==(SPI_WIDTH-1));
-wire       spi_bit_0   = (ss && spi_bit_cnt==0);
-
-reg ss;
+reg stb7, stb28;
 always @(posedge clk or negedge IO_ENA) begin
-
-	if(~IO_ENA) ss <= 0;
+	if(~IO_ENA) {IO_WAIT,stb7,stb28} <= 0;
 	else begin
-		if(~ss) begin
-			spi_bit_cnt <= 0;
-			if(IO_STROBE) ss <= 1;
+		stb28 <= 0;
+		if(IO_STROBE) begin
+			if(body & (cmd_hdd_data_wr | cmd_hdd_data_rd)) begin
+				rx_data <=IO_DIN;
+				IO_DOUT <=tx_data;
+				stb28   <= 1;
+			end
+			else begin
+				IO_WAIT <= 1;
+			end
 		end
-		else begin
-			if(spi_bit_cnt == (SPI_WIDTH-1)) ss <= 0;
-			else spi_bit_cnt <= spi_bit_cnt + 1'd1;
+		if(clk7_en & IO_WAIT) begin
+			if(~stb7) begin
+				rx_data <=IO_DIN;
+				stb7    <=1;
+			end
+			if(stb7) begin
+				stb7    <=0;
+				IO_WAIT <=0;
+				IO_DOUT <=tx_data;
+			end
 		end
 	end
 end
 
-reg [15:0] rx_data;			//spi received data
-reg [15:0] tx_data;			//data to be send via SPI
+reg [15:0] rx_data;	//received data from HPS
+reg [15:0] tx_data;	//data to be send to HPS
 
-always @(posedge clk) if(spi_bit_max) rx_data <= IO_DIN;
-always @(negedge clk) if(spi_bit_0)   IO_DOUT <= tx_data;
-
-
-// rx_flag is synchronous with clk and is set after receiving the last bit of a word
-assign spi_rx_flag_clr = rx_flag | reset;
-always @(posedge clk or posedge spi_rx_flag_clr)
-	if (spi_rx_flag_clr)
-		spi_rx_flag <= 0;
-	else if (spi_bit_max)
-		spi_rx_flag <= 1;
-
-always @(posedge clk) if (clk7n_en) rx_flag_sync <= spi_rx_flag;	//double synchronization to avoid metastability
-always @(posedge clk) if (clk7_en)  rx_flag <= rx_flag_sync;		//synchronous with clk
-
-// tx_flag is synchronous with clk and is set after sending the first bit of a word
-assign spi_tx_flag_clr = tx_flag | reset;
-always @(negedge clk or posedge spi_tx_flag_clr)
-	if (spi_tx_flag_clr)
-		spi_tx_flag <= 0;
-	else if (spi_bit_0)
-		spi_tx_flag <= 1;
-
-always @(posedge clk) if (clk7n_en) tx_flag_sync <= spi_tx_flag;	//double synchronization to avoid metastability
-always @(posedge clk) if (clk7_en)  tx_flag <= tx_flag_sync;		//synchronous with clk
-
-always @(negedge clk or negedge IO_ENA)
-	if (~IO_ENA)
-		spi_tx_cnt <= 0;
-	else if (spi_bit_0 && spi_tx_cnt!=3)
-		spi_tx_cnt <= spi_tx_cnt + 1'd1;
-		
-always @(negedge clk) if (spi_bit_0) spi_tx_cnt_del <= spi_tx_cnt;
-always @(posedge clk) if (clk7_en)   tx_cnt <= spi_tx_cnt_del;		
-
-
-//trnsmitted words counter (0-3) used for transfer of IDE task file registers
-always @(negedge clk)
-	if(spi_bit_0)
-		if (spi_tx_cnt==2)
-			tx_data_cnt <= 0;
-		else
-			tx_data_cnt <= tx_data_cnt + 3'd1;
-
-//received data counter, used only for transferring IDE task file register contents, count range: 0-7			
-always @(posedge clk) begin
-  if (clk7_en) begin
-	  if (rx_flag) begin
-	  	if (rx_cnt != 3)
-	  		rx_data_cnt <= 0;
-	  	else
-	  		rx_data_cnt <= rx_data_cnt + 3'd1;
-    end
-  end
+always @(posedge clk or negedge IO_ENA) begin
+	if (~IO_ENA) {cmd_cnt, data_cnt} <= 0;
+	else if (clk7_en & stb7) begin
+		if(!body) cmd_cnt <= cmd_cnt + 1'd1;
+		else data_cnt <= data_cnt + 1'd1;
+	end
 end
-
-always @(posedge clk or negedge IO_ENA)
-	if (~IO_ENA)
-		spi_rx_cnt_rst <= 1;
-	else if (spi_bit_max)
-		spi_rx_cnt_rst <= 0;
-		
-always @(posedge clk)
-	if(spi_bit_max)
-		if (spi_rx_cnt_rst)
-			spi_rx_cnt <= 0;
-		else if (spi_rx_cnt!=3)
-			spi_rx_cnt <= spi_rx_cnt + 2'd1;
-
-always @(posedge clk) if (clk7_en) rx_cnt <= spi_rx_cnt;
-
-wire spidat = cmd_fdd && rx_flag && rx_cnt==3; //data word transfer strobe
 
 //---------------------------------------------------------------------------------------------------------------------
 
-
 //HDD interface
-assign hdd_addr      = cmd_hdd_rd ? tx_data_cnt : cmd_hdd_wr ? rx_data_cnt : 3'd0;
+assign hdd_addr      = cmd_hdd_rd ? data_cnt : cmd_hdd_wr ? data_cnt : 3'd0;
 assign hdd_data_out  = rx_data;
-assign hdd_wr        = rx_flag && rx_cnt==3 && cmd_hdd_wr;
-assign hdd_data_wr   = rx_flag && rx_cnt==3 && cmd_hdd_data_wr;
-assign hdd_status_wr = rx_flag && rx_cnt==0 && rx_data[15:12]==4'b1111;
-assign hdd_data_rd   = tx_flag && tx_cnt==3 && cmd_hdd_data_rd;
+assign hdd_wr        = stb7 && body && cmd_hdd_wr;
+assign hdd_status_wr = stb7 && !cmd_cnt && rx_data[15:12]==4'b1111;
+assign hdd_data_wr   = stb28 && cmd_hdd_data_wr;
+assign hdd_data_rd   = stb28 && cmd_hdd_data_rd;
 assign hdd_led       = hdd_dat_req|hdd_cmd_req;
+
+always @(posedge clk) begin
+	if (clk7_en) begin
+		if (reset | ~IO_ENA) begin
+			cmd_fdd         <= 0;
+			cmd_hdd_rd      <= 0;
+			cmd_hdd_wr      <= 0;
+			cmd_hdd_data_wr <= 0;
+			cmd_hdd_data_rd <= 0;
+		end
+		else if (stb7 && !cmd_cnt) begin
+			cmd_fdd         <= (rx_data[15:13]==3'b000 );
+			cmd_hdd_rd      <= (rx_data[15:12]==4'b1000);
+			cmd_hdd_wr      <= (rx_data[15:12]==4'b1001);
+			cmd_hdd_data_wr <= (rx_data[15:12]==4'b1010);
+			cmd_hdd_data_rd <= (rx_data[15:12]==4'b1011);
+		end
+	end
+end
 
 
 //transmit data multiplexer
 always @(*) begin
-	casex ({spi_tx_cnt, cmd_fdd, trackrd, trackwr, cmd_hdd_rd | cmd_hdd_data_rd})
+	casex ({cmd_cnt, cmd_fdd, trackrd, trackwr, cmd_hdd_rd | cmd_hdd_data_rd})
 		
 		// hdd/fdd request status
 		'b00xxxx: tx_data = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd&~fifo_cnt[10],track[7:0]};
@@ -353,11 +290,11 @@ always @(*) begin
 	endcase
 end
 
-//floppy disk write fifo status is latched when transmision of the previous spi word begins 
-//it guarantees that when latching the status data into spi transmit register setup and hold times are met
+//floppy disk write fifo status is latched when transmision of the previous word begins 
+//it guarantees that when latching the status data into transmit register setup and hold times are met
 always @(posedge clk) begin
   if (clk7_en) begin
-  	if (tx_flag)
+  	if (stb7)
   		wr_fifo_status <= {dmaen&dsklen[14],3'b000,fifo_cnt[11:0]};
   end
 end
@@ -575,8 +512,11 @@ assign buswr = (reg_address_in[8:1]==DSKDAT[8:1]);
 //fifo data input multiplexer
 assign fifo_in[15:0] = trackrd ? rx_data[15:0] : data_in[15:0];
 
+//data word transfer strobe
+wire stbdat = cmd_fdd && stb7 && body;
+
 //fifo write control
-assign fifo_wr = (trackrdok & spidat & ~lenzero) | (buswr & dmaon);
+assign fifo_wr = (trackrdok & stbdat & ~lenzero) | (buswr & dmaon);
 
 //delayed version to allow writing of the last word to empty fifo
 always @(posedge clk) begin
@@ -586,11 +526,11 @@ always @(posedge clk) begin
 end
 
 //fifo read control
-assign fifo_rd = (busrd & dmaon) | (trackwr & spidat);
+assign fifo_rd = (busrd & dmaon) | (trackwr & stbdat);
 
 //DSKSYNC interrupt
 wire sync_match;
-assign sync_match = dsksync[15:0]==rx_data[15:0] && spidat && trackrd;
+assign sync_match = dsksync[15:0]==rx_data[15:0] && stbdat && trackrd;
 
 assign syncint = sync_match | ~dmaen & |(~_sel & motor_on & disk_present) & sof;
 
@@ -610,7 +550,7 @@ assign fifo_reset = reset | ~dmaen;
 paula_floppy_fifo db1
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
+	.clk7_en(clk7_en),
 	.reset(fifo_reset),
 	.in(fifo_in),
 	.out(fifo_out),
@@ -647,26 +587,8 @@ always @(posedge clk) begin
   if (clk7_en) begin
   	if(reset)
   		{disk_writable[3:0],disk_present[3:0]} <= 8'b0000_0000;
-  	else if (rx_data[15:12]==4'b0001 && rx_flag && rx_cnt==0)
+  	else if (rx_data[15:12]==4'b0001 && stb7 && !cmd_cnt)
   		{disk_writable[3:0],disk_present[3:0]} <= rx_data[7:0];
-  end
-end
-
-always @(posedge clk) begin
-  if (clk7_en) begin
-	  if (reset) begin
-	  	cmd_fdd <= 0;
-	  	cmd_hdd_rd <= 0;
-	  	cmd_hdd_wr <= 0;
-	  	cmd_hdd_data_wr <= 0;
-	  	cmd_hdd_data_rd <= 0;
-	  end else if (rx_flag && rx_cnt==0) begin
-	  	cmd_fdd <= rx_data[15:13]==3'b000 ? 1'b1 : 1'b0;
-	  	cmd_hdd_rd <= rx_data[15:12]==4'b1000 ? 1'b1 : 1'b0;
-	  	cmd_hdd_wr <= rx_data[15:12]==4'b1001 ? 1'b1 : 1'b0;
-	  	cmd_hdd_data_wr <= rx_data[15:12]==4'b1010 ? 1'b1 : 1'b0;
-	  	cmd_hdd_data_rd <= rx_data[15:12]==4'b1011 ? 1'b1 : 1'b0;
-	  end
   end
 end
 
@@ -692,7 +614,7 @@ always @(*) begin
 			trackwr = 0;
 			dmaon = 0;
 			blckint = 0;
-			if (cmd_fdd && rx_flag && rx_cnt==1 && dmaen && !lenzero && enable)//dsklen>0 and dma enabled, do disk dma operation
+			if (cmd_fdd && stb7 && cmd_cnt==1 && dmaen && !lenzero && enable)//dsklen>0 and dma enabled, do disk dma operation
 				nextstate = DISKDMA_ACTIVE; 
 			else
 				nextstate = DISKDMA_IDLE;			

@@ -36,7 +36,7 @@
 module gayle
 (
 	input	clk,
-  input clk7_en,
+	input clk7_en,
 	input	reset,
 	input	[23:1] address_in,
 	input	[15:0] data_in,
@@ -59,12 +59,9 @@ module gayle
 	input	hdd_status_wr,
 	input	hdd_data_wr,
 	input	hdd_data_rd,
-  output hd_fwr,
-  output hd_frd
+	output hd_fwr,
+	output hd_frd
 );
-
-localparam VCC = 1'b1;
-localparam GND = 1'b0;
 
 //0xda2000 Data
 //0xda2004 Error | Feature
@@ -164,44 +161,41 @@ assign drdy = ~(bsy|drq);
 assign err = error;
 
 // address decoding
-assign sel_gayleid = sel_gayle && address_in[15:12]==4'b0001 ? VCC : GND;	  // GAYLEID, $DE1xxx
-assign sel_tfr = sel_ide && address_in[15:14]==2'b00 && !address_in[12] ? VCC : GND; // $DA0xxx, $DA2xxx
-assign sel_status = rd && sel_tfr && address_in[4:2]==3'b111 ? VCC : GND;
-assign sel_command = hwr && sel_tfr && address_in[4:2]==3'b111 ? VCC : GND;
-assign sel_fifo = sel_tfr && address_in[4:2]==3'b000 ? VCC : GND;
-assign sel_cs     = sel_ide && address_in[15:12]==4'b1000 ? VCC : GND;      // GAYLE_CS_1200,  $DA8xxx
-assign sel_intreq = sel_ide && address_in[15:12]==4'b1001 ? VCC : GND;	    // GAYLE_IRQ_1200, $DA9xxx
-assign sel_intena = sel_ide && address_in[15:12]==4'b1010 ? VCC : GND;	    // GAYLE_INT_1200, $DAAxxx
-assign sel_cfg    = sel_ide && address_in[15:12]==4'b1011 ? VCC : GND;      // GAYLE_CFG_1200, $DABxxx
+assign sel_gayleid= (sel_gayle && address_in[15:12]==4'b0001);	               // GAYLEID, $DE1xxx
+assign sel_tfr    = (sel_ide && address_in[15:14]==2'b00 && !address_in[12]); // $DA0xxx, $DA2xxx
+assign sel_status = (rd && sel_tfr && address_in[4:2]==3'b111);
+assign sel_command= (hwr && sel_tfr && address_in[4:2]==3'b111);
+assign sel_fifo   = (sel_tfr && address_in[4:2]==3'b000);
+assign sel_cs     = (sel_ide && address_in[15:12]==4'b1000);  // GAYLE_CS_1200,  $DA8xxx
+assign sel_intreq = (sel_ide && address_in[15:12]==4'b1001);  // GAYLE_IRQ_1200, $DA9xxx
+assign sel_intena = (sel_ide && address_in[15:12]==4'b1010);  // GAYLE_INT_1200, $DAAxxx
+assign sel_cfg    = (sel_ide && address_in[15:12]==4'b1011);  // GAYLE_CFG_1200, $DABxxx
 
 //===============================================================================================//
 
 // gayle cs
 always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reset) begin
-      cs_mask <= #1 6'd0;
-      cs      <= #1 2'd0;
-    end else if (hwr && sel_cs) begin
-      cs_mask <= #1 data_in[15:10];
-      cs      <= #1 data_in[9:8];
-    end
-  end
+	if (clk7_en) begin
+		if (reset) begin
+			cs_mask <= 0;
+			cs      <= 0;
+		end else if (hwr && sel_cs) begin
+			cs_mask <= data_in[15:10];
+			cs      <= data_in[9:8];
+		end
+	end
 end
 
 // gayle cfg
 always @ (posedge clk) begin
-  if (clk7_en) begin
-    if (reset)
-      cfg <= #1 4'd0;
-    if (hwr && sel_cfg) begin
-      cfg <= #1 data_in[15:12];
-    end
-  end
+	if (clk7_en) begin
+		if (reset) cfg <= 0;
+		if (hwr && sel_cfg) cfg <= data_in[15:12];
+	end
 end
 
 // task file registers
-reg		[7:0] tfr [7:0];
+reg	[7:0] tfr [7:0];
 wire	[2:0] tfr_sel;
 wire	[7:0] tfr_in;
 wire	[7:0] tfr_out;
@@ -210,60 +204,52 @@ wire	tfr_we;
 reg		[7:0] sector_count;	// sector counter
 wire	sector_count_dec;	// decrease sector counter
 
-always @(posedge clk)
-  if (clk7_en) begin
-  	if (hwr && sel_tfr && address_in[4:2] == 3'b010) // sector count register loaded by the host
-  		sector_count <= data_in[15:8];
-  	else if (sector_count_dec)
-  		sector_count <= sector_count - 8'd1;
-  end
+assign sector_count_dec = pio_in & fifo_last;
 
-assign sector_count_dec = pio_in & fifo_last & sel_fifo & rd;
-		
+always @(posedge clk) begin
+	if (clk7_en && hwr && sel_tfr && address_in[4:2] == 3'b010) sector_count <= data_in[15:8]; // sector count register loaded by the host
+	if (sector_count_dec) sector_count <= sector_count - 8'd1;
+end
+
+
 // task file register control
-assign tfr_we = busy ? hdd_wr : sel_tfr & hwr;
+assign tfr_we  = busy ? hdd_wr : sel_tfr & hwr;
 assign tfr_sel = busy ? hdd_addr : address_in[4:2];
-assign tfr_in = busy ? hdd_data_out[7:0] : data_in[15:8];
+assign tfr_in  = busy ? hdd_data_out[7:0] : data_in[15:8];
 
 // input multiplexer for SPI host
 assign hdd_data_in = tfr_sel==0 ? fifo_data_out : {8'h00,tfr_out};
 
 // task file registers
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (tfr_we)
-  		tfr[tfr_sel] <= tfr_in;
-  end
-		
+	if (clk7_en) begin
+		if (tfr_we) tfr[tfr_sel] <= tfr_in;
+	end
+	
 assign tfr_out = tfr[tfr_sel];
 
 // master/slave drive select
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		dev <= 0;
-  	else if (sel_tfr && address_in[4:2]==6 && hwr)
-  		dev <= data_in[12];
-  end
-		
+	if (clk7_en) begin
+		if (reset) dev <= 0;
+		else if (sel_tfr && address_in[4:2]==6 && hwr) dev <= data_in[12];
+	end
+
 // IDE interrupt enable register
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		intena <= GND;
-  	else if (sel_intena && hwr)
-  		intena <= data_in[15];
-  end
-			
+	if (clk7_en) begin
+		if (reset) intena <= 0;
+		else if (sel_intena && hwr) intena <= data_in[15];
+	end
+		
 // gayle id register: reads 1->1->0->1 on MSB
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (sel_gayleid)
-  		if (hwr) // a write resets sequence counter
-  			gayleid_cnt <= 2'd0;
-  		else if (rd)
-  			gayleid_cnt <= gayleid_cnt + 2'd1;
-  end
+	if (clk7_en) begin
+		if (sel_gayleid) begin
+			if (hwr) gayleid_cnt <= 2'd0; // a write resets sequence counter
+			else if (rd) gayleid_cnt <= gayleid_cnt + 2'd1;
+		end
+	end
 
 assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
 
@@ -278,83 +264,73 @@ assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
 // 0 - error flag (remember about setting error task file register)
 
 // command busy status
-always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		busy <= GND;
-  	else if (hdd_status_wr && hdd_data_out[7] || (sector_count_dec && sector_count == 8'h01))	// reset by SPI host (by clearing BSY status bit)
-  		busy <= GND;
-  	else if (sel_command)	// set when the CPU writes command register
-  		busy <= VCC;
-  end
+always @(posedge clk) begin
+	if (clk7_en) begin
+		if (reset) busy <= 0;
+		else if (hdd_status_wr && hdd_data_out[7]) busy <= 0; // reset by SPI host (by clearing BSY status bit)
+		else if (sel_command) busy <= 1; // set when the CPU writes command register
+	end
+
+	if (sector_count_dec && sector_count == 1) busy <= 0;
+end
 
 // IDE interrupt request register
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		intreq <= GND;
-  	else if (busy && hdd_status_wr && hdd_data_out[4] && intena) // set by SPI host
-  		intreq <= VCC;
-  	else if (sel_intreq && hwr && !data_in[15]) // cleared by the CPU
-  		intreq <= GND;
-  end
+	if (clk7_en) begin
+		if (reset) intreq <= 0;
+		else if (busy && hdd_status_wr && hdd_data_out[4] && intena) intreq <= 1; // set by SPI host
+		else if (sel_intreq && hwr && !data_in[15]) intreq <= 0; // cleared by the CPU
+	end
 
 assign irq = (~pio_in | drq) & intreq; // interrupt request line (INT2)
 
 // pio in command type
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		pio_in <= GND;
-  	else if (drdy) // reset when processing of the current command ends
-  		pio_in <= GND;
-  	else if (busy && hdd_status_wr && hdd_data_out[3])	// set by SPI host 
-  		pio_in <= VCC;		
-  end
+	if (clk7_en) begin
+		if (reset) pio_in <= 0;
+		else if (drdy) pio_in <= 0; // reset when processing of the current command ends
+		else if (busy && hdd_status_wr && hdd_data_out[3])	pio_in <= 1; // set by SPI host 
+	end
 
 // pio out command type
-always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		pio_out <= GND;
-  	else if (busy && hdd_status_wr && hdd_data_out[7]) 	// reset by SPI host when command processing completes
-  		pio_out <= GND;
-  	else if (busy && hdd_status_wr && hdd_data_out[2])	// set by SPI host
-  		pio_out <= VCC;	
-  end
-		
+always @(posedge clk) 
+	if (clk7_en) begin
+		if (reset) pio_out <= 0;
+		else if (busy && hdd_status_wr && hdd_data_out[7]) pio_out <= 0; // reset by SPI host when command processing completes
+		else if (busy && hdd_status_wr && hdd_data_out[2])	pio_out <= 1; // set by SPI host
+	end
+	
 assign drq = (fifo_full & pio_in) | (~fifo_full & pio_out); // HDD data request status bit
 
 // error status
 always @(posedge clk)
-  if (clk7_en) begin
-  	if (reset)
-  		error <= GND;
-  	else if (sel_command) // reset by the CPU when command register is written
-  		error <= GND;
-  	else if (busy && hdd_status_wr && hdd_data_out[0]) // set by SPI host
-  		error <= VCC;	
-  end
-		
+	if (clk7_en) begin
+		if (reset) error <= 0;
+		else if (sel_command) error <= 0; // reset by the CPU when command register is written
+		else if (busy && hdd_status_wr && hdd_data_out[0]) error <= 1; // set by SPI host
+	end
+
 assign hdd_cmd_req = bsy; // bsy is set when command register is written, tells the SPI host about new command
 assign hdd_dat_req = (fifo_full & pio_out); // the FIFO is full so SPI host may read it
 
 // FIFO in/out multiplexer
 assign fifo_reset = reset | sel_command;
 assign fifo_data_in = pio_in ? hdd_data_out : data_in;
-assign fifo_rd = pio_out ? hdd_data_rd : sel_fifo & rd;
-assign fifo_wr = pio_in ? hdd_data_wr : sel_fifo & hwr & lwr;
+assign fifo_rd = ~pio_out & sel_fifo & rd;
+assign fifo_wr = ~pio_in  & sel_fifo & hwr & lwr;
 
 //sector data buffer (FIFO)
 gayle_fifo SECBUF1
 (
 	.clk(clk),
-  .clk7_en(clk7_en),
+	.clk7_en(clk7_en),
 	.reset(fifo_reset),
 	.data_in(fifo_data_in),
 	.data_out(fifo_data_out),
 	.rd(fifo_rd),
+	.fast_rd(pio_out & hdd_data_rd),
 	.wr(fifo_wr),
+	.fast_wr(pio_in & hdd_data_wr),
 	.full(fifo_full),
 	.empty(fifo_empty),
 	.last(fifo_last)
@@ -364,12 +340,12 @@ gayle_fifo SECBUF1
 assign nrdy = pio_in & sel_fifo & fifo_empty;
 
 //data_out multiplexer
-assign data_out = (sel_fifo && rd ? fifo_data_out : sel_status ? (!dev && hdd_ena[0]) || (dev && hdd_ena[1]) ? {status,8'h00} : 16'h00_00 : sel_tfr && rd ? {tfr_out,8'h00} : 16'h00_00)
-         | (sel_cs      && rd  ? {(cs_mask[5] || intreq), cs_mask[4:0], cs, 8'h0} : 16'h00_00)				
-			   | (sel_intreq  && rd  ? {intreq, 15'b000_0000_0000_0000}                 : 16'h00_00)				
-			   | (sel_intena  && rd  ? {intena, 15'b000_0000_0000_0000}                 : 16'h00_00)				
-			   | (sel_gayleid && rd  ? {gayleid,15'b000_0000_0000_0000}                 : 16'h00_00)
- 			   | (sel_cfg     && rd  ? {cfg,    12'b0000_0000_0000}                     : 16'h00_00);
+assign data_out = (sel_fifo    && rd ? fifo_data_out : sel_status ? (!dev && hdd_ena[0]) || (dev && hdd_ena[1]) ? {status,8'h00} : 16'h00_00 : sel_tfr && rd ? {tfr_out,8'h00} : 16'h00_00)
+                | (sel_cs      && rd ? {(cs_mask[5] || intreq), cs_mask[4:0], cs, 8'h0} : 16'h00_00)
+                | (sel_intreq  && rd ? {intreq, 15'b000_0000_0000_0000}                 : 16'h00_00)
+                | (sel_intena  && rd ? {intena, 15'b000_0000_0000_0000}                 : 16'h00_00)
+                | (sel_gayleid && rd ? {gayleid,15'b000_0000_0000_0000}                 : 16'h00_00)
+                | (sel_cfg     && rd ? {cfg,    12'b0000_0000_0000}                     : 16'h00_00);
 
 
 //===============================================================================================//
