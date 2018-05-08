@@ -137,7 +137,7 @@ reg    [2:0] sprsel;        //memory selection
 //in our solution to save resources they are evaluated sequencially but 8 times faster (28MHz clock)
 always @ (posedge clk) begin
   if (sprsel[2]==hpos[0])    //sprsel[2] is synced with hpos[0]
-    sprsel <= #1 sprsel + 1'b1;
+    sprsel <= sprsel + 1'b1;
 end
 
 //--------------------------------------------------------------------------------------
@@ -148,9 +148,9 @@ reg  [16-1:0] fmode;
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (reset)
-      fmode <= #1 16'h0000;
+      fmode <= 0;
     else if (aga && (reg_address_in[8:1] == FMODE_REG[8:1]))
-      fmode <= #1 data_in;
+      fmode <= data_in;
   end
 end
 
@@ -181,7 +181,7 @@ assign sprpth_in = ackdma ? newptr[20:16] : data_in[4:0];
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (ackdma || ((reg_address_in[8:5]==SPRPTBASE_REG[8:5]) && !reg_address_in[1]))//if dma cycle or bus write
-      sprpth[ptsel] <= #1 sprpth_in;
+      sprpth[ptsel] <= sprpth_in;
   end
 end
 
@@ -193,7 +193,7 @@ assign sprptl_in = ackdma ? newptr[15:1] : data_in[15:1];
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (ackdma || ((reg_address_in[8:5]==SPRPTBASE_REG[8:5]) && reg_address_in[1]))//if dma cycle or bus write
-      sprptl[ptsel] <= #1 sprptl_in;
+      sprptl[ptsel] <= sprptl_in;
   end
 end
 
@@ -204,8 +204,8 @@ always @ (posedge clk) begin
   if (clk7_en) begin
     if ((reg_address_in[8:6]==SPRPOSCTLBASE_REG[8:6]) && (reg_address_in[2:1]==2'b00)) begin
       // if bus write
-      sprpos[pcsel]  <= #1 data_in[15:8];
-      sprposh[pcsel] <= #1 data_in[7];
+      sprpos[pcsel]  <= data_in[15:8];
+      sprposh[pcsel] <= data_in[7];
     end
   end
 end
@@ -218,7 +218,7 @@ assign spr_sscan2 = sprposh[sprsel];
 always @ (posedge clk) begin
   if (clk7_en) begin
     if ((reg_address_in[8:6]==SPRPOSCTLBASE_REG[8:6]) && (reg_address_in[2:1]==2'b01))//if bus write
-      sprctl[pcsel] <= #1 {data_in[15:8],data_in[6],data_in[5],data_in[2],data_in[1]};
+      sprctl[pcsel] <= {data_in[15:8],data_in[6],data_in[5],data_in[2],data_in[1]};
   end
 end
 
@@ -230,9 +230,9 @@ assign {vstop[7:0],vstart[9],vstop[9],vstart[8],vstop[8]} = sprctl[sprsel];
 //the first during cycle #3 and the second during cycle #7
 //first slot transfers data to sprxpos register during vstop or vblend or to sprxdata when dma is active
 //second slot transfers data to sprxctl register during vstop or vblend or to sprxdatb when dma is active
-//current dmastate is valid after cycle #1 for given sprite and it's needed during cycle #3 and #7
+//current dmastate is valid after cycle for given sprite and it's needed during cycle #3 and #7
 always @ (posedge clk) begin
-  dmastate_mem[sprsel] <= #1 dmastate_in;
+  dmastate_mem[sprsel] <= dmastate_in;
 end
 
 assign dmastate = dmastate_mem[sprsel];
@@ -241,7 +241,7 @@ assign dmastate = dmastate_mem[sprsel];
 always @ (*) begin
   if (vbl || ({ecs&vstop[9],vstop[8:0]}==vpos[9:0]))
     dmastate_in = 0;
-  else if ( ({ecs&vstart[9],vstart[8:0]}==vpos[9:0]) && ((fmode[15] && spr_sscan2) ? (vpos[0] == vstart[0]) : 1'b1) ) // TODO fix needed!
+  else if ({ecs&vstart[9],vstart[8:0]}==vpos[9:0])
     dmastate_in = 1;
   else
     dmastate_in = dmastate;
@@ -249,15 +249,12 @@ end
 
 always @ (posedge clk) begin
   if (sprite==sprsel && hpos[2:1]==2'b01)
-    sprdmastate <= #1 dmastate;
+    sprdmastate <= dmastate & ~(fmode[15] && spr_sscan2 && (vpos[0] != vstart[0]));
 end
 
 always @ (posedge clk) begin
   if (sprite==sprsel && hpos[2:1]==2'b01)
-    if ({ecs&vstop[9],vstop[8:0]}==vpos[9:0])
-      sprvstop <= #1 1'b1;
-    else
-      sprvstop <= #1 1'b0;
+    sprvstop <= ({ecs&vstop[9],vstop[8:0]}==vpos[9:0]);
 end
 
 //--------------------------------------------------------------------------------------
@@ -268,9 +265,9 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[8:1]==8'h18 && hpos[0])
-      enable <= #1 1'b1;
+      enable <= 1;
     else if (hpos[8:1]==8'h38 && hpos[0])
-      enable <= #1 1'b0;
+      enable <= 0;
   end
 end
 
@@ -278,7 +275,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[2:0]==3'b001)
-      sprite[2:0] <= #1 {hpos[5]^hpos[4],~hpos[4],hpos[3]};
+      sprite[2:0] <= {hpos[5]^hpos[4],~hpos[4],hpos[3]};
   end
 end
 
