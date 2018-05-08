@@ -36,7 +36,7 @@ module denise_bitplane_shifter
   input  wire [  2-1:0] fmode,    // AGA fetch mode
   input  wire [ 64-1:0] data_in,  // parallel load data input
   input  wire [  8-1:0] scroll,   // scrolling value
-  output wire           out       // shift register output
+  output reg            out       // shift register output
 );
 
 
@@ -123,7 +123,7 @@ end
 
 
 // superhires scroller output
-assign out = sh_scroller[sh_select];
+always @ (posedge clk) if(shift) out <= sh_scroller[sh_select];
 
 
 endmodule
