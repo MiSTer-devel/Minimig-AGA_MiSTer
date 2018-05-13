@@ -371,7 +371,7 @@ wire        turbo;					//CPU is working in turbo mode
 wire  [6:0] memory_config;	//memory configuration
 wire  [3:0] floppy_config;	//floppy drives configuration (drive number and speed)
 wire  [4:0] chipset_config;	//chipset features selection
-wire  [2:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
+wire  [4:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
 wire        sel_ide;				//select IDE drive registers
@@ -843,7 +843,7 @@ gayle GAYLE1
 	.sel_gayle(sel_gayle),
 	.irq(gayle_irq),
 	.nrdy(gayle_nrdy),
-	.hdd_ena(ide_config[2:1]),
+	.hdd_ena(ide_config[4:1]),
 
 	.hdd_cmd_req(hdd_cmd_req),
 	.hdd_dat_req(hdd_dat_req),

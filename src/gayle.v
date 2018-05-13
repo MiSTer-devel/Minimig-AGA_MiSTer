@@ -48,7 +48,7 @@ module gayle
 	input	sel_gayle,			// $DExxxx
 	output	irq,
 	output	nrdy,				// fifo is not ready for reading 
-	input	[1:0] hdd_ena,		// enables Master & Slave drives
+	input	[3:0] hdd_ena,		// enables Master & Slave drives
 
 	output	hdd_cmd_req,
 	output	hdd_dat_req,
@@ -123,7 +123,7 @@ reg   [3:0] cfg;
 reg   [1:0] cs;
 reg   [5:0] cs_mask;
 
-reg		dev;			// drive select (Master/Slave)
+reg [1:0] dev;		// drive select (Master/Slave)
 wire 	bsy;			// busy
 wire 	drdy;			// drive ready
 wire 	drq;			// data request
@@ -148,28 +148,13 @@ wire	gayleid;			// output data (one bit wide)
 assign hd_fwr = fifo_wr;
 assign hd_frd = fifo_rd;
 
-// HDD status register
-assign status = {bsy,drdy,2'b00,drq,2'b00,err};
-
-// status debug
-//reg [7:0] status_dbg /* synthesis syn_noprune */;
-//always @ (posedge clk) status_dbg <= #1 status;
-
-// HDD status register bits
-assign bsy = busy & ~drq;
-assign drdy = ~(bsy|drq);
-assign err = error;
-
 // address decoding
-assign sel_gayleid= (sel_gayle && address_in[15:12]==4'b0001);	               // GAYLEID, $DE1xxx
-assign sel_tfr    = (sel_ide && address_in[15:14]==2'b00 && !address_in[12]); // $DA0xxx, $DA2xxx
-assign sel_status = (rd && sel_tfr && address_in[4:2]==3'b111);
-assign sel_command= (hwr && sel_tfr && address_in[4:2]==3'b111);
-assign sel_fifo   = (sel_tfr && address_in[4:2]==3'b000);
-assign sel_cs     = (sel_ide && address_in[15:12]==4'b1000);  // GAYLE_CS_1200,  $DA8xxx
-assign sel_intreq = (sel_ide && address_in[15:12]==4'b1001);  // GAYLE_IRQ_1200, $DA9xxx
-assign sel_intena = (sel_ide && address_in[15:12]==4'b1010);  // GAYLE_INT_1200, $DAAxxx
-assign sel_cfg    = (sel_ide && address_in[15:12]==4'b1011);  // GAYLE_CFG_1200, $DABxxx
+assign sel_gayleid= (sel_gayle && address_in[15:12]==4'b0001);	// GAYLEID, $DE1xxx
+assign sel_tfr    = (sel_ide && address_in[15:14]==2'b00 && (!address_in[12] || hdd_ena[3:2])); // $DA0xxx, $DA1xxx, $DA2xxx, $DA3xxx
+assign sel_cs     = (sel_ide && address_in[15:12]==4'b1000);   // GAYLE_CS_1200,  $DA8xxx
+assign sel_intreq = (sel_ide && address_in[15:12]==4'b1001);   // GAYLE_IRQ_1200, $DA9xxx
+assign sel_intena = (sel_ide && address_in[15:12]==4'b1010);   // GAYLE_INT_1200, $DAAxxx
+assign sel_cfg    = (sel_ide && address_in[15:12]==4'b1011);   // GAYLE_CFG_1200, $DABxxx
 
 //===============================================================================================//
 
@@ -218,7 +203,7 @@ assign tfr_sel = busy ? hdd_addr : address_in[4:2];
 assign tfr_in  = busy ? hdd_data_out[7:0] : data_in[15:8];
 
 // input multiplexer for SPI host
-assign hdd_data_in = tfr_sel==0 ? fifo_data_out : {8'h00,tfr_out};
+assign hdd_data_in = tfr_sel==0 ? fifo_data_out : {7'b000000, dev[1], tfr_out};
 
 // task file registers
 always @(posedge clk)
@@ -232,7 +217,7 @@ assign tfr_out = tfr[tfr_sel];
 always @(posedge clk)
 	if (clk7_en) begin
 		if (reset) dev <= 0;
-		else if (sel_tfr && address_in[4:2]==6 && hwr) dev <= data_in[12];
+		else if (sel_tfr && address_in[4:2]==6 && hwr) dev <= {address_in[12], data_in[12]};
 	end
 
 // IDE interrupt enable register
@@ -252,6 +237,11 @@ always @(posedge clk)
 	end
 
 assign gayleid = ~gayleid_cnt[1] | gayleid_cnt[0]; // Gayle ID output data
+
+// ide registers
+assign sel_status = (rd  && sel_tfr && address_in[4:2]==3'b111);
+assign sel_command= (hwr && sel_tfr && address_in[4:2]==3'b111);
+assign sel_fifo   = (       sel_tfr && address_in[4:2]==3'b000);
 
 // status register (write only from SPI host)
 // 7 - busy status (write zero to finish command processing: allow host access to task file registers)
@@ -339,8 +329,19 @@ gayle_fifo SECBUF1
 // fifo is not ready for reading
 assign nrdy = pio_in & sel_fifo & fifo_empty;
 
+// HDD status register
+assign status = {bsy,drdy,2'b00,drq,2'b00,err};
+
+// HDD status register bits
+assign bsy = busy & ~drq;
+assign drdy = ~(bsy|drq);
+assign err = error;
+
+
+wire [15:0] ide_out = !hdd_ena[dev] ? 16'h00_00 : sel_fifo ? fifo_data_out : sel_status ? {status,8'h00} : {tfr_out,8'h00};
+
 //data_out multiplexer
-assign data_out = (sel_fifo    && rd ? fifo_data_out : sel_status ? (!dev && hdd_ena[0]) || (dev && hdd_ena[1]) ? {status,8'h00} : 16'h00_00 : sel_tfr && rd ? {tfr_out,8'h00} : 16'h00_00)
+assign data_out = (sel_tfr     && rd ? ide_out                                          : 16'h00_00)
                 | (sel_cs      && rd ? {(cs_mask[5] || intreq), cs_mask[4:0], cs, 8'h0} : 16'h00_00)
                 | (sel_intreq  && rd ? {intreq, 15'b000_0000_0000_0000}                 : 16'h00_00)
                 | (sel_intena  && rd ? {intena, 15'b000_0000_0000_0000}                 : 16'h00_00)

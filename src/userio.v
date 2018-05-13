@@ -56,7 +56,7 @@ module userio (
 	output reg [  2-1:0] scanline,
 	output reg [  2-1:0] ar,
 	output reg [  2-1:0] blver,
-	output reg [  3-1:0] ide_config,
+	output reg [  5-1:0] ide_config,
 	output reg [  4-1:0] cpu_config,
 	output reg           usrrst,             // user reset from osd module
 	output reg           cpurst,
@@ -364,7 +364,7 @@ assign _mthird = ~mouse_btn[2];
 assign host_bs = 2'b11;
 
 reg [6:0] t_memory_config = 7'b0_00_01_01;
-reg	[2:0] t_ide_config = 0;
+reg [4:0] t_ide_config = 0;
 reg [3:0] t_cpu_config = 0;
 reg [4:0] t_chipset_config = 0;
 
@@ -450,7 +450,7 @@ always @(posedge clk) begin
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[6:0];
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[1:0]};
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
-				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[2:0];
+				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[4:0];
 				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
 			end
 			
