@@ -242,6 +242,7 @@ denise_bitplane_shifter bplshft1
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl1dat),
   .scroll(pf1h_del),
   .out(bpldata[1])
@@ -258,6 +259,7 @@ denise_bitplane_shifter bplshft2
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl2dat),
   .scroll(pf2h_del),
   .out(bpldata[2])
@@ -273,6 +275,7 @@ denise_bitplane_shifter bplshft3
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl3dat),
   .scroll(pf1h_del),
   .out(bpldata[3])
@@ -288,6 +291,7 @@ denise_bitplane_shifter bplshft4
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl4dat),
   .scroll(pf2h_del),
   .out(bpldata[4])
@@ -303,6 +307,7 @@ denise_bitplane_shifter bplshft5
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl5dat),
   .scroll(pf1h_del),
   .out(bpldata[5])
@@ -318,6 +323,7 @@ denise_bitplane_shifter bplshft6
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl6dat),
   .scroll(pf2h_del),
   .out(bpldata[6])
@@ -333,6 +339,7 @@ denise_bitplane_shifter bplshft7
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl7dat),
   .scroll(pf1h_del),
   .out(bpldata[7])
@@ -348,6 +355,7 @@ denise_bitplane_shifter bplshft8
   .hires(hires),
   .shres(shres),
   .fmode(fmode[1:0]),
+  .aga(aga),
   .data_in(bpl8dat),
   .scroll(pf2h_del),
   .out(bpldata[8])
