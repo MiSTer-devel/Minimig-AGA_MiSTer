@@ -449,7 +449,7 @@ wire  [24-1:0] out_rgb  = ham_sel && window_del && !sprsel_del ? ham_rgb : clut_
 
 wire t_blank;
 
-assign t_blank = blank | (ecs & ecsena & brdrblnk & (~window_del | ~display_ena));
+assign t_blank = /*blank |*/ (ecs & ecsena & brdrblnk & (~window_del | ~display_ena));
 
 // RGB video output
 assign {red[7:0],green[7:0],blue[7:0]} = t_blank ? 24'h000000 : out_rgb;

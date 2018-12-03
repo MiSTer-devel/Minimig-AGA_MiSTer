@@ -43,7 +43,8 @@ module agnus_beamcounter
 	output	reg _vsync,				// vertical sync
 	output       field1,          // 
 	output	_csync,					// composite sync
-	output	reg blank,				// video blanking
+	output	reg hblank,				// video blanking
+	output	reg vblank,				// video blanking
 	output	vbl,					// vertical blanking
 	output	vblend,					// last line of vertival blanking
 	output	eol,					// end of video line
@@ -438,9 +439,11 @@ assign vblend = vpos==vbstop ? 1'b1 : 1'b0;
 always @(posedge clk)
   if (clk7_en) begin
   	if (hpos==hbstrt)//start of blanking (active line=51.88us)
-  		blank <= 1'b1;
-  	else if (hpos==hbstop)//end of blanking (back porch=5.78us)
-		blank <= vbl;
+  		hblank <= 1;
+  	else if (hpos==hbstop) begin //end of blanking (back porch=5.78us)
+		vblank <= vbl;
+		hblank <= 0;
+	end
   end
 
 

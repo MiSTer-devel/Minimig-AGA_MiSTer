@@ -73,7 +73,8 @@ module agnus
   output  _vsync,            // vertical sync
   output  _csync,            // composite sync
   output  field1,
-  output  blank,            // video blanking
+  output  hblank,            // video blanking
+  output  vblank,            // video blanking
   output  hde,              // video horizontal data enable
   output  sol,            // start of video line (active during last pixel of previous line)
   output  sof,            // start of video frame (active during last pixel of previous frame)
@@ -473,7 +474,8 @@ agnus_beamcounter  bc1
   ._vsync(_vsync),
   ._csync(_csync),
   .field1(field1),
-  .blank(blank),
+  .hblank(hblank),
+  .vblank(vblank),
   .vbl(vbl),
   .vblend(vblend),
   .eol(sol),

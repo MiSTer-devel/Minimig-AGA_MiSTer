@@ -220,13 +220,15 @@ module minimig
 	output        _vsync,				//vertical sync
 	output        _csync,				//composite sync
 	output        field1,
-	output        de,            // video data enable
+	output        hblank,
+	output        vblank,
 	output  [7:0] red,			//red
 	output  [7:0] green,		//green
 	output  [7:0] blue,			//blue
 	output  [1:0] ar,
 	output  [1:0] scanline,
 	output        ce_pix,
+	output  [1:0] res,
 
 	//audio
 	output [14:0] ldata,			//left DAC data
@@ -342,8 +344,8 @@ wire        _ready;					//disk is ready
 wire        _wprot;					//disk is write-protected
 
 wire  [1:0] blver;
-wire        blank, hde;
-assign      de = blver ? (~blank & hde) : ~blank;
+wire        hbl, hde;
+assign      hblank = blver ? ~hde : hbl;
 
 wire        IO_WAIT_PAULA, IO_WAIT_OSD;
 wire [15:0] IO_DOUT_PAULA, IO_DOUT_OSD;
@@ -458,7 +460,8 @@ agnus AGNUS1
 	._csync(_csync),
 	.hde(hde),
 	.field1(field1),
-	.blank(blank),
+	.hblank(hbl),
+	.vblank(vblank),
 	.sol(sol),
 	.sof(sof),
 	.vbl_int(vbl_int),
@@ -597,6 +600,8 @@ reg [1:0] phase;
 always @(posedge clk) phase <= {phase[0], clk7_en};
 assign ce_pix = (shres & |chipset_config[4:3]) | (hires & phase[1]) | clk7_en;
 
+assign res = {shres & |chipset_config[4:3], hires};
+
 wire shres;
 
 //instantiate Denise
@@ -613,7 +618,7 @@ denise DENISE1
 	.data_in(custom_data_in),
 	.chip48(chip48),
 	.data_out(denise_data_out),
-	.blank(blank),
+	.blank(hbl|vblank),
 	.red(red),
 	.green(green),
 	.blue(blue),

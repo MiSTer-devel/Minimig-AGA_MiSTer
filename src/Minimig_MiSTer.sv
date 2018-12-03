@@ -25,8 +25,6 @@ module emu
    //Must be based on CLK_VIDEO
    output        CE_PIXEL,
 
-   output  [1:0] SCANLINE,
-
    //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
    output  [7:0] VIDEO_ARX,
    output  [7:0] VIDEO_ARY,
@@ -38,8 +36,9 @@ module emu
    output        VGA_VS,
    output        VGA_CS,
    output        VGA_F1,
+   output  [1:0] VGA_SL,
    input         HDMI_VS,
-	
+
    //NOTE: Scaler measures the frame width by first line.
    //So, make sure DE is stable during the first active line!
    output        VGA_DE,    // = ~(VBlank | HBlank)
@@ -317,6 +316,8 @@ wire        ce_pix;
 
 hps_io hps_io
 (
+	.*,
+
 	.clk(clk_28),
 
 	.IO_ENA(IO_UIO),
@@ -324,6 +325,9 @@ hps_io hps_io
 	.IO_WAIT(IO_WAIT_UIO),
 	.IO_DIN(IO_DIN),
 	.IO_DOUT(uio_dout),
+	
+	.BUTTONS(),
+	.CONF(),
 
 	.JOY0(joya),
 	.JOY1(joyb),
@@ -422,10 +426,12 @@ minimig minimig
 	.red          (VGA_R            ), // red
 	.green        (VGA_G            ), // green
 	.blue         (VGA_B            ), // blue
-	.de           (VGA_DE           ),
+	.hblank       (hblank           ),
+	.vblank       (vblank           ),
 	.ar           (ar               ),
-	.scanline     (SCANLINE         ),
+	.scanline     (VGA_SL           ),
 	.ce_pix       (ce_pix           ),
+	.res          (res              ),
 
 	//audio
 	.ldata        (ldata            ), // left DAC data
@@ -445,5 +451,157 @@ minimig minimig
 	.hd_frd       (                 )  // hd fifo reading
 );
 
+assign VGA_DE = hde & vde;
+
+reg  hde;
+wire vde = ~(fvbl | svbl);
+
+wire [7:0] red, green, blue, r,g,b;
+wire hblank, vblank;
+reg  fhbl, fvbl, shbl, svbl;
+wire hbl = fhbl | shbl;
+
+wire [1:0] res;
+
+wire sset;
+wire [11:0] shbl_l, shbl_r;
+wire [11:0] svbl_t, svbl_b;
+
+reg [11:0] hbl_l=0, hbl_r=0;
+reg [11:0] hsta, hend, hmax, hcnt;
+reg [11:0] hsize;
+always @(posedge clk_28) begin
+	reg old_hs;
+	reg old_hblank;
+
+	old_hs <= hs;
+	old_hblank <= hblank;
+
+	hcnt <= hcnt + 1'd1;
+	if(~hs) hcnt <= 0;
+
+	if(old_hblank & ~hblank) hend <= hcnt;
+	if(~old_hblank & hblank) hsta <= hcnt;
+	if(old_hs & ~hs)         hmax <= hcnt;
+
+	if(hcnt == hend+hbl_l-2'd2) shbl <= 0;
+	if(hcnt == hsta+hbl_r-2'd2) shbl <= 1;
+
+	//force hblank
+	if(hcnt == 8)         fhbl <= 0;
+	if(hcnt == hmax-4'd8) fhbl <= 1;
+	
+	if(~old_hblank & hblank & ~VGA_F1 & (vcnt == vsta+1'd1)) hsize <= hcnt - hend;
+end
+
+reg [11:0] vbl_t=0, vbl_b=0;
+reg [11:0] vsta, vend, vmax, f1_vend, f1_vsize, vcnt;
+reg [11:0] vsize;
+always @(posedge clk_28) begin
+	reg old_vs;
+	reg old_vblank, old_hs, old_hbl;
+
+	old_vs <= vs;
+	old_hs <= hs;
+	old_vblank <= vblank;
+	
+	if(old_hs & ~hs) vcnt <= vcnt + 1'd1;
+	if(~vs) vcnt <= 0;
+
+	if(~VGA_F1) begin
+		if(old_vblank & ~vblank) vend <= vcnt;
+		if(~old_vblank & vblank) vsta <= vcnt;
+		if(old_vs & ~vs)         vmax <= vcnt;
+		
+		if(~old_vblank & vblank) begin
+			vsize <= vcnt - vend + f1_vsize;
+			f1_vsize <= 0;
+		end
+	end
+	else begin
+		if(old_vblank & ~vblank) f1_vend <= vcnt;
+		if(~old_vblank & vblank) begin
+			f1_vsize <= vcnt - f1_vend;
+		end
+	end
+
+	old_hbl <= hbl;
+	if(old_hbl & ~hbl) begin
+		if(vcnt == vend+vbl_t-1'd1) svbl <= 0;
+		if(vcnt == vsta+vbl_b-1'd1) svbl <= 1;
+
+		//force vblank
+		if(vcnt == 1)         fvbl <= 0;
+		if(vcnt == vmax-4'd3) fvbl <= 1;
+	end
+	
+	hde <= ~hbl;
+end
+
+wire adj_stb = kbd_mouse_strobe && (kbd_mouse_type==3);
+
+always @(posedge clk_28) begin
+	reg old_stb;
+	reg alt = 0;
+
+	old_stb <= adj_stb;
+	if(~old_stb & adj_stb) begin
+		if(kbd_mouse_data == 'h41) begin //backspace
+			vbl_t <= 0; vbl_b <= 0;
+			hbl_l <= 0; hbl_r <= 0;
+		end
+		else if(kbd_mouse_data == 'h4c) begin //up
+			if(alt) vbl_b <= vbl_b + 1'd1;
+			else    vbl_t <= vbl_t + 1'd1;
+		end
+		else if(kbd_mouse_data == 'h4d) begin //down
+			if(alt) vbl_b <= vbl_b - 1'd1;
+			else    vbl_t <= vbl_t - 1'd1;
+		end
+		else if(kbd_mouse_data == 'h4f) begin //left
+			if(alt) hbl_r <= hbl_r + 3'd4;
+			else    hbl_l <= hbl_l + 3'd4;
+		end
+		else if(kbd_mouse_data == 'h4e) begin //right
+			if(alt) hbl_r <= hbl_r - 3'd4;
+			else    hbl_l <= hbl_l - 3'd4;
+		end
+		else if(kbd_mouse_data == 'h64 || kbd_mouse_data == 'h65) begin //alt press
+			alt <= 1;
+		end
+		else if(kbd_mouse_data == 'hE4 || kbd_mouse_data == 'hE5) begin //alt release
+			alt <= 0;
+		end
+	end
+	
+	if(sset) begin
+		vbl_t <= svbl_t; vbl_b <= svbl_b;
+		hbl_l <= shbl_l; hbl_r <= shbl_r;
+	end
+end
+
+
+reg [11:0] scr_hbl_l, scr_hbl_r;
+reg [11:0] scr_vbl_t, scr_vbl_b;
+reg [11:0] scr_hsize, scr_vsize;
+reg  [1:0] scr_res;
+reg  [6:0] scr_flg;
+
+always @(posedge clk_28) begin
+	reg old_vblank;
+
+	old_vblank <= vblank;
+	if(old_vblank & ~vblank) begin
+		scr_hbl_l <= hbl_l;
+		scr_hbl_r <= hbl_r;
+		scr_vbl_t <= vbl_t;
+		scr_vbl_b <= vbl_b;
+		scr_hsize <= hsize;
+		scr_vsize <= vsize;
+		scr_res   <= res;
+
+		if(scr_res != res || scr_vsize != vsize || scr_hsize != hsize) scr_flg <= scr_flg + 1'd1;
+	end
+end
 
 endmodule
