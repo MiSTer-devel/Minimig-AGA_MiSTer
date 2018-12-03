@@ -29,6 +29,17 @@ module hps_io
 	input        f1,
 	input        vs_hdmi,
 
+	input [11:0] scr_hbl_l, scr_hbl_r,
+	input [11:0] scr_hsize,
+	input [11:0] scr_vbl_t, scr_vbl_b,
+	input [11:0] scr_vsize,
+	input  [6:0] scr_flg,
+	input  [1:0] scr_res,
+
+	output reg [11:0] shbl_l, shbl_r,
+	output reg [11:0] svbl_t, svbl_b,
+	output reg        sset,
+
 	output reg [63:0] RTC
 );
 
@@ -159,22 +170,28 @@ always@(posedge clk) begin
 		kbd_mouse_strobe <= 0;
 	end
 
+	sset <= 0;
+
 	if(~IO_ENA) begin
 		cnt <= 0;
 		IO_WAIT <= 0;
 		timeout <= 0;
+		cmd <= 0;
+		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(IO_STROBE) begin
 		timeout <= 8;
 		IO_WAIT <= 1;
+		io_dout <= 0;
 
 		if(~&cnt) cnt <= cnt + 1'd1;
 
 		if(cnt == 0) begin
 			cmd <= IO_DIN[7:0];
-			if(IO_DIN[7:0] == 4) kbd_mouse_type <= 2'b00;  // first mouse axis
-			if(IO_DIN[7:0] == 5) kbd_mouse_type <= 2'b10;  // keyboard
-			if(IO_DIN[7:0] == 6) kbd_mouse_type <= 2'b11;  // OSD keyboard	
+			if(IO_DIN[7:0] == 4) kbd_mouse_type <= 0;  // first mouse axis
+			if(IO_DIN[7:0] == 5) kbd_mouse_type <= 2;  // keyboard
+			if(IO_DIN[7:0] == 6) kbd_mouse_type <= 3;  // OSD keyboard	
+			if(IO_DIN[7:0] == 'h2B) io_dout <= 1;
 		end
 
 		// first payload byte
@@ -196,7 +213,7 @@ always@(posedge clk) begin
 			// second byte contains movement data
 			if(cnt == 2) begin
 				kbd_mouse_data <= IO_DIN[7:0];
-				kbd_mouse_type <= 2'b01;
+				kbd_mouse_type <= 1;
 				kbd_mouse_strobe_level <= ~kbd_mouse_strobe_level; 
 				kbd_mouse_strobe <= 1;
 			end
@@ -224,6 +241,27 @@ always@(posedge clk) begin
 			  11: io_dout <= vid_pix[31:16];
 			  12: io_dout <= vid_vtime_hdmi[15:0];
 			  13: io_dout <= vid_vtime_hdmi[31:16];
+			endcase
+		end
+
+		if(cmd == 'h2C) begin
+			case(cnt)
+				1: io_dout <= {1'b1, scr_flg, 6'd0, scr_res};
+				2: io_dout <= scr_hsize;
+				3: io_dout <= scr_vsize;
+				4: io_dout <= scr_hbl_l;
+				5: io_dout <= scr_hbl_r;
+			   6: io_dout <= scr_vbl_t;
+			   7: io_dout <= scr_vbl_b;
+			endcase
+		end
+
+		if(cmd == 'h2D) begin
+			case(cnt)
+				1: shbl_l <= IO_DIN[11:0];
+				2: shbl_r <= IO_DIN[11:0];
+			   3: svbl_t <= IO_DIN[11:0];
+			   4: svbl_b <= IO_DIN[11:0];
 			endcase
 		end
 

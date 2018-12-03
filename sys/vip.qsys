@@ -555,7 +555,7 @@
   <parameter name="BITS_PER_SYMBOL" value="8" />
   <parameter name="BOB_BEHAVIOUR" value="FRAME_FOR_FIELD" />
   <parameter name="CADENCE_ALGORITHM_NAME" value="CADENCE_32_22" />
-  <parameter name="CADENCE_DETECTION" value="1" />
+  <parameter name="CADENCE_DETECTION" value="0" />
   <parameter name="CLOCKS_ARE_SEPARATE" value="1" />
   <parameter name="COLOR_PLANES_ARE_IN_PARALLEL" value="1" />
   <parameter name="DEINTERLACE_ALGORITHM" value="MOTION_ADAPTIVE" />
@@ -869,7 +869,7 @@
  <module name="Output" kind="out_mix" version="17.0" enabled="1" />
  <module name="Reset_Source" kind="reset_source" version="17.0" enabled="1" />
  <module name="Scaler" kind="alt_vip_cl_scl" version="17.0" enabled="1">
-  <parameter name="ALGORITHM_NAME" value="BICUBIC" />
+  <parameter name="ALGORITHM_NAME" value="POLYPHASE" />
   <parameter name="ALWAYS_DOWNSCALE" value="0" />
   <parameter name="ARE_IDENTICAL" value="0" />
   <parameter name="AUTO_DEVICE" value="5CSEBA6U23I7" />
@@ -879,9 +879,9 @@
   <parameter name="DEFAULT_LOWER_BLUR" value="0" />
   <parameter name="DEFAULT_UPPER_BLUR" value="0" />
   <parameter name="ENABLE_FIR" value="0" />
-  <parameter name="EXTRA_PIPELINING" value="0" />
+  <parameter name="EXTRA_PIPELINING" value="1" />
   <parameter name="FAMILY" value="Cyclone V" />
-  <parameter name="H_BANKS" value="1" />
+  <parameter name="H_BANKS" value="2" />
   <parameter name="H_COEFF_FILE"><![CDATA[<enter file name (including full path)>]]></parameter>
   <parameter name="H_FRACTION_BITS" value="7" />
   <parameter name="H_FUNCTION" value="LANCZOS_3" />
@@ -892,8 +892,8 @@
   <parameter name="H_TAPS" value="4" />
   <parameter name="IS_420" value="0" />
   <parameter name="IS_422" value="0" />
-  <parameter name="LIMITED_READBACK" value="0" />
-  <parameter name="LOAD_AT_RUNTIME" value="0" />
+  <parameter name="LIMITED_READBACK" value="1" />
+  <parameter name="LOAD_AT_RUNTIME" value="1" />
   <parameter name="MAX_IN_HEIGHT" value="1080" />
   <parameter name="MAX_IN_WIDTH" value="1920" />
   <parameter name="MAX_OUT_HEIGHT" value="1080" />
@@ -905,11 +905,11 @@
   <parameter name="SYMBOLS_IN_PAR" value="3" />
   <parameter name="SYMBOLS_IN_SEQ" value="1" />
   <parameter name="USER_PACKET_FIFO_DEPTH" value="0" />
-  <parameter name="USER_PACKET_SUPPORT" value="PASSTHROUGH" />
-  <parameter name="V_BANKS" value="1" />
+  <parameter name="USER_PACKET_SUPPORT" value="DISCARD" />
+  <parameter name="V_BANKS" value="2" />
   <parameter name="V_COEFF_FILE"><![CDATA[<enter file name (including full path)>]]></parameter>
   <parameter name="V_FRACTION_BITS" value="7" />
-  <parameter name="V_FUNCTION" value="LANCZOS_3" />
+  <parameter name="V_FUNCTION" value="LANCZOS_2" />
   <parameter name="V_INTEGER_BITS" value="1" />
   <parameter name="V_PHASES" value="16" />
   <parameter name="V_SIGNED" value="1" />
