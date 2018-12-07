@@ -618,7 +618,7 @@ denise DENISE1
 	.data_in(custom_data_in),
 	.chip48(chip48),
 	.data_out(denise_data_out),
-	.blank(hbl|vblank),
+	.blank(~_hsync|vblank),
 	.red(red),
 	.green(green),
 	.blue(blue),
