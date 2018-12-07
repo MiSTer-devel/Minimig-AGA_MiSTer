@@ -28,6 +28,17 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 
 ## Usage
 
+### Screen adjustment
+Adjustment is initiated from OSD menu. Keyboard control:
+* Cursor keys - top/left corner.
+* ALT+Cursor keys - bottom/right corner.
+* Enter - finish and store position.
+* Backspace - reset do default.
+* Esc - cancel and finish.
+
+Positions are saved in the configuration file. Up to 64 different resolutions can be adjusted.
+
+
 ### Hardware
 To use this minimig core on the MiST board, you will at the minimum need an SD/SDHC card, formatted with the FAT32 filesystem, an USB keyboard and a compatible monitor / TV. Joysticks & mouse can be emulated on the keyboard. You will probably want to attach a set of speakers of headphones, a real Amiga or USB mouse and a real Amiga joystick or an USB gamepad. The MiST board is needed too, of course ;)
 
