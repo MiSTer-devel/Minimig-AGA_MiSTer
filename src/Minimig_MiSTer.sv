@@ -427,7 +427,7 @@ minimig minimig
 	.green        (VGA_G            ), // green
 	.blue         (VGA_B            ), // blue
 	.hblank       (hblank           ),
-	.vblank       (vblank           ),
+	.vblank       (vbl              ),
 	.ar           (ar               ),
 	.scanline     (VGA_SL           ),
 	.ce_pix       (ce_pix           ),
@@ -457,9 +457,10 @@ reg  hde;
 wire vde = ~(fvbl | svbl);
 
 wire [7:0] red, green, blue, r,g,b;
-wire hblank, vblank;
+wire hblank, vbl;
+wire vblank = vbl | ~vs;
 reg  fhbl, fvbl, shbl, svbl;
-wire hbl = fhbl | shbl;
+wire hbl = fhbl | shbl | ~hs;
 
 wire [1:0] res;
 
