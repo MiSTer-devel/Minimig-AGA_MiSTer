@@ -165,9 +165,10 @@ wire           vs;
 wire           hs;
 wire     [1:0] ar;
 
-// mist
 wire [   15:0] joya;
 wire [   15:0] joyb;
+wire [   15:0] joyc;
+wire [   15:0] joyd;
 wire [  8-1:0] kbd_mouse_data;
 wire           kbd_mouse_strobe;
 wire           kms_level;
@@ -331,6 +332,8 @@ hps_io hps_io
 
 	.JOY0(joya),
 	.JOY1(joyb),
+	.JOY2(joyc),
+	.JOY3(joyd),
 	.MOUSE_BUTTONS(mouse_buttons),
 	.KBD_MOUSE_DATA(kbd_mouse_data),
 	.KBD_MOUSE_TYPE(kbd_mouse_type),
@@ -400,6 +403,8 @@ minimig minimig
 	//I/O
 	._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
 	._joy2        (~joyb            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
+	._joy3        (~joyc            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right]
+	._joy4        (~joyd            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right]
 	.mouse_btn    (mouse_buttons    ), // mouse buttons
 	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
 	.kbd_mouse_type (kbd_mouse_type ), // type of data

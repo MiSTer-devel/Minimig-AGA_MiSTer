@@ -16,7 +16,7 @@ module ciab
   input   eclk,           // eclk (counter input for timer A/B)
   input   flag,         // flag (set FLG bit in ICR register)
   output   irq,           // interrupt request out
-  input  [5:2] porta_in,   // input port
+  input  [5:0] porta_in,   // input port
   output   [7:6] porta_out,  // output port
   output  [7:0] portb_out    // output port
 );
@@ -83,7 +83,7 @@ assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;
 //----------------------------------------------------------------------------------
 // porta
 //----------------------------------------------------------------------------------
-reg [5:2] porta_in2;
+reg [5:0] porta_in2;
 reg [7:0] regporta;
 reg [7:0] ddrporta;
 
@@ -115,7 +115,7 @@ always @(posedge clk)
 always @(*)
 begin
   if (!wr && pra)
-    pa_out[7:0] = {porta_out[7:6],porta_in2[5:2],2'b11};
+    pa_out[7:0] = {porta_out[7:6],porta_in2[5:0]};
   else if (!wr && ddra)
     pa_out[7:0] = ddrporta[7:0];
   else

@@ -94,6 +94,7 @@ module ciaa
 	output       irq,           // interrupt request out
 	input  [7:2] porta_in,      // porta in
 	output [3:0] porta_out,     // porta out
+	input  [7:0] portb_in,      // portb in
 	input        keyboard_disabled,  // disable keystrokes
 	input        kbd_mouse_strobe,
 	input        kms_level,
@@ -293,15 +294,13 @@ always @(posedge clk)
 always @(*)
 begin
   if (!wr && prb)
-    pb_out[7:0] = (portb_out[7:0]);
+    pb_out[7:0] = portb_in[7:0];
   else if (!wr && ddrb)
     pb_out[7:0] = (ddrportb[7:0]);
   else
     pb_out[7:0] = 8'h00;
 end
 
-// assignment of output port while keeping in mind that the original 8520 uses pull-ups
-assign portb_out[7:0] = ((~ddrportb[7:0]) | (regportb[7:0]));
 
 // delayed tick signal for edge detection
 always @(posedge clk)

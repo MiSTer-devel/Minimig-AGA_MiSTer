@@ -10,6 +10,8 @@ module hps_io
 
 	output[15:0] JOY0,
 	output[15:0] JOY1,
+	output[15:0] JOY2,
+	output[15:0] JOY3,
 
 	output [2:0] MOUSE_BUTTONS,
 	output       KBD_MOUSE_STROBE,
@@ -136,6 +138,8 @@ end
 
 reg [15:0] joystick0;
 reg [15:0] joystick1;
+reg [15:0] joystick2;
+reg [15:0] joystick3;
 reg [7:0] but_sw;
 
 reg       kbd_mouse_strobe;
@@ -146,6 +150,8 @@ reg [2:0] mouse_buttons;
 
 assign JOY0 = joystick0;
 assign JOY1 = joystick1;
+assign JOY2 = joystick2;
+assign JOY3 = joystick3;
 
 assign KBD_MOUSE_DATA = kbd_mouse_data; // 8 bit movement data
 assign KBD_MOUSE_TYPE = kbd_mouse_type; // 0=mouse x,1=mouse y, 2=keycode, 3=OSD kbd
@@ -199,6 +205,8 @@ always@(posedge clk) begin
 			if(cmd == 1) but_sw <= IO_DIN[7:0];
 			if(cmd == 2) joystick0 <= IO_DIN; 
 			if(cmd == 3) joystick1 <= IO_DIN; 
+			if(cmd == 'h10) joystick2 <= IO_DIN;
+			if(cmd == 'h11) joystick3 <= IO_DIN;
 
 			// mouse, keyboard or OSD
 			if((cmd == 4)||(cmd == 5)||(cmd == 6)) begin
