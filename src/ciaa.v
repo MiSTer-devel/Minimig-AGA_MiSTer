@@ -269,9 +269,10 @@ assign porta_out[3:0] = {(~ddrporta[7:6] | regporta[3:2]), (~ddrporta[1:0] | reg
 //----------------------------------------------------------------------------------
 // portb
 //----------------------------------------------------------------------------------
-reg [7:0] regportb;
+//reg [7:0] regportb;
 reg [7:0] ddrportb;
 
+/*
 // writing of output port
 always @(posedge clk)
   if (clk7_en) begin
@@ -280,6 +281,7 @@ always @(posedge clk)
     else if (wr && prb)
       regportb[7:0] <= (data_in[7:0]);
   end
+*/
 
 // writing of ddr register
 always @(posedge clk)
