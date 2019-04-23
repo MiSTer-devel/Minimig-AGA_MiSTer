@@ -166,7 +166,7 @@ module minimig
 	//sram pins
 	output [15:0] ram_data,			//sram data bus
 	input	 [15:0] ramdata_in,		//sram data bus in
-	output [21:1] ram_address,		//sram address bus
+	output [23:1] ram_address,		//sram address bus
 	output        _ram_bhe,			//sram upper byte select
 	output        _ram_ble,			//sram lower byte select
 	output        _ram_we,			//sram write enable
@@ -276,7 +276,7 @@ wire [15:0] ar3_data_out;	//Action Replay data out
 //local signals for address bus
 wire [23:1] cpu_address_out;	//cpu address out
 wire [20:1] dma_address_out;	//agnus address out
-wire [18:1] ram_address_out;	//ram address out
+wire [23:1] ram_address_out;	//ram address out
 
 //local signals for control bus
 wire        ram_rd;					//ram read enable

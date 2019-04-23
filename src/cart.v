@@ -22,11 +22,11 @@
 // This is Cart module with support for HRTmon monitor.                       //
 // This module is based on existing ActionReplay.v module by Jakub Bednarski  //
 // and code from WinUAE ar.cpp file. The module requires the ctrl firmware    //
-// to load the special hrtmon.rom file to address 0xa00000. The module        //
-// requires one 512KB RAM bank. The start address (entry point) is 0xa0000c.  //
+// to load the special hrtmon.rom file to address 0xa10000. The module        //
+// requires one 512KB RAM bank. The start address (entry point) is 0xa1000c.  //
 // TODO : custom registers and CIA registers shadow implemented as in WinUAE. //
-// TODO : for better compatibility, load the monitor to $A10000               //
-// (requires recompilation!).                                                 //
+//                                                                            //
+//                                                                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -113,8 +113,8 @@ end
 //assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2]==22'b0000_0000_0000_0000_0111_11);
 assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2] == nmi_vec_adr[23:2]);
 
-// custom NMI vector address output
-assign nmi_adr_out = ovr ? (!cpu_address_in[1] ? 16'h00a1 : 16'h000c) : 16'h0000;
+// custom NMI vector address output $a1000c
+assign nmi_adr_out = ovr ? (!cpu_address_in[1] ? 16'h00a1 : 16'h000c) : 16'h0000; 
 
 // freeze button
 always @ (posedge clk) begin

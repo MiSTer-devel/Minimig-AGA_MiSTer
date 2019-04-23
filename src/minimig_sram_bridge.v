@@ -13,7 +13,7 @@ module minimig_sram_bridge
 	input	c3,							// clock enable signal	
 	//chipset internal port
 	input	[7:0] bank,					// memory bank select (512KB)
-	input	[18:1] address_in,			// bus address
+	input	[23:1] address_in,			// bus address
 	input	[15:0] data_in,				// bus data in
 	output	[15:0] data_out,			// bus data out
 	input	rd,			   				// bus read
@@ -31,7 +31,7 @@ module minimig_sram_bridge
 	output	_ble,   				// sram lower byte
 	output	_we,				// sram write enable
 	output	_oe,				// sram output enable
-	output	[21:1] address,			// sram address bus
+	output	[23:1] address,			// sram address bus
 	output	[15:0] data,	  			// sram data das
 	input	[15:0] ramdata_in	  		// sram data das in
 );	 
@@ -72,7 +72,8 @@ wire	enable;				// indicates memory access cycle
 
 // generate enable signal if any of the banks is selected
 //assign enable = |bank[7:0];
-assign enable = (bank[7:0]==8'b00000000) ? 1'b0 : 1'b1;
+   
+   assign enable =  (bank[7:0]==8'b00000000) ? 1'b0 : 1'b1;
 
 // generate _we
 assign _we = (!hwr && !lwr) | !enable;
@@ -129,7 +130,11 @@ always @(posedge clk)
 //		_ce[3:0] <= {~|bank[7:6],~|bank[5:4],~|bank[3:2],~|bank[1:0]};
 
 // ram address bus
-assign		address = {bank[7]|bank[6]|bank[5]|bank[4],  bank[7]|bank[6]|bank[3]|bank[2],  bank[7]|bank[5]|bank[3]|bank[1],  address_in[18:1]};
+//assign		address = {bank[7]|bank[6]|bank[5]|bank[4],  bank[7]|bank[6]|bank[3]|bank[2],  bank[7]|bank[5]|bank[3]|bank[1],  address_in[18:1]};
+// bank[7] is sel_kick from gary, only used for ovl during boot. bank[5] is sel_chipram -> use chipram mapping. a0-ff is mapped to 20-7f
+
+   assign address = bank[7]? {5'b0111_1,address_in[18:1]}: (bank[5]?  {3'b0, bank[3]|bank[2], bank[3]|bank[1], address_in[18:1]} :  {1'b0,address_in[22:1]});
+   
 //assign address = {bank[7]|bank[5]|bank[3]|bank[1],address_in[18:1]};
 //always @(posedge clk28m)
 //	if (c1 && !c3 && enable)	// set address in Q1		
