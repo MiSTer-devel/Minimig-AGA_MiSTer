@@ -40,7 +40,7 @@ module sdram_ctrl(
   output reg  [  2-1:0] dqm,
   inout  wire [ 16-1:0] sdata,
   // chip
-  input  wire    [23:1] chipAddr,
+  input  wire    [22:1] chipAddr, //we only use the first 8M block of the RAM for non-fastram
   input  wire           chipL,
   input  wire           chipU,
   input  wire           chipRW,
@@ -53,7 +53,7 @@ module sdram_ctrl(
   input  wire [  6-1:0] cpustate,
   input  wire           cpuL,
   input  wire           cpuU,
-  input  wire           cpu_dma,
+//  input  wire           cpu_dma, //not used at all!
   input  wire [ 16-1:0] cpuWR,
   output wire [ 16-1:0] cpuRD,
   output reg            enaWRreg,
@@ -237,7 +237,7 @@ cpu_cache_new cpu_cache (
   .sdr_read_req     (cache_req),                    // sdram read request from cache
   .sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
   .snoop_act        (snoop_act),                    // snoop act (write only - just update existing data in cache)
-  .snoop_adr        ({1'b0, chipAddr, 1'b0}),       // snoop address
+  .snoop_adr        ({2'b00, chipAddr, 1'b0}),       // snoop address
   .snoop_dat_w      (chipWR)                        // snoop write data
 );
 
@@ -542,7 +542,7 @@ always @ (posedge sysclk) begin
           cas_dqm             <= {chipU,chipL};
           sd_cs               <= 4'b1110; // ACTIVE
           sd_ras              <= 1'b0;
-          casaddr             <= {1'b0, chipAddr, 1'b0};
+          casaddr             <= {2'b00, chipAddr, 1'b0};
           cas_sd_cas          <= 1'b0;
           cas_sd_we           <= chipRW;
         end

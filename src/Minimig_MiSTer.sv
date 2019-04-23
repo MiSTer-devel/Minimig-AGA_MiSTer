@@ -152,18 +152,18 @@ wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
 wire           tg68_nrst_out;
-wire           tg68_cdma;
+// wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
 wire [  4-1:0] tg68_CACR_out;
 wire [ 32-1:0] tg68_VBR_out;
-wire           tg68_ovr;
+//wire           tg68_ovr;
 
 // minimig
 wire [ 16-1:0] ram_data;      // sram data bus
 wire [ 16-1:0] ramdata_in;    // sram data bus in
 wire [ 48-1:0] chip48;        // big chip read
-wire [ 22-1:1] ram_address;   // sram address bus
+wire [ 24-1:1] ram_address;   // sram address bus
 wire           _ram_bhe;      // sram upper byte select
 wire           _ram_ble;      // sram lower byte select
 wire           _ram_we;       // sram write enable
@@ -263,10 +263,10 @@ TG68K tg68k
 	.turbokick    (turbokick        ),
 	.cache_inhibit(cache_inhibit    ),
 	.fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
-	.ovr          (tg68_ovr         ),
+//	.ovr          (tg68_ovr         ), 
 	.ramaddr      (tg68_cad         ),
 	.nResetOut    (tg68_nrst_out    ),
-	.cpuDMA       (tg68_cdma        ),
+//	.cpuDMA       (tg68_cdma        ), 
 	.ramlds       (tg68_clds        ),
 	.ramuds       (tg68_cuds        ),
 
@@ -301,7 +301,7 @@ sdram_ctrl sdram
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),
-	.cpu_dma      (tg68_cdma        ),
+//	.cpu_dma      (tg68_cdma        ),
 	.cpuRD        (tg68_cout        ),
 	.cpuena       (tg68_cpuena      ),
 	.enaWRreg     (tg68_enaWR       ),
@@ -309,7 +309,7 @@ sdram_ctrl sdram
 	.ena7WRreg    (tg68_ena7WR      ),
 
 	.chipWR       (ram_data         ),
-	.chipAddr     ({2'b00, ram_address[21:1]}),
+	.chipAddr     (ram_address      ),
 	.chipU        (_ram_bhe         ),
 	.chipL        (_ram_ble         ),
 	.chipRW       (_ram_we          ),
@@ -376,12 +376,12 @@ minimig minimig
 	._cpu_reset   (tg68_rst         ), // M68K reset
 	._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
 	.cpu_vbr      (tg68_VBR_out     ), // M68K VBR
-	.ovr          (tg68_ovr         ), // NMI override address decoding
+//	.ovr          (tg68_ovr         ), // NMI override address decoding
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus
 	.ramdata_in   (ramdata_in       ), // SRAM data bus in
-	.ram_address  (ram_address[21:1]), // SRAM address bus
+	.ram_address  (ram_address[23:1]), // SRAM address bus
 	._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
 	._ram_ble     (_ram_ble         ), // SRAM lower byte select
 	._ram_we      (_ram_we          ), // SRAM write enable
