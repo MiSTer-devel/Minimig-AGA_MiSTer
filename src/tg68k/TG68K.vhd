@@ -134,7 +134,8 @@ SIGNAL autoconfig_data  : std_logic_vector(3 downto 0); -- Zorro II RAM
 SIGNAL autoconfig_data2 : std_logic_vector(3 downto 0); -- Zorro III RAM
 SIGNAL sel_fast         : std_logic;
 SIGNAL sel_slowram      : std_logic;
-signal sel_cart         : std_logic;    
+signal sel_a0map        : std_logic;
+--signal sel_cart         : std_logic;    
 SIGNAL sel_chipram      : std_logic;
 SIGNAL turbochip_ena    : std_logic := '0';
 SIGNAL turbochip_d      : std_logic := '0';
@@ -155,7 +156,10 @@ SIGNAL sel_kickram      : std_logic;
 
 SIGNAL NMI_vector       : std_logic_vector(15 downto 0);
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
-SIGNAL sel_interrupt    : std_logic;
+SIGNAL sel_nmi_vector    : std_logic;
+-- signal sel_kicklower    : std_logic; that might be part of a new option to
+-- boot from kickstart disks
+
 
 
 BEGIN
@@ -172,12 +176,12 @@ PROCESS(clk) BEGIN
 END PROCESS;
 
 
-                                                        
-                                                        
+
+    
 wrd <= wr;
 addr <= cpuaddr;
 datatg68 <=
-       fromram                                   WHEN sel_fast='1' and sel_interrupt='0' 
+       fromram                                   WHEN sel_fast='1' and sel_nmi_vector='0' 
        ELSE autoconfig_data&r_data(11 downto 0)  WHEN sel_autoconfig='1' AND autoconfig_out="01" -- Zorro II RAM autoconfig
        ELSE autoconfig_data2&r_data(11 downto 0) WHEN sel_autoconfig='1' AND autoconfig_out="10" -- Zorro III RAM autoconfig
        ELSE r_data;
@@ -192,17 +196,22 @@ sel_chipram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23
 -- don't sel_kickram when writing (state = "11")
 sel_kickram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 19)="11111") OR (cpuaddr(23 downto 19)="11100"))  AND turbochip_ena='1' AND turbokick_d='1' and state /="11"  ELSE '0'; -- $f8xxxx, e0xxxx
 
-sel_cart        <= '1' when  (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 20)="1010")  AND turbochip_ena='1' AND turbokick_d='1' ELSE '0';
+-- sel_kicklower <= '1' when (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 18)="111110") else '0';
 
---  always route reading the nmi vector through cart.v (needs a couple of signals to
+--  we route everything hrtmon related through cart.v (needs a couple of signals to
 --  decide what to do, would not be good style to replicate that here). 
-sel_interrupt   <= '1' WHEN (cpuaddr(31 downto 2) = NMI_addr(31 downto 2)) and state="10"  ELSE '0';
+sel_nmi_vector   <= '1' WHEN (cpuaddr(31 downto 2) = NMI_addr(31 downto 2)) and state="10"  ELSE '0';
+-- sel_cart        <= '1' when  (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 20)="1010")  AND turbochip_ena='1' AND turbokick_d='1' ELSE '0';
 
 --  added fast access to slowram $c0-$d8, when turobochip is enabled.
 sel_slowram    <= '1'  when (cpuaddr(31 downto 24) = "00000000") AND ( (cpuaddr(23 downto 20)="1100") or (cpuaddr (23 downto 19) = "11010"))  AND turbochip_ena='1' AND turbochip_d='1' ELSE '0';
- 
-sel_fast        <= '1'  WHEN state/="01" and sel_interrupt='0' AND (sel_cart='1'  or sel_slowram='1' or sel_z2ram='1' OR sel_z3ram='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
 
+
+sel_fast        <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND ( sel_slowram='1' or sel_z2ram='1' OR sel_z3ram='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
+
+--when this is true, we set bit 23 to zero, to map all this from a0-ff to
+--20-7f. Don't need this for chipram, since there is no remapping. 
+sel_a0map     <= '1'  when  sel_slowram='1' or sel_kickram='1' ELSE '0';
 
 cache_inhibit   <= '1' WHEN sel_chipram='1' OR sel_kickram='1' ELSE '0';
 
@@ -223,8 +232,14 @@ ramaddr(23 downto 21) <=  "100" WHEN sel_z2ram&cpuaddr(23 downto 21)="1001" -- 2
                       ELSE "101" WHEN sel_z2ram&cpuaddr(23 downto 21)="1010" -- 4 -> A
                       ELSE "110" WHEN sel_z2ram&cpuaddr(23 downto 21)="1011" -- 6 -> C
                       ELSE "111" WHEN sel_z2ram&cpuaddr(23 downto 21)="1100" -- 8 -> E      
-                      else '0'&cpuaddr (22 downto 21); -- map a0-ff to 20-7f
-ramaddr(20 downto 0)  <= cpuaddr(20 downto 0);
+                      else '0'&cpuaddr (22 downto 21) when sel_a0map ='1' -- map a0-ff to 20-7f
+                      else cpuaddr (23 downto 21);            
+ramaddr(20 downto 19)  <= cpuaddr(20 downto 19);
+ramaddr(18) <= cpuaddr(18);
+--ramaddr(18) <= cpuaddr(18) when sel_kicklower = '0' else '1'; 
+ramaddr(17 downto 0)  <= cpuaddr(17 downto 0);
+
+
 
 
 pf68K_Kernel_inst: TG68KdotC_Kernel

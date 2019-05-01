@@ -83,6 +83,7 @@ module gary
 	output reg [2:0] sel_slow, //select slowfast memory ($C0000)
 	output reg 	 sel_kick, //select kickstart rom
 	output reg 	 sel_kick1mb, // 1MB kickstart rom 'upper' half
+        output reg       sel_kick256kmirror, //mirror the f8 to fc in a1k
 	output 		 sel_cia, //select CIA space
 	output 		 sel_cia_a, //select cia A
 	output 		 sel_cia_b, //select cia B
@@ -127,11 +128,13 @@ begin
 		sel_chip[1] = ~dma_address_in[20] &  dma_address_in[19];
 		sel_chip[2] =  dma_address_in[20] & ~dma_address_in[19];
 		sel_chip[3] =  dma_address_in[20] &  dma_address_in[19];
-		sel_slow[0] = ( ecs && memory_config==4'b0100 && dma_address_in[20:19]==2'b01) ? 1'b1 : 1'b0;
+		sel_slow[0] = ( ecs && memory_config==4'b0100 && dma_address_in[20:19]==2'b01) ? 1'b1 : 1'b0; //use slow0 as chipmem, when only chip0 and slow0 are enabled.
 		sel_slow[1] = 1'b0;
 		sel_slow[2] = 1'b0;
 	   sel_kick    = 1'b0;
 	   sel_kick1mb = 1'b0;
+	   sel_kick256kmirror = 1'b0;
+	   
 	end
 	else
 	begin
@@ -143,7 +146,8 @@ begin
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
 		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt)) || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
-	   sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) ? 1'b1 : 1'b0; // $E00000 - $E7FFFF
+	 sel_kick256kmirror = (cpu_address_in[23:19]==5'b1111_1 &&  cpu_rd && !ovl && !cpu_hlt)  ? 1'b1 : 1'b0;
+	        sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) ? 1'b1 : 1'b0; // $E00000 - $E7FFFF
 	end
 end
 
