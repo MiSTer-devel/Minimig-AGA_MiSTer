@@ -16,7 +16,7 @@ create_generated_clock -source [get_pins -compatibility_mode {pll_hdmi|pll_hdmi_
 derive_clock_uncertainty
 
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 4
-set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 4
+set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 3
 
 
 set_input_delay -max -clock SDRAM_CLK 6.4ns [get_ports SDRAM_DQ[*]]
