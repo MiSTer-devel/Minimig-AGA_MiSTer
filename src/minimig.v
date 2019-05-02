@@ -302,6 +302,7 @@ wire  [3:0] sel_chip;			//chip ram select
 wire  [2:0] sel_slow;			//slow ram select
 wire        sel_kick;				//rom select
 wire        sel_kick1mb;     // 1MB upper rom select
+wire        sel_kick256kmirror; // mirror f8-fb to fc-ff in a1k mode    
 wire        sel_cia;				//CIA address space
 wire        sel_reg;				//chip register select
 wire        sel_rtc;
@@ -738,7 +739,8 @@ minimig_bankmapper BMAP1
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
 	.kick1mb(sel_kick1mb),
-	.cart(sel_cart),
+        .kick256kmirror(sel_kick256kmirror),
+ 	.cart(sel_cart),
 	.aron(aron),
 	.ecs(|chipset_config[4:3]),
 	.memory_config(memory_config[3:0]),
@@ -789,7 +791,8 @@ cart CART1
   .int7           (int7           ),
   .sel_cart       (sel_cart       ),
   .ovr            (ovr            ),
-  .aron           (aron           )
+//  .aron           (aron           ),
+  .cpuhlt         (cpuhlt)
 );
 
 //level 7 interrupt for CPU
@@ -827,7 +830,8 @@ gary GARY1
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
 	.sel_kick1mb(sel_kick1mb),
-	.sel_cia(sel_cia),
+        .sel_kick256kmirror(sel_kick256kmirror),
+        .sel_cia(sel_cia),
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),
 	.sel_cia_b(sel_cia_b),

@@ -41,34 +41,37 @@
 
 module cart
 (
-  input  wire           clk,
-  input  wire           clk7_en,
-  input  wire           clk7n_en,
-  input  wire           cpu_rst,
-  input  wire [ 24-1:1] cpu_address,
-  input  wire [ 24-1:1] cpu_address_in,
-  input  wire           _cpu_as,
-  input  wire           cpu_rd,
-  input  wire           cpu_hwr,
-  input  wire           cpu_lwr,
-  input  wire [ 32-1:0] cpu_vbr,
-  input  wire [  9-1:1] reg_address_in,
-  input  wire [ 16-1:0] reg_data_in,
-  input  wire           dbr,
-  input  wire           ovl,
-  input  wire           freeze,
+  input wire 		clk,
+  input wire 		clk7_en,
+  input wire 		clk7n_en,
+  input wire 		cpu_rst,
+  input wire [ 24-1:1] 	cpu_address,
+  input wire [ 24-1:1] 	cpu_address_in,
+  input wire 		_cpu_as,
+  input wire 		cpu_rd,
+  input wire 		cpu_hwr,
+  input wire 		cpu_lwr,
+  input wire [ 32-1:0] 	cpu_vbr,
+  input wire [ 9-1:1] 	reg_address_in,
+  input wire [ 16-1:0] 	reg_data_in,
+  input wire 		dbr,
+  input wire 		ovl,
+  input wire 		freeze, 
+  input wire 		cpuhlt,
   output wire [ 16-1:0] cart_data_out,
-  output reg            int7 = 1'b0,
-  output wire           sel_cart,
-  output wire           ovr,
+  output reg 		int7 = 1'b0,
+  output wire 		sel_cart,
+  output wire 		ovr
+ 
 //  output reg            aron = 1'b1
-  output wire           aron
-);
+//  output wire 		aron //not needed -- remove!
+ );
 
 
 //// internal signals ////
 reg  [32-1:0] nmi_vec_adr=0;
 reg           freeze_d=0;
+reg 	      stealth; //hide till first freeze request   
 wire          freeze_req;
 wire          int7_req;
 wire          int7_ack;
@@ -85,7 +88,9 @@ reg  [16-1:0] custom_mirror [0:256-1];
 
 //// code ////
 
-// cart is activated by writing to its area during bootloading
+// currently cart is activated by the first freeze request of the cia.    
+// OLD: cart is activated by writing to its area during bootloading
+/*
 `define ARON_HACK
 `ifndef ARON_HACK
 always @ (posedge clk) begin
@@ -98,9 +103,11 @@ end
 // TODO enable cart from firmware when uploading
 assign aron = 1'b1;
 `endif
-
-// cart selected
-assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0); // $A00000
+*/
+ 
+//  cart selected, is in stealth mode until first freeze, has to be available during halt to allow userio 
+   assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0) && (stealth | cpuhlt); // $A00000
+   
 
 // latch VBR + NMI vector offset
 always @ (posedge clk) begin
@@ -168,16 +175,22 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (cpu_rst)
-      active <= #1 1'b0;
+      begin
+	 active <= #1 1'b0;
+	 stealth <= #1 1'b0;
+      end
     else if (/*aron &&*/ l_int7 && l_int7_ack && cpu_rd)
-      active <= #1 1'b1;
+      begin
+	 active <= #1 1'b1;
+	 stealth <= #1 1'b1;
+      end
     else if (sel_cart && cpu_rd)
       active <= #1 1'b0;
   end
 end
 
 // custom registers mirror memory
-assign sel_custom_mirror = ~dbr && cpu_rd && (cpu_address_in[23:12]==12'b1010_1001_1111); // $A9F000
+assign sel_custom_mirror = ~dbr && cpu_rd && (cpu_address_in[23:12]==12'b1010_1001_1111) &&stealth; // $A9F000
 always @ (posedge clk) begin
   if (clk7_en) begin
     custom_mirror[reg_address_in] <= #1 reg_data_in;

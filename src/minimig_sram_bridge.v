@@ -31,7 +31,7 @@ module minimig_sram_bridge
 	output	_ble,   				// sram lower byte
 	output	_we,				// sram write enable
 	output	_oe,				// sram output enable
-	output	[23:1] address,			// sram address bus
+	output	[22:1] address,			// sram address bus
 	output	[15:0] data,	  			// sram data das
 	input	[15:0] ramdata_in	  		// sram data das in
 );	 
@@ -132,10 +132,20 @@ always @(posedge clk)
 // ram address bus
 //assign		address = {bank[7]|bank[6]|bank[5]|bank[4],  bank[7]|bank[6]|bank[3]|bank[2],  bank[7]|bank[5]|bank[3]|bank[1],  address_in[18:1]};
 // bank[7] is sel_kick from gary, only used for ovl during boot. bank[5] is sel_chipram -> use chipram mapping. a0-ff is mapped to 20-7f
+// bank[6] is 256k kickstart mirror, option disabled for now
 
-   assign address = bank[7]? {5'b0111_1,address_in[18:1]}: (bank[5]?  {3'b0, bank[3]|bank[2], bank[3]|bank[1], address_in[18:1]} :  {1'b0,address_in[22:1]});
+
+    assign address[17:1] = address_in[17:1];
+    assign address[22:18] = // bank[6]? //access f8-fb and !ovl and !halt, map to fc-ff
+			    //5'b111_11 : 
+			    (bank[7]? //access to f8-ff or ovl 
+			    {4'b111_1, address_in[18]} : (bank[5]? //chipram access  
+			    {2'b0, bank[3]|bank[2], bank[3]|bank[1],address_in[18]} :  address_in[22:18]));
+/* without kickstart mirror
+ assign address[18:1] = address_in[18:1];
+    assign address[22:19] = bank[7]? 4'b111_1: (bank[5]?  {2'b0, bank[3]|bank[2], bank[3]|bank[1]} :  address_in[22:19]);
+ */
    
-//assign address = {bank[7]|bank[5]|bank[3]|bank[1],address_in[18:1]};
 //always @(posedge clk28m)
 //	if (c1 && !c3 && enable)	// set address in Q1		
 //		address <= {bank[7]|bank[5]|bank[3]|bank[1],address_in[18:1]};
