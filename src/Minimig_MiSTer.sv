@@ -250,7 +250,6 @@ TG68K tg68k
 	.uds          (tg68_uds         ),
 	.lds          (tg68_lds         ),
 	.rw           (tg68_rw          ),
-	.e            (                 ),
 	.vma          (                 ),
 	.wrd          (                 ),
 	.ena7RDreg    (tg68_ena7RD      ),

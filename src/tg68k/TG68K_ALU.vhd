@@ -325,7 +325,7 @@ begin
   ------------------------------------------------------------------------------
   --ALU
   ------------------------------------------------------------------------------
-  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lc, nibs_hc, nibs_h, nibs_l, nibs_lc, Flags)
+  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lc, nibs_hc, nibs_h, nibs_l, nibs_lc, Flags, exe_opcode)
   begin
 	if exe_opcode(7 downto 6) = "01" then
 	  -- PACK
@@ -453,7 +453,7 @@ begin
   -- the extracted data it determines the highest bit setin the result
   
   process (clk, bf_ins, bf_bchg, bf_bset, bf_exts, bf_extu, bf_set2, OP1out, OP2out, result_tmp, bf_ext_in,
-           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width)
+           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width, bf_loff_dir)
   begin
 	if rising_edge(clk) then
 	  if clkena_lw = '1' then

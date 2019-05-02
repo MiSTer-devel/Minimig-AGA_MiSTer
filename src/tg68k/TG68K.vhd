@@ -44,7 +44,6 @@ entity TG68K is
     uds           : out     std_logic;
     lds           : out     std_logic;
     rw            : out     std_logic;
-    e             : out     std_logic;
     vma           : buffer  std_logic:='1';
     wrd           : out     std_logic;
     ena7RDreg     : in      std_logic:='1';
@@ -125,7 +124,6 @@ SIGNAL uds_in           : std_logic;
 SIGNAL lds_in           : std_logic;
 SIGNAL state            : std_logic_vector(1 downto 0);
 SIGNAL clkena           : std_logic;
-SIGNAL vmaena           : std_logic;
 SIGNAL eind             : std_logic;
 SIGNAL eindd            : std_logic;
 SIGNAL sel_autoconfig   : std_logic;
@@ -284,7 +282,7 @@ PROCESS(clk,turbochipram, turbokick) BEGIN
 	END IF;
 END PROCESS;
 
-PROCESS (clk) BEGIN
+PROCESS (clk, fastramcfg, cpuaddr) BEGIN
 	-- Zorro II RAM (Up to 8 meg at 0x200000)
 	autoconfig_data <= "1111";
 	IF fastramcfg/="000" THEN
@@ -357,21 +355,6 @@ PROCESS (clk) BEGIN
 END PROCESS;
 
 PROCESS (clk) BEGIN
-	IF rising_edge(clk) THEN
-		IF reset='0' THEN
-			vmaena <= '0';
-		ELSIF ena7RDreg='1' THEN
-			vmaena <= '0';
-			IF sync_state=sync5 THEN
-				e <= '1';
-			END IF;
-			IF sync_state=sync9 THEN
-				e <= '0';
-				vmaena <= NOT vma;
-			END IF;
-		END IF;
-	END IF;
-
 	IF rising_edge(clk) THEN
 		IF ena7WRreg='1' THEN
 			eind <= ein;
