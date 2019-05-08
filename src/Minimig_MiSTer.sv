@@ -148,6 +148,7 @@ wire [  4-1:0] cpu_config;
 wire [  6-1:0] memcfg;
 wire           turbochipram;
 wire           turbokick;
+wire           bootrom;   
 wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
@@ -185,6 +186,7 @@ wire [  2-1:0] kbd_mouse_type;
 wire [  3-1:0] mouse_buttons;
 wire [  4-1:0] core_config;
 wire [   63:0] rtc;
+
 
 
 ////////////////////////////////////////
@@ -263,11 +265,13 @@ TG68K tg68k
 	.cache_inhibit(cache_inhibit    ),
 	.fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
 //	.ovr          (tg68_ovr         ), 
+        .bootrom      (bootrom          ),
 	.ramaddr      (tg68_cad         ),
 	.nResetOut    (tg68_nrst_out    ),
 //	.cpuDMA       (tg68_cdma        ), 
 	.ramlds       (tg68_clds        ),
 	.ramuds       (tg68_cuds        ),
+ 
 
 	//custom CPU signals
 	.cpustate     (tg68_cpustate    ),
@@ -455,6 +459,7 @@ minimig minimig
 	.memcfg       (memcfg           ), // memory config
 	.turbochipram (turbochipram     ), // turbo chipRAM
 	.turbokick    (turbokick        ), // turbo kickstart
+        .bootrom      (bootrom          ), // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 
 	.trackdisp    (                 ), // floppy track number
 	.secdisp      (                 ), // sector
