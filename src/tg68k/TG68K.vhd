@@ -55,6 +55,7 @@ entity TG68K is
     fastramcfg    : in      std_logic_vector(2 downto 0);
     turbochipram  : in      std_logic;
     turbokick     : in      std_logic;
+    bootrom       : in      std_logic:='0';
     cache_inhibit : out     std_logic;
 --    ovr           : in      std_logic; -- signal used by cart.v, delete
     ramaddr       : out     std_logic_vector(31 downto 0);
@@ -151,12 +152,12 @@ SIGNAL z3ram_ena        : std_logic;
 SIGNAL sel_z2ram        : std_logic;
 SIGNAL sel_z3ram        : std_logic;
 SIGNAL sel_kickram      : std_logic;
+signal sel_kicklower    : std_logic;
 
 SIGNAL NMI_vector       : std_logic_vector(15 downto 0);
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
 SIGNAL sel_nmi_vector    : std_logic;
--- signal sel_kicklower    : std_logic; that might be part of a new option to
--- boot from kickstart disks
+
 
 
 
@@ -194,7 +195,7 @@ sel_chipram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23
 -- don't sel_kickram when writing (state = "11")
 sel_kickram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 19)="11111") OR (cpuaddr(23 downto 19)="11100"))  AND turbochip_ena='1' AND turbokick_d='1' and state /="11"  ELSE '0'; -- $f8xxxx, e0xxxx
 
--- sel_kicklower <= '1' when (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 18)="111110") else '0';
+sel_kicklower <= '1' when (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 18)="111110") else '0';
 
 --  we route everything hrtmon related through cart.v (needs a couple of signals to
 --  decide what to do, would not be good style to replicate that here). 
@@ -202,10 +203,12 @@ sel_nmi_vector   <= '1' WHEN (cpuaddr(31 downto 2) = NMI_addr(31 downto 2)) and 
 -- sel_cart        <= '1' when  (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 20)="1010")  AND turbochip_ena='1' AND turbokick_d='1' ELSE '0';
 
 --  added fast access to slowram $c0-$d8, when turobochip is enabled.
-sel_slowram    <= '1'  when (cpuaddr(31 downto 24) = "00000000") AND ( (cpuaddr(23 downto 20)="1100") or (cpuaddr (23 downto 19) = "11010"))  AND turbochip_ena='1' AND turbochip_d='1' ELSE '0';
+-- sel_slowram    <= '1'  when (cpuaddr(31 downto 24) = "00000000") AND ( (cpuaddr(23 downto 20)="1100") or (cpuaddr (23 downto 19) = "11010"))  AND turbochip_ena='1' AND turbochip_d='1' ELSE '0';
+-- could only enable this if slowram is set to 1.5M (like for chipram). But
+-- there also seems to be another problem. Somehow fails with bootrom and AGA.
+-- 
 
-
-sel_fast        <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND ( sel_slowram='1' or sel_z2ram='1' OR sel_z3ram='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
+sel_fast        <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND (  sel_z2ram='1' OR sel_z3ram='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
 
 --when this is true, we set bit 23 to zero, to map all this from a0-ff to
 --20-7f. Don't need this for chipram, since there is no remapping. 
@@ -233,8 +236,8 @@ ramaddr(23 downto 21) <=  "100" WHEN sel_z2ram&cpuaddr(23 downto 21)="1001" -- 2
                       else '0'&cpuaddr (22 downto 21) when sel_a0map ='1' -- map a0-ff to 20-7f
                       else cpuaddr (23 downto 21);            
 ramaddr(20 downto 19)  <= cpuaddr(20 downto 19);
-ramaddr(18) <= cpuaddr(18);
---ramaddr(18) <= cpuaddr(18) when sel_kicklower = '0' else '1'; 
+-- ramaddr(18) <= cpuaddr(18);
+ramaddr(18) <= '1' when (sel_kicklower = '1' and bootrom= '1') else cpuaddr(18); 
 ramaddr(17 downto 0)  <= cpuaddr(17 downto 0);
 
 
@@ -272,7 +275,7 @@ PORT MAP (
 
 PROCESS(clk,turbochipram, turbokick) BEGIN
 	IF rising_edge(clk) THEN
-		IF reset='0' THEN
+          IF (reset='0' or nResetOut='0' ) THEN
 			turbochip_d <= '0';
 			turbokick_d <= '0';
 		ELSIF state="01" THEN -- No mem access, so safe to switch chipram access mode
@@ -322,7 +325,7 @@ PROCESS (clk, fastramcfg, cpuaddr) BEGIN
 	END IF;
 
 	IF rising_edge(clk) THEN
-		IF reset='0' THEN
+		IF (reset='0' or nResetOut='0') THEN
 			autoconfig_out <= "01";    --autoconfig on
 			turbochip_ena <= '0';  -- disable turbo_chipram until we know kickstart's running...
 			z2ram_ena <='0';
@@ -403,7 +406,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 		lds <= lds_s AND lds_e;
 	END IF;
 
-	IF reset='0' THEN
+	IF (reset='0') THEN
 		S_state <= "00";
 		as_s  <= '1';
 		rw_s  <= '1';
@@ -445,7 +448,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 		END IF;
 	END IF;
 	
-	IF reset='0' THEN
+	IF (reset='0' ) THEN
 		as_e  <= '1';
 		rw_e  <= '1';
 		uds_e <= '1';

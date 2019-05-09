@@ -149,106 +149,107 @@
 module minimig
 (
 	//m68k pins
-	input	 [23:1] cpu_address,		// m68k address bus
-	output [15:0] cpu_data,			// m68k data bus
-	input	 [15:0] cpudata_in,		// m68k data in
-	output  [2:0] _cpu_ipl,			// m68k interrupt request
-	input	        _cpu_as,			// m68k address strobe
-	input	        _cpu_uds,			// m68k upper data strobe
-	input	        _cpu_lds,			// m68k lower data strobe
-	input	        cpu_r_w,			// m68k read / write
-	output        _cpu_dtack,		// m68k data acknowledge
-	output        _cpu_reset,		// m68k reset
-	input         _cpu_reset_in,  // m68k reset in
-	input  [31:0] cpu_vbr, 			// m68k VBR
-	output        ovr,      		// NMI address decoding override
+	input [23:1]   cpu_address, // m68k address bus
+	output [15:0]  cpu_data, // m68k data bus
+	input [15:0]   cpudata_in, // m68k data in
+	output [2:0]   _cpu_ipl, // m68k interrupt request
+	input 	       _cpu_as, // m68k address strobe
+	input 	       _cpu_uds, // m68k upper data strobe
+	input 	       _cpu_lds, // m68k lower data strobe
+	input 	       cpu_r_w, // m68k read / write
+	output 	       _cpu_dtack, // m68k data acknowledge
+	output 	       _cpu_reset, // m68k reset
+	input 	       _cpu_reset_in, // m68k reset in
+	input [31:0]   cpu_vbr, // m68k VBR
+	output 	       ovr, // NMI address decoding override
 
 	//sram pins
-	output [15:0] ram_data,			//sram data bus
-	input	 [15:0] ramdata_in,		//sram data bus in
-	output [23:1] ram_address,		//sram address bus
-	output        _ram_bhe,			//sram upper byte select
-	output        _ram_ble,			//sram lower byte select
-	output        _ram_we,			//sram write enable
-	output        _ram_oe,			//sram output enable
-	input [48-1:0] chip48,        // big chipram read
+	output [15:0]  ram_data, //sram data bus
+	input [15:0]   ramdata_in, //sram data bus in
+	output [23:1]  ram_address, //sram address bus
+	output 	       _ram_bhe, //sram upper byte select
+	output 	       _ram_ble, //sram lower byte select
+	output 	       _ram_we, //sram write enable
+	output 	       _ram_oe, //sram output enable
+	input [48-1:0] chip48, // big chipram read
 
 	//system	pins
-	input         rst_ext,      	// reset from ctrl block
-	output        rst_out,     	// minimig reset status
-	input	        clk,				// 28.37516 MHz clock
-	input         clk7_en,      	// 7MHz clock enable
-	input         clk7n_en, 		// 7MHz negedge clock enable
-	input         c1,					// clock enable signal
-	input         c3,					// clock enable signal
-	input         cck,				// colour clock enable
-	input   [9:0] eclk,				// ECLK enable (1/10th of CLK)
+	input 	       rst_ext, // reset from ctrl block
+	output 	       rst_out, // minimig reset status
+	input 	       clk, // 28.37516 MHz clock
+	input 	       clk7_en, // 7MHz clock enable
+	input 	       clk7n_en, // 7MHz negedge clock enable
+	input 	       c1, // clock enable signal
+	input 	       c3, // clock enable signal
+	input 	       cck, // colour clock enable
+	input [9:0]    eclk, // ECLK enable (1/10th of CLK)
 
 	//rs232 pins
-	input         rxd,				//rs232 receive
-	output        txd,				//rs232 send
-	input	        cts,				//rs232 clear to send
-	output        rts,				//rs232 request to send
-	output        dtr,				//rs232 Data Terminal Ready
-	input	        dsr,				//rs232 Data Set Ready
-	input	        cd,					//rs232 Carrier Detect
-	input	        ri,					//rs232 Ring Indicator
+	input 	       rxd, //rs232 receive
+	output 	       txd, //rs232 send
+	input 	       cts, //rs232 clear to send
+	output 	       rts, //rs232 request to send
+	output 	       dtr, //rs232 Data Terminal Ready
+	input 	       dsr, //rs232 Data Set Ready
+	input 	       cd, //rs232 Carrier Detect
+	input 	       ri, //rs232 Ring Indicator
 
 	//I/O
-	input	 [15:0] _joy1,				//joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-	input	 [15:0] _joy2,				//joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-	input	 [15:0] _joy3,				//joystick 3 [fire2,fire,up,down,left,right]
-	input	 [15:0] _joy4,				//joystick 4 [fire2,fire,up,down,left,right]
-	input   [2:0] mouse_btn, 		// mouse buttons
-	input         kbd_mouse_strobe,
-	input         kms_level,
-	input   [1:0] kbd_mouse_type,
-	input   [7:0] kbd_mouse_data,
-	output        pwr_led,			//power led
-	output        fdd_led,				//disk activity LED, active when DMA is on
-	output        hdd_led,
-	input  [63:0] rtc,
+	input [15:0]   _joy1, //joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+	input [15:0]   _joy2, //joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+	input [15:0]   _joy3, //joystick 3 [fire2,fire,up,down,left,right]
+	input [15:0]   _joy4, //joystick 4 [fire2,fire,up,down,left,right]
+	input [2:0]    mouse_btn, // mouse buttons
+	input 	       kbd_mouse_strobe,
+	input 	       kms_level,
+	input [1:0]    kbd_mouse_type,
+	input [7:0]    kbd_mouse_data,
+	output 	       pwr_led, //power led
+	output 	       fdd_led, //disk activity LED, active when DMA is on
+	output 	       hdd_led,
+	input [63:0]   rtc,
 
 	//host controller interface (SPI)
-	input         IO_OSD,
-	input         IO_FPGA,
-	input         IO_STROBE,
-	output        IO_WAIT,
-	input  [15:0] IO_DIN,
-	output [15:0] IO_DOUT,
+	input 	       IO_OSD,
+	input 	       IO_FPGA,
+	input 	       IO_STROBE,
+	output 	       IO_WAIT,
+	input [15:0]   IO_DIN,
+	output [15:0]  IO_DOUT,
 
 	//video
-	output        _hsync,				//horizontal sync
-	output        _vsync,				//vertical sync
-	output        _csync,				//composite sync
-	output        field1,
-	output        hblank,
-	output        vblank,
-	output  [7:0] red,			//red
-	output  [7:0] green,		//green
-	output  [7:0] blue,			//blue
-	output  [1:0] ar,
-	output  [1:0] scanline,
-	output        ce_pix,
-	output  [1:0] res,
+	output 	       _hsync, //horizontal sync
+	output 	       _vsync, //vertical sync
+	output 	       _csync, //composite sync
+	output 	       field1,
+	output 	       hblank,
+	output 	       vblank,
+	output [7:0]   red, //red
+	output [7:0]   green, //green
+	output [7:0]   blue, //blue
+	output [1:0]   ar,
+	output [1:0]   scanline,
+	output 	       ce_pix,
+	output [1:0]   res,
 
 	//audio
-	output [14:0] ldata,			//left DAC data
-	output [14:0] rdata, 			//right DAC data
+	output [14:0]  ldata, //left DAC data
+	output [14:0]  rdata, //right DAC data
 
 	//user i/o
-	output  [3:0] cpu_config,
-	output  [5:0] memcfg,
-	output        turbochipram,
-	output        turbokick,
+	output [3:0]   cpu_config,
+	output [5:0]   memcfg,
+	output 	       turbochipram,
+	output 	       turbokick,
+        output         bootrom, //enable bootrom magic in gary.v
 
 	// fifo / track display
-	output  [7:0] trackdisp,
-	output [13:0] secdisp,
-	output        floppy_fwr,
-	output        floppy_frd,
-	output        hd_fwr,
-	output        hd_frd
+	output [7:0]   trackdisp,
+	output [13:0]  secdisp,
+	output 	       floppy_fwr,
+	output 	       floppy_frd,
+	output 	       hd_fwr,
+	output 	       hd_frd
 );
 
 //--------------------------------------------------------------------------------------
@@ -370,7 +371,7 @@ wire [15:0] cart_data_out;
 
 wire        usrrst;					//user reset from osd interface
 wire        hires;					//hires signal from Denise for interpolation filter enable in Amber
-wire        aron;					//Action Replay is enabled
+//wire        aron;					//Action Replay is enabled
 wire        cpu_speed;				//requests CPU to switch speed mode
 wire        turbo;					//CPU is working in turbo mode
 wire  [6:0] memory_config;	//memory configuration
@@ -409,6 +410,13 @@ wire [15:0] host_wdat;
 wire [15:0] host_rdat;
 wire        host_ack;
 
+   wire     sys_reset;    //reset output from minimig_syscontrol.v
+   wire     rom_readonly; //writeprotect $f8-ff in gary.v
+  
+   
+
+   assign reset = sys_reset  | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
+   
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
@@ -423,7 +431,7 @@ always @ (posedge clk) begin
   end
 end
 
-assign pwr_led = ~(_led & led_dim);
+   assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = memory_config[5:0];
 
@@ -431,8 +439,9 @@ assign memcfg = memory_config[5:0];
 assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] && cpu_custom) && (&memory_config[1:0]);
 
 // turbo kickstart only when no overlay is active and cpu_config[3] (fast kick) enabled or AGA mode is enabled
-assign turbokick = !ovl && (cpu_config[3] || chipset_config[4]);
-
+assign turbokick = rom_readonly && !ovl && (cpu_config[3] || chipset_config[4]);
+//writing to the ROM area is not implemented in turbo mode (see tg68k.vhd)
+   
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
 
@@ -587,6 +596,7 @@ userio USERIO1
 	.usrrst(usrrst),
 	.cpurst(cpurst),
 	.cpuhlt(cpuhlt),
+	.bootrom(bootrom),
 	.host_cs      (host_cs          ),
 	.host_adr     (host_adr         ),
 	.host_we      (host_we          ),
@@ -741,7 +751,7 @@ minimig_bankmapper BMAP1
 	.kick1mb(sel_kick1mb),
         .kick256kmirror(sel_kick256kmirror),
  	.cart(sel_cart),
-	.aron(aron),
+//	.aron(aron),
 	.ecs(|chipset_config[4:3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
@@ -837,7 +847,11 @@ gary GARY1
 	.sel_cia_b(sel_cia_b),
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
-	.sel_rtc(sel_rtc)
+	.sel_rtc(sel_rtc),
+        .reset(reset),
+        .clk(clk),
+        .rom_readonly(rom_readonly),
+        .bootrom(bootrom)
 );
 
 gayle GAYLE1
@@ -877,8 +891,8 @@ minimig_syscontrol CONTROL1
 	.clk(clk),
 	.clk7_en(clk7_en),
 	.cnt(sof),
-	.mrst(usrrst | rst_ext | ~_cpu_reset_in),
-	.reset(reset)
+	.mrst(usrrst | rst_ext),// | ~_cpu_reset_in),
+	.reset(sys_reset)
 );
 
 
@@ -901,7 +915,7 @@ assign custom_data_out[15:0] = agnus_data_out[15:0]
 //--------------------------------------------------------------------------------------
 
 //cpu reset and clock
-assign _cpu_reset = ~(reset || cpurst);
+assign _cpu_reset = ~(cpurst || sys_reset); //~(reset || cpurst);
 
 //--------------------------------------------------------------------------------------
 

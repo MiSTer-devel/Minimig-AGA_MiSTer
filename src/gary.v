@@ -59,6 +59,9 @@ module gary
 	input [15:0] 	 ram_data_out,
 	output [15:0] 	 ram_data_in,
 	input 		 a1k,
+	input            bootrom, // do the A1000 bootrom magic 		 
+        input 		 clk,
+        input 		 reset, //global reset signal
 	input 		 cpu_rd, //cpu read
 	input 		 cpu_hwr, //cpu high write
 	input 		 cpu_lwr, //cpu low write
@@ -83,18 +86,20 @@ module gary
 	output reg [2:0] sel_slow, //select slowfast memory ($C0000)
 	output reg 	 sel_kick, //select kickstart rom
 	output reg 	 sel_kick1mb, // 1MB kickstart rom 'upper' half
-        output reg       sel_kick256kmirror, //mirror the f8 to fc in a1k
+        output reg 	 sel_kick256kmirror, //mirror $fc-$ff to $f8, when rom_readonly and bootrom 
 	output 		 sel_cia, //select CIA space
 	output 		 sel_cia_a, //select cia A
 	output 		 sel_cia_b, //select cia B
 	output 		 sel_rtc, //select $DCxxxx
 	output 		 sel_ide, //select $DAxxxx
-	output 		 sel_gayle				//select $DExxxx
+	output 		 sel_gayle, //select $DExxxx
+        output reg 	 rom_readonly = 0 //when zero allows to write to $fc-$ff, blocks effect of kick256kmirror.  
 );
 
 wire	[2:0] t_sel_slow;
 wire	sel_xram;
 wire	sel_bank_1; 				// $200000-$3FFFFF
+ 
 
 //--------------------------------------------------------------------------------------
 
@@ -119,6 +124,14 @@ assign ram_address_out  = dbr ? {3'b000, dma_address_in[20:1]} : cpu_address_in[
    
 //--------------------------------------------------------------------------------------
 
+always @ (posedge clk) begin
+    if (reset)
+      rom_readonly <= #1 ~bootrom;
+    else if ( (cpu_hwr || cpu_lwr) && (cpu_address_in[23:18]==6'b1111_10))
+      rom_readonly <= #1 1'b1 ;
+ end
+
+   
 //chipram, kickstart and bootrom address decode
 always @(*)
 begin
@@ -145,8 +158,8 @@ begin
 		sel_slow[0] = t_sel_slow[0];
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
-		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt)) || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFF
-	 sel_kick256kmirror = (cpu_address_in[23:19]==5'b1111_1 &&  cpu_rd && !ovl && !cpu_hlt)  ? 1'b1 : 1'b0;
+		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt || (!rom_readonly && cpu_address_in[18]==1'b1 )))  || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) ? 1'b1 : 1'b0; //$F80000 - $FFFFFF
+	 sel_kick256kmirror = (cpu_address_in[23:19]==5'b1111_1 &&  cpu_rd && rom_readonly && !cpu_hlt && bootrom)  ? 1'b1 : 1'b0;
 	        sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) ? 1'b1 : 1'b0; // $E00000 - $E7FFFF
 	end
 end

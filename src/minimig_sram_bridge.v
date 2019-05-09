@@ -136,8 +136,8 @@ always @(posedge clk)
 
 
     assign address[17:1] = address_in[17:1];
-    assign address[22:18] = // bank[6]? //access f8-fb and !ovl and !halt, map to fc-ff
-			    //5'b111_11 : 
+    assign address[22:18] =  bank[6]? //access f8-fb and !ovl and !halt, map to fc-ff
+			    5'b111_11 : 
 			    (bank[7]? //access to f8-ff or ovl 
 			    {4'b111_1, address_in[18]} : (bank[5]? //chipram access  
 			    {2'b0, bank[3]|bank[2], bank[3]|bank[1],address_in[18]} :  address_in[22:18]));
