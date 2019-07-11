@@ -204,6 +204,7 @@ always@(posedge clk) begin
 			if(IO_DIN[7:0] == 5) kbd_mouse_type <= 2;  // keyboard
 			if(IO_DIN[7:0] == 6) kbd_mouse_type <= 3;  // OSD keyboard	
 			if(IO_DIN[7:0] == 'h2B) io_dout <= 1;
+			if(IO_DIN[7:0] == 'h2F) io_dout <= 1;
 		end
 
 		// first payload byte
