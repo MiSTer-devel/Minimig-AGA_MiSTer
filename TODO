@@ -1,14 +1,5 @@
 FIX FIRST
-- HELP key / HRTMON (NMI) button fix - DONE (OSD HRTmon disabled - F11 is HELP key)
-- 512kB ROM mirror (just upload it twice) - DONE
-- video dithering needs fixed - to be checked with C model - DONE
-- fix reset problems, fastRAM problems - DONE
-- try to fix clock/sdram issues - ONGOING
 - add support for AROS - ONGOING (IDE problems)
-- audio sigma-delta needs fixes - to be checked with C model
-- implement audio volume control (full, half, quarter?)
-- mapping CTRL, ALT, ...  keys in mist.ini
-- IDE OSD settings sometimes don't get applied
 - A8 kickstart ROM mirror - WONTFIX (memory block is partly occupied by HRTmon, besides it is very rarely used)
 
 
@@ -31,14 +22,9 @@ IMPORTANT - AGA CHIPSET stuff
 
 
 IMPORTANT - CPU stuff
-- CPU chipRAM turbo - DONE, need to enable cache for chipRAM - CHECK
 - CPU kickstart turbo - DONE, some problems remain - ONGOING
 - CPU compatibility fixes are a must! - ONGOING (Till fixed most of the instructions, still need to check stack frames - see (http://lxr.free-electrons.com/source/include/asm-m68k/traps.h?v=2.2.26 ... http://ftp.dei.uc.pt/pub/linux/kernel/people/geert/uClinux-amiga-2.6.x-merging/008-frame.diff)
 - CPU fix cart compatibility problems (overlay detection should be moved to TG68K.vhd); big problems with turbo kickstart - ONGOING
-
-
-MEDIUM - mostly firmware stuff
-- joystick autofire menu ?
 
 
 LOW - waaay down the line
