@@ -4,8 +4,8 @@
 module amiga_clk (
   input        rst,        // asynhronous reset input
   input        clk_in,     // input clock        ( 27.000000MHz)
-  output       clk_114,    // SDRAM ctrl   clock (114.750000MHz)
-  output       clk_sdram,  // SDRAM output clock (114.750000MHz, -146.25 deg)
+  output       clk_86,     // SDRAM ctrl   clock (86.0625000MHz)
+  output       clk_sdram,  // SDRAM output clock (86.0625000MHz, shifted)
   output       clk_28,     // 28MHz output clock ( 28.375160MHz)
   output       clk_7,      // 7MHz  output clock (  7.171875MHz) DO NOT USE IT AS A CLOCK!
   output       clk7_en,    // 7MHz output clock enable (on 28MHz clock domain)
@@ -24,7 +24,7 @@ pll pll
 (
 	.refclk(clk_in),
 	.rst(rst),
-	.outclk_0(clk_114),
+	.outclk_0(clk_86),
 	.outclk_1(clk_sdram),
 	.outclk_2(clk_28),
 	.locked(locked)
@@ -80,16 +80,16 @@ reg [3:0] e_cnt = 4'b0000;
 assign cck = ~e_cnt[0];
 
 // 0.709379 MHz clock enable output (clk domain pulse)
-assign eclk[0] = ~e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] & ~e_cnt[0]; // e_cnt == 0
-assign eclk[1] = ~e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] &  e_cnt[0]; // e_cnt == 1
-assign eclk[2] = ~e_cnt[3] & ~e_cnt[2] &  e_cnt[1] & ~e_cnt[0]; // e_cnt == 2
-assign eclk[3] = ~e_cnt[3] & ~e_cnt[2] &  e_cnt[1] &  e_cnt[0]; // e_cnt == 3
-assign eclk[4] = ~e_cnt[3] &  e_cnt[2] & ~e_cnt[1] & ~e_cnt[0]; // e_cnt == 4
-assign eclk[5] = ~e_cnt[3] &  e_cnt[2] & ~e_cnt[1] &  e_cnt[0]; // e_cnt == 5
-assign eclk[6] = ~e_cnt[3] &  e_cnt[2] &  e_cnt[1] & ~e_cnt[0]; // e_cnt == 6
-assign eclk[7] = ~e_cnt[3] &  e_cnt[2] &  e_cnt[1] &  e_cnt[0]; // e_cnt == 7
-assign eclk[8] =  e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] & ~e_cnt[0]; // e_cnt == 8
-assign eclk[9] =  e_cnt[3] & ~e_cnt[2] & ~e_cnt[1] &  e_cnt[0]; // e_cnt == 9
+assign eclk[0] = (e_cnt == 0);
+assign eclk[1] = (e_cnt == 1);
+assign eclk[2] = (e_cnt == 2);
+assign eclk[3] = (e_cnt == 3);
+assign eclk[4] = (e_cnt == 4);
+assign eclk[5] = (e_cnt == 5);
+assign eclk[6] = (e_cnt == 6);
+assign eclk[7] = (e_cnt == 7);
+assign eclk[8] = (e_cnt == 8);
+assign eclk[9] = (e_cnt == 9);
 
 
 endmodule

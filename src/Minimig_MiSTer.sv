@@ -1,7 +1,7 @@
 /********************************************/
 /* minimig.sv                               */
 /* MiSTer glue logic                        */
-/* 2017-2019 Sorgelig                       */
+/* 2017-2019 Alexey Melnikov                */
 /********************************************/
 
 
@@ -117,7 +117,7 @@ assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DD
 ////////////////////////////////////////
 
 // clock
-wire           clk_114;
+wire           clk_86;
 wire           clk_28;
 wire           pll_locked;
 wire           clk_7;
@@ -222,8 +222,8 @@ amiga_clk amiga_clk
 (
 	.rst          (0                ), // async reset input
 	.clk_in       (CLK_50M          ), // input clock     ( 50.000000MHz)
-	.clk_114      (clk_114          ), // output clock c0 (114.750000MHz)
-	.clk_sdram    (SDRAM_CLK        ), // output clock c2 (114.750000MHz, -146.25 deg)
+	.clk_86       (clk_86           ), // output clock c0 (86.0625000MHz)
+	.clk_sdram    (SDRAM_CLK        ), // output clock c2 (86.0625000MHz, shifted)
 	.clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
 	.clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
 	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
@@ -238,7 +238,7 @@ amiga_clk amiga_clk
 
 TG68K tg68k
 (
-	.clk          (clk_114          ),
+	.clk          (clk_86           ),
 	.reset        (tg68_rst         ),
 	.clkena_in    (1'b1             ),
 	.IPL          (tg68_IPL         ),
@@ -281,7 +281,7 @@ TG68K tg68k
 
 sdram_ctrl sdram
 (
-	.sysclk       (clk_114          ),
+	.sysclk       (clk_86           ),
 	.reset_in     (pll_locked       ),
 	.c_7m         (clk_7            ),
 	.reset_out    (                 ),
