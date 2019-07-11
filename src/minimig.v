@@ -149,107 +149,107 @@
 module minimig
 (
 	//m68k pins
-	input [23:1]   cpu_address, // m68k address bus
-	output [15:0]  cpu_data, // m68k data bus
-	input [15:0]   cpudata_in, // m68k data in
-	output [2:0]   _cpu_ipl, // m68k interrupt request
-	input 	       _cpu_as, // m68k address strobe
-	input 	       _cpu_uds, // m68k upper data strobe
-	input 	       _cpu_lds, // m68k lower data strobe
-	input 	       cpu_r_w, // m68k read / write
-	output 	       _cpu_dtack, // m68k data acknowledge
-	output 	       _cpu_reset, // m68k reset
-	input 	       _cpu_reset_in, // m68k reset in
-	input [31:0]   cpu_vbr, // m68k VBR
-	output 	       ovr, // NMI address decoding override
+	input  [23:1] cpu_address, // m68k address bus
+	output [15:0] cpu_data,    // m68k data bus
+	input  [15:0] cpudata_in,  // m68k data in
+	output  [2:0] _cpu_ipl,    // m68k interrupt request
+	input 	     _cpu_as,     // m68k address strobe
+	input 	     _cpu_uds,    // m68k upper data strobe
+	input 	     _cpu_lds,    // m68k lower data strobe
+	input 	     cpu_r_w,     // m68k read / write
+	output 	     _cpu_dtack,  // m68k data acknowledge
+	output 	     _cpu_reset,  // m68k reset
+	input 	     _cpu_reset_in,//m68k reset in
+	input  [31:0] cpu_vbr,     // m68k VBR
+	output 	     ovr,         // NMI address decoding override
 
 	//sram pins
-	output [15:0]  ram_data, //sram data bus
-	input [15:0]   ramdata_in, //sram data bus in
-	output [23:1]  ram_address, //sram address bus
-	output 	       _ram_bhe, //sram upper byte select
-	output 	       _ram_ble, //sram lower byte select
-	output 	       _ram_we, //sram write enable
-	output 	       _ram_oe, //sram output enable
-	input [48-1:0] chip48, // big chipram read
+	output [15:0] ram_data,    // sram data bus
+	input  [15:0] ramdata_in,  // sram data bus in
+	output [23:1] ram_address, // sram address bus
+	output 	     _ram_bhe,    // sram upper byte select
+	output 	     _ram_ble,    // sram lower byte select
+	output 	     _ram_we,     // sram write enable
+	output 	     _ram_oe,     // sram output enable
+	input  [47:0] chip48,      // big chipram read
 
 	//system	pins
-	input 	       rst_ext, // reset from ctrl block
-	output 	       rst_out, // minimig reset status
-	input 	       clk, // 28.37516 MHz clock
-	input 	       clk7_en, // 7MHz clock enable
-	input 	       clk7n_en, // 7MHz negedge clock enable
-	input 	       c1, // clock enable signal
-	input 	       c3, // clock enable signal
-	input 	       cck, // colour clock enable
-	input [9:0]    eclk, // ECLK enable (1/10th of CLK)
+	input 	     rst_ext,     // reset from ctrl block
+	output 	     rst_out,     // minimig reset status
+	input 	     clk,         // 28.37516 MHz clock
+	input 	     clk7_en,     // 7MHz clock enable
+	input 	     clk7n_en,    // 7MHz negedge clock enable
+	input 	     c1,          // clock enable signal
+	input 	     c3,          // clock enable signal
+	input 	     cck,         // colour clock enable
+	input   [9:0] eclk,        // ECLK enable (1/10th of CLK)
 
 	//rs232 pins
-	input 	       rxd, //rs232 receive
-	output 	       txd, //rs232 send
-	input 	       cts, //rs232 clear to send
-	output 	       rts, //rs232 request to send
-	output 	       dtr, //rs232 Data Terminal Ready
-	input 	       dsr, //rs232 Data Set Ready
-	input 	       cd, //rs232 Carrier Detect
-	input 	       ri, //rs232 Ring Indicator
+	input 	     rxd,         // rs232 receive
+	output 	     txd,         // rs232 send
+	input 	     cts,         // rs232 clear to send
+	output 	     rts,         // rs232 request to send
+	output 	     dtr,         // rs232 Data Terminal Ready
+	input 	     dsr,         // rs232 Data Set Ready
+	input 	     cd,          // rs232 Carrier Detect
+	input 	     ri,          // rs232 Ring Indicator
 
 	//I/O
-	input [15:0]   _joy1, //joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
-	input [15:0]   _joy2, //joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
-	input [15:0]   _joy3, //joystick 3 [fire2,fire,up,down,left,right]
-	input [15:0]   _joy4, //joystick 4 [fire2,fire,up,down,left,right]
-	input [2:0]    mouse_btn, // mouse buttons
-	input 	       kbd_mouse_strobe,
-	input 	       kms_level,
-	input [1:0]    kbd_mouse_type,
-	input [7:0]    kbd_mouse_data,
-	output 	       pwr_led, //power led
-	output 	       fdd_led, //disk activity LED, active when DMA is on
-	output 	       hdd_led,
-	input [63:0]   rtc,
+	input  [15:0] _joy1,       // joystick 1 [fire2,fire,up,down,left,right] (default mouse port)
+	input  [15:0] _joy2,       // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
+	input  [15:0] _joy3,       // joystick 3 [fire2,fire,up,down,left,right]
+	input  [15:0] _joy4,       // joystick 4 [fire2,fire,up,down,left,right]
+	input   [2:0] mouse_btn,   // mouse buttons
+	input 	     kbd_mouse_strobe,
+	input 	     kms_level,
+	input   [1:0] kbd_mouse_type,
+	input   [7:0] kbd_mouse_data,
+	output 	     pwr_led,     // power led
+	output 	     fdd_led,     // disk activity LED, active when DMA is on
+	output 	     hdd_led,
+	input  [63:0] rtc,
 
 	//host controller interface (SPI)
-	input 	       IO_OSD,
-	input 	       IO_FPGA,
-	input 	       IO_STROBE,
-	output 	       IO_WAIT,
-	input [15:0]   IO_DIN,
-	output [15:0]  IO_DOUT,
+	input 	     IO_OSD,
+	input 	     IO_FPGA,
+	input 	     IO_STROBE,
+	output 	     IO_WAIT,
+	input  [15:0] IO_DIN,
+	output [15:0] IO_DOUT,
 
 	//video
-	output 	       _hsync, //horizontal sync
-	output 	       _vsync, //vertical sync
-	output 	       _csync, //composite sync
-	output 	       field1,
-	output 	       hblank,
-	output 	       vblank,
-	output [7:0]   red, //red
-	output [7:0]   green, //green
-	output [7:0]   blue, //blue
-	output [1:0]   ar,
-	output [1:0]   scanline,
-	output 	       ce_pix,
-	output [1:0]   res,
+	output 	     _hsync,      // horizontal sync
+	output 	     _vsync,      // vertical sync
+	output 	     _csync,      // composite sync
+	output 	     field1,
+	output 	     hblank,
+	output 	     vblank,
+	output  [7:0] red,
+	output  [7:0] green,
+	output  [7:0] blue,
+	output  [1:0] ar,
+	output  [1:0] scanline,
+	output 	     ce_pix,
+	output  [1:0] res,
 
 	//audio
-	output [14:0]  ldata, //left DAC data
-	output [14:0]  rdata, //right DAC data
+	output [14:0] ldata,       // left DAC data
+	output [14:0] rdata,       // right DAC data
 
 	//user i/o
-	output [3:0]   cpu_config,
-	output [5:0]   memcfg,
-	output 	       turbochipram,
-	output 	       turbokick,
-        output         bootrom, //enable bootrom magic in gary.v
+	output  [3:0] cpu_config,
+	output  [6:0] memcfg,
+	output 	     turbochipram,
+	output 	     turbokick,
+	output        bootrom,     // enable bootrom magic in gary.v
 
 	// fifo / track display
-	output [7:0]   trackdisp,
-	output [13:0]  secdisp,
-	output 	       floppy_fwr,
-	output 	       floppy_frd,
-	output 	       hd_fwr,
-	output 	       hd_frd
+	output  [7:0] trackdisp,
+	output [13:0] secdisp,
+	output 	     floppy_fwr,
+	output 	     floppy_frd,
+	output 	     hd_fwr,
+	output 	     hd_frd
 );
 
 //--------------------------------------------------------------------------------------
@@ -260,19 +260,19 @@ parameter [0:0] NTSC = 1'b0;	//Agnus type (PAL/NTSC)
 
 //local signals for data bus
 wire [15:0] cpu_data_in;		//cpu data bus in
-wire [15:0] cpu_data_out;	//cpu data bus out
+wire [15:0] cpu_data_out;	   //cpu data bus out
 wire [15:0] ram_data_in;		//ram data bus in
-wire [15:0] ram_data_out;	//ram data bus out
+wire [15:0] ram_data_out;	   //ram data bus out
 wire [15:0] custom_data_in;	//custom chips data bus in
 wire [15:0] custom_data_out;	//custom chips data bus out
 wire [15:0] agnus_data_out;	//agnus data out
 wire [15:0] paula_data_out;	//paula data bus out
 wire [15:0] denise_data_out;	//denise data bus out
-wire [15:0] user_data_out;	//user IO data out
-wire [15:0] gary_data_out;	//data out from memory bus multiplexer
+wire [15:0] user_data_out;	   //user IO data out
+wire [15:0] gary_data_out;	   //data out from memory bus multiplexer
 wire [15:0] gayle_data_out;	//Gayle data out
-wire [15:0] cia_data_out;	//cia A+B data bus out
-wire [15:0] ar3_data_out;	//Action Replay data out
+wire [15:0] cia_data_out;	   //cia A+B data bus out
+wire [15:0] ar3_data_out;	   //Action Replay data out
 
 //local signals for address bus
 wire [23:1] cpu_address_out;	//cpu address out
@@ -280,7 +280,7 @@ wire [20:1] dma_address_out;	//agnus address out
 wire [23:1] ram_address_out;	//ram address out
 
 //local signals for control bus
-wire        ram_rd;					//ram read enable
+wire        ram_rd;				//ram read enable
 wire        ram_hwr;				//ram high byte write enable 
 wire        ram_lwr;				//ram low byte write enable 
 wire        cpu_rd; 				//cpu read enable
@@ -291,7 +291,7 @@ wire        cpu_lwr;				//cpu low byte write enable
 wire  [8:1] reg_address; 		//main register address bus
 
 //rest of local signals
-wire        reset;					//global reset
+wire        reset;				//global reset
 wire        cpu_custom;
 wire        dbr;					//data bus request, Agnus tells CPU that she is using the bus
 wire        dbwe;					//data bus write enable, Agnus tells the RAM it's writing data
@@ -301,51 +301,51 @@ wire        ovl;					//kickstart overlay enable
 wire        _led;					//power led
 wire  [3:0] sel_chip;			//chip ram select
 wire  [2:0] sel_slow;			//slow ram select
-wire        sel_kick;				//rom select
-wire        sel_kick1mb;     // 1MB upper rom select
-wire        sel_kick256kmirror; // mirror f8-fb to fc-ff in a1k mode    
+wire        sel_kick;			//rom select
+wire        sel_kick1mb;      // 1MB upper rom select
+wire        sel_kick256kmirror;// mirror f8-fb to fc-ff in a1k mode    
 wire        sel_cia;				//CIA address space
 wire        sel_reg;				//chip register select
 wire        sel_rtc;
-wire        sel_cia_a;				//cia A select
-wire        sel_cia_b;				//cia B select
+wire        sel_cia_a;			//cia A select
+wire        sel_cia_b;			//cia B select
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
-wire        freeze;					//Action Replay freeze button
-wire        _fire0;					//joystick 1 fire signal to cia A
-wire        _fire1;					//joystick 2 fire signal to cia A
+wire        freeze;				//Action Replay freeze button
+wire        _fire0;				//joystick 1 fire signal to cia A
+wire        _fire1;				//joystick 2 fire signal to cia A
 wire        _fire0_dat;
 wire        _fire1_dat;
-wire  [3:0] audio_dmal;		//audio dma data transfer request from Paula to Agnus
-wire  [3:0] audio_dmas;		//audio dma location pointer restart from Paula to Agnus
-wire        disk_dmal;				//disk dma data transfer request from Paula to Agnus
-wire        disk_dmas;				//disk dma special request from Paula to Agnus
-wire        index;					//disk index interrupt
+wire  [3:0] audio_dmal;		   //audio dma data transfer request from Paula to Agnus
+wire  [3:0] audio_dmas;		   //audio dma location pointer restart from Paula to Agnus
+wire        disk_dmal;			//disk dma data transfer request from Paula to Agnus
+wire        disk_dmas;			//disk dma special request from Paula to Agnus
+wire        index;				//disk index interrupt
 
 //local video signals
 wire        sol;					//start of video line
 wire        sof;					//start of video frame
-wire        vbl_int;        // vertical blanking interrupt
-wire        strhor_denise;			//horizontal strobe for Denise
-wire        strhor_paula;			//horizontal strobe for Paula
-wire  [8:0] htotal;			//video line length (140ns units)
+wire        vbl_int;          // vertical blanking interrupt
+wire        strhor_denise;		//horizontal strobe for Denise
+wire        strhor_paula;		//horizontal strobe for Paula
+wire  [8:0] htotal;			   //video line length (140ns units)
 wire        harddis;
 wire        varbeamen;
 
 //local floppy signals (CIA<-->Paula)
-wire        _step;					//step heads of disk
-wire        direc;					//step heads direction
-wire        _sel0;					//disk0 select 	
-wire        _sel1;					//disk1 select 	
-wire        _sel2;					//disk2 select 	
-wire        _sel3;					//disk3 select 	
+wire        _step;				//step heads of disk
+wire        direc;				//step heads direction
+wire        _sel0;				//disk0 select 	
+wire        _sel1;				//disk1 select 	
+wire        _sel2;				//disk2 select 	
+wire        _sel3;				//disk3 select 	
 wire        side;					//upper/lower disk head
-wire        _motor;					//disk motor control
+wire        _motor;				//disk motor control
 wire        _track0;				//track zero detect
 wire        _change;				//disk has been removed from drive
-wire        _ready;					//disk is ready
-wire        _wprot;					//disk is write-protected
+wire        _ready;				//disk is ready
+wire        _wprot;				//disk is write-protected
 
 wire  [1:0] blver;
 wire        hbl, hde;
@@ -365,41 +365,41 @@ wire        cpurst;
 wire        cpuhlt;
 
 wire        int7;					//int7 interrupt request from Action Replay
-wire  [2:0] _iplx;			//interrupt request lines from Paula
-wire        sel_cart;				//Action Replay RAM select
+wire  [2:0] _iplx;			   //interrupt request lines from Paula
+wire        sel_cart;			//Action Replay RAM select
 wire [15:0] cart_data_out;
 
-wire        usrrst;					//user reset from osd interface
-wire        hires;					//hires signal from Denise for interpolation filter enable in Amber
-//wire        aron;					//Action Replay is enabled
-wire        cpu_speed;				//requests CPU to switch speed mode
-wire        turbo;					//CPU is working in turbo mode
-wire  [6:0] memory_config;	//memory configuration
-wire  [3:0] floppy_config;	//floppy drives configuration (drive number and speed)
+wire        usrrst;				//user reset from osd interface
+wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
+//wire        aron;				//Action Replay is enabled
+wire        cpu_speed;			//requests CPU to switch speed mode
+wire        turbo;				//CPU is working in turbo mode
+wire  [7:0] memory_config;		//memory configuration
+wire  [3:0] floppy_config;		//floppy drives configuration (drive number and speed)
 wire  [4:0] chipset_config;	//chipset features selection
-wire  [4:0] ide_config;		//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
+wire  [4:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
 wire        sel_ide;				//select IDE drive registers
-wire        sel_gayle;				//select GAYLE control registers
-wire        gayle_irq;				//interrupt request
+wire        sel_gayle;			//select GAYLE control registers
+wire        gayle_irq;			//interrupt request
 wire        gayle_nrdy;       // HDD fifo is not ready for reading
 //emulated hard disk drive signals
-wire        hdd_cmd_req;			//hard disk controller has written command register and requests processing
-wire        hdd_dat_req;			//hard disk controller requests data from emulated hard disk drive
+wire        hdd_cmd_req;		//hard disk controller has written command register and requests processing
+wire        hdd_dat_req;		//hard disk controller requests data from emulated hard disk drive
 wire  [2:0] hdd_addr;			//emulated hard disk drive register address bus
-wire [15:0] hdd_data_out;	//data output port of emulated hard disk drive
+wire [15:0] hdd_data_out;		//data output port of emulated hard disk drive
 wire [15:0] hdd_data_in;		//data input port of emulated hard disk drive
-wire        hdd_wr;					//register write strobe
-wire        hdd_status_wr;			//status register write strobe
-wire        hdd_data_wr;			//data port write strobe
-wire        hdd_data_rd;			//data port read strobe
+wire        hdd_wr;				//register write strobe
+wire        hdd_status_wr;		//status register write strobe
+wire        hdd_data_wr;		//data port write strobe
+wire        hdd_data_rd;		//data port read strobe
 
-wire	[7:0] bank;				//memory bank select
+wire	[7:0] bank;					//memory bank select
 
-wire        keyboard_disabled;		//disables Amiga keyboard while OSD is active
+wire        keyboard_disabled;//disables Amiga keyboard while OSD is active
 
-reg         ntsc = NTSC;			//PAL/NTSC video mode selection
+reg         ntsc = NTSC;		//PAL/NTSC video mode selection
 
 // host interface
 wire        host_cs;
@@ -410,13 +410,11 @@ wire [15:0] host_wdat;
 wire [15:0] host_rdat;
 wire        host_ack;
 
-   wire     sys_reset;    //reset output from minimig_syscontrol.v
-   wire     rom_readonly; //writeprotect $f8-ff in gary.v
-  
-   
+wire        sys_reset;    		//reset output from minimig_syscontrol.v
+wire        rom_readonly; 		//writeprotect $f8-ff in gary.v
 
-   assign reset = sys_reset  | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
-   
+assign      reset = sys_reset  | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
+
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
@@ -433,7 +431,7 @@ end
 
    assign pwr_led = ~(_led & led_dim);
 
-assign memcfg = memory_config[5:0];
+assign memcfg = {memory_config[7],memory_config[5:0]};
 
 // turbo chipram only when in AGA mode, no overlay is active, cpu_config[2] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
 assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] && cpu_custom) && (&memory_config[1:0]);
@@ -749,7 +747,7 @@ minimig_bankmapper BMAP1
 	.slow2(sel_slow[2]),
 	.kick(sel_kick),
 	.kick1mb(sel_kick1mb),
-        .kick256kmirror(sel_kick256kmirror),
+	.kick256kmirror(sel_kick256kmirror),
  	.cart(sel_cart),
 //	.aron(aron),
 	.ecs(|chipset_config[4:3]),
@@ -840,18 +838,18 @@ gary GARY1
 	.sel_slow(sel_slow),
 	.sel_kick(sel_kick),
 	.sel_kick1mb(sel_kick1mb),
-        .sel_kick256kmirror(sel_kick256kmirror),
-        .sel_cia(sel_cia),
+	.sel_kick256kmirror(sel_kick256kmirror),
+	.sel_cia(sel_cia),
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),
 	.sel_cia_b(sel_cia_b),
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.sel_rtc(sel_rtc),
-        .reset(reset),
-        .clk(clk),
-        .rom_readonly(rom_readonly),
-        .bootrom(bootrom)
+	.reset(reset),
+	.clk(clk),
+	.rom_readonly(rom_readonly),
+	.bootrom(bootrom)
 );
 
 gayle GAYLE1

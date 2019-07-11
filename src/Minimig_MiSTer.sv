@@ -145,7 +145,7 @@ wire           tg68_enaWR;
 wire [ 16-1:0] tg68_cout;
 wire           tg68_cpuena;
 wire [  4-1:0] cpu_config;
-wire [  6-1:0] memcfg;
+wire [  7-1:0] memcfg;
 wire           turbochipram;
 wire           turbokick;
 wire           bootrom;   
@@ -153,7 +153,6 @@ wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
 wire [  6-1:0] tg68_cpustate;
 wire           tg68_nrst_out;
-// wire           tg68_cdma;
 wire           tg68_clds;
 wire           tg68_cuds;
 wire [  4-1:0] tg68_CACR_out;
@@ -263,12 +262,11 @@ TG68K tg68k
 	.turbochipram (turbochipram     ),
 	.turbokick    (turbokick        ),
 	.cache_inhibit(cache_inhibit    ),
-	.fastramcfg   ({&memcfg[5:4],memcfg[5:4]}),
+	.fastramcfg   (memcfg[6:4]      ),
 //	.ovr          (tg68_ovr         ), 
-        .bootrom      (bootrom          ),
+	.bootrom      (bootrom          ),
 	.ramaddr      (tg68_cad         ),
 	.nResetOut    (tg68_nrst_out    ),
-//	.cpuDMA       (tg68_cdma        ), 
 	.ramlds       (tg68_clds        ),
 	.ramuds       (tg68_cuds        ),
  
@@ -288,7 +286,7 @@ sdram_ctrl sdram
 
 	.cache_rst    (tg68_rst         ),
 	.cache_inhibit(cache_inhibit    ),
-	.cpu_cache_ctrl (tg68_CACR_out  ),
+	.cpu_cache_ctrl(tg68_CACR_out   ),
 
 	.sdata        (SDRAM_DQ         ),
 	.sdaddr       (SDRAM_A[12:0]    ),
@@ -300,11 +298,10 @@ sdram_ctrl sdram
 	.sd_cas       (SDRAM_nCAS       ),
 
 	.cpuWR        (tg68_dat_out     ),
-	.cpuAddr      (tg68_cad[24:1]   ),
+	.cpuAddr      (tg68_cad[25:1]   ),
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),
-//	.cpu_dma      (tg68_cdma        ),
 	.cpuRD        (tg68_cout        ),
 	.cpuena       (tg68_cpuena      ),
 	.enaWRreg     (tg68_enaWR       ),
