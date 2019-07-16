@@ -1037,7 +1037,6 @@ emu emu
 	.AUDIO_L(audio_ls),
 	.AUDIO_R(audio_rs),
 	.AUDIO_S(audio_s),
-	.TAPE_IN(0),
 
 	.IO_UIO(io_uio),
 	.IO_FPGA(io_fpga),

@@ -58,7 +58,8 @@ module sdram_ctrl
 	output     [47:0] chip48,
 	// cpu
 	input      [25:1] cpuAddr,
-	input       [5:0] cpustate,
+	input             cpuCS,
+	input       [1:0] cpustate,
 	input             cpuL,
 	input             cpuU,
 	input      [15:0] cpuWR,
@@ -137,28 +138,28 @@ wire readcache_fill = (cache_fill_1 && slot1_type == CPU_READCACHE) || (cache_fi
 
 cpu_cache_new cpu_cache
 (
-	.clk              (sysclk),                       // clock
-	.rst              (!reset || !cache_rst),         // cache reset
-	.cache_en         (1'b1),                         // cache enable
-	.cpu_cache_ctrl   (cpu_cache_ctrl),               // CPU cache control
-	.cache_inhibit    (cache_inhibit),                // cache inhibit
-	.cpu_cs           (!cpustate[2]),                 // cpu activity
-	.cpu_adr          (cpuAddr),                      // cpu address
-	.cpu_bs           ({!cpuU, !cpuL}),               // cpu byte selects
-	.cpu_we           (&cpustate[1:0]),               // cpu write
-	.cpu_ir           (!cpustate[1:0]),               // cpu instruction read
-	.cpu_dr           (cpustate[1] && !cpustate[0]),  // cpu data read
-	.cpu_dat_w        (cpuWR),                        // cpu write data
-	.cpu_dat_r        (cpuRD),                        // cpu read data
-	.cpu_ack          (ccachehit),                    // cpu acknowledge
-	.wb_en            (writebuffer_cache_ack),        // writebuffer enable
-	.sdr_dat_r        (sdata_reg),                    // sdram read data
-	.sdr_read_req     (cache_req),                    // sdram read request from cache
-	.sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
-	.snoop_act        (snoop_act),                    // snoop act (write only - just update existing data in cache)
-	.snoop_adr        (chipAddr),                     // snoop address
-	.snoop_dat_w      (chipWR),                       // snoop write data
-	.snoop_bs         ({!chipU, !chipL})              // snoop byte selects
+	.clk              (sysclk),                // clock
+	.rst              (!reset || !cache_rst),  // cache reset
+	.cache_en         (1'b1),                  // cache enable
+	.cpu_cache_ctrl   (cpu_cache_ctrl),        // CPU cache control
+	.cache_inhibit    (cache_inhibit),         // cache inhibit
+	.cpu_cs           (cpuCS),                 // cpu activity
+	.cpu_adr          (cpuAddr),               // cpu address
+	.cpu_bs           ({!cpuU, !cpuL}),        // cpu byte selects
+	.cpu_we           (cpustate == 3),         // cpu write
+	.cpu_ir           (cpustate == 0),         // cpu instruction read
+	.cpu_dr           (cpustate == 2),         // cpu data read
+	.cpu_dat_w        (cpuWR),                 // cpu write data
+	.cpu_dat_r        (cpuRD),                 // cpu read data
+	.cpu_ack          (ccachehit),             // cpu acknowledge
+	.wb_en            (writebuffer_cache_ack), // writebuffer enable
+	.sdr_dat_r        (sdata_reg),             // sdram read data
+	.sdr_read_req     (cache_req),             // sdram read request from cache
+	.sdr_read_ack     (readcache_fill),        // sdram read acknowledge to cache
+	.snoop_act        (snoop_act),             // snoop act (write only - just update existing data in cache)
+	.snoop_adr        (chipAddr),              // snoop address
+	.snoop_dat_w      (chipWR),                // snoop write data
+	.snoop_bs         ({!chipU, !chipL})       // snoop byte selects
 );
 
 //// writebuffer ////
@@ -181,7 +182,7 @@ always @ (posedge sysclk) begin
 		case(writebuffer_state)
 			WAITING : begin
 				// CPU write cycle, no cycle already pending
-				if(cpustate[2:0] == 3'b011) begin
+				if(cpuCS && cpustate == 3) begin
 					writebufferAddr <= cpuAddr;
 					writebufferWR   <= cpuWR;
 					writebuffer_dqm <= {cpuU, cpuL};
@@ -209,7 +210,7 @@ always @ (posedge sysclk) begin
 				writebuffer_state <= WAITING;
 			end
 		endcase
-		if(cpustate[2]) begin
+		if(~cpuCS) begin
 			// the CPU has unpaused, so clear the ack signal
 			writebuffer_ena <= 0;
 		end

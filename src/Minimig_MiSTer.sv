@@ -56,7 +56,6 @@ module emu
    output [15:0] AUDIO_L,
    output [15:0] AUDIO_R,
    output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
-   input         TAPE_IN,
 
    input         IO_UIO,
    input         IO_FPGA,
@@ -151,7 +150,8 @@ wire           turbokick;
 wire           bootrom;   
 wire           cache_inhibit;
 wire [ 32-1:0] tg68_cad;
-wire [  6-1:0] tg68_cpustate;
+wire [    1:0] tg68_cpustate;
+wire           tg68_ramcs;
 wire           tg68_nrst_out;
 wire           tg68_clds;
 wire           tg68_cuds;
@@ -266,6 +266,7 @@ TG68K tg68k
 //	.ovr          (tg68_ovr         ), 
 	.bootrom      (bootrom          ),
 	.ramaddr      (tg68_cad         ),
+	.ramcs        (tg68_ramcs       ),
 	.nResetOut    (tg68_nrst_out    ),
 	.ramlds       (tg68_clds        ),
 	.ramuds       (tg68_cuds        ),
@@ -289,7 +290,7 @@ sdram_ctrl sdram
 	.cpu_cache_ctrl(tg68_CACR_out   ),
 
 	.sdata        (SDRAM_DQ         ),
-	.sdaddr       (SDRAM_A[12:0]    ),
+	.sdaddr       (SDRAM_A          ),
 	.dqm          ({SDRAM_DQMH, SDRAM_DQML}),
 	.sd_cs        (SDRAM_nCS        ),
 	.ba           (SDRAM_BA         ),
@@ -302,6 +303,7 @@ sdram_ctrl sdram
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),
+	.cpuCS        (tg68_ramcs       ),
 	.cpuRD        (tg68_cout        ),
 	.cpuena       (tg68_cpuena      ),
 	.enaWRreg     (tg68_enaWR       ),
