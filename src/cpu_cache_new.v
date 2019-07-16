@@ -296,10 +296,12 @@ always @ (posedge clk) begin
         cpu_sm_dram0_we <= dtag0_match && dtag0_valid /*&& !cc_fr*/;
         cpu_sm_dram1_we <= dtag1_match && dtag1_valid /*&& !cc_fr*/;
         cpu_sm_state <= CPU_SM_WB;
-      end
-      CPU_SM_WB : begin
         wb_en <= 1'b1;
         if (!cpu_cs) cpu_sm_state <= CPU_SM_IDLE;
+      end
+      CPU_SM_WB : begin
+        if (!cpu_cs) cpu_sm_state <= CPU_SM_IDLE;
+        else wb_en <= 1'b1;
       end
       CPU_SM_READ : begin
         // on hit update LRU flag in tag memory
