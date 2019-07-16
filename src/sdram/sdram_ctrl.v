@@ -143,10 +143,10 @@ cpu_cache_new cpu_cache
 	.cpu_cache_ctrl   (cpu_cache_ctrl),               // CPU cache control
 	.cache_inhibit    (cache_inhibit),                // cache inhibit
 	.cpu_cs           (!cpustate[2]),                 // cpu activity
-	.cpu_adr          ({cpuAddr, 1'b0}),              // cpu address
+	.cpu_adr          (cpuAddr),                      // cpu address
 	.cpu_bs           ({!cpuU, !cpuL}),               // cpu byte selects
 	.cpu_we           (&cpustate[1:0]),               // cpu write
-	.cpu_ir           (!(|cpustate[1:0])),            // cpu instruction read
+	.cpu_ir           (!cpustate[1:0]),               // cpu instruction read
 	.cpu_dr           (cpustate[1] && !cpustate[0]),  // cpu data read
 	.cpu_dat_w        (cpuWR),                        // cpu write data
 	.cpu_dat_r        (cpuRD),                        // cpu read data
@@ -156,7 +156,7 @@ cpu_cache_new cpu_cache
 	.sdr_read_req     (cache_req),                    // sdram read request from cache
 	.sdr_read_ack     (readcache_fill),               // sdram read acknowledge to cache
 	.snoop_act        (snoop_act),                    // snoop act (write only - just update existing data in cache)
-	.snoop_adr        ({2'b00, chipAddr, 1'b0}),      // snoop address
+	.snoop_adr        (chipAddr),                     // snoop address
 	.snoop_dat_w      (chipWR),                       // snoop write data
 	.snoop_bs         ({!chipU, !chipL})              // snoop byte selects
 );

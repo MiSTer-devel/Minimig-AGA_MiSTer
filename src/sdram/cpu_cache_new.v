@@ -25,7 +25,7 @@ module cpu_cache_new
 
   // cpu    
   input             cpu_cs,         // cpu activity
-  input      [28:0] cpu_adr,        // cpu address
+  input      [28:1] cpu_adr,        // cpu address
   input       [1:0] cpu_bs,         // cpu byte selects
   input             cpu_we,         // cpu write
   input             cpu_ir,         // cpu instruction read
@@ -44,7 +44,7 @@ module cpu_cache_new
 
   // snoop
   input             snoop_act,      // snoop act (write only - just update existing data in cache)
-  input      [28:0] snoop_adr,      // chip address                      
+  input      [28:1] snoop_adr,      // chip address                      
   input      [15:0] snoop_dat_w,    // snoop write data
   input       [1:0] snoop_bs
 );
