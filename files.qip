@@ -1,5 +1,5 @@
-set_global_assignment -name QIP_FILE src/sdram/sdram.qip
 set_global_assignment -name QIP_FILE src/tg68k/TG68K.qip
+set_global_assignment -name QIP_FILE src/ram.qip
 set_global_assignment -name QIP_FILE src/agnus.qip
 set_global_assignment -name QIP_FILE src/cia.qip
 set_global_assignment -name QIP_FILE src/gayle.qip
