@@ -53,7 +53,6 @@ entity TG68K is
     ramready      : in      std_logic:='0';
     cpu           : in      std_logic_vector(1 downto 0);
     fastramcfg    : in      std_logic_vector(2 downto 0);
-    ddr3_en       : in      std_logic;
     turbochipram  : in      std_logic;
     turbokick     : in      std_logic;
     bootrom       : in      std_logic:='0';
@@ -310,7 +309,7 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	IF autoconfig_out = "010"  THEN
 		CASE cpuaddr(6 downto 1) IS
 			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
-			WHEN "000001" => autoconfig_data <= "0000";    -- 8MB (extended to 16MB in reg 08)
+			WHEN "000001" => autoconfig_data <= "0000";    -- 16MB/extended
 			WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
 			WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
 			WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
@@ -330,7 +329,7 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	IF autoconfig_out = "011" THEN
 		CASE cpuaddr(6 downto 1) IS
 			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
-			WHEN "000001" => autoconfig_data <= "0001";    -- 64KB (extended to 32MB in reg 08)
+			WHEN "000001" => autoconfig_data <= "0001";    -- 32MB/extended
 			WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
 			WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
 			WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
@@ -343,7 +342,7 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 		END CASE;
 	END IF;
 
-	-- Zorro III RAM #3 #256MB
+	-- Zorro III RAM #3 #256MB in DDR3
 	IF autoconfig_out = "100" THEN
 		CASE cpuaddr(6 downto 1) IS
 			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
@@ -382,17 +381,26 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 						turbochip_ena <= '1';  -- enable turbo_chipram after autoconfig has been done...
                             -- FIXME - this is a hack to allow ROM overlay to work.
 					WHEN "100010" => -- Register 0x44, assign base address to ZIII RAM.
-                      -- We ought to take 16 bits here, but for now we take liberties and use a single byte.
 						IF autoconfig_out="010" THEN
 							z3ram_base0<=data_write(15 downto 8);
 							z3ram_ena0 <='1';
-							autoconfig_out <= '0'&fastramcfg(2)&fastramcfg(2);
+							if (fastramcfg = "100" OR fastramcfg = "110") then
+								autoconfig_out <= "011";
+							elsif (fastramcfg = "101") then
+								autoconfig_out <= "100";
+							else
+								autoconfig_out <= "000";
+							end if;
 						END IF;
 
 						IF autoconfig_out="011" THEN
 							z3ram_base1<=data_write(15 downto 9);
 							z3ram_ena1 <='1';
-							autoconfig_out <= ddr3_en&"00";
+							if (fastramcfg = "110") then
+								autoconfig_out <= "100";
+							else
+								autoconfig_out <= "000";
+							end if;
 						END IF;
 
 						IF autoconfig_out="100" THEN

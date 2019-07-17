@@ -264,7 +264,6 @@ TG68K tg68k
 	.turbokick    (turbokick        ),
 	.cache_inhibit(cache_inhibit    ),
 	.fastramcfg   (memcfg[6:4]      ),
-	.ddr3_en      (1                ),
 //	.ovr          (tg68_ovr         ), 
 	.bootrom      (bootrom          ),
 	.ramaddr      (tg68_cad         ),
