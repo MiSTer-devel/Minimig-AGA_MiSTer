@@ -35,8 +35,6 @@ entity TG68K is
     clkena_in     : in      std_logic:='1';
     IPL           : in      std_logic_vector(2 downto 0):="111";
     dtack         : in      std_logic;
-    vpa           : in      std_logic:='1';
-    ein           : in      std_logic:='1';
     addr          : buffer  std_logic_vector(31 downto 0);
     data_read     : in      std_logic_vector(15 downto 0);
     data_write    : buffer  std_logic_vector(15 downto 0);
@@ -44,8 +42,6 @@ entity TG68K is
     uds           : out     std_logic;
     lds           : out     std_logic;
     rw            : out     std_logic;
-    vma           : buffer  std_logic:='1';
-    wrd           : out     std_logic;
     ena7RDreg     : in      std_logic:='1';
     ena7WRreg     : in      std_logic:='1';
     enaWRreg      : in      std_logic:='1';
@@ -71,38 +67,6 @@ end TG68K;
 
 ARCHITECTURE logic OF TG68K IS
 
-COMPONENT TG68KdotC_Kernel
-	generic(
-		SR_Read         : integer := 2; --0=>user,   1=>privileged,   2=>switchable with CPU(0)
-		VBR_Stackframe  : integer := 2; --0=>no,     1=>yes/extended, 2=>switchable with CPU(0)
-		extAddr_Mode    : integer := 2; --0=>no,     1=>yes,          2=>switchable with CPU(1)
-		MUL_Mode        : integer := 2; --0=>16Bit,  1=>32Bit,        2=>switchable with CPU(1),  3=>no MUL,
-		DIV_Mode        : integer := 2; --0=>16Bit,  1=>32Bit,        2=>switchable with CPU(1),  3=>no DIV,
-		BitField        : integer := 2  --0=>no,     1=>yes,          2=>switchable with CPU(1)
-	);
-	port(
-		clk             : in      std_logic;
-		nReset          : in      std_logic;      --low active
-		clkena_in       : in      std_logic:='1';
-		data_in         : in      std_logic_vector(15 downto 0);
-		IPL             : in      std_logic_vector(2 downto 0):="111";
-		IPL_autovector  : in      std_logic:='0';
-		CPU             : in      std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only same parts - yet)
-		addr_out        : buffer  std_logic_vector(31 downto 0);
-		data_write      : buffer  std_logic_vector(15 downto 0);
-		nWr             : out     std_logic;
-		nUDS, nLDS      : out     std_logic;
-		nResetOut       : out     std_logic;
-		FC              : out     std_logic_vector(2 downto 0);
-		busstate        : out     std_logic_vector(1 downto 0);  -- 00-> fetch code 10->read data 11->write data 01->no memaccess
-		skipFetch       : out     std_logic;
-		regin_out       : buffer  std_logic_vector(31 downto 0);
-		CACR_out        : buffer  std_logic_vector(3 downto 0);
-		VBR_out         : buffer  std_logic_vector(31 downto 0)
-	);
-END COMPONENT;
-
-
 SIGNAL cpuaddr          : std_logic_vector(31 downto 0);
 SIGNAL r_data           : std_logic_vector(15 downto 0);
 SIGNAL cpuIPL           : std_logic_vector(2 downto 0);
@@ -124,12 +88,10 @@ SIGNAL uds_in           : std_logic;
 SIGNAL lds_in           : std_logic;
 SIGNAL state            : std_logic_vector(1 downto 0);
 SIGNAL clkena           : std_logic;
-SIGNAL eind             : std_logic;
-SIGNAL eindd            : std_logic;
 SIGNAL sel_autoconfig   : std_logic;
 SIGNAL autoconfig_out   : std_logic_vector(2 downto 0); -- We use this as a counter since we have two cards to configure
 SIGNAL autoconfig_data  : std_logic_vector(3 downto 0);
-SIGNAL sel_fast         : std_logic;
+SIGNAL sel_ram         : std_logic;
 SIGNAL sel_slowram      : std_logic;
 signal sel_a0map        : std_logic;
 --signal sel_cart         : std_logic;    
@@ -137,10 +99,7 @@ SIGNAL sel_chipram      : std_logic;
 SIGNAL turbochip_ena    : std_logic := '0';
 SIGNAL turbochip_d      : std_logic := '0';
 SIGNAL turbokick_d      : std_logic := '0';
-SIGNAL slower           : std_logic_vector(3 downto 0);
 
-TYPE   sync_states      IS (sync0, sync1, sync2, sync3, sync4, sync5, sync6, sync7, sync8, sync9);
-SIGNAL sync_state       : sync_states;
 SIGNAL datatg68         : std_logic_vector(15 downto 0);
 
 SIGNAL z2ram_ena        : std_logic;
@@ -159,7 +118,8 @@ signal sel_kicklower    : std_logic;
 
 SIGNAL NMI_vector       : std_logic_vector(15 downto 0);
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
-SIGNAL sel_nmi_vector    : std_logic;
+SIGNAL sel_nmi_vector   : std_logic;
+SIGNAL en               : std_logic;
 
 BEGIN
 
@@ -175,9 +135,8 @@ PROCESS(clk) BEGIN
 END PROCESS;
 
 
-wrd <= wr;
 addr <= cpuaddr;
-datatg68 <= fromram WHEN sel_fast='1' and sel_nmi_vector='0' 
+datatg68 <= fromram WHEN sel_ram='1' and sel_nmi_vector='0' 
        ELSE autoconfig_data&r_data(11 downto 0) WHEN sel_autoconfig='1'
        ELSE r_data;
 
@@ -206,7 +165,7 @@ sel_nmi_vector  <= '1' WHEN (cpuaddr(31 downto 2) = NMI_addr(31 downto 2)) and s
 -- there also seems to be another problem. Somehow fails with bootrom and AGA.
 -- 
 
-sel_fast        <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND (sel_z2ram='1' OR sel_z3ram0='1' OR sel_z3ram1='1' OR sel_z3ram2='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
+sel_ram         <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND (sel_z2ram='1' OR sel_z3ram0='1' OR sel_z3ram1='1' OR sel_z3ram2='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
 
 --when this is true, we set bit 23 to zero, to map all this from a0-ff to
 --20-7f. Don't need this for chipram, since there is no remapping. 
@@ -215,8 +174,6 @@ sel_a0map       <= '1'  when sel_kickram='1' ELSE '0';
 
 cache_inhibit   <= '0'; --'1' WHEN sel_chipram='1' OR sel_kickram='1' ELSE '0';
 
-ramcs <= sel_fast and not slower(0);-- OR (state(0) AND NOT state(1));
--- cpuDMA <= sel_fast;
 cpustate <= state;
 ramlds <= lds_in;
 ramuds <= uds_in;
@@ -241,15 +198,18 @@ ramaddr(20 downto 19) <= cpuaddr(20 downto 19);
 ramaddr(18)           <= '1' when (sel_kicklower = '1' and bootrom= '1') else cpuaddr(18); 
 ramaddr(17 downto 0)  <= cpuaddr(17 downto 0);
 
-pf68K_Kernel_inst: TG68KdotC_Kernel
-generic map (
+pf68K_Kernel_inst: work.TG68KdotC_Kernel
+generic map
+(
 	SR_Read        => 2, -- 0=>user,   1=>privileged,    2=>switchable with CPU(0)
 	VBR_Stackframe => 2, -- 0=>no,     1=>yes/extended,  2=>switchable with CPU(0)
 	extAddr_Mode   => 2, -- 0=>no,     1=>yes,           2=>switchable with CPU(1)
 	MUL_Mode       => 2, -- 0=>16Bit,  1=>32Bit,         2=>switchable with CPU(1),  3=>no MUL,
-	DIV_Mode       => 2  -- 0=>16Bit,  1=>32Bit,         2=>switchable with CPU(1),  3=>no DIV,
+	DIV_Mode       => 2, -- 0=>16Bit,  1=>32Bit,         2=>switchable with CPU(1),  3=>no DIV,
+	BitField       => 2  -- 0=>no,     1=>yes,           2=>switchable with CPU(1)
 )
-PORT MAP (
+PORT MAP
+(
 	clk            => clk,           -- : in std_logic;
 	nReset         => reset,         -- : in std_logic:='1';      --low active
 	clkena_in      => clkena,        -- : in std_logic:='1';
@@ -416,50 +376,35 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	END IF;
 END PROCESS;
 
+clkena <= '1' when (clkena_in='1' AND en='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1')) else '0';
+
 PROCESS (clk) BEGIN
 	IF rising_edge(clk) THEN
-		IF ena7WRreg='1' THEN
-			eind <= ein;
-			eindd <= eind;
-			CASE sync_state IS
-				WHEN sync0  => sync_state <= sync1;
-				WHEN sync1  => sync_state <= sync2;
-				WHEN sync2  => sync_state <= sync3;
-				WHEN sync3  => sync_state <= sync4; vma <= vpa;
-				WHEN sync4  => sync_state <= sync5;
-				WHEN sync5  => sync_state <= sync6;
-				WHEN sync6  => sync_state <= sync7;
-				WHEN sync7  => sync_state <= sync8;
-				WHEN sync8  => sync_state <= sync9;
-				WHEN OTHERS => sync_state <= sync0; vma <= '1';
-			END CASE;
-			IF eind='1' AND eindd='0' THEN
-				sync_state <= sync7;
-			END IF;
-		END IF;
+		en <= not en;
+		if(ena7RDreg='1') then
+			en <= '0';
+		end if;
 	END IF;
 END PROCESS;
-
-clkena <= '1' when (clkena_in='1' AND enaWRreg='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1')) else '0';
 
 PROCESS (clk) BEGIN
 	IF rising_edge(clk) THEN
 		IF clkena='1' THEN
-			slower <= "0111"; -- rokk
+			ramcs <= '0';
 		ELSE
-			slower(3 downto 0) <= '0'&slower(3 downto 1); -- enaWRreg&slower(3 downto 1);
+			ramcs <= sel_ram;
 		END IF;
 	END IF;
 END PROCESS;
 
-PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, sel_fast) BEGIN
+PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, sel_ram) BEGIN
 	IF state="01" THEN
 		as  <= '1';
 		rw  <= '1';
 		uds <= '1';
 		lds <= '1';
 	ELSE
-		as  <= (as_s AND as_e) OR sel_fast;
+		as  <= (as_s AND as_e) OR sel_ram;
 		rw  <= rw_s AND rw_e;
 		uds <= uds_s AND uds_e;
 		lds <= lds_s AND lds_e;
@@ -479,7 +424,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 			lds_s <= '1';
 			CASE S_state IS
 				WHEN "00" =>
-					IF state/="01" AND sel_fast='0' THEN
+					IF state/="01" AND sel_ram='0' THEN
 						uds_s   <= uds_in;
 						lds_s   <= lds_in;
 						S_state <= "01";
@@ -492,7 +437,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 					S_state <= "10";
 				WHEN "10" =>
 					r_data <= data_read;
-					IF waitm='0' OR (vma='0' AND sync_state=sync9) THEN
+					IF waitm='0' THEN
 						S_state <= "11";
 					ELSE
 						as_s  <= '0';
@@ -523,7 +468,7 @@ PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, 
 			CASE S_state IS
 				WHEN "00" =>
 					cpuIPL <= IPL;
-					IF sel_fast='0' THEN
+					IF sel_ram='0' THEN
 						IF state/="01" THEN
 							as_e <= '0';
 						END IF;
