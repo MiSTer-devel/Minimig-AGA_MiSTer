@@ -64,10 +64,10 @@ module sdram_ctrl
 	input             cpuU,
 	input      [15:0] cpuWR,
 	output     [15:0] cpuRD,
-	output reg        enaWRreg,
+	output reg        cpuEN,
 	output reg        ena7RDreg,
 	output reg        ena7WRreg,
-	output            cpuena
+	output            ramready
 );
 
 assign dqm = sdaddr[12:11];
@@ -98,7 +98,11 @@ localparam [3:0]
 	ph8 = 8,
 	ph9 = 9,
 	ph10 = 10,
-	ph11 = 11;
+	ph11 = 11,
+	ph12 = 12,
+	ph13 = 13,
+	ph14 = 14,
+	ph15 = 15;
 
 
 ////////////////////////////////////////
@@ -117,7 +121,7 @@ always @(posedge sysclk) begin
 	end else begin
 		if(reset_cnt == 42) reset_sdstate <= 1;
 		if(reset_cnt == 170) begin
-			if(sdram_state == ph11) reset <= 1;
+			if(sdram_state == ph15) reset <= 1;
 		end
 		else begin
 			reset_cnt <= reset_cnt + 8'd1;
@@ -217,7 +221,7 @@ always @ (posedge sysclk) begin
 	end
 end
 
-assign cpuena = ccachehit || writebuffer_ena;
+assign ramready = (ccachehit || writebuffer_ena) & cpuCS;
 
 //// chip line read ////
 reg [15:0] chip48_1, chip48_2, chip48_3;
@@ -225,10 +229,10 @@ reg [15:0] chip48_1, chip48_2, chip48_3;
 always @ (posedge sysclk) begin
 	if(slot1_type == CHIP) begin
 		case(sdram_state)
-			ph7 : chipRD   <= sdata_reg;
-			ph8 : chip48_1 <= sdata_reg;
-			ph9 : chip48_2 <= sdata_reg;
-			ph10: chip48_3 <= sdata_reg;
+			ph9 : chipRD   <= sdata_reg;
+			ph10: chip48_1 <= sdata_reg;
+			ph11: chip48_2 <= sdata_reg;
+			ph12: chip48_3 <= sdata_reg;
 		endcase
 	end
 end
@@ -243,19 +247,17 @@ assign chip48 = {chip48_1, chip48_2, chip48_3};
 
 //// write / read control ////
 always @ (posedge sysclk) begin
-	enaWRreg  <= 0;
+	cpuEN  <= 0;
 	ena7RDreg <= 0;
 	ena7WRreg <= 0;
 	if(reset_sdstate) begin
 		case(sdram_state) // LATENCY=3
-			 ph2: enaWRreg  <= 1;
-			 ph5: enaWRreg  <= 1;
-			 ph8: enaWRreg  <= 1;
-			ph11: enaWRreg  <= 1;
+//			 ph0, ph2, ph4, ph6, ph8, ph10, ph12, ph14: cpuEN <= 1;
+			 ph2, ph6, ph10, ph14: cpuEN <= 1;
 		endcase
 		case(sdram_state) // LATENCY=3
-			 ph5: ena7RDreg <= 1;
-			ph11: ena7WRreg <= 1;
+			 ph6: ena7RDreg <= 1;
+			ph14: ena7WRreg <= 1;
 		endcase
 	end
 end
@@ -269,7 +271,7 @@ always @ (posedge sysclk) begin
 		initstate <= 0;
 		init_done <= 0;
 	end else begin
-		if (sdram_state == ph11) begin // LATENCY=3
+		if (sdram_state == ph15) begin // LATENCY=3
 			if(~&initstate) initstate <= initstate + 4'd1;
 			else init_done <= 1;
 		end
@@ -283,7 +285,6 @@ always @ (posedge sysclk) begin
 	reg old_7m;
 
 	sdram_state <= sdram_state + 1'd1;
-	if (sdram_state == ph11) sdram_state <= 0;
 
 	old_7m <= c_7m;
 	if(~old_7m & c_7m) sdram_state <= ph2;
@@ -297,14 +298,8 @@ always @ (posedge sysclk) begin
 
 	if(init_done) begin
 		case(sdram_state)
-		   ph0: cache_fill_2 <= 1;
-		   ph1: cache_fill_2 <= 1;
-		   ph2: cache_fill_2 <= 1;
-		   ph3: cache_fill_2 <= 1;
-		   ph6: cache_fill_1 <= 1;
-		   ph7: cache_fill_1 <= 1;
-		   ph8: cache_fill_1 <= 1;
-		   ph9: cache_fill_1 <= 1;
+		   ph0, ph1,  ph2,  ph3: cache_fill_2 <= 1;
+		   ph8, ph9, ph10, ph11: cache_fill_1 <= 1;
 		endcase
 	end
 end
@@ -358,7 +353,7 @@ always @ (posedge sysclk) begin
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 0;
-					sdaddr            <= 13'b0001000100010; // BURST=4 LATENCY=2
+					sdaddr            <= 13'b0001000110010; // BURST=4 LATENCY=3
 				end
 			endcase
 		end
@@ -417,7 +412,7 @@ always @ (posedge sysclk) begin
 			end
 
 			// Access slot 2, RAS
-			ph7 : begin
+			ph9 : begin
 				cas_sd_cas           <= 1;
 				cas_sd_we            <= 1;
 				cas_dqm              <= 0;
@@ -442,7 +437,7 @@ always @ (posedge sysclk) begin
 			end
 
 			// CAS
-			ph3,ph9 : begin
+			ph4,ph12 : begin
 				sdaddr                <= {1'b1, casaddr}; // AUTO PRECHARGE
 				sd_cas                <= cas_sd_cas;
 				if(!cas_sd_we) begin
@@ -462,15 +457,19 @@ end
 // ph0    NOP          READ
 // ph1    RAS/REFRESH  READ
 // ph2    NOP          READ
-// ph3    CAS/WRITE    READ
-// ph4    NOP          NOP
+// ph3    NOP          READ
+// ph4    CAS/WRITE    NOP
 // ph5    NOP          NOP
-// ph6    READ         NOP
-// ph7    READ         RAS
+// ph6    NOP          NOP
+// ph7    NOP          NOP
 // ph8    READ         NOP
-// ph9    READ         CAS/WRITE
-// ph10   NOP          NOP
-// ph11   NOP          NOP
+// ph9    READ         RAS
+// ph10   READ         NOP
+// ph11   READ         NOP
+// ph12   NOP          CAS/WRITE
+// ph13   NOP          NOP
+// ph14   NOP          NOP
+// ph15   NOP          NOP
 
 
 endmodule

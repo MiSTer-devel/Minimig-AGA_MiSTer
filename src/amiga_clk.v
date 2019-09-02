@@ -1,12 +1,9 @@
 /* amiga_clk.v */
 /* 2012, rok.krajnc@gmail.com */
 
-module amiga_clk (
-  input        rst,        // asynhronous reset input
-  input        clk_in,     // input clock        ( 27.000000MHz)
-  output       clk_86,     // SDRAM ctrl   clock (86.0625000MHz)
-  output       clk_sdram,  // SDRAM output clock (86.0625000MHz, shifted)
-  output       clk_28,     // 28MHz output clock ( 28.375160MHz)
+module amiga_clk
+(
+  input        clk_28,     // 28MHz output clock ( 28.375160MHz)
   output       clk_7,      // 7MHz  output clock (  7.171875MHz) DO NOT USE IT AS A CLOCK!
   output       clk7_en,    // 7MHz output clock enable (on 28MHz clock domain)
   output       clk7n_en,   // 7MHz negedge output clock enable (on 28MHz clock domain)
@@ -14,20 +11,7 @@ module amiga_clk (
   output reg   c3,         // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   output       cck,        // colour clock output (3.54 MHz)
   output [9:0] eclk,       // 0.709379 MHz clock enable output (clk domain pulse)
-  output       locked      // PLL locked output
-);
-
-//// hardware clocks ////
-// device-specific PLL/DCM
-
-pll pll
-(
-	.refclk(clk_in),
-	.rst(rst),
-	.outclk_0(clk_86),
-	.outclk_1(clk_sdram),
-	.outclk_2(clk_28),
-	.locked(locked)
+  input        locked      // PLL locked output
 );
 
 //// generated clocks ////

@@ -50,7 +50,7 @@ module ddram_ctrl
 	input             cpuU,
 	input      [15:0] cpuWR,
 	output     [15:0] cpuRD,
-	output            cpuena
+	output            ramready
 );
 
 wire cache_hit;
@@ -119,7 +119,7 @@ always @ (posedge sysclk) begin
 	end
 end
 
-assign cpuena = cache_hit || write_ena;
+assign ramready = cache_hit || write_ena;
 
 assign DDRAM_CLK = sysclk;
 assign DDRAM_BURSTCNT = 1;

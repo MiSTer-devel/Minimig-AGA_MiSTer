@@ -34,7 +34,6 @@ module emu
    output  [7:0] VGA_B,
    output        VGA_HS,
    output        VGA_VS,
-   output        VGA_CS,
    output        VGA_F1,
    output  [1:0] VGA_SL,
    input         HDMI_VS,
@@ -115,7 +114,7 @@ assign USER_OUT = '1;
 ////////////////////////////////////////
 
 // clock
-wire           clk_86;
+wire           clk_mem;
 wire           clk_28;
 wire           pll_locked;
 wire           clk_7;
@@ -139,7 +138,7 @@ wire           tg68_lds;
 wire           tg68_rw;
 wire           tg68_ena7RD;
 wire           tg68_ena7WR;
-wire           tg68_enaWR;
+wire           tg68_cpuEN;
 wire [ 16-1:0] tg68_cout;
 wire           tg68_cpuena;
 wire [  4-1:0] cpu_config;
@@ -215,14 +214,20 @@ assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 
 assign CLK_SYS      = clk_28;
 
+pll pll
+(
+	.refclk(CLK_50M),
+	.rst(0),
+	.outclk_0(clk_mem),
+	.outclk_1(SDRAM_CLK),
+	.outclk_2(clk_28),
+	.locked(pll_locked)
+);
+
 //// amiga clocks ////
 amiga_clk amiga_clk
 (
-	.rst          (0                ), // async reset input
-	.clk_in       (CLK_50M          ), // input clock     ( 50.000000MHz)
-	.clk_86       (clk_86           ), // output clock c0 (86.0625000MHz)
-	.clk_sdram    (SDRAM_CLK        ), // output clock c2 (86.0625000MHz, shifted)
-	.clk_28       (clk_28           ), // output clock c1 ( 28.687500MHz)
+	.clk_28       (clk_28           ), // input  clock c1 ( 28.687500MHz)
 	.clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
 	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
 	.clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
@@ -238,9 +243,9 @@ wire SDR_EN = ~tg68_cad[28];
 
 TG68K tg68k
 (
-	.clk          (clk_86           ),
+	.clk          (clk_mem          ),
 	.reset        (tg68_rst         ),
-	.clkena_in    (1'b1             ),
+	.clkena_in    (tg68_cpuEN       ),
 	.IPL          (tg68_IPL         ),
 	.dtack        (tg68_dtack       ),
 	.addr         (tg68_adr         ),
@@ -252,7 +257,6 @@ TG68K tg68k
 	.rw           (tg68_rw          ),
 	.ena7RDreg    (tg68_ena7RD      ),
 	.ena7WRreg    (tg68_ena7WR      ),
-	.enaWRreg     (tg68_enaWR       ),
 	.fromram      (tg68_cout        ),
 	.ramready     (tg68_cpuena      ),
 	.cpu          (cpu_config[1:0]  ),
@@ -276,10 +280,10 @@ TG68K tg68k
 );
 
 wire [ 16-1:0] tg68_cout1;
-wire           tg68_cpuena1;
+wire           tg68_ramready1;
 sdram_ctrl ram1
 (
-	.sysclk       (clk_86           ),
+	.sysclk       (clk_mem          ),
 	.reset_in     (pll_locked       ),
 	.c_7m         (clk_7            ),
 	.reset_out    (                 ),
@@ -304,8 +308,8 @@ sdram_ctrl ram1
 	.cpustate     (tg68_cpustate    ),
 	.cpuCS        (SDR_EN & tg68_ramcs ),
 	.cpuRD        (tg68_cout1       ),
-	.cpuena       (tg68_cpuena1     ),
-	.enaWRreg     (tg68_enaWR       ),
+	.ramready     (tg68_ramready1   ),
+	.cpuEN        (tg68_cpuEN       ),
 	.ena7RDreg    (tg68_ena7RD      ),
 	.ena7WRreg    (tg68_ena7WR      ),
 
@@ -320,10 +324,10 @@ sdram_ctrl ram1
 );
 
 wire [ 16-1:0] tg68_cout2;
-wire           tg68_cpuena2;
+wire           tg68_ramready2;
 ddram_ctrl ram2
 (
-	.sysclk       (clk_86           ),
+	.sysclk       (clk_mem          ),
 	.reset_in     (pll_locked       ),
 
 	.cache_rst    (tg68_rst         ),
@@ -348,17 +352,18 @@ ddram_ctrl ram2
 	.cpustate     (tg68_cpustate    ),
 	.cpuCS        (DDR_EN & tg68_ramcs ),
 	.cpuRD        (tg68_cout2       ),
-	.cpuena       (tg68_cpuena2     )
+	.ramready     (tg68_ramready2   )
 );
 
-assign tg68_cout   = DDR_EN ? tg68_cout2   : tg68_cout1;
-assign tg68_cpuena = DDR_EN ? tg68_cpuena2 : tg68_cpuena1;
+assign tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
+assign tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
 assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
 
 wire [15:0] uio_dout;
 wire [15:0] fpga_dout;
 wire        ce_pix;
+wire [15:0] sdram_sz;
 
 hps_io hps_io
 (
@@ -471,7 +476,6 @@ minimig minimig
 	//video
 	._hsync       (hs               ), // horizontal sync
 	._vsync       (vs               ), // vertical sync
-	._csync       (VGA_CS           ),
 	.field1       (VGA_F1           ),
 	.red          (VGA_R            ), // red
 	.green        (VGA_G            ), // green
