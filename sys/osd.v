@@ -14,7 +14,6 @@ module osd
 	output [23:0] dout,
 	input         de_in,
 	output reg    de_out,
-	input         f1,
 
 	output reg [1:0] amix
 );
@@ -150,6 +149,7 @@ always @(posedge clk_video) begin
 	reg [21:0] osd_hcnt;
 	reg        osd_de1,osd_de2;
 	reg  [1:0] osd_en;
+	reg        f1;
 
 	if(ce_pix) begin
 
@@ -175,6 +175,7 @@ always @(posedge clk_video) begin
 
 			if(h_cnt > {dsp_width, 2'b00}) begin
 				v_cnt <= 1;
+				f1 <= ~f1; // skip every other frame for interlace compatibility.
 				if(~f1) begin
 
 					osd_en <= (osd_en << 1) | osd_enable;
