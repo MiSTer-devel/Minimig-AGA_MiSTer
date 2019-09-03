@@ -332,24 +332,20 @@ always @ (posedge sysclk) begin
 	if(!init_done) begin
 		slot1_type                 <= IDLE;
 		slot2_type                 <= IDLE;
-		sd_cs                      <= 1;
 		if(sdram_state == ph1) begin
 			case(initstate)
 				2 : begin // PRECHARGE
 					sdaddr[10]        <= 1; // all banks
-					sd_cs             <= 0;
 					sd_ras            <= 0;
 					sd_cas            <= 1;
 					sd_we             <= 0;
 				end
 				3,4,5,6,7,8,9,10,11,12 : begin // AUTOREFRESH
-					sd_cs             <= 0;
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 1;
 				end
 				13 : begin // LOAD MODE REGISTER
-					sd_cs             <= 0;
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 0;
