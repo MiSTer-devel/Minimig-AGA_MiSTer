@@ -1,7 +1,7 @@
 //============================================================================
 //
 //  MiSTer hardware abstraction module (Minimig version)
-//  (c)2017-2019 Sorgelig
+//  (c)2017-2019 Alexey Melnikov
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -96,8 +96,14 @@ module sys_top
 `endif
 
 	////////// I/O ALT /////////
-	inout   [3:0] BTNLED,
+	output        SD_SPI_CS,
+	input         SD_SPI_MISO,
+	output        SD_SPI_CLK,
+	output        SD_SPI_MOSI,
+
 	inout         SDCD_SPDIF,
+	inout         IO_SCL,
+	inout         IO_SDA,
 
 	////////// ADC //////////////
 	output        ADC_SCK,
@@ -115,18 +121,29 @@ module sys_top
 	output  [7:0] LED,
 
 	///////// USER IO ///////////
-	inout   [5:0] USER_IO
+	inout   [6:0] USER_IO
 );
 
-assign SDIO_DAT[2:1] = 2'bZZ;
-assign SDIO_DAT[3] = 1'bZ;
-assign SDIO_DAT[0] = 1'bZ;
-assign SDIO_CMD = 1'bZ;
-assign SDIO_CLK = 1'bZ;
-assign ADC_SCK = 1'bZ;
-assign ADC_SDI = 1'bZ;
-assign ADC_CONVST = 1'bZ;
+//////////////////////  Secondary SD  ///////////////////////////////////
 
+wire sd_miso;
+wire SD_CS, SD_CLK, SD_MOSI, SD_MISO;
+
+`ifndef DUAL_SDRAM
+	assign SDIO_DAT[2:1]= 2'bZZ;
+	assign SDIO_DAT[3]  = SW[3] ? 1'bZ  : SD_CS;
+	assign SDIO_CLK     = SW[3] ? 1'bZ  : SD_CLK;
+	assign SDIO_CMD     = SW[3] ? 1'bZ  : SD_MOSI;
+	assign sd_miso      = SW[3] ? 1'b1  : SDIO_DAT[0];
+	assign SD_SPI_CS    = mcp_sdcd ? ((~VGA_EN & sog & ~cs1) ? 1'b1 : 1'bZ) : SD_CS;
+`else
+	assign sd_miso      = 1'b1;
+	assign SD_SPI_CS    = mcp_sdcd ? 1'bZ : SD_CS;
+`endif
+
+assign SD_SPI_CLK  = mcp_sdcd ? 1'bZ    : SD_CLK;
+assign SD_SPI_MOSI = mcp_sdcd ? 1'bZ    : SD_MOSI;
+assign SD_MISO     = mcp_sdcd ? sd_miso : SD_SPI_MISO;
 
 //////////////////////  LEDs/Buttons  ///////////////////////////////////
 
@@ -147,33 +164,27 @@ wire led_locked;
 //LEDs on main board
 assign LED = (led_overtake & led_state) | (~led_overtake & {1'b0,led_locked,1'b0, ~led_p, 1'b0, ~led_d, 1'b0, ~led_u});
 
-reg [3:0] btnled = 3'bZZZ;
-reg btn_r = 0, btn_o = 0, btn_u = 0;
-always @(posedge FPGA_CLK2_50) begin
-	reg [12:0] cnt;
-
-	if(SW[3]) begin
-		cnt <= cnt + 1'd1;
-		if(~&cnt[12:8]) btnled <= ~{1'b0,led_p,led_d,led_u};
-		else begin
-			if(~cnt[7]) btnled <= 0;
-			else btnled <= 4'b0ZZZ;
-			if(&cnt) {btn_r,btn_o,btn_u} <= ~BTNLED[2:0];
-		end
-	end
-	else begin
-		cnt <= 0;
+wire btn_r, btn_o, btn_u;
 		`ifdef DUAL_SDRAM
-			{btn_r,btn_o,btn_u} <= 0;
-			btnled <= 4'bZZZZ;
+	assign {btn_r,btn_o,btn_u} = {mcp_btn[1],mcp_btn[2],mcp_btn[0]};
 		`else
-			{btn_r,btn_o,btn_u} <= ~{BTN_RESET,BTN_OSD,BTN_USER};
-			btnled <= {(~VGA_EN & sog & ~cs1) ? 1'b1 : 1'bZ, 3'bZZZ};
+	assign {btn_r,btn_o,btn_u} = ~{BTN_RESET,BTN_OSD,BTN_USER} | {mcp_btn[1],mcp_btn[2],mcp_btn[0]};
 		`endif
-	end
-end
 
-assign BTNLED = btnled;
+wire [2:0] mcp_btn;
+wire       mcp_sdcd;
+mcp23009 mcp23009
+(
+	.clk(FPGA_CLK2_50),
+
+	.btn(mcp_btn),
+	.led({led_p, led_d, led_u}),
+	.sd_cd(mcp_sdcd),
+
+	.scl(IO_SCL),
+	.sda(IO_SDA)
+);
+
 
 reg btn_user, btn_osd;
 always @(posedge FPGA_CLK2_50) begin
@@ -200,7 +211,7 @@ end
 
 // gp_in[31] = 0 - quick flag that FPGA is initialized (HPS reads 1 when FPGA is not in user mode)
 //                 used to avoid lockups while JTAG loading
-wire [31:0] gp_in = {1'b0, btn_user, btn_osd, 9'd0, io_ver, io_ack, io_wide, io_dout};
+wire [31:0] gp_in = {1'b0, btn_user | btn[1], btn_osd | btn[0], SW[3], 8'd0, io_ver, io_ack, io_wide, io_dout};
 wire [31:0] gp_out;
 
 wire  [1:0] io_ver    = 0; // Only for generic cores: 0 - standard MiST I/O (for quick porting of complex MiST cores). 1 - optimized HPS I/O. 2,3 - reserved for future.
@@ -250,18 +261,18 @@ cyclonev_hps_interface_mpu_general_purpose h2f_gp
 
 reg [15:0] cfg;
 
-reg        cfg_got   = 0;
-reg        cfg_set   = 0;
+reg        cfg_got      = 0;
+reg        cfg_set      = 0;
 wire [1:0] hdmi_limited = {cfg[11],cfg[8]};
-wire       dvi_mode  = cfg[7];
-wire       audio_96k = cfg[6];
-wire direct_video = cfg[10];
-wire csync_en     = cfg[3];
-wire ypbpr_en  = cfg[5];
-wire io_osd_vga= io_ss1 & ~io_ss2;
+wire       direct_video = cfg[10];
+wire       dvi_mode     = cfg[7];
+wire       audio_96k    = cfg[6];
+wire       csync_en     = cfg[3];
+wire       ypbpr_en     = cfg[5];
+wire       io_osd_vga   = io_ss1 & ~io_ss2;
 `ifndef DUAL_SDRAM
-	wire sog       = cfg[9];
-	wire vga_scaler= cfg[2];
+	wire    sog          = cfg[9];
+	wire    vga_scaler   = cfg[2];
 `endif
 
 reg        cfg_custom_t = 0;
@@ -430,7 +441,7 @@ always @(posedge FPGA_CLK2_50) begin
 end
 
 wire clk_100m;
-wire clk_hdmi  = hdmi_tx_clk;
+wire clk_hdmi  = ~hdmi_tx_clk;  // Internal HDMI clock, inverted in relation to external clock
 wire clk_audio = FPGA_CLK3_50;
 wire clk_pal   = FPGA_CLK3_50;
 
@@ -807,7 +818,8 @@ osd hdmi_osd
 	.dout(hdmi_tx_d),
 	.de_in(hdmi_de),
 	.de_out(hdmi_tx_de),
-	.amix(audio_mix)
+
+	.osd_status(osd_status)
 );
 
 reg [23:0] dv_d;
@@ -916,7 +928,7 @@ csync csync_vga(clk_vid, hs, vs, cs);
 
 /////////////////////////  Audio output  ////////////////////////////////
 
-assign SDCD_SPDIF =(SW[3] & spdif) ? 1'b0 : 1'bZ;
+assign SDCD_SPDIF =(SW[3] & ~spdif) ? 1'b0 : 1'bZ;
 
 `ifndef DUAL_SDRAM
 	wire anl,anr;
@@ -1018,6 +1030,7 @@ assign USER_IO[2] = !(SW[1] ? HDMI_I2S   : user_out[2]) ? 1'b0 : 1'bZ;
 assign USER_IO[3] =                       !user_out[3]  ? 1'b0 : 1'bZ;
 assign USER_IO[4] = !(SW[1] ? HDMI_SCLK  : user_out[4]) ? 1'b0 : 1'bZ;
 assign USER_IO[5] = !(SW[1] ? HDMI_LRCLK : user_out[5]) ? 1'b0 : 1'bZ;
+assign USER_IO[6] =                       !user_out[6]  ? 1'b0 : 1'bZ;
 
 assign user_in[0] =         USER_IO[0];
 assign user_in[1] =         USER_IO[1];
@@ -1025,6 +1038,7 @@ assign user_in[2] = SW[1] | USER_IO[2];
 assign user_in[3] =         USER_IO[3];
 assign user_in[4] = SW[1] | USER_IO[4];
 assign user_in[5] = SW[1] | USER_IO[5];
+assign user_in[6] =         USER_IO[6];
 
 
 ///////////////////  User module connection ////////////////////////////
@@ -1051,6 +1065,7 @@ wire        ram_write;
 wire        led_user;
 wire  [1:0] led_power;
 wire  [1:0] led_disk;
+wire  [1:0] btn;
 
 wire vs_emu, hs_emu;
 sync_fix sync_v(clk_vid, vs_emu, vs);
@@ -1062,7 +1077,9 @@ wire        uart_cts;
 wire        uart_rts;
 wire        uart_rxd;
 wire        uart_txd;
-wire  [5:0] user_out, user_in;
+wire        osd_status;
+
+wire  [6:0] user_out, user_in;
 
 emu emu
 (
@@ -1071,6 +1088,14 @@ emu emu
 
 	.CLK_SYS(clk_sys),
 	.CLK_100(clk_100m),
+	.IO_UIO(io_uio),
+	.IO_FPGA(io_fpga),
+	.IO_OSD(io_osd_hdmi),
+	.IO_STROBE(io_strobe),
+	.IO_WAIT(io_wait),
+	.IO_DIN(io_din),
+	.IO_DOUT(io_dout),
+	.HDMI_VS(HDMI_TX_VS),
 
 	.CLK_VIDEO(clk_vid),
 	.CE_PIXEL(ce_pix),
@@ -1083,12 +1108,11 @@ emu emu
 	.VGA_DE(de),
 	.VGA_F1(f1),
 	.VGA_SL(scanlines),
-	.HDMI_VS(HDMI_TX_VS),
 
 	.LED_USER(led_user),
 	.LED_POWER(led_power),
 	.LED_DISK(led_disk),
-	.BTN_USER(btn_user),
+	.BUTTONS(btn),
 
 	.VIDEO_ARX(ARX),
 	.VIDEO_ARY(ARY),
@@ -1096,14 +1120,9 @@ emu emu
 	.AUDIO_L(audio_ls),
 	.AUDIO_R(audio_rs),
 	.AUDIO_S(audio_s),
+	.AUDIO_MIX(audio_mix),
 
-	.IO_UIO(io_uio),
-	.IO_FPGA(io_fpga),
-	.IO_OSD(io_osd_hdmi),
-	.IO_STROBE(io_strobe),
-	.IO_WAIT(io_wait),
-	.IO_DIN(io_din),
-	.IO_DOUT(io_dout),
+	.ADC_BUS({ADC_SCK,ADC_SDO,ADC_SDI,ADC_CONVST}),
 
 	.DDRAM_CLK(ram_clk),
 	.DDRAM_ADDR(ram_address),
@@ -1128,6 +1147,28 @@ emu emu
 	.SDRAM_CLK(SDRAM_CLK),
 	.SDRAM_CKE(SDRAM_CKE),
 
+`ifdef DUAL_SDRAM
+	.SDRAM2_DQ(SDRAM2_DQ),
+	.SDRAM2_A(SDRAM2_A),
+	.SDRAM2_BA(SDRAM2_BA),
+	.SDRAM2_nCS(SDRAM2_nCS),
+	.SDRAM2_nWE(SDRAM2_nWE),
+	.SDRAM2_nRAS(SDRAM2_nRAS),
+	.SDRAM2_nCAS(SDRAM2_nCAS),
+	.SDRAM2_CLK(SDRAM2_CLK),
+	.SDRAM2_EN(SW[3]),
+`endif
+
+	.SD_SCK(SD_CLK),
+	.SD_MOSI(SD_MOSI),
+	.SD_MISO(SD_MISO),
+	.SD_CS(SD_CS),
+`ifdef DUAL_SDRAM
+	.SD_CD(mcp_sdcd),
+`else
+	.SD_CD(mcp_sdcd & (SW[0] ? VGA_HS : (SW[3] | SDCD_SPDIF))),
+`endif
+
 	.UART_CTS(uart_rts),
 	.UART_RTS(uart_cts),
 	.UART_RXD(uart_txd),
@@ -1136,7 +1177,9 @@ emu emu
 	.UART_DSR(uart_dtr),
 
 	.USER_OUT(user_out),
-	.USER_IN(user_in)
+	.USER_IN(user_in),
+
+	.OSD_STATUS(osd_status)
 );
 
 endmodule

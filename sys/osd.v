@@ -14,8 +14,7 @@ module osd
 	output [23:0] dout,
 	input         de_in,
 	output reg    de_out,
-
-	output reg [1:0] amix
+	output reg    osd_status
 );
 
 parameter  OSD_COLOR    =  3'd4;
@@ -53,6 +52,7 @@ always@(posedge clk_sys) begin
 	hrheight <= info ? infoh : ((OSD_HEIGHT<<highres)+OSD_HDR);
 
 	old_strobe <= io_strobe;
+	osd_status <= 0;
 
 	if(~io_osd) begin
 		bcnt <= 0;
@@ -76,8 +76,6 @@ always@(posedge clk_sys) begin
 						if(io_din[3]) highres <= 1;
 					end
 				end else begin
-
-					if(cmd == 'h74) amix <= io_din[1:0];
 
 					// OSD_CMD_OSD: enable/disable
 					if(cmd == 'h28) begin
