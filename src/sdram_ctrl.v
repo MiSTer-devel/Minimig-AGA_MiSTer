@@ -264,7 +264,7 @@ end
 
 
 //// init counter ////
-reg [3:0] initstate;
+reg [4:0] initstate;
 reg       init_done;
 always @ (posedge sysclk) begin
 	if(!reset) begin
@@ -322,7 +322,6 @@ always @ (posedge sysclk) begin
 	reg [15:0] datawr;
 	reg  [9:0] casaddr;
 
-	sd_cs                         <= 0;
 	sd_ras                        <= 1;
 	sd_cas                        <= 1;
 	sd_we                         <= 1;
@@ -333,7 +332,8 @@ always @ (posedge sysclk) begin
 		slot1_type                 <= IDLE;
 		slot2_type                 <= IDLE;
 		if(sdram_state == ph1) begin
-			case(initstate)
+			sd_cs <= initstate[4];
+			case(initstate[3:0])
 				2 : begin // PRECHARGE
 					sdaddr[10]        <= 1; // all banks
 					sd_ras            <= 0;
@@ -354,6 +354,9 @@ always @ (posedge sysclk) begin
 			endcase
 		end
 	end else begin
+
+		sd_cs                      <= 0;
+
 		case(sdram_state)
 
 			// 25:23 : 000 for ROM, ChipRAM and SlowRAM only

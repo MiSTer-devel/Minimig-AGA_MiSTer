@@ -45,6 +45,7 @@ module userio (
 	input [ 2-1:0] 	     kbd_mouse_type,
 	input [ 8-1:0] 	     kbd_mouse_data,
 	output reg 	     keyboard_disabled, // disables Amiga keyboard while OSD is active
+	output reg [1:0] aud_mix,
 	input 		     IO_ENA,
 	input 		     IO_STROBE,
 	output reg 	     IO_WAIT,
@@ -403,6 +404,7 @@ wire harddisk_cfg_sel = (cmd == 6'b0101_01); // XXXXXSMC || harddisk config | S 
 wire joystick_cfg_sel = (cmd == 6'b0110_01); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
 wire mem_write_sel    = (cmd == 6'b0001_11); // A_A_A_A B,B,... || write system memory, A - 32 bit memory address, B - variable number of bytes
 wire version_sel      = (cmd == 6'b1000_10); // read RTL version
+wire aud_sel          = (cmd == 6'b0111_01);
 
 `include "minimig_version.vh"
 
@@ -454,6 +456,7 @@ always @(posedge clk) begin
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
 				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[4:0];
 				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
+				if (aud_sel)          aud_mix <= IO_DIN[1:0];
 			end
 			
 			if (mem_write_sel) begin

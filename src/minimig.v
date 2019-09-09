@@ -235,6 +235,7 @@ module minimig
 	//audio
 	output [14:0] ldata,       // left DAC data
 	output [14:0] rdata,       // right DAC data
+	output  [1:0] aud_mix,
 
 	//user i/o
 	output  [3:0] cpu_config,
@@ -419,17 +420,15 @@ assign      reset = sys_reset  | ~_cpu_reset_in; // both tg68k and minimig_sysco
 //--------------------------------------------------------------------------------------
 
 // power led control
-reg [3:0] led_cnt;
+reg [5:0] led_cnt;
 reg led_dim;
 
 always @ (posedge clk) begin
-  if (_hsync) begin
-    led_cnt <= led_cnt + 1'd1;
-    led_dim <= |led_cnt;
-  end
+  led_cnt <= led_cnt + 1'd1;
+  led_dim <= |led_cnt[5:2];
 end
 
-   assign pwr_led = ~(_led & led_dim);
+assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
 
@@ -578,6 +577,7 @@ userio USERIO1
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
 	.keyboard_disabled(keyboard_disabled),
+	.aud_mix(aud_mix),
 	.IO_ENA(IO_OSD),
 	.IO_STROBE(IO_STROBE),
 	.IO_WAIT(IO_WAIT_OSD),

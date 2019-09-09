@@ -7,106 +7,121 @@
 
 module emu
 (
-   //Master input clock
-   input         CLK_50M,
+	//Master input clock
+	input         CLK_50M,
 	
-   //Async reset from top-level module.
-   //Can be used as initial reset.
-   input         RESET,
-
-   //Used as clock for IO_* signals in top module
-   output        CLK_SYS,
-   input         CLK_100,
+	//Async reset from top-level module.
+	//Can be used as initial reset.
+	input         RESET,
 	
-   //Base video clock. Usually equals to CLK_SYS.
-   output        CLK_VIDEO,
+	//Used as clock for IO_* signals in top module
+	output        CLK_SYS,
+	input         CLK_100,
+	input         IO_UIO,
+	input         IO_FPGA,
+	input         IO_OSD,
+	input         IO_STROBE,
+	output        IO_WAIT,
+	input  [15:0] IO_DIN,
+	output [15:0] IO_DOUT,
+	input         HDMI_VS,
+	
+	//Base video clock. Usually equals to CLK_SYS.
+	output        CLK_VIDEO,
+	
+	//Multiple resolutions are supported using different CE_PIXEL rates.
+	//Must be based on CLK_VIDEO
+	output        CE_PIXEL,
+	
+	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
+	output  [7:0] VIDEO_ARX,
+	output  [7:0] VIDEO_ARY,
+	
+	output  [7:0] VGA_R,
+	output  [7:0] VGA_G,
+	output  [7:0] VGA_B,
+	output        VGA_HS,
+	output        VGA_VS,
+	output        VGA_DE,    // = ~(VBlank | HBlank)
+	output        VGA_F1,
+	output  [1:0] VGA_SL,
+	
+	output        LED_USER,  // 1 - ON, 0 - OFF.
+	
+	// b[1]: 0 - LED status is system status OR'd with b[0]
+	//       1 - LED status is controled solely by b[0]
+	// hint: supply 2'b00 to let the system control the LED.
+	output  [1:0] LED_POWER,
+	output  [1:0] LED_DISK,
 
-   //Multiple resolutions are supported using different CE_PIXEL rates.
-   //Must be based on CLK_VIDEO
-   output        CE_PIXEL,
-
-   //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-   output  [7:0] VIDEO_ARX,
-   output  [7:0] VIDEO_ARY,
-
-   output  [7:0] VGA_R,
-   output  [7:0] VGA_G,
-   output  [7:0] VGA_B,
-   output        VGA_HS,
-   output        VGA_VS,
-   output        VGA_F1,
-   output  [1:0] VGA_SL,
-   input         HDMI_VS,
-
-   //NOTE: Scaler measures the frame width by first line.
-   //So, make sure DE is stable during the first active line!
-   output        VGA_DE,    // = ~(VBlank | HBlank)
-
-   output        LED_USER,  // 1 - ON, 0 - OFF.
-
-   // b[1]: 0 - LED status is system status ORed with b[0]
-   //       1 - LED status is controled solely by b[0]
-   // hint: supply 2'b00 to let the system control the LED.
-   output  [1:0] LED_POWER,
-   output  [1:0] LED_DISK,
-
-   input         BTN_USER,
-
-   output [15:0] AUDIO_L,
-   output [15:0] AUDIO_R,
-   output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
-
-   input         IO_UIO,
-   input         IO_FPGA,
-   input         IO_OSD,
-   input         IO_STROBE,
-   output        IO_WAIT,
-   input  [15:0] IO_DIN,
-   output [15:0] IO_DOUT,
-
-   //High latency DDR3 RAM interface
-   //Use for non-critical time purposes
-   output        DDRAM_CLK,
-   input         DDRAM_BUSY,
-   output  [7:0] DDRAM_BURSTCNT,
-   output [28:0] DDRAM_ADDR,
-   input  [63:0] DDRAM_DOUT,
-   input         DDRAM_DOUT_READY,
-   output        DDRAM_RD,
-   output [63:0] DDRAM_DIN,
-   output  [7:0] DDRAM_BE,
-   output        DDRAM_WE,
-
-   //SDRAM interface with lower latency
-   output        SDRAM_CLK,
-   output        SDRAM_CKE,
-   output [12:0] SDRAM_A,
-   output  [1:0] SDRAM_BA,
-   inout  [15:0] SDRAM_DQ,
-   output        SDRAM_DQML,
-   output        SDRAM_DQMH,
-   output        SDRAM_nCS,
-   output        SDRAM_nCAS,
-   output        SDRAM_nRAS,
-   output        SDRAM_nWE,
-
-   input         UART_CTS,
-   output        UART_RTS,
-   input         UART_RXD,
-   output        UART_TXD,
+	// I/O board button press simulation (active high)
+	// b[1]: user button
+	// b[0]: osd button
+	output  [1:0] BUTTONS,
+	
+	output [15:0] AUDIO_L,
+	output [15:0] AUDIO_R,
+	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
+	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
+	
+	//ADC
+	inout   [3:0] ADC_BUS,
+	
+	//SD-SPI
+	output        SD_SCK,
+	output        SD_MOSI,
+	input         SD_MISO,
+	output        SD_CS,
+	input         SD_CD,
+	
+	//High latency DDR3 RAM interface
+	//Use for non-critical time purposes
+	output        DDRAM_CLK,
+	input         DDRAM_BUSY,
+	output  [7:0] DDRAM_BURSTCNT,
+	output [28:0] DDRAM_ADDR,
+	input  [63:0] DDRAM_DOUT,
+	input         DDRAM_DOUT_READY,
+	output        DDRAM_RD,
+	output [63:0] DDRAM_DIN,
+	output  [7:0] DDRAM_BE,
+	output        DDRAM_WE,
+	
+	//SDRAM interface with lower latency
+	output        SDRAM_CLK,
+	output        SDRAM_CKE,
+	output [12:0] SDRAM_A,
+	output  [1:0] SDRAM_BA,
+	inout  [15:0] SDRAM_DQ,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_nCS,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nWE,
+	
+	input         UART_CTS,
+	output        UART_RTS,
+	input         UART_RXD,
+	output        UART_TXD,
 	output        UART_DTR,
 	input         UART_DSR,
-
+	
 	// Open-drain User port.
 	// 0 - D+/RX
 	// 1 - D-/TX
-	// 2..5 - USR1..USR4
+	// 2..6 - USR2..USR6
 	// Set USER_OUT to 1 to read from USER_IN.
-	input   [5:0] USER_IN,
-	output  [5:0] USER_OUT
+	input   [6:0] USER_IN,
+	output  [6:0] USER_OUT,
+
+	input         OSD_STATUS
 );
 
+assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
+assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+assign BUTTONS = 0;
 
 
 ////////////////////////////////////////
@@ -364,6 +379,7 @@ wire [15:0] uio_dout;
 wire [15:0] fpga_dout;
 wire        ce_pix;
 wire [15:0] sdram_sz;
+wire  [1:0] buttons;
 
 hps_io hps_io
 (
@@ -377,7 +393,7 @@ hps_io hps_io
 	.IO_DIN(IO_DIN),
 	.IO_DOUT(uio_dout),
 	
-	.BUTTONS(),
+	.BUTTONS(buttons),
 	.CONF(),
 
 	.JOY0(joya),
@@ -430,7 +446,7 @@ minimig minimig
 	.chip48       (chip48           ), // big chipram read
 
 	//system  pins
-	.rst_ext      (BTN_USER         ), // reset from ctrl block
+	.rst_ext      (buttons[1]       ), // reset from ctrl block
 	.rst_out      (                 ), // minimig reset status
 	.clk          (clk_28           ), // output clock c1 ( 28.687500MHz)
 	.clk7_en      (clk7_en          ), // 7MHz clock enable
@@ -490,6 +506,7 @@ minimig minimig
 	//audio
 	.ldata        (ldata            ), // left DAC data
 	.rdata        (rdata            ), // right DAC data
+	.aud_mix      (AUDIO_MIX        ),
 
 	//user i/o
 	.cpu_config   (cpu_config       ), // CPU config
