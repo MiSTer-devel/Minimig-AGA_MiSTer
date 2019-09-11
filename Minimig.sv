@@ -220,14 +220,33 @@ assign VGA_HS       = ~hs;
 assign VGA_VS       = ~vs;
 assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
-assign CLK_VIDEO    = clk_28;
-assign CE_PIXEL     = 1;
+assign CLK_VIDEO    = clk_mem;
+assign CE_PIXEL     = ce_out;
 
 wire   IO_WAIT_UIO;
 wire   IO_WAIT_MM;
 assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 
 assign CLK_SYS      = clk_28;
+
+reg ce_28;
+always @(posedge clk_28) begin
+	reg ce1,ce2;
+	
+	ce1 <= ce_pix;
+	ce2 <= ce1;
+	ce_28 <= ce2;
+end
+
+reg ce_out;
+always @(posedge CLK_VIDEO) begin
+	reg ce1, ce2;
+	
+	ce1 <= ce_28 & ~clk_28;
+	ce2 <= ce1;
+	
+	ce_out <= ~ce1 & ce2;
+end
 
 pll pll
 (
@@ -409,7 +428,7 @@ hps_io hps_io
 
 	.clk_100(CLK_100),
 	.clk_vid(CLK_VIDEO),
-	.ce_pix(ce_pix),
+	.ce_pix(CE_PIXEL),
 	.de(VGA_DE),
 	.hs(~hs),
 	.vs(~vs),
