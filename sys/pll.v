@@ -6,21 +6,31 @@
 
 `timescale 1 ps / 1 ps
 module pll (
-		input  wire  refclk,   //  refclk.clk
-		input  wire  rst,      //   reset.reset
-		output wire  outclk_0, // outclk0.clk
-		output wire  outclk_1, // outclk1.clk
-		output wire  outclk_2, // outclk2.clk
-		output wire  locked    //  locked.export
+		input  wire       refclk,     //     refclk.clk
+		input  wire       rst,        //      reset.reset
+		output wire       outclk_0,   //    outclk0.clk
+		output wire       outclk_1,   //    outclk1.clk
+		output wire       outclk_2,   //    outclk2.clk
+		output wire       locked,     //     locked.export
+		input  wire       phase_en,   //   phase_en.phase_en
+		input  wire       scanclk,    //    scanclk.scanclk
+		input  wire       updn,       //       updn.updn
+		input  wire [4:0] cntsel,     //     cntsel.cntsel
+		output wire       phase_done  // phase_done.phase_done
 	);
 
 	pll_0002 pll_inst (
-		.refclk   (refclk),   //  refclk.clk
-		.rst      (rst),      //   reset.reset
-		.outclk_0 (outclk_0), // outclk0.clk
-		.outclk_1 (outclk_1), // outclk1.clk
-		.outclk_2 (outclk_2), // outclk2.clk
-		.locked   (locked)    //  locked.export
+		.refclk     (refclk),     //     refclk.clk
+		.rst        (rst),        //      reset.reset
+		.outclk_0   (outclk_0),   //    outclk0.clk
+		.outclk_1   (outclk_1),   //    outclk1.clk
+		.outclk_2   (outclk_2),   //    outclk2.clk
+		.locked     (locked),     //     locked.export
+		.phase_en   (phase_en),   //   phase_en.phase_en
+		.scanclk    (scanclk),    //    scanclk.scanclk
+		.updn       (updn),       //       updn.updn
+		.cntsel     (cntsel),     //     cntsel.cntsel
+		.phase_done (phase_done)  // phase_done.phase_done
 	);
 
 endmodule
@@ -234,7 +244,7 @@ endmodule
 // Retrieval info: 	<generic name="gui_pll_auto_reset" value="On" />
 // Retrieval info: 	<generic name="gui_pll_bandwidth_preset" value="Auto" />
 // Retrieval info: 	<generic name="gui_en_reconf" value="false" />
-// Retrieval info: 	<generic name="gui_en_dps_ports" value="false" />
+// Retrieval info: 	<generic name="gui_en_dps_ports" value="true" />
 // Retrieval info: 	<generic name="gui_en_phout_ports" value="false" />
 // Retrieval info: 	<generic name="gui_phout_division" value="1" />
 // Retrieval info: 	<generic name="gui_mif_generate" value="false" />

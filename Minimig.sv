@@ -239,11 +239,29 @@ end
 pll pll
 (
 	.refclk(CLK_50M),
-	.rst(0),
 	.outclk_0(clk_mem),
 	.outclk_1(SDRAM_CLK),
 	.outclk_2(clk_28),
-	.locked(pll_locked)
+	.locked(pll_locked),
+
+	.phase_en(phase_en),
+	.scanclk(CLK_SYS),
+	.updn(updn),
+	.cntsel(1),
+	.phase_done(phase_done)
+);
+
+wire phase_en, updn, phase_done;
+phase_shift #(.M64MB(-4), .M128MB(-4)) phase_shift
+(
+	.clk(CLK_SYS),
+	.pll_locked(pll_locked),
+
+	.phase_en(phase_en),
+	.updn(updn),
+	.phase_done(phase_done),
+
+	.sdram_sz(sdram_sz)
 );
 
 //// amiga clocks ////
