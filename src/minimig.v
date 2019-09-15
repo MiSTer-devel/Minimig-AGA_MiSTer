@@ -607,9 +607,7 @@ userio USERIO1
 //assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
 assign cpu_speed = 1'b0;
 
-reg [1:0] phase;
-always @(posedge clk) phase <= {phase[0], clk7_en};
-assign ce_pix = (shres & |chipset_config[4:3]) | (hires & phase[1]) | clk7_en;
+assign ce_pix = (shres & |chipset_config[4:3]) | (hires & clk7n_en) | clk7_en;
 
 assign res = {shres & |chipset_config[4:3], hires};
 

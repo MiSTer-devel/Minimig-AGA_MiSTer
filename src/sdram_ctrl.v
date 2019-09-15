@@ -221,7 +221,7 @@ always @ (posedge sysclk) begin
 	end
 end
 
-assign ramready = (ccachehit || writebuffer_ena) & cpuCS;
+assign ramready = ccachehit || writebuffer_ena;
 
 //// chip line read ////
 reg [15:0] chip48_1, chip48_2, chip48_3;

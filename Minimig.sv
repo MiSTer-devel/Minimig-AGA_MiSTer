@@ -229,23 +229,11 @@ assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 
 assign CLK_SYS      = clk_28;
 
-reg ce_28;
-always @(posedge clk_28) begin
-	reg ce1,ce2;
-	
-	ce1 <= ce_pix;
-	ce2 <= ce1;
-	ce_28 <= ce2;
-end
-
 reg ce_out;
 always @(posedge CLK_VIDEO) begin
-	reg ce1, ce2;
-	
-	ce1 <= ce_28 & ~clk_28;
-	ce2 <= ce1;
-	
-	ce_out <= ~ce1 & ce2;
+	reg old_clk;
+	old_clk <= clk_28;
+	ce_out <= old_clk & ~clk_28;
 end
 
 pll pll
@@ -427,8 +415,8 @@ hps_io hps_io
 	.RTC(rtc),
 
 	.clk_100(CLK_100),
-	.clk_vid(CLK_VIDEO),
-	.ce_pix(CE_PIXEL),
+	.clk_vid(clk_28),
+	.ce_pix(ce_pix),
 	.de(VGA_DE),
 	.hs(~hs),
 	.vs(~vs),
