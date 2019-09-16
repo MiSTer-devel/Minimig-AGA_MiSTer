@@ -19,6 +19,13 @@ derive_clock_uncertainty
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 4
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 3
 
+set_false_path -from {*|userio:USERIO1|cpu_config*} -to *
+set_false_path -from {*|userio:USERIO1|ide_config*} -to *
+set_false_path -from {*|minimig_m68k_bridge:CPU1|halt} -to *
+
+set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -setup 2
+set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -hold 2
+
 
 set_input_delay -max -clock SDRAM_CLK 6.4ns [get_ports SDRAM_DQ[*]]
 set_input_delay -min -clock SDRAM_CLK 3.7ns [get_ports SDRAM_DQ[*]]
@@ -27,9 +34,9 @@ set_output_delay -max -clock SDRAM_CLK 1.6ns [get_ports {SDRAM_D* SDRAM_A* SDRAM
 set_output_delay -min -clock SDRAM_CLK -0.9ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
 
 # Decouple different clock groups (to simplify routing)
-set_clock_groups -asynchronous \
+set_clock_groups -exclusive \
    -group [get_clocks { *|pll|pll_inst|altera_pll_i|*[*].*|divclk}] \
-   -group [get_clocks { pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk}] \
+   -group [get_clocks { pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk HDMI_CLK}] \
    -group [get_clocks { *|h2f_user0_clk}] \
    -group [get_clocks { FPGA_CLK1_50 FPGA_CLK2_50 FPGA_CLK3_50}]
 
@@ -50,3 +57,5 @@ set_false_path -from * -to [get_ports {AUDIO_SPDIF}]
 set_false_path -from * -to [get_ports {AUDIO_L}]
 set_false_path -from * -to [get_ports {AUDIO_R}]
 set_false_path -from * -to [get_keepers {cfg[*]}]
+set_false_path -from [get_keepers {cfg[*]}] -to *
+
