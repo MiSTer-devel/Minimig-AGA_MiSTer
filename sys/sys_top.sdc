@@ -10,11 +10,19 @@ derive_pll_clocks
 create_generated_clock -source [get_pins -compatibility_mode {pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk}] \
                        -name HDMI_CLK [get_ports HDMI_TX_CLK]
 
+create_generated_clock -source [get_pins -compatibility_mode {*|pll|pll_inst|altera_pll_i|*[1].*|divclk}] \
+                       -name SDRAM_CLK [get_ports {SDRAM_CLK}]
 
 derive_clock_uncertainty
 
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 4
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 3
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -to * -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -to * -hold 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -to * -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -to * -hold 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -to * -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -to * -hold 2
 
 set_false_path -from {*|userio:USERIO1|cpu_config*} -to *
 set_false_path -from {*|userio:USERIO1|ide_config*} -to *
@@ -23,21 +31,21 @@ set_false_path -from {*|minimig_m68k_bridge:CPU1|halt} -to *
 set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -setup 2
 set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -hold 2
 
-set_input_delay  -max -clock [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}]  6.4ns [get_ports SDRAM_DQ[*]]
-set_input_delay  -min -clock [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}]  3.7ns [get_ports SDRAM_DQ[*]]
-
-set_output_delay -max -clock [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}]  1.6ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
-set_output_delay -min -clock [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -0.9ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
+set_input_delay  -max -clock SDRAM_CLK  6.4ns [get_ports SDRAM_DQ[*]]
+set_input_delay  -min -clock SDRAM_CLK  3.7ns [get_ports SDRAM_DQ[*]]
+set_output_delay -max -clock SDRAM_CLK  1.6ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
+set_output_delay -min -clock SDRAM_CLK -0.9ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
 
 # Decouple different clock groups (to simplify routing)
 set_clock_groups -exclusive \
-   -group [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk *|pll|pll_inst|altera_pll_i|*[2].*|divclk}] \
-	-group [get_clocks { *|pll|pll_inst|altera_pll_i|*[1].*|divclk }] \
+   -group [get_clocks { *|pll|pll_inst|altera_pll_i|*[*].*|divclk }] \
    -group [get_clocks { pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk HDMI_CLK}] \
    -group [get_clocks { *|h2f_user0_clk}] \
    -group [get_clocks { FPGA_CLK1_50 }] \
    -group [get_clocks { FPGA_CLK2_50 }] \
    -group [get_clocks { FPGA_CLK3_50 }]
+
+set_false_path -from [get_clocks {SDRAM_CLK}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}]
 
 set_output_delay -max -clock HDMI_CLK 3.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
 set_output_delay -min -clock HDMI_CLK 2.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]

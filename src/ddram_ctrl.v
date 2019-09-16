@@ -89,32 +89,34 @@ reg [27:1] writeAddr;
 reg [15:0] writeDat;
 
 always @ (posedge sysclk) begin
-	reg write_state = 0;
+	reg  [1:0] write_state;
 
 	if(~reset_in) begin
 		write_req   <= 0;
 		write_ena   <= 0;
 		write_state <= 0;
 	end else begin
-		if(!write_state) begin
-			// CPU write cycle, no cycle already pending
-			if(cpuCS && cpustate == 3) begin
-				writeAddr <= cpuAddr;
-				writeDat  <= cpuWR;
-				writeBE   <= ~{cpuU, cpuL};
-				write_req <= 1;
-				if(cache_ack) begin
-					write_ena   <= 1;
-					write_state <= 1;
+		case(write_state)
+			default:
+				if(cpuCS && cpustate == 3) begin
+					writeAddr <= cpuAddr;
+					writeDat  <= cpuWR;
+					writeBE   <= ~{cpuU, cpuL};
+					write_req <= 1;
+					if(cache_ack) begin
+						write_ena   <= 1;
+						write_state <= 1;
+					end
 				end
-			end
-		end
-		else if(write_ack) begin
-			// The RAM controller has picked up the request
-			write_req   <= 0;
-			write_state <= 0;
-		end
 
+			1: if(write_ack) begin
+					// The SDRAM controller has picked up the request
+					write_req   <= 0;
+					write_state <= 2;
+				end
+
+			2: if(!write_ack) write_state <= 0;
+		endcase
 		if(~cpuCS) write_ena <= 0;
 	end
 end
