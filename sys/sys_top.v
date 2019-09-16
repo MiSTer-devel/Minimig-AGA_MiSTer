@@ -1103,7 +1103,7 @@ wire  [6:0] user_out, user_in;
 
 emu emu
 (
-	.CLK_50M(FPGA_CLK3_50),
+	.CLK_50M(FPGA_CLK2_50),
 	.RESET(reset),
 
 	.CLK_SYS(clk_sys),
