@@ -252,7 +252,7 @@ pll pll
 );
 
 wire phase_en, updn, phase_done;
-phase_shift #(.M64MB(-4), .M128MB(-4)) phase_shift
+phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 (
 	.clk(CLK_SYS),
 	.pll_locked(pll_locked),

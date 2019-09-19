@@ -17,16 +17,16 @@ derive_clock_uncertainty
 
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 4
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 3
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -to * -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -to * -hold 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -to * -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -to * -hold 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -to * -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -to * -hold 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -hold 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -hold 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -setup 2
+set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -hold 2
 
-set_false_path -from {*|userio:USERIO1|cpu_config*} -to *
-set_false_path -from {*|userio:USERIO1|ide_config*} -to *
-set_false_path -from {*|minimig_m68k_bridge:CPU1|halt} -to *
+set_false_path -from {*|userio:USERIO1|cpu_config*}
+set_false_path -from {*|userio:USERIO1|ide_config*}
+set_false_path -from {*|minimig_m68k_bridge:CPU1|halt}
 
 set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -setup 2
 set_multicycle_path -from [get_clocks {*|pll|pll_inst|altera_pll_i|*[2].*|divclk}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -hold 2
@@ -45,22 +45,22 @@ set_clock_groups -exclusive \
    -group [get_clocks { FPGA_CLK2_50 }] \
    -group [get_clocks { FPGA_CLK3_50 }]
 
-set_false_path -from [get_clocks {SDRAM_CLK}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}]
+#set_false_path -from [get_clocks {SDRAM_CLK}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}]
 
 set_output_delay -max -clock HDMI_CLK 3.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
 set_output_delay -min -clock HDMI_CLK 2.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
 
 # Put constraints on input ports
-set_false_path -from [get_ports {KEY*}] -to *
-set_false_path -from [get_ports {BTN_*}] -to *
+set_false_path -from [get_ports {KEY*}]
+set_false_path -from [get_ports {BTN_*}]
 
 # Put constraints on output ports
-set_false_path -from * -to [get_ports {LED_*}]
-set_false_path -from * -to [get_ports {VGA_*}]
-set_false_path -from * -to [get_ports {AUDIO_SPDIF}]
-set_false_path -from * -to [get_ports {AUDIO_L}]
-set_false_path -from * -to [get_ports {AUDIO_R}]
+set_false_path -to [get_ports {LED_*}]
+set_false_path -to [get_ports {VGA_*}]
+set_false_path -to [get_ports {AUDIO_SPDIF}]
+set_false_path -to [get_ports {AUDIO_L}]
+set_false_path -to [get_ports {AUDIO_R}]
 
-set_false_path -from * -to [get_keepers {cfg[*]}]
-set_false_path -from [get_keepers {cfg[*]}] -to *
-set_false_path -from * -to [get_registers {wcalc[*] hcalc[*]}]
+set_false_path -to {cfg[*]}
+set_false_path -from {cfg[*]}
+set_false_path -to {wcalc[*] hcalc[*]}
