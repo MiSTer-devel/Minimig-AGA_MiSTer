@@ -43,7 +43,7 @@ module ddram_ctrl
 	output reg        DDRAM_WE,
 
 	// cpu    
-	input      [27:1] cpuAddr,
+	input      [28:1] cpuAddr,
 	input             cpuCS,
 	input       [1:0] cpustate,
 	input             cpuL,
@@ -85,7 +85,7 @@ reg        write_ena;
 reg        write_req;
 reg        write_ack;
 reg  [1:0] writeBE;
-reg [27:1] writeAddr;
+reg [28:1] writeAddr;
 reg [15:0] writeDat;
 
 always @ (posedge sysclk) begin
@@ -149,14 +149,14 @@ always @ (posedge sysclk) begin
 		case(state)
 			0: if(~DDRAM_BUSY) begin
 					if(~write_ack & write_req) begin
-						DDRAM_ADDR <= {4'b0011, writeAddr[27:3]};
+						DDRAM_ADDR <= {3'b001, writeAddr[28:3]};
 						DDRAM_BE   <= {6'b000000,writeBE}<<{writeAddr[2:1],1'b0};
 						DDRAM_DIN  <= {writeDat,writeDat,writeDat,writeDat};
 						DDRAM_WE   <= 1;
 						write_ack  <= 1;
 					end
 					else if(cache_req) begin
-						DDRAM_ADDR <= {4'b0011, cpuAddr[27:3]};
+						DDRAM_ADDR <= {3'b001, cpuAddr[28:3]};
 						DDRAM_BE   <= 8'hFF;
 						DDRAM_RD   <= 1;
 						ba         <= cpuAddr[2:1];

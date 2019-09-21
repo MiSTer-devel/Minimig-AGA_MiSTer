@@ -40,8 +40,8 @@ module sdram_ctrl
 	output            reset_out,
 	// sdram
 	output reg [12:0] sdaddr,
-	output reg  [1:0] ba,
-	output reg        sd_cs,
+	output      [1:0] ba,
+	output            sd_cs,
 	output reg        sd_we,
 	output reg        sd_ras,
 	output reg        sd_cas,
@@ -70,7 +70,9 @@ module sdram_ctrl
 	output            ramready
 );
 
-assign dqm = sdaddr[12:11];
+assign dqm   = sdaddr[12:11];
+assign ba    = 0;
+assign sd_cs = 0;
 
 //// parameters ////
 localparam [1:0]
@@ -83,24 +85,6 @@ localparam [2:0]
 	CHIP = 1,
 	CPU_READCACHE = 2,
 	CPU_WRITECACHE = 3;
-
-localparam [3:0]
-	ph0 = 0,
-	ph1 = 1,
-	ph2 = 2,
-	ph3 = 3,
-	ph4 = 4,
-	ph5 = 5,
-	ph6 = 6,
-	ph7 = 7,
-	ph8 = 8,
-	ph9 = 9,
-	ph10 = 10,
-	ph11 = 11,
-	ph12 = 12,
-	ph13 = 13,
-	ph14 = 14,
-	ph15 = 15;
 
 
 ////////////////////////////////////////
@@ -119,7 +103,7 @@ always @(posedge sysclk) begin
 	end else begin
 		if(reset_cnt == 42) reset_sdstate <= 1;
 		if(reset_cnt == 170) begin
-			if(sdram_state == ph15) reset <= 1;
+			if(sdram_state == 15) reset <= 1;
 		end
 		else begin
 			reset_cnt <= reset_cnt + 8'd1;
@@ -135,7 +119,7 @@ assign reset_out = init_done;
 
 wire ccachehit;
 wire cache_req;
-wire snoop_act = ((sdram_state==ph2)&&(!chipRW));
+wire snoop_act = ((sdram_state==2)&&(!chipRW));
 wire readcache_fill = (cache_fill && slot_type == CPU_READCACHE);
 
 cpu_cache_new cpu_cache
@@ -227,10 +211,10 @@ reg [15:0] chip48_1, chip48_2, chip48_3;
 always @ (posedge sysclk) begin
 	if(slot_type == CHIP) begin
 		case(sdram_state)
-			ph9 : chipRD   <= sdata_reg;
-			ph10: chip48_1 <= sdata_reg;
-			ph11: chip48_2 <= sdata_reg;
-			ph12: chip48_3 <= sdata_reg;
+			9 : chipRD   <= sdata_reg;
+			10: chip48_1 <= sdata_reg;
+			11: chip48_2 <= sdata_reg;
+			12: chip48_3 <= sdata_reg;
 		endcase
 	end
 end
@@ -250,26 +234,26 @@ always @ (posedge sysclk) begin
 	ena7WRreg <= 0;
 	if(reset_sdstate) begin
 		case(sdram_state) // LATENCY=3
-			 ph2, ph6, ph10, ph14: cpuEN <= 1;
+			 2, 6, 10, 14: cpuEN <= 1;
 		endcase
 		case(sdram_state) // LATENCY=3
-			 ph6: ena7RDreg <= 1;
-			ph14: ena7WRreg <= 1;
+			 6: ena7RDreg <= 1;
+			14: ena7WRreg <= 1;
 		endcase
 	end
 end
 
 
 //// init counter ////
-reg [4:0] initstate;
+reg [3:0] initstate;
 reg       init_done;
 always @ (posedge sysclk) begin
 	if(!reset) begin
 		initstate <= 0;
 		init_done <= 0;
 	end else begin
-		if (sdram_state == ph15) begin // LATENCY=3
-			if(~&initstate) initstate <= initstate + 4'd1;
+		if (sdram_state == 15) begin
+			if(~&initstate) initstate <= initstate + 1'd1;
 			else init_done <= 1;
 		end
 	end
@@ -284,7 +268,7 @@ always @ (posedge sysclk) begin
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
-	if(~old_7m & c_7m) sdram_state <= ph2;
+	if(~old_7m & c_7m) sdram_state <= 2;
 end
 
 reg cache_fill;
@@ -293,7 +277,7 @@ always @ (posedge sysclk) begin
 
 	if(init_done) begin
 		case(sdram_state)
-		   ph8, ph9, ph10, ph11: cache_fill <= 1;
+		   8, 9, 10, 11: cache_fill <= 1;
 		endcase
 	end
 end
@@ -310,6 +294,7 @@ always @ (posedge sysclk) begin
 	reg  [1:0] cas_dqm;
 	reg [15:0] datawr;
 	reg  [9:0] casaddr;
+	reg  [3:0] rcnt;
 
 	sd_ras                        <= 1;
 	sd_cas                        <= 1;
@@ -319,18 +304,17 @@ always @ (posedge sysclk) begin
 
 	if(!init_done) begin
 		slot_type                  <= IDLE;
-		ba                         <= 0;
 		casaddr                    <= 0;
-		if(sdram_state == ph1) begin
-			sd_cs <= initstate[4];
-			case(initstate[3:0])
-				2 : begin // PRECHARGE
+		rcnt                       <= 0;
+		if(sdram_state == 1) begin
+			case(initstate)
+				4 : begin // PRECHARGE
 					sdaddr[10]        <= 1; // all banks
 					sd_ras            <= 0;
 					sd_cas            <= 1;
 					sd_we             <= 0;
 				end
-				4,8 : begin // AUTOREFRESH
+				8,10 : begin // AUTOREFRESH
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 1;
@@ -345,16 +329,16 @@ always @ (posedge sysclk) begin
 		end
 	end else begin
 
-		sd_cs                      <= 0;
-
 		case(sdram_state)
 
 			// RAS
-			ph1 : begin
+			1 : begin
 				cas_sd_cas           <= 1;
 				cas_sd_we            <= 1;
 				cas_dqm              <= 0;
 				slot_type            <= IDLE;
+
+				if(~&rcnt) rcnt      <= rcnt + 1'd1;
 
 				// we give the chipset first priority
 				// (this includes anything on the "motherboard" - chip RAM, slow RAM and Kickstart, turbo modes notwithstanding)
@@ -367,10 +351,7 @@ always @ (posedge sysclk) begin
 					cas_sd_we         <= chipRW;
 					datawr            <= chipWR;
 				end
-				// the Amiga CPU gets next bite of the cherry, unless the OSD CPU has been cycle-starved
-				// request from write buffer
 				else if(writebuffer_req) begin
-				// We only yield to the OSD CPU if it's both cycle-starved and ready to go.
 					slot_type         <= CPU_WRITECACHE;
 					{sdaddr,casaddr[8:0]} <= writebufferAddr;
 					sd_ras            <= 0;
@@ -382,21 +363,21 @@ always @ (posedge sysclk) begin
 				end
 				// request from read cache
 				else if(cache_req) begin
-					// we only yield to the OSD CPU if it's both cycle-starved and ready to go
 					slot_type         <= CPU_READCACHE;
 					{sdaddr,casaddr[8:0]} <= cpuAddr;
 					sd_ras            <= 0;
 					cas_sd_cas        <= 0;
 				end
-				else begin
+				else if(&rcnt) begin
 					// REFRESH
 					sd_ras            <= 0;
 					sd_cas            <= 0;
+					rcnt              <= 0;
 				end
 			end
 
 			// CAS
-			ph4 : begin
+			4 : begin
 				sdaddr               <= {1'b1, casaddr}; // AUTO PRECHARGE
 				sd_cas               <= cas_sd_cas;
 				if(!cas_sd_we) begin

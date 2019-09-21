@@ -278,8 +278,8 @@ amiga_clk amiga_clk
 	.locked       (pll_locked       )  // pll locked output
 );
 
-wire DDR_EN = tg68_cad[28];
-wire SDR_EN = ~tg68_cad[28];
+wire DDR_EN = tg68_cad[29];
+wire SDR_EN = ~tg68_cad[29];
 
 TG68K tg68k
 (
@@ -386,7 +386,7 @@ ddram_ctrl ram2
 	.DDRAM_WE     (DDRAM_WE         ),
 
 	.cpuWR        (tg68_dat_out     ),
-	.cpuAddr      (tg68_cad[27:1]   ),
+	.cpuAddr      (tg68_cad[28:1]   ),
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),
