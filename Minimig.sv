@@ -342,7 +342,7 @@ sdram_ctrl ram1
 	.sd_cas       (SDRAM_nCAS       ),
 
 	.cpuWR        (tg68_dat_out     ),
-	.cpuAddr      (tg68_cad[25:1]   ),
+	.cpuAddr      (tg68_cad[22:1]   ),
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),

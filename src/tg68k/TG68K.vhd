@@ -88,7 +88,7 @@ SIGNAL lds_in           : std_logic;
 SIGNAL state            : std_logic_vector(1 downto 0);
 SIGNAL clkena           : std_logic;
 SIGNAL sel_autoconfig   : std_logic;
-SIGNAL autoconfig_out   : std_logic_vector(2 downto 0); -- We use this as a counter since we have two cards to configure
+SIGNAL autoconfig_out   : std_logic_vector(1 downto 0); -- We use this as a counter since we have two cards to configure
 SIGNAL autoconfig_data  : std_logic_vector(3 downto 0);
 SIGNAL sel_ram         : std_logic;
 SIGNAL sel_slowram      : std_logic;
@@ -102,16 +102,10 @@ SIGNAL turbokick_d      : std_logic := '0';
 SIGNAL datatg68         : std_logic_vector(15 downto 0);
 
 SIGNAL z2ram_ena        : std_logic;
-SIGNAL z3ram_base0      : std_logic_vector(7 downto 0);
-SIGNAL z3ram_base1      : std_logic_vector(6 downto 0);
-SIGNAL z3ram_base2      : std_logic_vector(3 downto 0);
-SIGNAL z3ram_ena0       : std_logic;
-SIGNAL z3ram_ena1       : std_logic;
-SIGNAL z3ram_ena2       : std_logic;
+SIGNAL z3ram_base       : std_logic_vector(3 downto 0);
+SIGNAL z3ram_ena        : std_logic;
 SIGNAL sel_z2ram        : std_logic;
-SIGNAL sel_z3ram0       : std_logic;
-SIGNAL sel_z3ram1       : std_logic;
-SIGNAL sel_z3ram2       : std_logic;
+SIGNAL sel_z3ram        : std_logic;
 SIGNAL sel_kickram      : std_logic;
 signal sel_kicklower    : std_logic;
 
@@ -139,10 +133,8 @@ datatg68 <= fromram WHEN sel_ram='1' and sel_nmi_vector='0'
        ELSE autoconfig_data&r_data(11 downto 0) WHEN sel_autoconfig='1'
        ELSE r_data;
 
-sel_autoconfig  <= '1' WHEN fastramcfg/="000" AND cpuaddr(23 downto 19)="11101" AND autoconfig_out/="000" ELSE '0'; --$E80000 - $EFFFFF
-sel_z3ram0      <= '1' WHEN (cpuaddr(31 downto 24)=z3ram_base0) AND z3ram_ena0='1' ELSE '0';
-sel_z3ram1      <= '1' WHEN (cpuaddr(31 downto 25)=z3ram_base1) AND z3ram_ena1='1' ELSE '0';
-sel_z3ram2      <= '1' WHEN (cpuaddr(31 downto 28)=z3ram_base2) AND z3ram_ena2='1' ELSE '0';
+sel_autoconfig  <= '1' WHEN fastramcfg/="000" AND cpuaddr(23 downto 19)="11101" AND autoconfig_out/="00" ELSE '0'; --$E80000 - $EFFFFF
+sel_z3ram       <= '1' WHEN (cpuaddr(31 downto 28) = z3ram_base) AND z3ram_ena='1' ELSE '0';
 sel_z2ram       <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 21) = "001") OR (cpuaddr(23 downto 21) = "010") OR (cpuaddr(23 downto 21) = "011") OR (cpuaddr(23 downto 21) = "100")) AND z2ram_ena='1' ELSE '0';
 
 -- turbochip is off during boot overlay
@@ -164,7 +156,7 @@ sel_nmi_vector  <= '1' WHEN (cpuaddr(31 downto 2) = NMI_addr(31 downto 2)) and s
 -- there also seems to be another problem. Somehow fails with bootrom and AGA.
 -- 
 
-sel_ram         <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND (sel_z2ram='1' OR sel_z3ram0='1' OR sel_z3ram1='1' OR sel_z3ram2='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
+sel_ram         <= '1'  WHEN state/="01" and sel_nmi_vector='0' AND (sel_z2ram='1' OR sel_z3ram='1' OR sel_chipram='1' OR sel_kickram='1') ELSE '0';
 
 --when this is true, we set bit 23 to zero, to map all this from a0-ff to
 --20-7f. Don't need this for chipram, since there is no remapping. 
@@ -182,18 +174,9 @@ ramuds <= uds_in;
 -- 8M block. This map should be the same as in minimig_sram_bridge.v 
 -- 8M Zorro II RAM 20-9f goes to 80-ff 
 ramaddr(31 downto 29) <= "000";
-ramaddr(28)           <= sel_z3ram2;                                 -- Remap the Zorro III RAM
-ramaddr(27)           <= sel_z3ram2 and cpuaddr(27);                 -- Remap the Zorro III RAM
-ramaddr(26)           <= sel_z3ram2 and cpuaddr(26);                 -- Remap the Zorro III RAM
-ramaddr(25)           <= sel_z3ram1 or (cpuaddr(25) and sel_z3ram2); -- Remap the Zorro III RAM
-ramaddr(24)           <= sel_z3ram0 or (cpuaddr(24) and (sel_z3ram1 or sel_z3ram2)); -- Remap the Zorro III RAM
-ramaddr(23 downto 21) <= "100" WHEN sel_z2ram&cpuaddr(23 downto 21)="1001" -- 2 -> 8
-                    ELSE "101" WHEN sel_z2ram&cpuaddr(23 downto 21)="1010" -- 4 -> A
-                    ELSE "110" WHEN sel_z2ram&cpuaddr(23 downto 21)="1011" -- 6 -> C
-                    ELSE "111" WHEN sel_z2ram&cpuaddr(23 downto 21)="1100" -- 8 -> E      
-                    ELSE '0'&cpuaddr(22 downto 21) WHEN sel_a0map ='1' -- map a0-ff to 20-7f
-                    ELSE cpuaddr(23 downto 21);            
-ramaddr(20 downto 19) <= cpuaddr(20 downto 19);
+ramaddr(28)           <= sel_z3ram or sel_z2ram;
+ramaddr(27 downto 23) <= cpuaddr(27 downto 23) when sel_z3ram = '1' else (others => '0');
+ramaddr(22 downto 19) <= cpuaddr(22 downto 19);
 ramaddr(18)           <= '1' when (sel_kicklower = '1' and bootrom= '1') else cpuaddr(18); 
 ramaddr(17 downto 0)  <= cpuaddr(17 downto 0);
 
@@ -245,130 +228,66 @@ END PROCESS;
 PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	autoconfig_data <= "1111";
 
-	-- Zorro II RAM (Up to 8 meg at 0x200000)
-	IF autoconfig_out = "001" THEN
-		CASE cpuaddr(6 downto 1) IS
-			WHEN "000000" => autoconfig_data <= "1110";    -- Zorro-II card, add mem, no ROM
-			WHEN "000001" => 
-				CASE fastramcfg(2 downto 0) IS
-					WHEN  "001" => autoconfig_data <= "0110";  -- 2MB
-					WHEN  "010" => autoconfig_data <= "0111";  -- 4MB
-					WHEN OTHERS => autoconfig_data <= "0000";  -- 8MB
-				END CASE;
-			WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
-			WHEN "001001" => autoconfig_data <= "1100";
-			WHEN "001010" => autoconfig_data <= "0110";
-			WHEN "001011" => autoconfig_data <= "0011";
-			WHEN "010011" => autoconfig_data <= "1110";    --serial=1
-			WHEN OTHERS => null;
-		END CASE;
-	END IF;
-
-	-- Zorro III RAM #1 16MB
-	IF autoconfig_out = "010"  THEN
-		CASE cpuaddr(6 downto 1) IS
-			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
-			WHEN "000001" => autoconfig_data <= "0000";    -- 16MB/extended
-			WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
-			WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
-			WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
-			WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
-			WHEN "001001" => autoconfig_data <= "1100";
-			WHEN "001010" => autoconfig_data <= "0110";
-			WHEN "001011" => autoconfig_data <= "0011";
-			WHEN "010011" => autoconfig_data <= "1101";    -- serial=2
-			WHEN OTHERS => null;
-		END CASE;
-	END IF;
-
-	-- Zorro III RAM #2 #32MB
-	-- 8MB of 32MB are on the same bank as ChipRAM
-	-- With cache enabled on ChipRAM bank, it should not affect performance much
-	-- But may be need to split to 24MB and 8MB as separate FastRAM options.
-	IF autoconfig_out = "011" THEN
-		CASE cpuaddr(6 downto 1) IS
-			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
-			WHEN "000001" => autoconfig_data <= "0001";    -- 32MB/extended
-			WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
-			WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
-			WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
-			WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
-			WHEN "001001" => autoconfig_data <= "1100";
-			WHEN "001010" => autoconfig_data <= "0110";
-			WHEN "001011" => autoconfig_data <= "0011";
-			WHEN "010011" => autoconfig_data <= "1100";    -- serial=3
-			WHEN OTHERS => null;
-		END CASE;
-	END IF;
-
-	-- Zorro III RAM #3 #256MB in DDR3
-	IF autoconfig_out = "100" THEN
-		CASE cpuaddr(6 downto 1) IS
-			WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
-			WHEN "000001" => autoconfig_data <= "0100";    -- 256MB/extended
-			WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
-			WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
-			WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
-			WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
-			WHEN "001001" => autoconfig_data <= "1100";
-			WHEN "001010" => autoconfig_data <= "0110";
-			WHEN "001011" => autoconfig_data <= "0011";
-			WHEN "010011" => autoconfig_data <= "1011";    -- serial=4
-			WHEN OTHERS => null;
-		END CASE;
+	IF autoconfig_out = "01" THEN
+		if fastramcfg(2) = '0' then
+			-- Zorro II RAM (Up to 8 meg at 0x200000)
+			CASE cpuaddr(6 downto 1) IS
+				WHEN "000000" => autoconfig_data <= "1110";    -- Zorro-II card, add mem, no ROM
+				WHEN "000001" => 
+					CASE fastramcfg(1 downto 0) IS
+						WHEN   "01" => autoconfig_data <= "0110";  -- 2MB
+						WHEN   "10" => autoconfig_data <= "0111";  -- 4MB
+						WHEN OTHERS => autoconfig_data <= "0000";  -- 8MB
+					END CASE;
+				WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
+				WHEN "001001" => autoconfig_data <= "1100";
+				WHEN "001010" => autoconfig_data <= "0110";
+				WHEN "001011" => autoconfig_data <= "0011";
+				WHEN "010011" => autoconfig_data <= "1110";    --serial=1
+				WHEN OTHERS => null;
+			END CASE;
+		else
+			-- Zorro III RAM 256MB
+			CASE cpuaddr(6 downto 1) IS
+				WHEN "000000" => autoconfig_data <= "1010";    -- Zorro-III card, add mem, no ROM
+				WHEN "000001" => autoconfig_data <= "0100";    -- 256MB/extended
+				WHEN "000010" => autoconfig_data <= "1110";    -- ProductID=0x10 (only setting upper nibble)
+				WHEN "000100" => autoconfig_data <= "0000";    -- Memory card, not silenceable, Extended size, reserved.
+				WHEN "000101" => autoconfig_data <= "1111";    -- 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.
+				WHEN "001000" => autoconfig_data <= "1110";    -- Manufacturer ID: 0x139c
+				WHEN "001001" => autoconfig_data <= "1100";
+				WHEN "001010" => autoconfig_data <= "0110";
+				WHEN "001011" => autoconfig_data <= "0011";
+				WHEN "010011" => autoconfig_data <= "1011";    -- serial=4
+				WHEN OTHERS => null;
+			END CASE;
+		end if;
 	END IF;
 
 	IF rising_edge(clk) THEN
 		IF (reset='0' or nResetOut='0') THEN
-			autoconfig_out <= "001";    --autoconfig on
+			autoconfig_out <= "01";    --autoconfig on
 			turbochip_ena <= '0';  -- disable turbo_chipram until we know kickstart's running...
-			z2ram_ena <='0';
-			z3ram_ena0 <='0';
-			z3ram_ena1 <='0';
-			z3ram_ena2 <='0';
-			z3ram_base0<="00000001";
-			z3ram_base1<="0000001";
-			z3ram_base2<="0001";
+			z2ram_ena  <='0';
+			z3ram_ena  <='0';
+			z3ram_base <="0001";
 		ELSIF sel_autoconfig='1' AND state="11"AND uds_in='0' AND clkena='1' THEN
-			CASE cpuaddr(6 downto 1) IS
-				WHEN "100100" => -- Register 0x48 - config
-					IF autoconfig_out="001" THEN
-						z2ram_ena <= '1';
-						autoconfig_out<="010";
-					END IF;
-					turbochip_ena <= '1';  -- enable turbo_chipram after autoconfig has been done...
-								 -- FIXME - this is a hack to allow ROM overlay to work.
-				WHEN "100010" => -- Register 0x44, assign base address to ZIII RAM.
-					IF autoconfig_out="010" THEN
-						z3ram_base0<=data_write(15 downto 8);
-						z3ram_ena0 <='1';
-						if (fastramcfg = "100" OR fastramcfg = "110") then
-							autoconfig_out <= "011";
-						elsif (fastramcfg = "101") then
-							autoconfig_out <= "100";
-						else
-							autoconfig_out <= "000";
-						end if;
-					END IF;
-
-					IF autoconfig_out="011" THEN
-						z3ram_base1<=data_write(15 downto 9);
-						z3ram_ena1 <='1';
-						if (fastramcfg = "110") then
-							autoconfig_out <= "100";
-						else
-							autoconfig_out <= "000";
-						end if;
-					END IF;
-
-					IF autoconfig_out="100" THEN
-						z3ram_base2<=data_write(15 downto 12);
-						z3ram_ena2 <='1';
-						autoconfig_out <= "000";
-					END IF;
-				WHEN others =>
-					null;
-			END CASE;
+			if fastramcfg(2) = '0' then
+				if cpuaddr(6 downto 1) = "100100" then -- Register 0x48 - config, ZII RAM
+					z2ram_ena <= '1';
+					autoconfig_out<="00";
+					turbochip_ena <= '1'; -- enable turbo_chipram after autoconfig has been done...
+												 -- FIXME - this is a hack to allow ROM overlay to work.
+				end if;
+			else
+				if cpuaddr(6 downto 1) = "100010" then -- Register 0x44, assign base address to ZIII RAM.
+					z3ram_base <=data_write(15 downto 12);
+					z3ram_ena  <='1';
+					autoconfig_out <= "00";
+					turbochip_ena <= '1'; -- enable turbo_chipram after autoconfig has been done...
+												 -- FIXME - this is a hack to allow ROM overlay to work.
+				end if;
+			end if;
 		END IF;
 	END IF;
 END PROCESS;

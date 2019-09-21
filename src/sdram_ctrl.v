@@ -57,7 +57,7 @@ module sdram_ctrl
 	output reg [15:0] chipRD,
 	output     [47:0] chip48,
 	// cpu
-	input      [25:1] cpuAddr,
+	input      [22:1] cpuAddr,
 	input             cpuCS,
 	input       [1:0] cpustate,
 	input             cpuL,
@@ -76,15 +76,13 @@ assign dqm = sdaddr[12:11];
 localparam [1:0]
 	WAITING = 0,
 	WRITE1 = 1,
-	WRITE2 = 2,
-	WRITE3 = 3;
+	WRITE2 = 2;
 
 localparam [2:0]
-	REFRESH = 0,
+	IDLE = 0,
 	CHIP = 1,
 	CPU_READCACHE = 2,
-	CPU_WRITECACHE = 3,
-	IDLE = 4;
+	CPU_WRITECACHE = 3;
 
 localparam [3:0]
 	ph0 = 0,
@@ -138,7 +136,7 @@ assign reset_out = init_done;
 wire ccachehit;
 wire cache_req;
 wire snoop_act = ((sdram_state==ph2)&&(!chipRW));
-wire readcache_fill = (cache_fill_1 && slot1_type == CPU_READCACHE) || (cache_fill_2 && slot2_type == CPU_READCACHE);
+wire readcache_fill = (cache_fill && slot_type == CPU_READCACHE);
 
 cpu_cache_new cpu_cache
 (
@@ -171,7 +169,7 @@ cpu_cache_new cpu_cache
 reg        writebuffer_req;
 reg        writebuffer_ena;
 reg  [1:0] writebuffer_dqm;
-reg [25:1] writebufferAddr;
+reg [22:1] writebufferAddr;
 reg [15:0] writebufferWR;
 wire       writebuffer_cache_ack;
 reg        writebuffer_hold;
@@ -193,18 +191,18 @@ always @ (posedge sysclk) begin
 					writebuffer_req <= 1;
 					if(writebuffer_cache_ack) begin
 						writebuffer_ena   <= 1;
-						writebuffer_state <= WRITE2;
+						writebuffer_state <= WRITE1;
 					end
 				end
 			end
-			WRITE2 : begin
+			WRITE1 : begin
 				if(writebuffer_hold) begin
 					// The SDRAM controller has picked up the request
 					writebuffer_req   <= 0;
-					writebuffer_state <= WRITE3;
+					writebuffer_state <= WRITE2;
 				end
 			end
-			WRITE3 : begin
+			WRITE2 : begin
 				if(!writebuffer_hold) begin
 					// Wait for write cycle to finish, so it's safe to update the signals
 					writebuffer_state <= WAITING;
@@ -227,7 +225,7 @@ assign ramready = ccachehit || writebuffer_ena;
 reg [15:0] chip48_1, chip48_2, chip48_3;
 
 always @ (posedge sysclk) begin
-	if(slot1_type == CHIP) begin
+	if(slot_type == CHIP) begin
 		case(sdram_state)
 			ph9 : chipRD   <= sdata_reg;
 			ph10: chip48_1 <= sdata_reg;
@@ -252,7 +250,6 @@ always @ (posedge sysclk) begin
 	ena7WRreg <= 0;
 	if(reset_sdstate) begin
 		case(sdram_state) // LATENCY=3
-//			 ph0, ph2, ph4, ph6, ph8, ph10, ph12, ph14: cpuEN <= 1;
 			 ph2, ph6, ph10, ph14: cpuEN <= 1;
 		endcase
 		case(sdram_state) // LATENCY=3
@@ -290,29 +287,21 @@ always @ (posedge sysclk) begin
 	if(~old_7m & c_7m) sdram_state <= ph2;
 end
 
-reg cache_fill_1;
-reg cache_fill_2;
+reg cache_fill;
 always @ (posedge sysclk) begin
-	cache_fill_1 <= 0;
-	cache_fill_2 <= 0;
+	cache_fill <= 0;
 
 	if(init_done) begin
 		case(sdram_state)
-		   ph0, ph1,  ph2,  ph3: cache_fill_2 <= 1;
-		   ph8, ph9, ph10, ph11: cache_fill_1 <= 1;
+		   ph8, ph9, ph10, ph11: cache_fill <= 1;
 		endcase
 	end
 end
 
 
 //// sdram control ////
-// Address bits will be allocated as follows:
-// 24:23: bank
-// 22:10: row
-// 25,9:1: column
 
-reg  [2:0] slot1_type = IDLE;
-reg  [2:0] slot2_type = IDLE;
+reg  [2:0] slot_type = IDLE;
 reg [15:0] sdata_reg;
 
 always @ (posedge sysclk) begin
@@ -329,8 +318,9 @@ always @ (posedge sysclk) begin
 	sdata_reg                     <= sdata;
 
 	if(!init_done) begin
-		slot1_type                 <= IDLE;
-		slot2_type                 <= IDLE;
+		slot_type                  <= IDLE;
+		ba                         <= 0;
+		casaddr                    <= 0;
 		if(sdram_state == ph1) begin
 			sd_cs <= initstate[4];
 			case(initstate[3:0])
@@ -340,7 +330,7 @@ always @ (posedge sysclk) begin
 					sd_cas            <= 1;
 					sd_we             <= 0;
 				end
-				3,4,5,6,7,8,9,10,11,12 : begin // AUTOREFRESH
+				4,8 : begin // AUTOREFRESH
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 1;
@@ -359,21 +349,18 @@ always @ (posedge sysclk) begin
 
 		case(sdram_state)
 
-			// 25:23 : 000 for ROM, ChipRAM and SlowRAM only
-			//       : 100 also slower RAM 
-
-			// Access slot 1, RAS
+			// RAS
 			ph1 : begin
 				cas_sd_cas           <= 1;
 				cas_sd_we            <= 1;
 				cas_dqm              <= 0;
-				slot1_type           <= IDLE;
+				slot_type            <= IDLE;
 
 				// we give the chipset first priority
 				// (this includes anything on the "motherboard" - chip RAM, slow RAM and Kickstart, turbo modes notwithstanding)
 				if(!chip_dma || !chipRW) begin
-					slot1_type        <= CHIP;
-					{casaddr[9],ba,sdaddr,casaddr[8:0]} <= {3'b000,chipAddr};
+					slot_type         <= CHIP;
+					{sdaddr,casaddr[8:0]} <= chipAddr;
 					sd_ras            <= 0;
 					cas_dqm           <= {chipU,chipL};
 					cas_sd_cas        <= 0;
@@ -382,10 +369,10 @@ always @ (posedge sysclk) begin
 				end
 				// the Amiga CPU gets next bite of the cherry, unless the OSD CPU has been cycle-starved
 				// request from write buffer
-				else if(writebuffer_req && !writebufferAddr[24:23]) begin
+				else if(writebuffer_req) begin
 				// We only yield to the OSD CPU if it's both cycle-starved and ready to go.
-					slot1_type        <= CPU_WRITECACHE;
-					{casaddr[9],ba,sdaddr,casaddr[8:0]} <= writebufferAddr;
+					slot_type         <= CPU_WRITECACHE;
+					{sdaddr,casaddr[8:0]} <= writebufferAddr;
 					sd_ras            <= 0;
 					cas_dqm           <= writebuffer_dqm;
 					cas_sd_we         <= 0;
@@ -394,81 +381,34 @@ always @ (posedge sysclk) begin
 					datawr            <= writebufferWR;
 				end
 				// request from read cache
-				else if(cache_req && !cpuAddr[24:23]) begin
+				else if(cache_req) begin
 					// we only yield to the OSD CPU if it's both cycle-starved and ready to go
-					slot1_type        <= CPU_READCACHE;
-					{casaddr[9],ba,sdaddr,casaddr[8:0]} <= cpuAddr;
+					slot_type         <= CPU_READCACHE;
+					{sdaddr,casaddr[8:0]} <= cpuAddr;
 					sd_ras            <= 0;
 					cas_sd_cas        <= 0;
 				end
 				else begin
 					// REFRESH
-					slot1_type        <= REFRESH;
 					sd_ras            <= 0;
 					sd_cas            <= 0;
-					cas_dqm           <= 2'b11;
-				end
-			end
-
-			// Access slot 2, RAS
-			ph9 : begin
-				cas_sd_cas           <= 1;
-				cas_sd_we            <= 1;
-				cas_dqm              <= 0;
-				slot2_type           <= IDLE;
-
-				if(writebuffer_req && writebufferAddr[24:23]) begin
-					slot2_type        <= CPU_WRITECACHE;
-					{casaddr[9],ba,sdaddr,casaddr[8:0]} <= writebufferAddr;
-					sd_ras            <= 0;
-					cas_dqm           <= writebuffer_dqm;
-					cas_sd_we         <= 0;
-					cas_sd_cas        <= 0;
-					writebuffer_hold  <= 1; // let the write buffer know we're about to write
-					datawr            <= writebufferWR;
-				end
-				else if(cache_req && cpuAddr[24:23]) begin
-					slot2_type        <= CPU_READCACHE;
-					{casaddr[9],ba,sdaddr,casaddr[8:0]} <= cpuAddr;
-					sd_ras            <= 0;
-					cas_sd_cas        <= 0;
 				end
 			end
 
 			// CAS
-			ph4,ph12 : begin
-				sdaddr                <= {1'b1, casaddr}; // AUTO PRECHARGE
-				sd_cas                <= cas_sd_cas;
+			ph4 : begin
+				sdaddr               <= {1'b1, casaddr}; // AUTO PRECHARGE
+				sd_cas               <= cas_sd_cas;
 				if(!cas_sd_we) begin
-					sdata              <= datawr;
-					sdaddr[12:11]      <= cas_dqm;
-					sd_we              <= 0;
+					sdata             <= datawr;
+					sdaddr[12:11]     <= cas_dqm;
+					sd_we             <= 0;
 				end
-				writebuffer_hold      <= 0; // indicate to WriteBuffer that it's safe to accept the next write
+				writebuffer_hold     <= 0; // indicate to WriteBuffer that it's safe to accept the next write
 			end
 		endcase
 	end
 end
-
-
-//        Slot 1       Slot 2
-//        -----------  ----------
-// ph0    NOP          READ
-// ph1    RAS/REFRESH  READ
-// ph2    NOP          READ
-// ph3    NOP          READ
-// ph4    CAS/WRITE    NOP
-// ph5    NOP          NOP
-// ph6    NOP          NOP
-// ph7    NOP          NOP
-// ph8    READ         NOP
-// ph9    READ         RAS
-// ph10   READ         NOP
-// ph11   READ         NOP
-// ph12   NOP          CAS/WRITE
-// ph13   NOP          NOP
-// ph14   NOP          NOP
-// ph15   NOP          NOP
 
 
 endmodule
