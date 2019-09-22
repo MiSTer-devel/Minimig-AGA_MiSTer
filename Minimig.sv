@@ -129,75 +129,74 @@ assign BUTTONS = 0;
 ////////////////////////////////////////
 
 // clock
-wire           clk_mem;
-wire           clk_28;
-wire           pll_locked;
-wire           clk_7;
-wire           clk7_en;
-wire           clk7n_en;
-wire           c1;
-wire           c3;
-wire           cck;
-wire [ 10-1:0] eclk;
+wire        clk_mem;
+wire        clk_28;
+wire        pll_locked;
+wire        clk_7;
+wire        clk7_en;
+wire        clk7n_en;
+wire        c1;
+wire        c3;
+wire        cck;
+wire  [9:0] eclk;
 
 // tg68
-wire           tg68_rst;
-wire [ 16-1:0] tg68_dat_in;
-wire [ 16-1:0] tg68_dat_out;
-wire [ 32-1:0] tg68_adr;
-wire [  3-1:0] tg68_IPL;
-wire           tg68_dtack;
-wire           tg68_as;
-wire           tg68_uds;
-wire           tg68_lds;
-wire           tg68_rw;
-wire           tg68_ena7RD;
-wire           tg68_ena7WR;
-wire           tg68_cpuEN;
-wire [ 16-1:0] tg68_cout;
-wire           tg68_cpuena;
-wire [  4-1:0] cpu_config;
-wire [  7-1:0] memcfg;
-wire           turbochipram;
-wire           turbokick;
-wire           bootrom;   
-wire           cache_inhibit;
-wire [ 32-1:0] tg68_cad;
-wire [    1:0] tg68_cpustate;
-wire           tg68_ramcs;
-wire           tg68_nrst_out;
-wire           tg68_clds;
-wire           tg68_cuds;
-wire [  4-1:0] tg68_CACR_out;
-wire [ 32-1:0] tg68_VBR_out;
-//wire           tg68_ovr;
+wire        tg68_rst;
+wire [15:0] tg68_dat_in;
+wire [15:0] tg68_dat_out;
+wire [31:0] tg68_adr;
+wire  [2:0] tg68_IPL;
+wire        tg68_dtack;
+wire        tg68_as;
+wire        tg68_uds;
+wire        tg68_lds;
+wire        tg68_rw;
+wire        tg68_ena7RD;
+wire        tg68_ena7WR;
+wire        tg68_cpuEN;
+wire [15:0] tg68_cout;
+wire        tg68_cpuena;
+wire  [3:0] cpu_config;
+wire  [6:0] memcfg;
+wire        turbochipram;
+wire        turbokick;
+wire        bootrom;   
+wire        cache_inhibit;
+wire [31:0] tg68_cad;
+wire  [1:0] tg68_cpustate;
+wire        tg68_ramcs;
+wire        tg68_nrst_out;
+wire        tg68_clds;
+wire        tg68_cuds;
+wire  [3:0] tg68_CACR_out;
+wire [31:0] tg68_VBR_out;
 
 // minimig
-wire [ 16-1:0] ram_data;      // sram data bus
-wire [ 16-1:0] ramdata_in;    // sram data bus in
-wire [ 48-1:0] chip48;        // big chip read
-wire [ 24-1:1] ram_address;   // sram address bus
-wire           _ram_bhe;      // sram upper byte select
-wire           _ram_ble;      // sram lower byte select
-wire           _ram_we;       // sram write enable
-wire           _ram_oe;       // sram output enable
-wire [ 15-1:0] ldata;         // left DAC data
-wire [ 15-1:0] rdata;         // right DAC data
-wire           vs;
-wire           hs;
-wire     [1:0] ar;
+wire [15:0] ram_data;      // sram data bus
+wire [15:0] ramdata_in;    // sram data bus in
+wire [47:0] chip48;        // big chip read
+wire [23:1] ram_address;   // sram address bus
+wire        _ram_bhe;      // sram upper byte select
+wire        _ram_ble;      // sram lower byte select
+wire        _ram_we;       // sram write enable
+wire        _ram_oe;       // sram output enable
+wire [14:0] ldata;         // left DAC data
+wire [14:0] rdata;         // right DAC data
+wire        vs;
+wire        hs;
+wire  [1:0] ar;
 
-wire [   15:0] joya;
-wire [   15:0] joyb;
-wire [   15:0] joyc;
-wire [   15:0] joyd;
-wire [  8-1:0] kbd_mouse_data;
-wire           kbd_mouse_strobe;
-wire           kms_level;
-wire [  2-1:0] kbd_mouse_type;
-wire [  3-1:0] mouse_buttons;
-wire [  4-1:0] core_config;
-wire [   63:0] rtc;
+wire [15:0] joya;
+wire [15:0] joyb;
+wire [15:0] joyc;
+wire [15:0] joyd;
+wire  [7:0] kbd_mouse_data;
+wire        kbd_mouse_strobe;
+wire        kms_level;
+wire  [1:0] kbd_mouse_type;
+wire  [2:0] mouse_buttons;
+wire  [3:0] core_config;
+wire [63:0] rtc;
 
 
 
@@ -220,7 +219,6 @@ assign VGA_HS       = ~hs;
 assign VGA_VS       = ~vs;
 assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
-assign CLK_VIDEO    = clk_mem;
 assign CE_PIXEL     = ce_out;
 
 wire   IO_WAIT_UIO;
@@ -233,7 +231,8 @@ reg ce_out;
 always @(posedge CLK_VIDEO) begin
 	reg old_clk;
 	old_clk <= clk_28;
-	ce_out <= old_clk & ~clk_28;
+	ce_out <= 0;
+	if(old_clk & ~clk_28) ce_out <= ce_pix;
 end
 
 pll pll
@@ -242,6 +241,7 @@ pll pll
 	.outclk_0(clk_mem),
 	.outclk_1(SDRAM_CLK),
 	.outclk_2(clk_28),
+	.outclk_3(CLK_VIDEO),
 	.locked(pll_locked),
 
 	.phase_en(phase_en),
@@ -319,8 +319,8 @@ TG68K tg68k
 	.VBR_out      (tg68_VBR_out     )
 );
 
-wire [ 16-1:0] tg68_cout1;
-wire           tg68_ramready1;
+wire [15:0] tg68_cout1;
+wire        tg68_ramready1;
 sdram_ctrl ram1
 (
 	.sysclk       (clk_mem          ),
@@ -363,8 +363,8 @@ sdram_ctrl ram1
 	.chip48       (chip48           )
 );
 
-wire [ 16-1:0] tg68_cout2;
-wire           tg68_ramready2;
+wire [15:0] tg68_cout2;
+wire        tg68_ramready2;
 ddram_ctrl ram2
 (
 	.sysclk       (clk_mem          ),
@@ -458,7 +458,6 @@ minimig minimig
 	._cpu_reset   (tg68_rst         ), // M68K reset
 	._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
 	.cpu_vbr      (tg68_VBR_out     ), // M68K VBR
-//	.ovr          (tg68_ovr         ), // NMI override address decoding
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus
@@ -559,15 +558,15 @@ wire vblank = vbl | ~vs;
 reg  fhbl, fvbl, shbl, svbl;
 wire hbl = fhbl | shbl | ~hs;
 
-wire [1:0] res;
+wire  [1:0] res;
 
 wire sset;
 wire [11:0] shbl_l, shbl_r;
 wire [11:0] svbl_t, svbl_b;
 
-reg [11:0] hbl_l=0, hbl_r=0;
-reg [11:0] hsta, hend, hmax, hcnt;
-reg [11:0] hsize;
+reg  [11:0] hbl_l=0, hbl_r=0;
+reg  [11:0] hsta, hend, hmax, hcnt;
+reg  [11:0] hsize;
 always @(posedge clk_28) begin
 	reg old_hs;
 	reg old_hblank;

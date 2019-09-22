@@ -113,15 +113,9 @@ end
 
 assign reset_out = init_done;
 
-////////////////////////////////////////
 // cpu cache
-////////////////////////////////////////
-
 wire ccachehit;
 wire cache_req;
-wire snoop_act = ((sdram_state==2)&&(!chipRW));
-wire readcache_fill = (cache_fill && slot_type == CPU_READCACHE);
-
 cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                // clock
@@ -141,15 +135,26 @@ cpu_cache_new cpu_cache
 	.wb_en            (writebuffer_cache_ack), // writebuffer enable
 	.sdr_dat_r        (sdata_reg),             // sdram read data
 	.sdr_read_req     (cache_req),             // sdram read request from cache
-	.sdr_read_ack     (readcache_fill),        // sdram read acknowledge to cache
-	.snoop_act        (snoop_act),             // snoop act (write only - just update existing data in cache)
+	.sdr_read_ack     (cache_fill),            // sdram read acknowledge to cache
+	.snoop_act        (chipWE),                // snoop act (write only - just update existing data in cache)
 	.snoop_adr        (chipAddr),              // snoop address
 	.snoop_dat_w      (chipWR),                // snoop write data
 	.snoop_bs         ({!chipU, !chipL})       // snoop byte selects
 );
 
-//// writebuffer ////
-// write buffer, enables CPU to continue while a write is in progress
+reg cache_fill;
+always @ (posedge sysclk) begin
+	cache_fill <= 0;
+
+	if(init_done && slot_type == CPU_READCACHE) begin
+		case(sdram_state)
+		   8, 9, 10, 11: cache_fill <= 1;
+		endcase
+	end
+end
+
+
+// writebuffer: enables CPU to continue while a write is in progress
 reg        writebuffer_req;
 reg        writebuffer_ena;
 reg  [1:0] writebuffer_dqm;
@@ -271,22 +276,11 @@ always @ (posedge sysclk) begin
 	if(~old_7m & c_7m) sdram_state <= 2;
 end
 
-reg cache_fill;
-always @ (posedge sysclk) begin
-	cache_fill <= 0;
-
-	if(init_done) begin
-		case(sdram_state)
-		   8, 9, 10, 11: cache_fill <= 1;
-		endcase
-	end
-end
-
-
 //// sdram control ////
 
 reg  [2:0] slot_type = IDLE;
 reg [15:0] sdata_reg;
+reg        chipWE;
 
 always @ (posedge sysclk) begin
 	reg        cas_sd_cas;
@@ -301,6 +295,7 @@ always @ (posedge sysclk) begin
 	sd_we                         <= 1;
 	sdata                         <= 16'hZZZZ;
 	sdata_reg                     <= sdata;
+	chipWE                        <= 0;
 
 	if(!init_done) begin
 		slot_type                  <= IDLE;
@@ -350,6 +345,7 @@ always @ (posedge sysclk) begin
 					cas_sd_cas        <= 0;
 					cas_sd_we         <= chipRW;
 					datawr            <= chipWR;
+					chipWE            <= !chipRW;
 				end
 				else if(writebuffer_req) begin
 					slot_type         <= CPU_WRITECACHE;

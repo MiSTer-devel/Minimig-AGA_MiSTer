@@ -77,11 +77,9 @@ SIGNAL lds_s            : std_logic;
 SIGNAL lds_e            : std_logic;
 SIGNAL rw_s             : std_logic;
 SIGNAL rw_e             : std_logic;
-SIGNAL vpad             : std_logic;
 SIGNAL waitm            : std_logic;
 SIGNAL clkena_e         : std_logic;
 SIGNAL S_state          : std_logic_vector(1 downto 0);
-SIGNAL decode           : std_logic;
 SIGNAL wr               : std_logic;
 SIGNAL uds_in           : std_logic;
 SIGNAL lds_in           : std_logic;
@@ -91,9 +89,6 @@ SIGNAL sel_autoconfig   : std_logic;
 SIGNAL autoconfig_out   : std_logic_vector(1 downto 0); -- We use this as a counter since we have two cards to configure
 SIGNAL autoconfig_data  : std_logic_vector(3 downto 0);
 SIGNAL sel_ram          : std_logic;
-SIGNAL sel_slowram      : std_logic;
-signal sel_a0map        : std_logic;
---signal sel_cart         : std_logic;    
 SIGNAL sel_chipram      : std_logic;
 SIGNAL turbochip_ena    : std_logic := '0';
 SIGNAL turbochip_d      : std_logic := '0';
@@ -112,7 +107,6 @@ SIGNAL sel_z3ram1       : std_logic;
 SIGNAL sel_kickram      : std_logic;
 signal sel_kicklower    : std_logic;
 
-SIGNAL NMI_vector       : std_logic_vector(15 downto 0);
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
 SIGNAL sel_nmi_vector   : std_logic;
 SIGNAL en               : std_logic;
@@ -142,10 +136,10 @@ sel_z3ram1      <= '1' WHEN (cpuaddr(31 downto 28) = z3ram_base1) AND z3ram_ena1
 sel_z2ram       <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 21) = "001") OR (cpuaddr(23 downto 21) = "010") OR (cpuaddr(23 downto 21) = "011") OR (cpuaddr(23 downto 21) = "100")) AND z2ram_ena='1' ELSE '0';
 
 -- turbochip is off during boot overlay
-sel_chipram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 21)="000") AND turbochip_ena='1' AND turbochip_d='1' ELSE '0'; --$000000 - $1FFFFF
+sel_chipram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 21)="000") AND turbochip_d='1' ELSE '0'; --$000000 - $1FFFFF
 
 -- don't sel_kickram when writing (state = "11")
-sel_kickram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 19)="11111") OR (cpuaddr(23 downto 19)="11100"))  AND turbochip_ena='1' AND turbokick_d='1' and state /="11"  ELSE '0'; -- $f8xxxx, e0xxxx
+sel_kickram     <= '1' WHEN (cpuaddr(31 downto 24) = "00000000") AND ((cpuaddr(23 downto 19)="11111") OR (cpuaddr(23 downto 19)="11100"))  AND turbokick_d='1' and state /="11"  ELSE '0'; -- $f8xxxx, e0xxxx
 
 sel_kicklower   <= '1' when (cpuaddr(31 downto 24) = "00000000") AND (cpuaddr(23 downto 18)="111110") else '0';
 
@@ -273,7 +267,6 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	IF rising_edge(clk) THEN
 		IF (reset='0' or nResetOut='0') THEN
 			autoconfig_out <= "01";    --autoconfig on
-			turbochip_ena <= '0';  -- disable turbo_chipram until we know kickstart's running...
 			z2ram_ena  <='0';
 			z3ram_ena0 <='0';
 			z3ram_ena1 <='0';
@@ -284,8 +277,6 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 				if cpuaddr(6 downto 1) = "100100" then -- Register 0x48 - config, ZII RAM
 					z2ram_ena <= '1';
 					autoconfig_out<="00";
-					turbochip_ena <= '1'; -- enable turbo_chipram after autoconfig has been done...
-												 -- FIXME - this is a hack to allow ROM overlay to work.
 				end if;
 			else
 				if cpuaddr(6 downto 1) = "100010" then -- Register 0x44, assign base address to ZIII RAM.
@@ -298,7 +289,6 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 						z3ram_ena0     <= '1';
 						autoconfig_out <= "00";
 					end if;
-					turbochip_ena  <= '1';
 				end if;
 			end if;
 		END IF;
