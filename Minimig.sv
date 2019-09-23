@@ -227,13 +227,8 @@ assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
 
 assign CLK_SYS      = clk_28;
 
-reg ce_out;
-always @(posedge CLK_VIDEO) begin
-	reg old_clk;
-	old_clk <= clk_28;
-	ce_out <= 0;
-	if(old_clk & ~clk_28) ce_out <= ce_pix;
-end
+reg ce_out = 0;
+always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
 
 pll pll
 (
