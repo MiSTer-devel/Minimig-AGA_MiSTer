@@ -2148,14 +2148,34 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 						setstackaddr <= '1';
 						if opcode(2) = '1' then
 						  set(directCCR) <= '1';
+						  next_micro_state <= rtr1;
 						else
 						  set(directSR) <= '1';
+						  next_micro_state <= rte1;
 						end if;
-						next_micro_state <= rte1;
 					  end if;
 					else
 					  trap_priv <= '1';
 					  trapmake <= '1';
+					end if;
+
+				  when "1110100" => --rtd
+					if VBR_Stackframe = 0 or (cpu(0) = '0' and VBR_Stackframe = 2) then
+					  trap_illegal <= '1';
+					  trapmake <= '1';
+					else
+					  datatype <= "10";
+					  set_exec(opcADD) <= '1'; --for displacement
+					  set_exec(Regwrena) <= '1';
+					  set(no_Flags) <= '1';
+					  if decodeOPC = '1' then
+						setstate <= "10";
+						set(postadd) <= '1';
+						setstackaddr <= '1';
+						set(direct_delta) <= '1';
+						set(directPC) <= '1';
+						next_micro_state <= rtd1;
+					  end if;
 					end if;
 
 				  when "1110101" => --rts
@@ -3041,6 +3061,15 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		writeSR <= '1';
 		next_micro_state <= trap3;
 
+	  when rtr1 => -- RTR
+		datatype <= "10";
+		setstate <= "10";
+		set(postadd) <= '1';
+		setstackaddr <= '1';
+		set(direct_delta) <= '1';
+		set(directPC) <= '1';
+		next_micro_state <= nopnop;
+
 										-- return from exception - RTE
 										-- fetch PC and status register from stack
 										-- 010+ fetches another word containing
@@ -3091,6 +3120,15 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 										end if;
 					WHEN rte5 =>            -- RTE
 					next_micro_state <= nop;
+
+	  when rtd1 => -- RTD
+		set(store_ea_data) <= '1';
+		next_micro_state <= rtd2;
+
+	  when rtd2 => -- RTD
+		setstackaddr <= '1';
+		set(ea_data_OP2) <= '1';
+
 	  when movec1 => -- MOVEC
 		set(briefext) <= '1';
 		set_writePCbig <= '1';
