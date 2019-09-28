@@ -2456,6 +2456,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 				setstate <= "10";
 				set(update_ld) <= '1';
 				set(postadd) <= '1';
+				if opcode(2 downto 0) = "111" then
+				  set(use_SP) <= '1';
+				end if;
 				next_micro_state <= cmpm;
 			  end if;
 			  set_exec(ea_data_OP1) <= '1';
@@ -2650,7 +2653,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	  end if;
 	end if;
 
-	-- use for ABCD, SBCD
+	-- use for ABCD, SBCD, ADDX, SUBX
 	if build_bcd = '1' then
 	  set_exec(use_XZFlag) <= '1';
 	  set_exec(ea_data_OP1) <= '1';
@@ -2661,6 +2664,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		  setstate <= "10";
 		  set(update_ld) <= '1';
 		  set(presub) <= '1';
+		  if opcode(2 downto 0) = "111" then
+			set(use_SP) <= '1';
+		  end if;
 		  next_micro_state <= op_AxAy;
 		  dest_areg <= '1'; --???
 		end if;
@@ -2952,6 +2958,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	  when op_AxAy => -- op -(Ax),-(Ay)
 		set_direct_data <= '1';
 		set(presub) <= '1';
+		if opcode(11 downto 9) = "111" then
+		  set(use_SP) <= '1';
+		end if;
 		dest_hbits <= '1';
 		dest_areg <= '1';
 		setstate <= "10";
@@ -2959,6 +2968,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	  when cmpm => -- cmpm (Ay)+,(Ax)+
 		set_direct_data <= '1';
 		set(postadd) <= '1';
+		if opcode(11 downto 9) = "111" then
+		  set(use_SP) <= '1';
+		end if;
 		dest_hbits <= '1';
 		dest_areg <= '1';
 		setstate <= "10";
