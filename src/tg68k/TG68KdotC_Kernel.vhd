@@ -25,8 +25,7 @@
 
 -- to do 68010:
 -- (MOVEC)
--- BKPT
--- RTD
+-- BKPT (with debug hardware attached)
 -- MOVES
 --
 -- to do 68020:
@@ -48,6 +47,7 @@
 -- LINK long
 -- MULS.L, MULU.L
 -- extb.l
+-- RTD
 
 library ieee;
 use ieee.std_logic_1164.ALL;
@@ -1936,8 +1936,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 					if opcode(5 downto 3) = "000" then --swap
 					  set_exec(opcSWAP) <= '1';
 					  set_exec(Regwrena) <= '1';
-					elsif opcode(5 downto 3) = "001" then --bkpt
-
+					elsif opcode(5 downto 3) = "001" then --bkpt (TODO: behavior with debug HW attached)
+					  trap_illegal <= '1';
+					  trapmake <= '1';
 					else --pea
 					  ea_only <= '1';
 					  ea_build_now <= '1';
