@@ -13,6 +13,7 @@ create_generated_clock -source [get_pins -compatibility_mode {pll_hdmi|pll_hdmi_
 create_generated_clock -source [get_pins -compatibility_mode {*|pll|pll_inst|altera_pll_i|*[1].*|divclk}] \
                        -name SDRAM_CLK [get_ports {SDRAM_CLK}]
 
+
 derive_clock_uncertainty
 
 set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 4
@@ -38,29 +39,34 @@ set_output_delay -min -clock SDRAM_CLK -0.9ns [get_ports {SDRAM_D* SDRAM_A* SDRA
 
 # Decouple different clock groups (to simplify routing)
 set_clock_groups -exclusive \
-   -group [get_clocks { *|pll|pll_inst|altera_pll_i|*[*].*|divclk }] \
-   -group [get_clocks { pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk HDMI_CLK}] \
+   -group [get_clocks { *|pll|pll_inst|altera_pll_i|*[*].*|divclk}] \
+   -group [get_clocks { pll_hdmi|pll_hdmi_inst|altera_pll_i|*[0].*|divclk}] \
    -group [get_clocks { *|h2f_user0_clk}] \
    -group [get_clocks { FPGA_CLK1_50 }] \
    -group [get_clocks { FPGA_CLK2_50 }] \
    -group [get_clocks { FPGA_CLK3_50 }]
 
-#set_false_path -from [get_clocks {SDRAM_CLK}] -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[*].*|divclk}]
+set_output_delay -max -clock HDMI_CLK 4.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
+set_output_delay -min -clock HDMI_CLK 3.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
 
-set_output_delay -max -clock HDMI_CLK 3.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
-set_output_delay -min -clock HDMI_CLK 2.0ns [get_ports {HDMI_TX_D[*] HDMI_TX_DE HDMI_TX_HS HDMI_TX_VS}]
-
-# Put constraints on input ports
 set_false_path -from [get_ports {KEY*}]
 set_false_path -from [get_ports {BTN_*}]
-
-# Put constraints on output ports
 set_false_path -to [get_ports {LED_*}]
 set_false_path -to [get_ports {VGA_*}]
 set_false_path -to [get_ports {AUDIO_SPDIF}]
 set_false_path -to [get_ports {AUDIO_L}]
 set_false_path -to [get_ports {AUDIO_R}]
-
 set_false_path -to {cfg[*]}
 set_false_path -from {cfg[*]}
 set_false_path -to {wcalc[*] hcalc[*]}
+
+set_multicycle_path -to {*_osd|osd_vcnt*} -setup 2
+set_multicycle_path -to {*_osd|osd_vcnt*} -hold 2
+set_false_path -to {*_osd|v_cnt*}
+set_false_path -to {*_osd|v_osd_start*}
+set_false_path -to {*_osd|h_osd_start*}
+set_false_path -from {*_osd|v_osd_start*}
+set_false_path -from {*_osd|h_osd_start*}
+set_false_path -from {*_osd|rot*}
+set_false_path -from {*_osd|dsp_width*}
+set_false_path -to {*_osd|half}
