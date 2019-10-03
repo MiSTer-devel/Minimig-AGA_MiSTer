@@ -328,7 +328,7 @@ begin
   ------------------------------------------------------------------------------
   --ALU
   ------------------------------------------------------------------------------
-  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lpt, niba_lc, niba_lca, nibs_hc, nibs_h, nibs_l, nibs_lc, nibs_lca, Flags)
+  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lpt, niba_lc, niba_lca, nibs_hc, nibs_h, nibs_l, nibs_lc, nibs_lca, Flags, exe_opcode)
   begin
 	if exe_opcode(7 downto 6) = "01" then
 	  -- PACK
