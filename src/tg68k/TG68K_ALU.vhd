@@ -461,7 +461,7 @@ begin
   -- the extracted data it determines the highest bit setin the result
   
   process (clk, bf_ins, bf_bchg, bf_bset, bf_exts, bf_extu, bf_set2, OP1out, OP2out, result_tmp, bf_ext_in,
-           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width)
+           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width, bf_loff_dir)
   begin
 	if rising_edge(clk) then
 	  if clkena_lw = '1' then
