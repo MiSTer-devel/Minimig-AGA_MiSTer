@@ -92,12 +92,15 @@ architecture logic of TG68K_ALU IS
   signal niba_l      : std_logic_vector(5 downto 0);
   signal niba_h      : std_logic_vector(5 downto 0);
   signal niba_lc     : std_logic;
+  signal niba_lca    : std_logic;
+  signal niba_lpt    : std_logic;
   signal niba_hc     : std_logic;
   signal bcda_lc     : std_logic;
   signal bcda_hc     : std_logic;
   signal nibs_l      : std_logic_vector(5 downto 0);
   signal nibs_h      : std_logic_vector(5 downto 0);
   signal nibs_lc     : std_logic;
+  signal nibs_lca    : std_logic_vector(4 downto 0);
   signal nibs_hc     : std_logic;
 
   signal bcd_a       : std_logic_vector(8 downto 0);
@@ -325,7 +328,7 @@ begin
   ------------------------------------------------------------------------------
   --ALU
   ------------------------------------------------------------------------------
-  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lc, nibs_hc, nibs_h, nibs_l, nibs_lc, Flags, exe_opcode)
+  process (OP1out, OP2out, pack_a, niba_hc, niba_h, niba_l, niba_lpt, niba_lc, niba_lca, nibs_hc, nibs_h, nibs_l, nibs_lc, nibs_lca, Flags)
   begin
 	if exe_opcode(7 downto 6) = "01" then
 	  -- PACK
@@ -337,17 +340,22 @@ begin
 	  pack_out <= std_logic_vector(unsigned(OP1out(15 downto 0)) + unsigned(pack_a));
 	end if;
 	--BCD_ARITH-------------------------------------------------------------------
-	--ADC
-	bcd_a <= niba_hc & (niba_h(4 downto 1) + ('0', niba_hc, niba_hc, '0')) & (niba_l(4 downto 1) + ('0', niba_lc, niba_lc, '0'));
+	--ABCD
+	bcd_a <= niba_hc & (niba_h(4 downto 1) + ('0', niba_hc, niba_hc, niba_lca)) & (niba_l(4 downto 1) + ('0', niba_lc, niba_lc, '0'));
+
 	niba_l <= ('0' & OP1out(3 downto 0) & '1') + ('0' & OP2out(3 downto 0) & Flags(4));
-	niba_lc <= niba_l(5) OR (niba_l(4) and niba_l(3)) OR (niba_l(4) and niba_l(2));
+	niba_lpt <= (niba_l(4) and niba_l(3)) OR (niba_l(4) and niba_l(2));
+	niba_lc <= niba_l(5) OR niba_lpt;
+	niba_lca <= niba_l(5) and niba_lpt;
 
 	niba_h <= ('0' & OP1out(7 downto 4) & '1') + ('0' & OP2out(7 downto 4) & niba_lc);
 	niba_hc <= niba_h(5) OR (niba_h(4) and niba_h(3)) OR (niba_h(4) and niba_h(2));
-	--SBC
-	bcd_s <= nibs_hc & (nibs_h(4 downto 1) - ('0', nibs_hc, nibs_hc, '0')) & (nibs_l(4 downto 1) - ('0', nibs_lc, nibs_lc, '0'));
+	--SBCD
+	bcd_s <= nibs_hc & (nibs_h(4 downto 1) - ('0', nibs_hc, nibs_hc, nibs_lca(4))) & nibs_lca(3 downto 0);
+
 	nibs_l <= ('0' & OP1out(3 downto 0) & '0') - ('0' & OP2out(3 downto 0) & Flags(4));
 	nibs_lc <= nibs_l(5);
+	nibs_lca <= '0' & nibs_l(4 downto 1) - ('0', '0', nibs_lc, nibs_lc, '0');
 
 	nibs_h <= ('0' & OP1out(7 downto 4) & '0') - ('0' & OP2out(7 downto 4) & nibs_lc);
 	nibs_hc <= nibs_h(5);
@@ -453,7 +461,7 @@ begin
   -- the extracted data it determines the highest bit setin the result
   
   process (clk, bf_ins, bf_bchg, bf_bset, bf_exts, bf_extu, bf_set2, OP1out, OP2out, result_tmp, bf_ext_in,
-           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width, bf_loff_dir)
+           datareg, bf_NFlag, result, reg_QB, sign, bf_d32, copy, bf_loffset, bf_width)
   begin
 	if rising_edge(clk) then
 	  if clkena_lw = '1' then
@@ -709,8 +717,10 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 	  set_flags <= OP1in(7) & flag_z(0) & addsub_ofl(0) & c_out(0);
 	  if exec(opcABCD) = '1' then
 		set_flags(0) <= bcd_a(8);
+		set_flags(1) <= '0';
 	  elsif exec(opcSBCD) = '1' then
 		set_flags(0) <= bcd_s(8);
+		set_flags(1) <= '0';
 	  end if;
 	elsif exe_datatype = "10" OR exec(opcCPMAW) = '1' then --Long
 	  set_flags <= OP1in(31) & flag_z(2) & addsub_ofl(2) & c_out(2);

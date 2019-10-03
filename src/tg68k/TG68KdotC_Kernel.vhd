@@ -2138,7 +2138,6 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 					  if stop = '1' then
 						skipFetch <= '1';
 					  end if;
-
 					end if;
 
 				  when "1110011" | "1110111" => --rte/rtr
@@ -2384,6 +2383,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 				setstate <= "10";
 				set(update_ld) <= '1';
 				set(presub) <= '1';
+				if opcode(2 downto 0) = "111" then
+				  set(use_SP) <= '1';
+				end if;
 				next_micro_state <= pack1;
 				dest_areg <= '1'; --???
 			  end if;
@@ -3316,6 +3318,9 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		  datatype <= "00";
 		end if;
 		set(presub) <= '1';
+		if opcode(11 downto 9) = "111" then
+		  set(use_SP) <= '1';
+		end if;
 		setstate <= "11";
 		dest_hbits <= '1';
 		dest_areg <= '1';
