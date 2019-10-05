@@ -40,7 +40,6 @@ module userio (
 	input [ 15:0] 	     _joy1, // joystick 1 in (default mouse port)
 	input [ 15:0] 	     _joy2, // joystick 2 in (default joystick port)
 	input [ 3-1:0] 	     mouse_btn,
-	input 		     kbd_mouse_strobe,
 	input 		     kms_level,
 	input [ 2-1:0] 	     kbd_mouse_type,
 	input [ 8-1:0] 	     kbd_mouse_data,

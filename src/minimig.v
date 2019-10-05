@@ -200,7 +200,6 @@ module minimig
 	input  [15:0] _joy3,       // joystick 3 [fire2,fire,up,down,left,right]
 	input  [15:0] _joy4,       // joystick 4 [fire2,fire,up,down,left,right]
 	input   [2:0] mouse_btn,   // mouse buttons
-	input 	     kbd_mouse_strobe,
 	input 	     kms_level,
 	input   [1:0] kbd_mouse_type,
 	input   [7:0] kbd_mouse_data,
@@ -571,7 +570,6 @@ userio USERIO1
 	._joy2(_joy2),
 	.mouse_btn(mouse_btn),
 	.kbd_mouse_type(kbd_mouse_type),
-	.kbd_mouse_strobe(kbd_mouse_strobe),
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
 	.aud_mix(aud_mix),
@@ -654,7 +652,6 @@ ciaa CIAA1
 	.porta_out({_fire1_dat,_fire0_dat,_led,ovl}),
 	.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]}),
 	.kbd_mouse_type(kbd_mouse_type),
-	.kbd_mouse_strobe(kbd_mouse_strobe),
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
 	.freeze(freeze),

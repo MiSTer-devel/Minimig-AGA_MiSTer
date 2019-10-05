@@ -423,7 +423,6 @@ hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.MOUSE_BUTTONS(mouse_buttons),
 	.KBD_MOUSE_DATA(kbd_mouse_data),
 	.KBD_MOUSE_TYPE(kbd_mouse_type),
-	.KBD_MOUSE_STROBE(kbd_mouse_strobe),
 	.KMS_LEVEL(kms_level),
 	.RTC(rtc)
 );
@@ -484,7 +483,6 @@ minimig minimig
 	.mouse_btn    (mouse_buttons    ), // mouse buttons
 	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
 	.kbd_mouse_type (kbd_mouse_type ), // type of data
-	.kbd_mouse_strobe (kbd_mouse_strobe), // kbd/mouse data strobe
 	.kms_level    (kms_level        ),
 	.pwr_led      (LED_POWER[0]     ), // power led
 	.fdd_led      (LED_USER         ),
@@ -621,14 +619,12 @@ always @(posedge clk_sys) begin
 	hde <= ~hbl;
 end
 
-wire adj_stb = kbd_mouse_strobe && (kbd_mouse_type==3);
-
 always @(posedge clk_sys) begin
-	reg old_stb;
+	reg old_level;
 	reg alt = 0;
 
-	old_stb <= adj_stb;
-	if(~old_stb & adj_stb) begin
+	old_level <= kms_level;
+	if((old_level ^ kms_level) && (kbd_mouse_type==3)) begin
 		if(kbd_mouse_data == 'h41) begin //backspace
 			vbl_t <= 0; vbl_b <= 0;
 			hbl_l <= 0; hbl_r <= 0;

@@ -96,7 +96,6 @@ module ciaa
 	output [3:0] porta_out,     // porta out
 	input  [7:0] portb_in,      // portb in
 	input        keyboard_disabled,  // disable keystrokes
-	input        kbd_mouse_strobe,
 	input        kms_level,
 	input  [1:0] kbd_mouse_type,
 	input  [7:0] kbd_mouse_data,
@@ -170,10 +169,10 @@ assign keystrobe = keystrobe_reg && ((kbd_mouse_type == 2) || (kbd_mouse_type ==
 
 // generate a keystrobe which is valid exactly one clk cycle
 always @(posedge clk) begin
-	reg kbd_mouse_strobeD;
+	reg kms_levelD;
 	if (clk7n_en) begin
-		kbd_mouse_strobeD <= kbd_mouse_strobe;
-		keystrobe_reg <= kbd_mouse_strobe && !kbd_mouse_strobeD;
+		kms_levelD <= kms_level;
+		keystrobe_reg <= kms_level ^ kms_levelD;
 	end
 end
 
