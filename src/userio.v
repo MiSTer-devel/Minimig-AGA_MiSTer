@@ -44,7 +44,6 @@ module userio (
 	input 		     kms_level,
 	input [ 2-1:0] 	     kbd_mouse_type,
 	input [ 8-1:0] 	     kbd_mouse_data,
-	output reg 	     keyboard_disabled, // disables Amiga keyboard while OSD is active
 	output reg [1:0] aud_mix,
 	input 		     IO_ENA,
 	input 		     IO_STROBE,
@@ -394,7 +393,6 @@ reg [5:0] cmd;
 
 // reg selects
 wire reset_ctrl_sel   = (cmd == 6'b0000_10); // XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
-wire osd_ctrl_sel     = (cmd == 6'b0010_10); // XXXXXXKE || osd control     | K - disable Amiga keyboard, E - enable OSD
 wire chip_cfg_sel     = (cmd == 6'b0000_01); // XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
 wire cpu_cfg_sel      = (cmd == 6'b0001_01); // XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
 wire memory_cfg_sel   = (cmd == 6'b0010_01); // XHFFSSCC || memory config   | H - HRTmon, FF - fast, SS - slow, CC - chip
@@ -448,7 +446,6 @@ always @(posedge clk) begin
 
 			if(!bcnt) begin
 				if (reset_ctrl_sel)   {cpuhlt, cpurst, usrrst} <= IO_DIN[2:0];
-				if (osd_ctrl_sel)     keyboard_disabled <= IO_DIN[1];
 				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[4:0];
 				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[3:0];
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];

@@ -49,10 +49,8 @@ reg  [1:0] rot = 0;
 always@(posedge clk_sys) begin
 	reg [12:0] bcnt;
 	reg  [7:0] cmd;
-	reg  [2:0] pcnt;
 	reg        has_cmd;
 	reg        old_strobe;
-	reg        osd_en;
 	reg        highres = 0;
 
 	osd_t <= rot[0] ? OSD_WIDTH : (OSD_HEIGHT<<1);
@@ -60,44 +58,42 @@ always@(posedge clk_sys) begin
 	osd_w <= rot[0] ? (info ? infoh : (OSD_HEIGHT<<highres)) : (info ? infow : OSD_WIDTH);
 
 	old_strobe <= io_strobe;
-	osd_status <= 0;
 
 	if(~io_osd) begin
 		bcnt <= 0;
-		pcnt <= 0;
 		has_cmd <= 0;
 		cmd <= 0;
-		if(cmd == 'h28) osd_enable <= osd_en;
+		if(cmd[7:4] == 4) osd_enable <= cmd[0];
 	end else begin
 		if(~old_strobe & io_strobe) begin
 			if(!has_cmd) begin
 				has_cmd <= 1;
 				cmd <= io_din[7:0];
-				bcnt <= 0;
-			end else begin
-				if(cmd == 'h0c && pcnt<4) begin
-					pcnt <= pcnt + 1'd1;
-
-					// OSD_CMD_OSD_WR: set write address
-					if(pcnt == 3) begin
-						bcnt <= {io_din[3:0], 8'h00};
-						if(io_din[3]) highres <= 1;
-					end
-				end else begin
-
-					// OSD_CMD_OSD: enable/disable
-					if(cmd == 'h28) begin
-						if(bcnt == 0) begin osd_en <= io_din[0]; info <= io_din[2]; if(~io_din[0]) highres <= 0; end
-						if(bcnt == 1) infox <= io_din[11:0];
-						if(bcnt == 2) infoy <= io_din[11:0];
-						if(bcnt == 3) infow <= {io_din[5:0], 3'b000};
-						if(bcnt == 4) infoh <= {io_din[5:0], 3'b000};
-						if(bcnt == 5) rot   <= io_din[1:0];
-					end
-					// OSD_CMD_OSD_WR
-					if(cmd == 'h0c) osd_buffer[bcnt] <= io_din[7:0];
-					bcnt <= bcnt + 1'd1;
+				// command 0x40: OSDCMDENABLE, OSDCMDDISABLE
+				if(io_din[7:4] == 4) begin
+					if(!io_din[0]) {osd_status,highres} <= 0;
+					else {osd_status,info} <= {~io_din[2],io_din[2]};
+					bcnt  <= 0;
 				end
+				// command 0x20: OSDCMDWRITE
+				if(io_din[7:5] == 'b001) begin
+					if(io_din[3]) highres <= 1;
+					bcnt <= {io_din[4:0], 8'h00};
+				end
+			end else begin
+				// command 0x40: OSDCMDENABLE, OSDCMDDISABLE
+				if(cmd[7:4] == 4) begin
+					if(bcnt == 0) infox <= io_din[11:0];
+					if(bcnt == 1) infoy <= io_din[11:0];
+					if(bcnt == 2) infow <= {io_din[5:0], 3'b000};
+					if(bcnt == 3) infoh <= {io_din[5:0], 3'b000};
+					if(bcnt == 4) rot   <= io_din[1:0];
+				end
+
+				// command 0x20: OSDCMDWRITE
+				if(cmd[7:5] == 'b001) osd_buffer[bcnt] <= io_din[7:0];
+
+				bcnt <= bcnt + 1'd1;
 			end
 		end
 	end

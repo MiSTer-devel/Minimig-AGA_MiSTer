@@ -398,8 +398,6 @@ wire        hdd_data_rd;		//data port read strobe
 
 wire	[7:0] bank;					//memory bank select
 
-wire        keyboard_disabled;//disables Amiga keyboard while OSD is active
-
 reg         ntsc = NTSC;		//PAL/NTSC video mode selection
 
 // host interface
@@ -576,7 +574,6 @@ userio USERIO1
 	.kbd_mouse_strobe(kbd_mouse_strobe),
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
-	.keyboard_disabled(keyboard_disabled),
 	.aud_mix(aud_mix),
 	.IO_ENA(IO_OSD),
 	.IO_STROBE(IO_STROBE),
@@ -661,7 +658,6 @@ ciaa CIAA1
 	.kbd_mouse_strobe(kbd_mouse_strobe),
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
-	.keyboard_disabled(keyboard_disabled),
 	.freeze(freeze),
 	.hrtmon_en (memory_config[6])
 );

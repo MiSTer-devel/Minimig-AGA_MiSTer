@@ -15,4 +15,5 @@ set_global_assignment -name VERILOG_FILE src/minimig_sram_bridge.v
 set_global_assignment -name VERILOG_FILE src/minimig_m68k_bridge.v
 set_global_assignment -name VERILOG_FILE src/minimig_bankmapper.v
 set_global_assignment -name VERILOG_FILE src/minimig.v
+set_global_assignment -name SDC_FILE Minimig.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Minimig.sv
