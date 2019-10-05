@@ -1,6 +1,6 @@
 //============================================================================
 //
-//  MiSTer hardware abstraction module (Minimig version)
+//  MiSTer hardware abstraction module
 //  (c)2017-2019 Alexey Melnikov
 //
 //  This program is free software; you can redistribute it and/or modify it
@@ -213,9 +213,9 @@ end
 wire [31:0] gp_in = {1'b0, btn_user | btn[1], btn_osd | btn[0], SW[3], 8'd0, io_ver, io_ack, io_wide, io_dout};
 wire [31:0] gp_out;
 
-wire  [1:0] io_ver    = 0; // Only for generic cores: 0 - standard MiST I/O (for quick porting of complex MiST cores). 1 - optimized HPS I/O. 2,3 - reserved for future.
+wire  [1:0] io_ver = 1; // 0 - standard MiST I/O (for quick porting of complex MiST cores). 1 - optimized HPS I/O. 2,3 - reserved for future.
 wire        io_wait;
-wire        io_wide   = 0; // io_wide valid only for generic cores.
+wire        io_wide;
 wire [15:0] io_dout;                  
 wire [15:0] io_din = gp_outr[15:0];
 wire        io_clk = gp_outr[17];
@@ -246,7 +246,11 @@ always @(posedge clk_sys) begin
 	gp_outd <= gp_out;
 end
 
-wire  [7:0] core_type  = 'hA5; // Minimig V2
+`ifdef DUAL_SDRAM
+	wire  [7:0] core_type  = 'hA8; // generic core, dual SDRAM.
+`else
+	wire  [7:0] core_type  = 'hA4; // generic core.
+`endif
 
 // HPS will not communicate to core if magic is different
 wire [31:0] core_magic = {24'h5CA623, core_type};
@@ -1105,16 +1109,7 @@ emu emu
 (
 	.CLK_50M(FPGA_CLK2_50),
 	.RESET(reset),
-
-	.CLK_SYS(clk_sys),
-	.CLK_100(clk_100m),
-	.IO_UIO(io_uio),
-	.IO_FPGA(io_fpga),
-	.IO_STROBE(io_strobe),
-	.IO_WAIT(io_wait),
-	.IO_DIN(io_din),
-	.IO_DOUT(io_dout),
-	.HDMI_VS(HDMI_TX_VS),
+	.HPS_BUS({f1, HDMI_TX_VS, clk_100m, clk_vid, ce_pix, de_emu, hs_fix, vs_fix, io_wait, clk_sys, io_fpga, io_uio, io_strobe, io_wide, io_din, io_dout}),
 
 	.CLK_VIDEO(clk_vid),
 	.CE_PIXEL(ce_pix),

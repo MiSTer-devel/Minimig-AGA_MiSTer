@@ -14,16 +14,8 @@ module emu
 	//Can be used as initial reset.
 	input         RESET,
 	
-	//Used as clock for IO_* signals in top module
-	output        CLK_SYS,
-	input         CLK_100,
-	input         IO_UIO,
-	input         IO_FPGA,
-	input         IO_STROBE,
-	output        IO_WAIT,
-	input  [15:0] IO_DIN,
-	output [15:0] IO_DOUT,
-	input         HDMI_VS,
+	//Must be passed to hps_io module
+	inout  [45:0] HPS_BUS,
 	
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -123,13 +115,20 @@ assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign BUTTONS = 0;
 
 
+`include "build_id.v" 
+localparam CONF_STR = {
+	"MINIMIG;;",
+	"V,v",`BUILD_DATE
+};
+
+
 ////////////////////////////////////////
 // internal signals                   //
 ////////////////////////////////////////
 
 // clock
 wire        clk_mem;
-wire        clk_28;
+wire        clk_sys;
 wire        pll_locked;
 wire        clk_7;
 wire        clk7_en;
@@ -220,8 +219,6 @@ assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
 assign CE_PIXEL     = ce_out;
 
-assign CLK_SYS      = clk_28;
-
 reg ce_out = 0;
 always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
 
@@ -230,12 +227,12 @@ pll pll
 	.refclk(CLK_50M),
 	.outclk_0(clk_mem),
 	.outclk_1(SDRAM_CLK),
-	.outclk_2(clk_28),
+	.outclk_2(clk_sys),
 	.outclk_3(CLK_VIDEO),
 	.locked(pll_locked),
 
 	.phase_en(phase_en),
-	.scanclk(clk_28),
+	.scanclk(clk_sys),
 	.updn(updn),
 	.cntsel(1),
 	.phase_done(phase_done)
@@ -244,7 +241,7 @@ pll pll
 wire phase_en, updn, phase_done;
 phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 (
-	.clk(clk_28),
+	.clk(clk_sys),
 	.pll_locked(pll_locked),
 
 	.phase_en(phase_en),
@@ -257,7 +254,7 @@ phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 //// amiga clocks ////
 amiga_clk amiga_clk
 (
-	.clk_28       (clk_28           ), // input  clock c1 ( 28.687500MHz)
+	.clk_28       (clk_sys          ), // input  clock c1 ( 28.687500MHz)
 	.clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
 	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
 	.clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
@@ -388,31 +385,36 @@ ddram_ctrl ram2
 assign tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
 assign tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
-wire   IO_WAIT_UIO;
-wire   IO_WAIT_MM;
-assign IO_WAIT = IO_WAIT_UIO | IO_WAIT_MM;
-assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
-
 wire [15:0] uio_dout;
 wire [15:0] fpga_dout;
 wire        ce_pix;
 wire [15:0] sdram_sz;
 wire  [1:0] buttons;
 
-hps_io hps_io
+wire        io_strobe;
+wire        io_wait;
+wire        io_fpga;
+wire        io_uio;
+wire [15:0] io_din;
+
+hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
 	.*,
 
-	.clk(clk_28),
+	.clk_sys(clk_sys),
+	.conf_str(CONF_STR),
 
-	.IO_ENA(IO_UIO),
-	.IO_STROBE(IO_STROBE),
-	.IO_WAIT(IO_WAIT_UIO),
-	.IO_DIN(IO_DIN),
-	.IO_DOUT(uio_dout),
+	.IO_STROBE(io_strobe),
+	.IO_DIN(io_din),
+	.UIO_ENA(io_uio),
+	.FPGA_ENA(io_fpga),
+	.FPGA_DOUT(fpga_dout),
+	.FPGA_WAIT(io_wait),
 	
+	.ce_pix(ce_pix),
+
 	.BUTTONS(buttons),
-	.CONF(),
+	.new_vmode(),
 
 	.JOY0(joya),
 	.JOY1(joyb),
@@ -423,16 +425,7 @@ hps_io hps_io
 	.KBD_MOUSE_TYPE(kbd_mouse_type),
 	.KBD_MOUSE_STROBE(kbd_mouse_strobe),
 	.KMS_LEVEL(kms_level),
-	.RTC(rtc),
-
-	.clk_100(CLK_100),
-	.clk_vid(clk_28),
-	.ce_pix(ce_pix),
-	.de(VGA_DE),
-	.hs(~hs),
-	.vs(~vs),
-	.vs_hdmi(HDMI_VS),
-	.f1(VGA_F1)
+	.RTC(rtc)
 );
 
 //// minimig top ////
@@ -465,7 +458,7 @@ minimig minimig
 	//system  pins
 	.rst_ext      (buttons[1]       ), // reset from ctrl block
 	.rst_out      (                 ), // minimig reset status
-	.clk          (clk_28           ), // output clock c1 ( 28.687500MHz)
+	.clk          (clk_sys           ), // output clock c1 ( 28.687500MHz)
 	.clk7_en      (clk7_en          ), // 7MHz clock enable
 	.clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
 	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
@@ -499,11 +492,11 @@ minimig minimig
 	.rtc          (rtc              ),
 
 	//host controller interface (SPI)
-	.IO_UIO       (IO_UIO           ),
-	.IO_FPGA      (IO_FPGA          ),
-	.IO_STROBE    (IO_STROBE        ),
-	.IO_WAIT      (IO_WAIT_MM       ),
-	.IO_DIN       (IO_DIN           ),
+	.IO_UIO       (io_uio           ),
+	.IO_FPGA      (io_fpga          ),
+	.IO_STROBE    (io_strobe        ),
+	.IO_WAIT      (io_wait          ),
+	.IO_DIN       (io_din           ),
 	.IO_DOUT      (fpga_dout        ),
 
 	//video
@@ -560,7 +553,7 @@ wire [11:0] svbl_t, svbl_b;
 reg  [11:0] hbl_l=0, hbl_r=0;
 reg  [11:0] hsta, hend, hmax, hcnt;
 reg  [11:0] hsize;
-always @(posedge clk_28) begin
+always @(posedge clk_sys) begin
 	reg old_hs;
 	reg old_hblank;
 
@@ -587,7 +580,7 @@ end
 reg [11:0] vbl_t=0, vbl_b=0;
 reg [11:0] vsta, vend, vmax, f1_vend, f1_vsize, vcnt;
 reg [11:0] vsize;
-always @(posedge clk_28) begin
+always @(posedge clk_sys) begin
 	reg old_vs;
 	reg old_vblank, old_hs, old_hbl;
 
@@ -630,7 +623,7 @@ end
 
 wire adj_stb = kbd_mouse_strobe && (kbd_mouse_type==3);
 
-always @(posedge clk_28) begin
+always @(posedge clk_sys) begin
 	reg old_stb;
 	reg alt = 0;
 
@@ -677,7 +670,7 @@ reg [11:0] scr_hsize, scr_vsize;
 reg  [1:0] scr_res;
 reg  [6:0] scr_flg;
 
-always @(posedge clk_28) begin
+always @(posedge clk_sys) begin
 	reg old_vblank;
 
 	old_vblank <= vblank;
