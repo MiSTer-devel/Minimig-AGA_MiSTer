@@ -210,7 +210,7 @@ module minimig
 	input  [63:0] rtc,
 
 	//host controller interface (SPI)
-	input 	     IO_OSD,
+	input 	     IO_UIO,
 	input 	     IO_FPGA,
 	input 	     IO_STROBE,
 	output 	     IO_WAIT,
@@ -353,9 +353,9 @@ wire        hbl, hde;
 assign      hblank = blver ? ~hde : hbl;
 
 wire        IO_WAIT_PAULA, IO_WAIT_OSD;
-wire [15:0] IO_DOUT_PAULA, IO_DOUT_OSD;
+wire [15:0] IO_DOUT_PAULA;
 
-assign      IO_DOUT = IO_DOUT_PAULA | IO_DOUT_OSD;
+assign      IO_DOUT = IO_DOUT_PAULA;
 assign      IO_WAIT = IO_WAIT_PAULA | IO_WAIT_OSD;
 
 //--------------------------------------------------------------------------------------
@@ -575,11 +575,10 @@ userio USERIO1
 	.kms_level(kms_level),
 	.kbd_mouse_data(kbd_mouse_data), 
 	.aud_mix(aud_mix),
-	.IO_ENA(IO_OSD),
+	.IO_ENA(IO_UIO),
 	.IO_STROBE(IO_STROBE),
 	.IO_WAIT(IO_WAIT_OSD),
 	.IO_DIN(IO_DIN),
-	.IO_DOUT(IO_DOUT_OSD),
 	.memory_config(memory_config),
 	.chipset_config(chipset_config),
 	.floppy_config(floppy_config),

@@ -1110,7 +1110,6 @@ emu emu
 	.CLK_100(clk_100m),
 	.IO_UIO(io_uio),
 	.IO_FPGA(io_fpga),
-	.IO_OSD(io_osd_hdmi),
 	.IO_STROBE(io_strobe),
 	.IO_WAIT(io_wait),
 	.IO_DIN(io_din),

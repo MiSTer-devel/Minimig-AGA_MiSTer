@@ -49,7 +49,6 @@ module userio (
 	input 		     IO_STROBE,
 	output reg 	     IO_WAIT,
 	input [15:0] 	     IO_DIN,
-	output reg [15:0]    IO_DOUT,
 	output reg [ 8-1:0]  memory_config,
 	output reg [ 5-1:0]  chipset_config,
 	output reg [ 4-1:0]  floppy_config,
@@ -389,22 +388,19 @@ always @(posedge clk) begin
 	end
 end
 
-reg [5:0] cmd;
+reg [7:0] cmd;
 
 // reg selects
-wire reset_ctrl_sel   = (cmd == 6'b0000_10); // XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
-wire chip_cfg_sel     = (cmd == 6'b0000_01); // XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
-wire cpu_cfg_sel      = (cmd == 6'b0001_01); // XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
-wire memory_cfg_sel   = (cmd == 6'b0010_01); // XHFFSSCC || memory config   | H - HRTmon, FF - fast, SS - slow, CC - chip
-wire video_cfg_sel    = (cmd == 6'b0011_01); // DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
-wire floppy_cfg_sel   = (cmd == 6'b0100_01); // XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
-wire harddisk_cfg_sel = (cmd == 6'b0101_01); // XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
-wire joystick_cfg_sel = (cmd == 6'b0110_01); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
-wire mem_write_sel    = (cmd == 6'b0001_11); // A_A_A_A B,B,... || write system memory, A - 32 bit memory address, B - variable number of bytes
-wire version_sel      = (cmd == 6'b1000_10); // read RTL version
-wire aud_sel          = (cmd == 6'b0111_01);
-
-`include "minimig_version.vh"
+wire mem_write_sel    = (cmd[3:0] == 0); // A_A_A_A B,B,... || write system memory, A - 32 bit memory address, B - variable number of bytes
+wire reset_ctrl_sel   = (cmd[3:0] == 1); // XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
+wire aud_sel          = (cmd[3:0] == 2);
+wire chip_cfg_sel     = (cmd[3:0] == 3); // XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
+wire cpu_cfg_sel      = (cmd[3:0] == 4); // XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
+wire memory_cfg_sel   = (cmd[3:0] == 5); // XHFFSSCC || memory config   | H - HRTmon, FF - fast, SS - slow, CC - chip
+wire video_cfg_sel    = (cmd[3:0] == 6); // DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
+wire floppy_cfg_sel   = (cmd[3:0] == 7); // XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
+wire harddisk_cfg_sel = (cmd[3:0] == 8); // XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
+wire joystick_cfg_sel = (cmd[3:0] == 9); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
 
 always @(posedge clk) begin
 	reg       has_cmd;
@@ -414,14 +410,13 @@ always @(posedge clk) begin
 	reg [2:0] bcnt;
 
 	old_ack <= host_ack;
-        if (old_ack & ~host_ack) begin
+	if (old_ack & ~host_ack) begin
 		IO_WAIT  <= 0;
 		host_adr <= host_adr + 24'd2;
 	end
 
 	if(~IO_ENA) begin
 		IO_WAIT <= 0;
-		IO_DOUT <= 0;
 		has_cmd <= 0;
 		mrx     <= 0;
 		bcnt    <= 0;
@@ -429,20 +424,9 @@ always @(posedge clk) begin
 	end
 	else if(IO_STROBE) begin
 		has_cmd <= 1;
-		if(~has_cmd) cmd <= IO_DIN[7:2];
-		else begin
+		if(~has_cmd) cmd <= IO_DIN[7:0];
+		else if(&cmd[7:4]) begin
 			if(~bcnt[2]) bcnt <= bcnt + 1'd1;
-
-			IO_DOUT <= 0;
-			if(version_sel) begin
-				IO_DOUT <= 0;
-				case (bcnt)
-					0 : IO_DOUT <= BETA_FLAG;
-					1 : IO_DOUT <= MAJOR_VER;
-					2 : IO_DOUT <= MINOR_VER;
-					3 : IO_DOUT <= MINION_VER;
-				endcase
-			end
 
 			if(!bcnt) begin
 				if (reset_ctrl_sel)   {cpuhlt, cpurst, usrrst} <= IO_DIN[2:0];

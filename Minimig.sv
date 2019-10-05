@@ -19,7 +19,6 @@ module emu
 	input         CLK_100,
 	input         IO_UIO,
 	input         IO_FPGA,
-	input         IO_OSD,
 	input         IO_STROBE,
 	output        IO_WAIT,
 	input  [15:0] IO_DIN,
@@ -221,10 +220,6 @@ assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
 assign CE_PIXEL     = ce_out;
 
-wire   IO_WAIT_UIO;
-wire   IO_WAIT_MM;
-assign IO_WAIT      = IO_WAIT_UIO | IO_WAIT_MM;
-
 assign CLK_SYS      = clk_28;
 
 reg ce_out = 0;
@@ -240,7 +235,7 @@ pll pll
 	.locked(pll_locked),
 
 	.phase_en(phase_en),
-	.scanclk(CLK_SYS),
+	.scanclk(clk_28),
 	.updn(updn),
 	.cntsel(1),
 	.phase_done(phase_done)
@@ -249,7 +244,7 @@ pll pll
 wire phase_en, updn, phase_done;
 phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 (
-	.clk(CLK_SYS),
+	.clk(clk_28),
 	.pll_locked(pll_locked),
 
 	.phase_en(phase_en),
@@ -393,6 +388,9 @@ ddram_ctrl ram2
 assign tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
 assign tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
+wire   IO_WAIT_UIO;
+wire   IO_WAIT_MM;
+assign IO_WAIT = IO_WAIT_UIO | IO_WAIT_MM;
 assign IO_DOUT = IO_UIO ? uio_dout : fpga_dout;
 
 wire [15:0] uio_dout;
@@ -501,7 +499,7 @@ minimig minimig
 	.rtc          (rtc              ),
 
 	//host controller interface (SPI)
-	.IO_OSD       (IO_OSD           ),
+	.IO_UIO       (IO_UIO           ),
 	.IO_FPGA      (IO_FPGA          ),
 	.IO_STROBE    (IO_STROBE        ),
 	.IO_WAIT      (IO_WAIT_MM       ),
