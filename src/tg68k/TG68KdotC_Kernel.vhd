@@ -126,6 +126,9 @@ architecture logic of TG68KdotC_Kernel is
 
   type regfile_t is ARRAY(0 TO 15) OF std_logic_vector(31 downto 0);
   signal regfile                : regfile_t := (OTHERS => (OTHERS => '0')); -- mikej stops sim X issues;
+  attribute ramstyle            : string;
+  attribute ramstyle of regfile : signal is "logic";
+
   signal RDindex_A              : integer range 0 TO 15;
   signal RDindex_B              : integer range 0 TO 15;
 
