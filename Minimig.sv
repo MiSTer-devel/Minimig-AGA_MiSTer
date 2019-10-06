@@ -117,95 +117,51 @@ assign BUTTONS = 0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"MINIMIG;;",
+	"Minimig;;",
 	"V,v",`BUILD_DATE
 };
 
+wire [15:0] JOY0;
+wire [15:0] JOY1;
+wire [15:0] JOY2;
+wire [15:0] JOY3;
+wire  [7:0] KBD_MOUSE_DATA;
+wire        KMS_LEVEL;
+wire  [1:0] KBD_MOUSE_TYPE;
+wire  [2:0] MOUSE_BUTTONS;
+wire [63:0] RTC;
 
-////////////////////////////////////////
-// internal signals                   //
-////////////////////////////////////////
+wire [15:0] uio_dout;
+wire [15:0] fpga_dout;
+wire        ce_pix;
+wire [15:0] sdram_sz;
+wire  [1:0] buttons;
 
-// clock
-wire        clk_mem;
-wire        clk_sys;
-wire        pll_locked;
-wire        clk_7;
-wire        clk7_en;
-wire        clk7n_en;
-wire        c1;
-wire        c3;
-wire        cck;
-wire  [9:0] eclk;
+wire        io_strobe;
+wire        io_wait;
+wire        io_fpga;
+wire        io_uio;
+wire [15:0] io_din;
 
-// tg68
-wire        tg68_rst;
-wire [15:0] tg68_dat_in;
-wire [15:0] tg68_dat_out;
-wire [31:0] tg68_adr;
-wire  [2:0] tg68_IPL;
-wire        tg68_dtack;
-wire        tg68_as;
-wire        tg68_uds;
-wire        tg68_lds;
-wire        tg68_rw;
-wire        tg68_ena7RD;
-wire        tg68_ena7WR;
-wire        tg68_cpuEN;
-wire [15:0] tg68_cout;
-wire        tg68_cpuena;
-wire  [3:0] cpu_config;
-wire  [6:0] memcfg;
-wire        turbochipram;
-wire        turbokick;
-wire        bootrom;   
-wire        cache_inhibit;
-wire [31:0] tg68_cad;
-wire  [1:0] tg68_cpustate;
-wire        tg68_ramcs;
-wire        tg68_nrst_out;
-wire        tg68_clds;
-wire        tg68_cuds;
-wire  [3:0] tg68_CACR_out;
-wire [31:0] tg68_VBR_out;
+hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
+(
+	.*,
+	.conf_str(CONF_STR),
 
-// minimig
-wire [15:0] ram_data;      // sram data bus
-wire [15:0] ramdata_in;    // sram data bus in
-wire [47:0] chip48;        // big chip read
-wire [23:1] ram_address;   // sram address bus
-wire        _ram_bhe;      // sram upper byte select
-wire        _ram_ble;      // sram lower byte select
-wire        _ram_we;       // sram write enable
-wire        _ram_oe;       // sram output enable
-wire [14:0] ldata;         // left DAC data
-wire [14:0] rdata;         // right DAC data
-wire        vs;
-wire        hs;
-wire  [1:0] ar;
-
-wire [15:0] joya;
-wire [15:0] joyb;
-wire [15:0] joyc;
-wire [15:0] joyd;
-wire  [7:0] kbd_mouse_data;
-wire        kbd_mouse_strobe;
-wire        kms_level;
-wire  [1:0] kbd_mouse_type;
-wire  [2:0] mouse_buttons;
-wire  [3:0] core_config;
-wire [63:0] rtc;
+	.IO_STROBE(io_strobe),
+	.IO_DIN(io_din),
+	.UIO_ENA(io_uio),
+	.FPGA_ENA(io_fpga),
+	.FPGA_DOUT(fpga_dout),
+	.FPGA_WAIT(io_wait),
+	
+	.BUTTONS(buttons),
+	.new_vmode()
+);
 
 
-
-////////////////////////////////////////
-// toplevel assignments               //
-////////////////////////////////////////
-
-// SDRAM
 assign SDRAM_CKE    = 1;
 
-// AUDIO
 assign AUDIO_L      = {ldata, 1'b0};
 assign AUDIO_R      = {rdata, 1'b0};
 assign AUDIO_S      = 1;
@@ -221,6 +177,10 @@ assign CE_PIXEL     = ce_out;
 
 reg ce_out = 0;
 always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
+
+wire clk_mem;
+wire clk_sys;
+wire pll_locked;
 
 pll pll
 (
@@ -252,6 +212,14 @@ phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 );
 
 //// amiga clocks ////
+wire        clk_7;
+wire        clk7_en;
+wire        clk7n_en;
+wire        c1;
+wire        c3;
+wire        cck;
+wire  [9:0] eclk;
+
 amiga_clk amiga_clk
 (
 	.clk_28       (clk_sys          ), // input  clock c1 ( 28.687500MHz)
@@ -265,8 +233,30 @@ amiga_clk amiga_clk
 	.locked       (pll_locked       )  // pll locked output
 );
 
-wire DDR_EN = tg68_cad[29];
-wire SDR_EN = ~tg68_cad[29];
+wire        cache_inhibit;
+wire [31:0] tg68_cad;
+wire  [1:0] tg68_cpustate;
+wire        tg68_ramcs;
+wire        tg68_nrst_out;
+wire        tg68_clds;
+wire        tg68_cuds;
+wire  [3:0] tg68_CACR_out;
+wire [31:0] tg68_VBR_out;
+wire        tg68_rst;
+wire [15:0] tg68_dat_in;
+wire [15:0] tg68_dat_out;
+wire [31:0] tg68_adr;
+wire  [2:0] tg68_IPL;
+wire        tg68_dtack;
+wire        tg68_as;
+wire        tg68_uds;
+wire        tg68_lds;
+wire        tg68_rw;
+wire        tg68_ena7RD;
+wire        tg68_ena7WR;
+wire        tg68_cpuEN;
+wire [15:0] tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
+wire        tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
 TG68K tg68k
 (
@@ -291,7 +281,6 @@ TG68K tg68k
 	.turbokick    (turbokick        ),
 	.cache_inhibit(cache_inhibit    ),
 	.fastramcfg   (memcfg[6:4]      ),
-//	.ovr          (tg68_ovr         ), 
 	.bootrom      (bootrom          ),
 	.ramaddr      (tg68_cad         ),
 	.ramcs        (tg68_ramcs       ),
@@ -299,12 +288,14 @@ TG68K tg68k
 	.ramlds       (tg68_clds        ),
 	.ramuds       (tg68_cuds        ),
  
-
 	//custom CPU signals
 	.cpustate     (tg68_cpustate    ),
 	.CACR_out     (tg68_CACR_out    ),
 	.VBR_out      (tg68_VBR_out     )
 );
+
+wire DDR_EN = tg68_cad[29];
+wire SDR_EN = ~tg68_cad[29];
 
 wire [15:0] tg68_cout1;
 wire        tg68_ramready1;
@@ -382,52 +373,27 @@ ddram_ctrl ram2
 	.ramready     (tg68_ramready2   )
 );
 
-assign tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
-assign tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
-
-wire [15:0] uio_dout;
-wire [15:0] fpga_dout;
-wire        ce_pix;
-wire [15:0] sdram_sz;
-wire  [1:0] buttons;
-
-wire        io_strobe;
-wire        io_wait;
-wire        io_fpga;
-wire        io_uio;
-wire [15:0] io_din;
-
-hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
-(
-	.*,
-
-	.clk_sys(clk_sys),
-	.conf_str(CONF_STR),
-
-	.IO_STROBE(io_strobe),
-	.IO_DIN(io_din),
-	.UIO_ENA(io_uio),
-	.FPGA_ENA(io_fpga),
-	.FPGA_DOUT(fpga_dout),
-	.FPGA_WAIT(io_wait),
-	
-	.ce_pix(ce_pix),
-
-	.BUTTONS(buttons),
-	.new_vmode(),
-
-	.JOY0(joya),
-	.JOY1(joyb),
-	.JOY2(joyc),
-	.JOY3(joyd),
-	.MOUSE_BUTTONS(mouse_buttons),
-	.KBD_MOUSE_DATA(kbd_mouse_data),
-	.KBD_MOUSE_TYPE(kbd_mouse_type),
-	.KMS_LEVEL(kms_level),
-	.RTC(rtc)
-);
 
 //// minimig top ////
+wire  [3:0] cpu_config;
+wire  [6:0] memcfg;
+wire        turbochipram;
+wire        turbokick;
+wire        bootrom;   
+wire [15:0] ram_data;      // sram data bus
+wire [15:0] ramdata_in;    // sram data bus in
+wire [47:0] chip48;        // big chip read
+wire [23:1] ram_address;   // sram address bus
+wire        _ram_bhe;      // sram upper byte select
+wire        _ram_ble;      // sram lower byte select
+wire        _ram_we;       // sram write enable
+wire        _ram_oe;       // sram output enable
+wire [14:0] ldata;         // left DAC data
+wire [14:0] rdata;         // right DAC data
+wire        vs;
+wire        hs;
+wire  [1:0] ar;
+
 minimig minimig
 (
 	//m68k pins
@@ -476,18 +442,18 @@ minimig minimig
 	.ri           (1                ), // RS232 Ring Indicator
 
 	//I/O
-	._joy1        (~joya            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
-	._joy2        (~joyb            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
-	._joy3        (~joyc            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right]
-	._joy4        (~joyd            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right]
-	.mouse_btn    (mouse_buttons    ), // mouse buttons
-	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
-	.kbd_mouse_type (kbd_mouse_type ), // type of data
-	.kms_level    (kms_level        ),
+	._joy1        (~JOY0            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
+	._joy2        (~JOY1            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
+	._joy3        (~JOY2            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right]
+	._joy4        (~JOY3            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right]
+	.mouse_btn    (MOUSE_BUTTONS    ), // mouse buttons
+	.kbd_mouse_data (KBD_MOUSE_DATA ), // mouse direction data, keycodes
+	.kbd_mouse_type (KBD_MOUSE_TYPE ), // type of data
+	.kms_level    (KMS_LEVEL        ),
 	.pwr_led      (LED_POWER[0]     ), // power led
 	.fdd_led      (LED_USER         ),
 	.hdd_led      (LED_DISK[0]      ),
-	.rtc          (rtc              ),
+	.rtc          (RTC              ),
 
 	//host controller interface (SPI)
 	.IO_UIO       (io_uio           ),
@@ -623,32 +589,32 @@ always @(posedge clk_sys) begin
 	reg old_level;
 	reg alt = 0;
 
-	old_level <= kms_level;
-	if((old_level ^ kms_level) && (kbd_mouse_type==3)) begin
-		if(kbd_mouse_data == 'h41) begin //backspace
+	old_level <= KMS_LEVEL;
+	if((old_level ^ KMS_LEVEL) && (KBD_MOUSE_TYPE==3)) begin
+		if(KBD_MOUSE_DATA == 'h41) begin //backspace
 			vbl_t <= 0; vbl_b <= 0;
 			hbl_l <= 0; hbl_r <= 0;
 		end
-		else if(kbd_mouse_data == 'h4c) begin //up
+		else if(KBD_MOUSE_DATA == 'h4c) begin //up
 			if(alt) vbl_b <= vbl_b + 1'd1;
 			else    vbl_t <= vbl_t + 1'd1;
 		end
-		else if(kbd_mouse_data == 'h4d) begin //down
+		else if(KBD_MOUSE_DATA == 'h4d) begin //down
 			if(alt) vbl_b <= vbl_b - 1'd1;
 			else    vbl_t <= vbl_t - 1'd1;
 		end
-		else if(kbd_mouse_data == 'h4f) begin //left
+		else if(KBD_MOUSE_DATA == 'h4f) begin //left
 			if(alt) hbl_r <= hbl_r + 3'd4;
 			else    hbl_l <= hbl_l + 3'd4;
 		end
-		else if(kbd_mouse_data == 'h4e) begin //right
+		else if(KBD_MOUSE_DATA == 'h4e) begin //right
 			if(alt) hbl_r <= hbl_r - 3'd4;
 			else    hbl_l <= hbl_l - 3'd4;
 		end
-		else if(kbd_mouse_data == 'h64 || kbd_mouse_data == 'h65) begin //alt press
+		else if(KBD_MOUSE_DATA == 'h64 || KBD_MOUSE_DATA == 'h65) begin //alt press
 			alt <= 1;
 		end
-		else if(kbd_mouse_data == 'hE4 || kbd_mouse_data == 'hE5) begin //alt release
+		else if(KBD_MOUSE_DATA == 'hE4 || KBD_MOUSE_DATA == 'hE5) begin //alt release
 			alt <= 0;
 		end
 	end
