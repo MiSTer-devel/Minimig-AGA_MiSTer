@@ -9,7 +9,7 @@ module amiga_clk
   output       clk7n_en,   // 7MHz negedge output clock enable (on 28MHz clock domain)
   output reg   c1,         // clk28m clock domain signal synchronous with clk signal
   output reg   c3,         // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
-  output       cck,        // colour clock output (3.54 MHz)
+  output reg   cck,        // colour clock output (3.54 MHz)
   output [9:0] eclk,       // 0.709379 MHz clock enable output (clk domain pulse)
   input        locked      // PLL locked output
 );
@@ -20,18 +20,22 @@ module amiga_clk
 reg [1:0] clk7_cnt = 2'b10;
 reg       clk7_en_reg = 1'b1;
 reg       clk7n_en_reg = 1'b1;
+reg [9:0] shifter;
 always @ (posedge clk_28, negedge locked) begin
   if (!locked) begin
     clk7_cnt     <= 2'b10;
     clk7_en_reg  <= 1'b1;
     clk7n_en_reg <= 1'b1;
+	 cck          <= 1;
+	 shifter      <= 1;
   end else begin
     clk7_cnt     <= clk7_cnt + 2'b01;
     clk7_en_reg  <= (clk7_cnt == 2'b00);
     clk7n_en_reg <= (clk7_cnt == 2'b10);
 	 if(clk7_cnt == 2'b01) begin
-		if (e_cnt == 9) e_cnt <= 0;
-			else e_cnt <= e_cnt + 1'd1;
+		cck <= ~cck;
+		shifter <= {shifter[8:0],shifter[9]};
+		if(!shifter) shifter <= 1;
 	 end
   end
 end
@@ -57,24 +61,7 @@ always @(posedge clk_28) c3 <= clk_7;
 // clk28m clock domain signal synchronous with clk signal
 always @(posedge clk_28) c1 <= ~c3;
 
-// counter used to generate e clock enable
-reg [3:0] e_cnt = 4'b0000;
-
-// CCK clock output
-assign cck = ~e_cnt[0];
-
 // 0.709379 MHz clock enable output (clk domain pulse)
-assign eclk[0] = (e_cnt == 0);
-assign eclk[1] = (e_cnt == 1);
-assign eclk[2] = (e_cnt == 2);
-assign eclk[3] = (e_cnt == 3);
-assign eclk[4] = (e_cnt == 4);
-assign eclk[5] = (e_cnt == 5);
-assign eclk[6] = (e_cnt == 6);
-assign eclk[7] = (e_cnt == 7);
-assign eclk[8] = (e_cnt == 8);
-assign eclk[9] = (e_cnt == 9);
-
+assign eclk = shifter;
 
 endmodule
-
