@@ -109,7 +109,6 @@ signal sel_kicklower    : std_logic;
 
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
 SIGNAL sel_nmi_vector   : std_logic;
-SIGNAL en               : std_logic;
 
 BEGIN
 
@@ -295,16 +294,7 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	END IF;
 END PROCESS;
 
-clkena <= '1' when (clkena_in='1' AND en='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1')) else '0';
-
-PROCESS (clk) BEGIN
-	IF rising_edge(clk) THEN
-		en <= not en;
-		if(ena7RDreg='1') then
-			en <= '0';
-		end if;
-	END IF;
-END PROCESS;
+clkena <= '1' when (clkena_in='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1')) else '0';
 
 PROCESS (clk) BEGIN
 	IF rising_edge(clk) THEN
