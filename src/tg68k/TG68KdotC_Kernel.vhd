@@ -696,7 +696,7 @@ begin
 		elsif micro_state = trap0 then
 		  -- this is only active for 010+ since in 000 writePC is
 		  -- true in state trap0
-		  if trap_trace='1' then
+		  if trap_trace='1' or set_exec(opcTRAPV) = '1' then
 			-- stack frame format #2
 			data_write_tmp(15 downto 0) <= "0010" & trap_vector(11 downto 0); --TH
 		  else
@@ -1286,10 +1286,10 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
   -- decode opcode
   -----------------------------------------------------------------------------
   process(clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state, decodeOPC, state, setexecOPC, Flags, FlagsSR, direct_data, build_logical,
-	build_bcd, set_Z_error, trapd, movem_run, last_data_read, set, set_V_Flag, z_error, trap_trace, trap_interrupt,
+	build_bcd, set_Z_error, trapd, movem_run, last_data_in, last_data_read, set, set_V_Flag, z_error, trap_trace, trap_interrupt,
 	SVmode, preSVmode, stop, long_done, ea_only, setstate, execOPC, exec_write_back, exe_datatype,
-	datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, last_data_in,
-	long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr)
+	datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr,
+	long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr, trap_trapv)
   begin
 	TG68_PC_brw        <= '0';
 	setstate           <= "00";
@@ -1361,7 +1361,11 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	end case;
 
 	if trapmake = '1' and trapd = '0' then
-	  next_micro_state <= trap0;
+	  if trap_trapv = '1' and (VBR_Stackframe = 1 or (cpu(0) = '1' and VBR_Stackframe = 2)) then
+		next_micro_state <= trap00;
+	  else
+		next_micro_state <= trap0;
+	  end if;
 	  if VBR_Stackframe = 0 or (cpu(0) = '0' and VBR_Stackframe = 2) then
 		set(writePC_add) <= '1';
 		-- set_datatype <= "10";
@@ -2190,6 +2194,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 					end if;
 
 				  when "1110110" => --trapv
+					set_exec(opcTRAPV) <= '1';
 					if decodeOPC = '1' then
 					  setstate <= "01";
 					end if;

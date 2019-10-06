@@ -111,8 +111,9 @@ package TG68K_Pack is
 	constant opcBF          : integer := 76; --
 	constant opcBFwb        : integer := 77; --
 	constant opcPACK        : integer := 78; --
+	constant opcTRAPV       : integer := 79; --
 
-	constant lastOpcBit     : integer := 78;
+	constant lastOpcBit     : integer := 79;
 
 	type rTG68K_opc is record
 	   opcMOVE        : bit;
@@ -194,6 +195,7 @@ package TG68K_Pack is
 	   opcBF          : bit;
 	   opcBFwb        : bit;
 	   opcPACK        : bit;
+	   opcTRAPV       : bit;
 	end record;
 
 	component TG68K_ALU
