@@ -32,18 +32,16 @@ entity TG68K is
   port(
     clk           : in      std_logic;
     reset         : in      std_logic;
-    clkena_in     : in      std_logic:='1';
+    ce_7          : in      std_logic:='1';
     IPL           : in      std_logic_vector(2 downto 0):="111";
     dtack         : in      std_logic;
     addr          : buffer  std_logic_vector(31 downto 0);
     data_read     : in      std_logic_vector(15 downto 0);
     data_write    : buffer  std_logic_vector(15 downto 0);
-    as            : out     std_logic;
+    as            : buffer  std_logic;
     uds           : out     std_logic;
     lds           : out     std_logic;
     rw            : out     std_logic;
-    ena7RDreg     : in      std_logic:='1';
-    ena7WRreg     : in      std_logic:='1';
     fromram       : in      std_logic_vector(15 downto 0);
     ramready      : in      std_logic:='0';
     cpu           : in      std_logic_vector(1 downto 0);
@@ -69,16 +67,8 @@ ARCHITECTURE logic OF TG68K IS
 SIGNAL cpuaddr          : std_logic_vector(31 downto 0);
 SIGNAL r_data           : std_logic_vector(15 downto 0);
 SIGNAL cpuIPL           : std_logic_vector(2 downto 0);
-SIGNAL as_s             : std_logic;
-SIGNAL as_e             : std_logic;
-SIGNAL uds_s            : std_logic;
-SIGNAL uds_e            : std_logic;
-SIGNAL lds_s            : std_logic;
-SIGNAL lds_e            : std_logic;
-SIGNAL rw_s             : std_logic;
-SIGNAL rw_e             : std_logic;
 SIGNAL waitm            : std_logic;
-SIGNAL clkena_e         : std_logic;
+SIGNAL chipready        : std_logic;
 SIGNAL S_state          : std_logic_vector(1 downto 0);
 SIGNAL wr               : std_logic;
 SIGNAL uds_in           : std_logic;
@@ -109,6 +99,10 @@ signal sel_kicklower    : std_logic;
 
 SIGNAL NMI_addr         : std_logic_vector(31 downto 0);
 SIGNAL sel_nmi_vector   : std_logic;
+
+SIGNAL stage            : std_logic_vector(3 downto 0);
+SIGNAL cpuEN            : std_logic;
+SIGNAL ce_7D            : std_logic;
 
 BEGIN
 
@@ -209,7 +203,7 @@ PORT MAP
 
 PROCESS(clk,turbochipram, turbokick) BEGIN
 	IF rising_edge(clk) THEN
-          IF (reset='0' or nResetOut='0' ) THEN
+		IF (reset='0' or nResetOut='0' ) THEN
 			turbochip_d <= '0';
 			turbokick_d <= '0';
 		ELSIF state="01" THEN -- No mem access, so safe to switch chipram access mode
@@ -294,114 +288,76 @@ PROCESS (clk, fastramcfg, autoconfig_out, cpuaddr) BEGIN
 	END IF;
 END PROCESS;
 
-clkena <= '1' when (clkena_in='1' AND (state="01" OR (ena7RDreg='1' AND clkena_e='1') OR ramready='1')) else '0';
+clkena <= '1' when cpuEN='1' AND (state="01" OR chipready='1' OR ramready='1') else '0';
+ramcs  <= not clkena and sel_ram when rising_edge(clk);
 
 PROCESS (clk) BEGIN
-	IF rising_edge(clk) THEN
-		IF clkena='1' THEN
-			ramcs <= '0';
-		ELSE
-			ramcs <= sel_ram;
-		END IF;
-	END IF;
+	if rising_edge(clk) then
+
+		cpuEN <= '0';
+		if stage(1 downto 0) = "00" then
+			cpuEN <= '1';
+		end if;
+
+		stage <= stage + 1;
+		ce_7D <= ce_7;
+		if ce_7D = '0' and ce_7 = '1' then
+			stage <= x"0";
+		end if;
+	end if;
 END PROCESS;
 
-PROCESS (clk, reset, state, as_s, as_e, rw_s, rw_e, uds_s, uds_e, lds_s, lds_e, sel_ram) BEGIN
-	IF state="01" THEN
+PROCESS (clk, reset) BEGIN
+	IF (reset='0') THEN
+		S_state <= "00";
 		as  <= '1';
 		rw  <= '1';
 		uds <= '1';
 		lds <= '1';
-	ELSE
-		as  <= (as_s AND as_e) OR sel_ram;
-		rw  <= rw_s AND rw_e;
-		uds <= uds_s AND uds_e;
-		lds <= lds_s AND lds_e;
-	END IF;
-
-	IF (reset='0') THEN
-		S_state <= "00";
-		as_s  <= '1';
-		rw_s  <= '1';
-		uds_s <= '1';
-		lds_s <= '1';
+		chipready <= '0';
 	ELSIF rising_edge(clk) THEN
-		IF ena7WRreg='1' THEN
-			as_s  <= '1';
-			rw_s  <= '1';
-			uds_s <= '1';
-			lds_s <= '1';
+
+		if clkena = '1' then
+			chipready <='0';
+		end if;
+		
+		IF stage = 1 THEN
 			CASE S_state IS
 				WHEN "00" =>
-					IF state/="01" AND sel_ram='0' THEN
-						uds_s   <= uds_in;
-						lds_s   <= lds_in;
+					IF as = '0' THEN
 						S_state <= "01";
 					END IF;
 				WHEN "01" =>
-					as_s    <= '0';
-					rw_s    <= wr;
-					uds_s   <= uds_in;
-					lds_s   <= lds_in;
 					S_state <= "10";
 				WHEN "10" =>
 					r_data <= data_read;
 					IF waitm='0' THEN
 						S_state <= "11";
-					ELSE
-						as_s  <= '0';
-						rw_s  <= wr;
-						uds_s <= uds_in;
-						lds_s <= lds_in;
+						as  <= '1';
+						rw  <= '1';
+						uds <= '1';
+						lds <= '1';
+						chipready <= '1';
 					END IF;
 				WHEN "11" =>
 					S_state <= "00";
 				WHEN OTHERS => null;
 			END CASE;
 		END IF;
-	END IF;
-	
-	IF (reset='0' ) THEN
-		as_e  <= '1';
-		rw_e  <= '1';
-		uds_e <= '1';
-		lds_e <= '1';
-		clkena_e <= '0';
-	ELSIF rising_edge(clk) THEN
-		IF ena7RDreg='1' THEN
-			as_e  <= '1';
-			rw_e  <= '1';
-			uds_e <= '1';
-			lds_e <= '1';
-			clkena_e <= '0';
-			CASE S_state IS
-				WHEN "00" =>
-					cpuIPL <= IPL;
-					IF sel_ram='0' THEN
-						IF state/="01" THEN
-							as_e <= '0';
-						END IF;
-						rw_e <= wr;
-						IF wr='1' THEN
-							uds_e <= uds_in;
-							lds_e <= lds_in;
-						END IF;
-					END IF;
-				WHEN "01" =>
-					as_e  <= '0';
-					rw_e  <= wr;
-					uds_e <= uds_in;
-					lds_e <= lds_in;
-				WHEN "10" =>
-					rw_e   <= wr;
-					cpuIPL <= IPL;
-					waitm  <= dtack;
-				WHEN OTHERS =>
-					clkena_e <= '1';
-			END CASE;
+
+		IF stage = 9 THEN
+			waitm <= dtack;
+			if S_state(0) = '0' then
+				cpuIPL <= IPL;
+			end if;
+			IF S_state = "00" and state/="01" AND sel_ram='0' THEN
+				uds <= uds_in;
+				lds <= lds_in;
+				as <= '0';
+				rw <= wr;
+			end if;
 		END IF;
 	END IF;
 END PROCESS;
 
 END;
-

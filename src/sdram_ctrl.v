@@ -37,7 +37,6 @@ module sdram_ctrl
 	input             cache_rst,
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
-	output            reset_out,
 	// sdram
 	output reg [12:0] sdaddr,
 	output      [1:0] ba,
@@ -64,9 +63,6 @@ module sdram_ctrl
 	input             cpuU,
 	input      [15:0] cpuWR,
 	output     [15:0] cpuRD,
-	output reg        cpuEN,
-	output reg        ena7RDreg,
-	output reg        ena7WRreg,
 	output            ramready
 );
 
@@ -92,16 +88,13 @@ localparam [2:0]
 ////////////////////////////////////////
 
 reg reset;
-reg reset_sdstate;
 always @(posedge sysclk) begin
 	reg [7:0] reset_cnt;
 
 	if(!reset_in) begin
 		reset_cnt     <= 0;
 		reset         <= 0;
-		reset_sdstate <= 0;
 	end else begin
-		if(reset_cnt == 42) reset_sdstate <= 1;
 		if(reset_cnt == 170) begin
 			if(sdram_state == 15) reset <= 1;
 		end
@@ -110,8 +103,6 @@ always @(posedge sysclk) begin
 		end
 	end
 end
-
-assign reset_out = init_done;
 
 // cpu cache
 wire ccachehit;
@@ -201,10 +192,7 @@ always @ (posedge sysclk) begin
 				writebuffer_state <= WAITING;
 			end
 		endcase
-		if(~cpuCS) begin
-			// the CPU has unpaused, so clear the ack signal
-			writebuffer_ena <= 0;
-		end
+		if(~cpuCS) writebuffer_ena <= 0;
 	end
 end
 
@@ -230,23 +218,6 @@ assign chip48 = {chip48_1, chip48_2, chip48_3};
 ////////////////////////////////////////
 // SDRAM control
 ////////////////////////////////////////
-
-
-//// write / read control ////
-always @ (posedge sysclk) begin
-	cpuEN  <= 0;
-	ena7RDreg <= 0;
-	ena7WRreg <= 0;
-	if(reset_sdstate) begin
-		case(sdram_state) // LATENCY=3
-			 2, 6, 10, 14: cpuEN <= 1;
-		endcase
-		case(sdram_state) // LATENCY=3
-			 6: ena7RDreg <= 1;
-			14: ena7WRreg <= 1;
-		endcase
-	end
-end
 
 
 //// init counter ////

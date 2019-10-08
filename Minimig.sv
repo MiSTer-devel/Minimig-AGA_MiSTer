@@ -212,7 +212,6 @@ phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
 );
 
 //// amiga clocks ////
-wire        clk_7;
 wire        clk7_en;
 wire        clk7n_en;
 wire        c1;
@@ -223,7 +222,6 @@ wire  [9:0] eclk;
 amiga_clk amiga_clk
 (
 	.clk_28       (clk_sys          ), // input  clock c1 ( 28.687500MHz)
-	.clk_7        (clk_7            ), // output clock 7  (  7.171875MHz) DO NOT USE IT AS A CLOCK!
 	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
 	.clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
 	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
@@ -252,9 +250,6 @@ wire        tg68_as;
 wire        tg68_uds;
 wire        tg68_lds;
 wire        tg68_rw;
-wire        tg68_ena7RD;
-wire        tg68_ena7WR;
-wire        tg68_cpuEN;
 wire [15:0] tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
 wire        tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
@@ -262,7 +257,7 @@ TG68K tg68k
 (
 	.clk          (clk_mem          ),
 	.reset        (tg68_rst         ),
-	.clkena_in    (tg68_cpuEN       ),
+	.ce_7         (clk7_en          ),
 	.IPL          (tg68_IPL         ),
 	.dtack        (tg68_dtack       ),
 	.addr         (tg68_adr         ),
@@ -272,8 +267,6 @@ TG68K tg68k
 	.uds          (tg68_uds         ),
 	.lds          (tg68_lds         ),
 	.rw           (tg68_rw          ),
-	.ena7RDreg    (tg68_ena7RD      ),
-	.ena7WRreg    (tg68_ena7WR      ),
 	.fromram      (tg68_cout        ),
 	.ramready     (tg68_cpuena      ),
 	.cpu          (cpu_config[1:0]  ),
@@ -303,8 +296,7 @@ sdram_ctrl ram1
 (
 	.sysclk       (clk_mem          ),
 	.reset_in     (pll_locked       ),
-	.c_7m         (clk_7            ),
-	.reset_out    (                 ),
+	.c_7m         (c1               ),
 
 	.cache_rst    (tg68_rst         ),
 	.cache_inhibit(cache_inhibit    ),
@@ -327,9 +319,6 @@ sdram_ctrl ram1
 	.cpuCS        (SDR_EN & tg68_ramcs ),
 	.cpuRD        (tg68_cout1       ),
 	.ramready     (tg68_ramready1   ),
-	.cpuEN        (tg68_cpuEN       ),
-	.ena7RDreg    (tg68_ena7RD      ),
-	.ena7WRreg    (tg68_ena7WR      ),
 
 	.chipWR       (ram_data         ),
 	.chipAddr     (ram_address      ),
@@ -423,7 +412,7 @@ minimig minimig
 	//system  pins
 	.rst_ext      (buttons[1]       ), // reset from ctrl block
 	.rst_out      (                 ), // minimig reset status
-	.clk          (clk_sys           ), // output clock c1 ( 28.687500MHz)
+	.clk          (clk_sys          ), // output clock c1 ( 28.687500MHz)
 	.clk7_en      (clk7_en          ), // 7MHz clock enable
 	.clk7n_en     (clk7n_en         ), // 7MHz negedge clock enable
 	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
