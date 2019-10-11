@@ -386,37 +386,44 @@ always @ (posedge clk) begin
         end
       end
       CPU_SM_FILL2 : begin
-        // cache line fill 2nd word
-        fill <= 1'b1;
-        cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
-        cpu_sm_mem_dat_w <= sdr_dat_r;
-        cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_state <= CPU_SM_FILL3;
+        if (sdr_read_ack) begin
+			  // cache line fill 2nd word
+			  fill <= 1'b1;
+			  cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
+			  cpu_sm_mem_dat_w <= sdr_dat_r;
+			  cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_state <= CPU_SM_FILL3;
+        end
       end
       CPU_SM_FILL3 : begin
-        // cache line fill 3rd word
-        fill <= 1'b1;
-        cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
-        cpu_sm_mem_dat_w <= sdr_dat_r;
-        cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_state <= CPU_SM_FILL4;
+        if (sdr_read_ack) begin
+			  // cache line fill 3rd word
+			  fill <= 1'b1;
+			  cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
+			  cpu_sm_mem_dat_w <= sdr_dat_r;
+			  cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_state <= CPU_SM_FILL4;
+        end
       end
       CPU_SM_FILL4 : begin
-        // cache line fill 4th word
-        fill <= 1'b1;
-        cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
-        cpu_sm_mem_dat_w <= sdr_dat_r;
-        cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
-        cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
-        cpu_sm_state <= CPU_SM_FILLW;
+        if (sdr_read_ack) begin
+			  // cache line fill 4th word
+			  fill <= 1'b1;
+			  cpu_sm_adr[1:0] <= cpu_sm_adr[1:0] + 2'b01;
+			  cpu_sm_mem_dat_w <= sdr_dat_r;
+			  cpu_sm_iram0_we <=  cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_iram1_we <= !cpu_sm_ilru &&  cpu_sm_id;
+			  cpu_sm_dram0_we <=  cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_dram1_we <= !cpu_sm_dlru && !cpu_sm_id;
+			  cpu_sm_state <= CPU_SM_FILLW;
+			  //if (!cpu_ack) cpu_sm_state <= CPU_SM_IDLE;
+        end
       end
       CPU_SM_FILLW : begin
         if (!cpu_ack) begin

@@ -139,7 +139,7 @@ always @ (posedge sysclk) begin
 
 	if(init_done && slot_type == CPU_READCACHE) begin
 		case(sdram_state)
-		   8, 9, 10, 11: cache_fill <= 1;
+		   9, 11, 13, 15: cache_fill <= 1;
 		endcase
 	end
 end
@@ -204,10 +204,10 @@ reg [15:0] chip48_1, chip48_2, chip48_3;
 always @ (posedge sysclk) begin
 	if(slot_type == CHIP) begin
 		case(sdram_state)
-			9 : chipRD   <= sdata_reg;
-			10: chip48_1 <= sdata_reg;
-			11: chip48_2 <= sdata_reg;
-			12: chip48_3 <= sdata_reg;
+			10: chipRD   <= sdata_reg;
+			12: chip48_1 <= sdata_reg;
+			14: chip48_2 <= sdata_reg;
+			00: chip48_3 <= sdata_reg;
 		endcase
 	end
 end
@@ -244,7 +244,7 @@ always @ (posedge sysclk) begin
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
-	if(~old_7m & c_7m) sdram_state <= 2;
+	if(~old_7m & c_7m) sdram_state <= 3;
 end
 
 //// sdram control ////
@@ -261,18 +261,21 @@ always @ (posedge sysclk) begin
 	reg  [9:0] casaddr;
 	reg  [3:0] rcnt;
 
-	sd_ras                        <= 1;
-	sd_cas                        <= 1;
-	sd_we                         <= 1;
-	sdata                         <= 16'hZZZZ;
-	sdata_reg                     <= sdata;
-	chipWE                        <= 0;
+	if(~sdram_state[0]) begin
+		sd_ras                     <= 1;
+		sd_cas                     <= 1;
+		sd_we                      <= 1;
+		sdata                      <= 16'hZZZZ;
+		chipWE                     <= 0;
+	end
+
+	if(sdram_state[3] & sdram_state[0]) sdata_reg <= sdata;
 
 	if(!init_done) begin
 		slot_type                  <= IDLE;
 		casaddr                    <= 0;
 		rcnt                       <= 0;
-		if(sdram_state == 1) begin
+		if(sdram_state == 2) begin
 			case(initstate)
 				4 : begin // PRECHARGE
 					sdaddr[10]        <= 1; // all banks
@@ -289,7 +292,7 @@ always @ (posedge sysclk) begin
 					sd_ras            <= 0;
 					sd_cas            <= 0;
 					sd_we             <= 0;
-					sdaddr            <= 13'b0001000110010; // BURST=4 LATENCY=3
+					sdaddr            <= 13'b0001000100010; // CL=2, BURST=4
 				end
 			endcase
 		end
@@ -298,7 +301,7 @@ always @ (posedge sysclk) begin
 		case(sdram_state)
 
 			// RAS
-			1 : begin
+			2 : begin
 				cas_sd_cas           <= 1;
 				cas_sd_we            <= 1;
 				cas_dqm              <= 0;

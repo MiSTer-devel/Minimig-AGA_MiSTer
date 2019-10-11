@@ -174,41 +174,24 @@ assign VGA_VS       = ~vs;
 assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
 assign CE_PIXEL     = ce_out;
+assign CLK_VIDEO    = clk_57;
 
 reg ce_out = 0;
 always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
 
-wire clk_mem;
+wire clk_57, clk_114;
 wire clk_sys;
 wire pll_locked;
+
+assign SDRAM_CLK = clk_57;
 
 pll pll
 (
 	.refclk(CLK_50M),
-	.outclk_0(clk_mem),
-	.outclk_1(SDRAM_CLK),
+	.outclk_0(clk_114),
+	.outclk_1(clk_57),
 	.outclk_2(clk_sys),
-	.outclk_3(CLK_VIDEO),
-	.locked(pll_locked),
-
-	.phase_en(phase_en),
-	.scanclk(clk_sys),
-	.updn(updn),
-	.cntsel(1),
-	.phase_done(phase_done)
-);
-
-wire phase_en, updn, phase_done;
-phase_shift #(.M64MB(-5), .M128MB(-8)) phase_shift
-(
-	.clk(clk_sys),
-	.pll_locked(pll_locked),
-
-	.phase_en(phase_en),
-	.updn(updn),
-	.phase_done(phase_done),
-
-	.sdram_sz(sdram_sz)
+	.locked(pll_locked)
 );
 
 //// amiga clocks ////
@@ -255,7 +238,7 @@ wire        tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
 TG68K tg68k
 (
-	.clk          (clk_mem          ),
+	.clk          (clk_114          ),
 	.reset        (tg68_rst         ),
 	.ce_7         (clk7_en          ),
 	.IPL          (tg68_IPL         ),
@@ -294,7 +277,7 @@ wire [15:0] tg68_cout1;
 wire        tg68_ramready1;
 sdram_ctrl ram1
 (
-	.sysclk       (clk_mem          ),
+	.sysclk       (clk_114          ),
 	.reset_in     (pll_locked       ),
 	.c_7m         (c1               ),
 
@@ -334,7 +317,7 @@ wire [15:0] tg68_cout2;
 wire        tg68_ramready2;
 ddram_ctrl ram2
 (
-	.sysclk       (clk_mem          ),
+	.sysclk       (clk_114          ),
 	.reset_in     (pll_locked       ),
 
 	.cache_rst    (tg68_rst         ),
