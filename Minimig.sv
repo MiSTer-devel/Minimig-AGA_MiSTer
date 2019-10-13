@@ -236,11 +236,11 @@ wire        tg68_rw;
 wire [15:0] tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
 wire        tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
 
-TG68K tg68k
+cpu_wrapper cpu_wrapper
 (
 	.clk          (clk_114          ),
 	.reset        (tg68_rst         ),
-	.ce_7         (clk7_en          ),
+	.ce_7         (c1               ),
 	.IPL          (tg68_IPL         ),
 	.dtack        (tg68_dtack       ),
 	.addr         (tg68_adr         ),

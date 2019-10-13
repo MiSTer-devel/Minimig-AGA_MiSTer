@@ -139,7 +139,7 @@ always @ (posedge sysclk) begin
 
 	if(init_done && slot_type == CPU_READCACHE) begin
 		case(sdram_state)
-		   9, 11, 13, 15: cache_fill <= 1;
+		   7, 9, 11, 13: cache_fill <= 1;
 		endcase
 	end
 end
@@ -204,10 +204,10 @@ reg [15:0] chip48_1, chip48_2, chip48_3;
 always @ (posedge sysclk) begin
 	if(slot_type == CHIP) begin
 		case(sdram_state)
-			10: chipRD   <= sdata_reg;
-			12: chip48_1 <= sdata_reg;
-			14: chip48_2 <= sdata_reg;
-			00: chip48_3 <= sdata_reg;
+			 8: chipRD   <= sdata_reg;
+			10: chip48_1 <= sdata_reg;
+			12: chip48_2 <= sdata_reg;
+			14: chip48_3 <= sdata_reg;
 		endcase
 	end
 end
@@ -244,7 +244,7 @@ always @ (posedge sysclk) begin
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
-	if(~old_7m & c_7m) sdram_state <= 3;
+	if(~old_7m & c_7m) sdram_state <= 1;
 end
 
 //// sdram control ////
@@ -269,13 +269,13 @@ always @ (posedge sysclk) begin
 		chipWE                     <= 0;
 	end
 
-	if(sdram_state[3] & sdram_state[0]) sdata_reg <= sdata;
+	if(sdram_state[0]) sdata_reg  <= sdata;
 
 	if(!init_done) begin
 		slot_type                  <= IDLE;
 		casaddr                    <= 0;
 		rcnt                       <= 0;
-		if(sdram_state == 2) begin
+		if(sdram_state == 0) begin
 			case(initstate)
 				4 : begin // PRECHARGE
 					sdaddr[10]        <= 1; // all banks
@@ -301,7 +301,7 @@ always @ (posedge sysclk) begin
 		case(sdram_state)
 
 			// RAS
-			2 : begin
+			0 : begin
 				cas_sd_cas           <= 1;
 				cas_sd_we            <= 1;
 				cas_dqm              <= 0;
@@ -347,7 +347,7 @@ always @ (posedge sysclk) begin
 			end
 
 			// CAS
-			4 : begin
+			2 : begin
 				sdaddr               <= {1'b1, casaddr}; // AUTO PRECHARGE
 				sd_cas               <= cas_sd_cas;
 				if(!cas_sd_we) begin
@@ -360,6 +360,5 @@ always @ (posedge sysclk) begin
 		endcase
 	end
 end
-
 
 endmodule

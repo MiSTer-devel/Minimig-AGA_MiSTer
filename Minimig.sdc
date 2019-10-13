@@ -5,14 +5,14 @@ create_generated_clock -source [get_pins -compatibility_mode {*|pll|pll_inst|alt
 
 derive_clock_uncertainty
 
-set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -setup 3
-set_multicycle_path -from {*|TG68K:tg68k|TG68KdotC_Kernel:pf68K_Kernel_inst|*} -hold 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_base*} -hold 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|z3ram_ena*} -hold 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -setup 2
-set_multicycle_path -from {emu:emu|TG68K:tg68k|NMI_addr[*]} -hold 2
+set_multicycle_path -from {*|cpu_wrapper|cpu_inst|*} -setup 3
+set_multicycle_path -from {*|cpu_wrapper|cpu_inst|*} -hold 2
+set_multicycle_path -from {*|cpu_wrapper|z3ram_base*} -setup 2
+set_multicycle_path -from {*|cpu_wrapper|z3ram_base*} -hold 2
+set_multicycle_path -from {*|cpu_wrapper|z3ram_ena*} -setup 2
+set_multicycle_path -from {*|cpu_wrapper|z3ram_ena*} -hold 2
+set_multicycle_path -from {*|cpu_wrapper|NMI_addr[*]} -setup 2
+set_multicycle_path -from {*|cpu_wrapper|NMI_addr[*]} -hold 2
 
 set_false_path -from {*|userio:USERIO1|cpu_config*}
 set_false_path -from {*|userio:USERIO1|ide_config*}
