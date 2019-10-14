@@ -647,7 +647,7 @@ begin
 
 		if state = "11" then
 		  exec_write_back <= '0';
-		elsif setstate = "10" and write_back = '1' then
+		elsif setstate = "10" and write_back = '1' and next_micro_state = idle then
 		  exec_write_back <= '1';
 		end if;
 
