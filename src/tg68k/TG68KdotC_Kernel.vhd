@@ -532,11 +532,15 @@ begin
 	elsif set(briefext) = '1' then
 	  rf_dest_addr <= brief(15 downto 12);
 	elsif set(get_bfoffset) = '1' then
-	  rf_dest_addr <= sndOPC(9 downto 6);
+	  if opcode(15 downto 12) = "1110" then
+		rf_dest_addr <= '0' & sndOPC(8 downto 6);
+	  else
+		rf_dest_addr <= sndOPC(9 downto 6);
+	  end if;
 	elsif dest_2ndHbits = '1' then
-	  rf_dest_addr <= sndOPC(15 downto 12);
+	  rf_dest_addr <= '0' & sndOPC(14 downto 12);
 	elsif set(write_reminder) = '1' then
-	  rf_dest_addr <= sndOPC(3 downto 0);
+	  rf_dest_addr <= '0' & sndOPC(2 downto 0);
 	elsif setstackaddr = '1' then
 	  rf_dest_addr <= "1111";
 	elsif dest_hbits = '1' then
@@ -562,9 +566,9 @@ begin
 		rf_source_addr <= movem_regaddr;
 	  end if;
 	elsif source_2ndLbits = '1' then
-	  rf_source_addr <= sndOPC(3 downto 0);
+	  rf_source_addr <= '0' & sndOPC(2 downto 0);
 	elsif source_2ndHbits = '1' then
-	  rf_source_addr <= sndOPC(15 downto 12);
+	  rf_source_addr <= '0' & sndOPC(14 downto 12);
 	elsif source_lowbits = '1' then
 	  rf_source_addr <= source_areg & opcode(2 downto 0);
 	elsif exec(linksp) = '1' then
