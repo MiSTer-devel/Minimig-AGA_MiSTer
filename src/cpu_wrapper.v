@@ -237,7 +237,8 @@ always @(posedge clk) begin
 	end
 end
 
-wire cen = en && (~cpu_req || (ph2 & chipready) || ramready);
+wire cen = en & (~cpu_req | chipready | ramready);
+
 always @(posedge clk) ramcs <= ~cen & sel_ram;
 
 reg en;
@@ -270,11 +271,11 @@ reg  [2:0] cpuIPL;
 reg        chipready;
 
 always @(posedge clk, negedge reset) begin
-	reg [1:0] stage;
+	reg state;
 	reg waitm;
 
 	if(~reset) begin
-		stage <= 0;
+		state <= 0;
 		as <= 1;
 		rw <= 1;
 		uds <= 1;
@@ -282,35 +283,35 @@ always @(posedge clk, negedge reset) begin
 		chipready <= 0;
 	end
 	else begin
+
+		if (cen) chipready <= 0;
+
 		if (ph1) begin
 			waitm <= dtack;
-			if(~stage[0]) cpuIPL <= IPL;
+			cpuIPL <= IPL;
 		end
 
 		if (ph2) begin
-			chipready <= 0;
-			case (stage)
-				0: if (cpu_req & ~sel_ram) begin
-						as <= 0;
-						rw <= wr;
-						uds <= uds_in;
-						lds <= lds_in;
-						stage <= 1;
-					end
-				1: stage <= 2;
-				2: begin
-						data <= data_read;
-						if (~waitm) begin
-							as <= 1;
-							rw <= 1;
-							uds <= 1;
-							lds <= 1;
-							chipready <= 1;
-							stage <= 3;
-						end
-					end
-				3: stage <= 0;
-			endcase
+			if(~state) begin
+				if (cpu_req & ~sel_ram) begin
+					as <= 0;
+					rw <= wr;
+					uds <= uds_in;
+					lds <= lds_in;
+					state <= 1;
+				end
+			end
+			else begin
+				data <= data_read;
+				if (~waitm) begin
+					as <= 1;
+					rw <= 1;
+					uds <= 1;
+					lds <= 1;
+					chipready <= 1;
+					state <= 0;
+				end
+			end
 		end
 	end
 end
