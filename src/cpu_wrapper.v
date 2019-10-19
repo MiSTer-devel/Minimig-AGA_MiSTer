@@ -49,7 +49,7 @@ module cpu_wrapper
    output  [1:0] cpustate,
    input   [2:0] IPL,
 
-   output [31:0] ramaddr,
+   output [28:0] ramaddr,
    input  [15:0] fromram,
    input         ramready,
    output reg    ramcs,
@@ -87,20 +87,27 @@ wire sel_kicklower = !cpuaddr[31:24] && (cpuaddr[23:18] == 6'b111110);
 wire sel_nmi_vector = (cpuaddr[31:2] == NMI_addr[31:2]) && (cpustate == 2);
 
 wire sel_ram = cpu_req & ~sel_nmi_vector & (sel_z2ram | sel_z3ram0 | sel_z3ram1 | sel_chipram | sel_kickram);
+wire sel_zram = sel_z3ram0 | sel_z3ram1 | sel_z2ram;
 
 assign cache_inhibit = 0;
 
 assign ramlds = lds_in;
 assign ramuds = uds_in;
 
+//       Main  8M  128M  256M
+//       ----  --  ----  ----
+//        SDR  Z2  Z3_0  Z3_1
+// 28      0    1    0     1
+// 27      0    1    1     X
+// 26-23   0    0    X     X
+// supported configs: SDR + (Z2, Z3_1, Z3_0+Z3_1)
+
 // This is the mapping to the sram
 // map 00-1f to 00-1f (chipram), a0-ff to 20-7f. All non-fastram goes into the first
-// 8M block. This map should be the same as in minimig_sram_bridge.v 
-// 8M Zorro II RAM 20-9f goes to 80-ff 
-assign ramaddr[31:30] = 0;
-assign ramaddr[29]    = sel_z3ram0 | sel_z3ram1 | sel_z2ram;
-assign ramaddr[28]    = ~sel_z3ram0;
-assign ramaddr[27]    = ~sel_z3ram1 | cpuaddr[27];
+// 8M block(SDRAM). This map should be the same as in minimig_sram_bridge.v 
+// All Zorro RAM goes to DDR3
+assign ramaddr[28]    = sel_zram & ~sel_z3ram0;
+assign ramaddr[27]    = sel_zram & (~sel_z3ram1 | cpuaddr[27]);
 assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpuaddr[26:23] : 4'b0000;
 assign ramaddr[22:19] = cpuaddr[22:19];
 assign ramaddr[18]    = (sel_kicklower & bootrom) | cpuaddr[18];
@@ -237,8 +244,7 @@ always @(posedge clk) begin
 	end
 end
 
-wire cen = en & (~cpu_req | chipready | ramready);
-
+wire cen = en && (~cpu_req || (ph1 & chipready) || ramready);
 always @(posedge clk) ramcs <= ~cen & sel_ram;
 
 reg en;
@@ -270,8 +276,39 @@ reg [15:0] data;
 reg  [2:0] cpuIPL;
 reg        chipready;
 
+/*
+68000 bus timing diagram
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+        7 . 0 . 1 . 2 . 3 . 4 . 5 . 6 . 7 . 0 . 1 . 2 . 3 . 4 . 5 . 6 . 7 . 0 . 1
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+           ___     ___     ___     ___     ___     ___     ___     ___     ___
+CLK    ___/   \___/   \___/   \___/   \___/   \___/   \___/   \___/   \___/   \___
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+       _____________________________________________                         _____		  
+R/W                 \_ _ _ _ _ _ _ _ _ _ _ _/       \_______________________/     
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+       _________ _______________________________ _______________________________ _		  
+ADDR   _________X_______________________________X_______________________________X_
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+       _____________                     ___________                     _________
+/AS                 \___________________/           \___________________/         
+          .....   .   .   .       .   .   .....   .   .   .   .       .   .....
+       _____________        READ         ___________________    WRITE    _________
+/DS                 \___________________/                   \___________/         
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+       _____________________     ___________________________     _________________
+/DTACK                      \___/                           \___/                 
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+                                     ___
+DIN    -----------------------------<___>-----------------------------------------
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+                                                         ___________________
+DOUT   -------------------------------------------------<___________________>-----
+          .....   .   .   .   .   .   .   .....   .   .   .   .   .   .   .....
+*/
+
 always @(posedge clk, negedge reset) begin
-	reg state;
+	reg [1:0] state;
 	reg waitm;
 
 	if(~reset) begin
@@ -284,34 +321,34 @@ always @(posedge clk, negedge reset) begin
 	end
 	else begin
 
-		if (cen) chipready <= 0;
+		if(cen) chipready <= 0;
 
-		if (ph1) begin
-			waitm <= dtack;
-			cpuIPL <= IPL;
-		end
-
-		if (ph2) begin
-			if(~state) begin
-				if (cpu_req & ~sel_ram) begin
-					as <= 0;
-					rw <= wr;
-					uds <= uds_in;
-					lds <= lds_in;
-					state <= 1;
-				end
-			end
-			else begin
-				data <= data_read;
-				if (~waitm) begin
-					as <= 1;
-					rw <= 1;
-					uds <= 1;
-					lds <= 1;
-					chipready <= 1;
-					state <= 0;
-				end
-			end
+		if (ph1|ph2) begin
+			case({state,ph2})
+				0: cpuIPL <= IPL;
+				1: if (cpu_req & ~sel_ram) state <= 1;
+				2: begin
+						as <= 0;
+						rw <= wr;
+						if(wr) {uds,lds} <= {uds_in,lds_in};
+					end
+				3: state <= 2;
+				4: begin
+						{uds,lds} <= {uds_in,lds_in};
+						waitm  <= dtack;
+						cpuIPL <= IPL;
+					end
+				5: if (~waitm) state <= 3;
+				6: chipready <= 1;
+				7: begin
+						data <= data_read;
+						as <= 1;
+						rw <= 1;
+						uds <= 1;
+						lds <= 1;
+						state <= 0;
+					end
+			endcase
 		end
 	end
 end

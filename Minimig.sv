@@ -215,7 +215,7 @@ amiga_clk amiga_clk
 );
 
 wire        cache_inhibit;
-wire [31:0] tg68_cad;
+wire [28:0] tg68_cad;
 wire  [1:0] tg68_cpustate;
 wire        tg68_ramcs;
 wire        tg68_nrst_out;
@@ -270,8 +270,7 @@ cpu_wrapper cpu_wrapper
 	.VBR_out      (tg68_VBR_out     )
 );
 
-wire DDR_EN = tg68_cad[29];
-wire SDR_EN = ~tg68_cad[29];
+wire DDR_EN = |tg68_cad[28:27];
 
 wire [15:0] tg68_cout1;
 wire        tg68_ramready1;
@@ -299,7 +298,7 @@ sdram_ctrl ram1
 	.cpuU         (tg68_cuds        ),
 	.cpuL         (tg68_clds        ),
 	.cpustate     (tg68_cpustate    ),
-	.cpuCS        (SDR_EN & tg68_ramcs ),
+	.cpuCS        (~DDR_EN & tg68_ramcs ),
 	.cpuRD        (tg68_cout1       ),
 	.ramready     (tg68_ramready1   ),
 
