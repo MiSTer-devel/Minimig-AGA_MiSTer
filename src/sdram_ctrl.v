@@ -33,7 +33,7 @@ module sdram_ctrl
 	// system
 	input             sysclk,
 	input             c_7m,
-	input             reset_in,
+	input             reset_n,
 	input             cache_rst,
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
@@ -91,7 +91,7 @@ reg reset;
 always @(posedge sysclk) begin
 	reg [7:0] reset_cnt;
 
-	if(!reset_in) begin
+	if(!reset_n) begin
 		reset_cnt     <= 0;
 		reset         <= 0;
 	end else begin

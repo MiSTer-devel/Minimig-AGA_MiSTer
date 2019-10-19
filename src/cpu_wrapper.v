@@ -49,7 +49,7 @@ module cpu_wrapper
    output  [1:0] cpustate,
    input   [2:0] IPL,
 
-   output [28:0] ramaddr,
+   output [28:1] ramaddr,
    input  [15:0] fromram,
    input         ramready,
    output reg    ramcs,
@@ -111,7 +111,7 @@ assign ramaddr[27]    = sel_zram & (~sel_z3ram1 | cpuaddr[27]);
 assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpuaddr[26:23] : 4'b0000;
 assign ramaddr[22:19] = cpuaddr[22:19];
 assign ramaddr[18]    = (sel_kicklower & bootrom) | cpuaddr[18];
-assign ramaddr[17:0]  = cpuaddr[17:0];
+assign ramaddr[17:1]  = cpuaddr[17:1];
 
 wire wr;
 wire uds_in;

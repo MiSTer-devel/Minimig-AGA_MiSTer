@@ -25,7 +25,7 @@ module ddram_ctrl
 (
 	// system
 	input             sysclk,
-	input             reset_in,
+	input             reset_n,
 	input             cache_rst,
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
@@ -61,7 +61,7 @@ wire cache_ack;
 cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                 // clock
-	.rst              (~reset_in | ~cache_rst), // cache reset
+	.rst              (~reset_n | ~cache_rst), // cache reset
 	.cache_en         (1),                      // cache enable
 	.cpu_cache_ctrl   (cpu_cache_ctrl),         // CPU cache control
 	.cache_inhibit    (cache_inhibit),          // cache inhibit
@@ -91,7 +91,7 @@ reg [15:0] writeDat;
 always @ (posedge sysclk) begin
 	reg  [1:0] write_state;
 
-	if(~reset_in) begin
+	if(~reset_n) begin
 		write_req   <= 0;
 		write_ena   <= 0;
 		write_state <= 0;
@@ -141,7 +141,7 @@ always @ (posedge sysclk) begin
 		DDRAM_RD  <= 0;
 	end
 
-	if(~reset_in) begin
+	if(~reset_n) begin
 		state     <= 0;
 		write_ack <= 0;
 	end

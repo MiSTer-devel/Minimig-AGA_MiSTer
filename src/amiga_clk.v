@@ -10,7 +10,7 @@ module amiga_clk
   output reg   c3,         // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
   output reg   cck,        // colour clock output (3.54 MHz)
   output [9:0] eclk,       // 0.709379 MHz clock enable output (clk domain pulse)
-  input        locked      // PLL locked output
+  input        reset_n
 );
 
 //// generated clocks ////
@@ -20,8 +20,8 @@ reg [1:0] clk7_cnt = 2'b10;
 reg       clk7_en_reg = 1'b1;
 reg       clk7n_en_reg = 1'b1;
 reg [9:0] shifter;
-always @ (posedge clk_28, negedge locked) begin
-  if (!locked) begin
+always @ (posedge clk_28, negedge reset_n) begin
+  if (!reset_n) begin
     clk7_cnt     <= 2'b10;
     clk7_en_reg  <= 1'b1;
     clk7n_en_reg <= 1'b1;

@@ -181,9 +181,7 @@ always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
 
 wire clk_57, clk_114;
 wire clk_sys;
-wire pll_locked;
-
-assign SDRAM_CLK = clk_57;
+wire locked;
 
 pll pll
 (
@@ -191,8 +189,16 @@ pll pll
 	.outclk_0(clk_114),
 	.outclk_1(clk_57),
 	.outclk_2(clk_sys),
-	.locked(pll_locked)
+	.locked(locked)
 );
+
+wire reset = ~locked | buttons[1] | RESET;
+
+reg [7:0] reset_s;
+always @(posedge clk_sys, posedge reset) begin
+	if(reset) reset_s <= '1;
+	else reset_s <= reset_s << 1;
+end
 
 //// amiga clocks ////
 wire        clk7_en;
@@ -204,144 +210,149 @@ wire  [9:0] eclk;
 
 amiga_clk amiga_clk
 (
-	.clk_28       (clk_sys          ), // input  clock c1 ( 28.687500MHz)
-	.clk7_en      (clk7_en          ), // output clock 7 enable (on 28MHz clock domain)
-	.clk7n_en     (clk7n_en         ), // 7MHz negedge output clock enable (on 28MHz clock domain)
-	.c1           (c1               ), // clk28m clock domain signal synchronous with clk signal
-	.c3           (c3               ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
-	.cck          (cck              ), // colour clock output (3.54 MHz)
-	.eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
-	.locked       (pll_locked       )  // pll locked output
+	.clk_28   ( clk_sys    ), // input  clock c1 ( 28.687500MHz)
+	.clk7_en  ( clk7_en    ), // output clock 7 enable (on 28MHz clock domain)
+	.clk7n_en ( clk7n_en   ), // 7MHz negedge output clock enable (on 28MHz clock domain)
+	.c1       ( c1         ), // clk28m clock domain signal synchronous with clk signal
+	.c3       ( c3         ), // clk28m clock domain signal synchronous with clk signal delayed by 90 degrees
+	.cck      ( cck        ), // colour clock output (3.54 MHz)
+	.eclk     ( eclk       ), // 0.709379 MHz clock enable output (clk domain pulse)
+	.reset_n  ( ~reset     )
 );
 
 wire        cache_inhibit;
-wire [28:0] tg68_cad;
-wire  [1:0] tg68_cpustate;
-wire        tg68_ramcs;
-wire        tg68_nrst_out;
-wire        tg68_clds;
-wire        tg68_cuds;
-wire  [3:0] tg68_CACR_out;
-wire [31:0] tg68_VBR_out;
-wire        tg68_rst;
-wire [15:0] tg68_dat_in;
-wire [15:0] tg68_dat_out;
-wire [31:0] tg68_adr;
-wire  [2:0] tg68_IPL;
-wire        tg68_dtack;
-wire        tg68_as;
-wire        tg68_uds;
-wire        tg68_lds;
-wire        tg68_rw;
-wire [15:0] tg68_cout   = DDR_EN ? tg68_cout2     : tg68_cout1;
-wire        tg68_cpuena = DDR_EN ? tg68_ramready2 : tg68_ramready1;
+wire  [1:0] cpu_state;
+wire        cpu_nrst_out;
+wire  [3:0] cpu_CACR_out;
+wire [31:0] cpu_VBR_out;
+wire        cpu_rst;
+wire [15:0] cpu_din;
+wire [15:0] cpu_dout;
+wire [31:0] cpu_addr;
+wire  [2:0] cpu_IPL;
+wire        cpu_dtack;
+wire        cpu_as;
+wire        cpu_uds;
+wire        cpu_lds;
+wire        cpu_rw;
+
+wire [28:1] ram_addr;
+wire        ram_cs;
+wire        ram_lds;
+wire        ram_uds;
+wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
+wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
+wire        zram_sel  = |ram_addr[28:27];
 
 cpu_wrapper cpu_wrapper
 (
-	.clk          (clk_114          ),
-	.reset        (tg68_rst         ),
-	.ce_7         (c1               ),
-	.IPL          (tg68_IPL         ),
-	.dtack        (tg68_dtack       ),
-	.addr         (tg68_adr         ),
-	.data_read    (tg68_dat_in      ),
-	.data_write   (tg68_dat_out     ),
-	.as           (tg68_as          ),
-	.uds          (tg68_uds         ),
-	.lds          (tg68_lds         ),
-	.rw           (tg68_rw          ),
-	.fromram      (tg68_cout        ),
-	.ramready     (tg68_cpuena      ),
-	.cpu          (cpu_config[1:0]  ),
-	.turbochipram (turbochipram     ),
-	.turbokick    (turbokick        ),
-	.cache_inhibit(cache_inhibit    ),
-	.fastramcfg   (memcfg[6:4]      ),
-	.bootrom      (bootrom          ),
-	.ramaddr      (tg68_cad         ),
-	.ramcs        (tg68_ramcs       ),
-	.nResetOut    (tg68_nrst_out    ),
-	.ramlds       (tg68_clds        ),
-	.ramuds       (tg68_cuds        ),
+	.clk          (clk_114         ),
+	.reset        (cpu_rst         ),
+	.nResetOut    (cpu_nrst_out    ),
+	.ce_7         (c1              ),
+	.IPL          (cpu_IPL         ),
+	.dtack        (cpu_dtack       ),
+	.addr         (cpu_addr        ),
+	.data_read    (cpu_din         ),
+	.data_write   (cpu_dout        ),
+	.as           (cpu_as          ),
+	.uds          (cpu_uds         ),
+	.lds          (cpu_lds         ),
+	.rw           (cpu_rw          ),
+	.cpu          (cpu_config[1:0] ),
+	.turbochipram (turbochipram    ),
+	.turbokick    (turbokick       ),
+	.cache_inhibit(cache_inhibit   ),
+	.fastramcfg   (memcfg[6:4]     ),
+	.bootrom      (bootrom         ),
+
+	.ramaddr      (ram_addr        ),
+	.ramcs        (ram_cs          ),
+	.ramlds       (ram_lds         ),
+	.ramuds       (ram_uds         ),
+	.fromram      (ram_dout        ),
+	.ramready     (ram_ready       ),
  
 	//custom CPU signals
-	.cpustate     (tg68_cpustate    ),
-	.CACR_out     (tg68_CACR_out    ),
-	.VBR_out      (tg68_VBR_out     )
+	.cpustate     (cpu_state       ),
+	.CACR_out     (cpu_CACR_out    ),
+	.VBR_out      (cpu_VBR_out     )
 );
 
-wire DDR_EN = |tg68_cad[28:27];
 
-wire [15:0] tg68_cout1;
-wire        tg68_ramready1;
+assign SDRAM_CLK = clk_57;
+
+wire [15:0] ram_dout1;
+wire        ram_ready1;
+
 sdram_ctrl ram1
 (
-	.sysclk       (clk_114          ),
-	.reset_in     (pll_locked       ),
-	.c_7m         (c1               ),
+	.sysclk       (clk_114         ),
+	.reset_n      (~reset_s[7]     ),
+	.c_7m         (c1              ),
 
-	.cache_rst    (tg68_rst         ),
-	.cache_inhibit(cache_inhibit    ),
-	.cpu_cache_ctrl(tg68_CACR_out   ),
+	.cache_rst    (cpu_rst         ),
+	.cache_inhibit(cache_inhibit   ),
+	.cpu_cache_ctrl(cpu_CACR_out   ),
 
-	.sdata        (SDRAM_DQ         ),
-	.sdaddr       (SDRAM_A          ),
+	.sdata        (SDRAM_DQ        ),
+	.sdaddr       (SDRAM_A         ),
 	.dqm          ({SDRAM_DQMH, SDRAM_DQML}),
-	.sd_cs        (SDRAM_nCS        ),
-	.ba           (SDRAM_BA         ),
-	.sd_we        (SDRAM_nWE        ),
-	.sd_ras       (SDRAM_nRAS       ),
-	.sd_cas       (SDRAM_nCAS       ),
+	.sd_cs        (SDRAM_nCS       ),
+	.ba           (SDRAM_BA        ),
+	.sd_we        (SDRAM_nWE       ),
+	.sd_ras       (SDRAM_nRAS      ),
+	.sd_cas       (SDRAM_nCAS      ),
 
-	.cpuWR        (tg68_dat_out     ),
-	.cpuAddr      (tg68_cad[22:1]   ),
-	.cpuU         (tg68_cuds        ),
-	.cpuL         (tg68_clds        ),
-	.cpustate     (tg68_cpustate    ),
-	.cpuCS        (~DDR_EN & tg68_ramcs ),
-	.cpuRD        (tg68_cout1       ),
-	.ramready     (tg68_ramready1   ),
+	.cpuWR        (cpu_dout        ),
+	.cpuAddr      (ram_addr[22:1]  ),
+	.cpuU         (ram_uds         ),
+	.cpuL         (ram_lds         ),
+	.cpustate     (cpu_state       ),
+	.cpuCS        (~zram_sel&ram_cs),
+	.cpuRD        (ram_dout1       ),
+	.ramready     (ram_ready1      ),
 
-	.chipWR       (ram_data         ),
-	.chipAddr     (ram_address      ),
-	.chipU        (_ram_bhe         ),
-	.chipL        (_ram_ble         ),
-	.chipRW       (_ram_we          ),
-	.chip_dma     (_ram_oe          ),
-	.chipRD       (ramdata_in       ),
-	.chip48       (chip48           )
+	.chipWR       (ram_data        ),
+	.chipAddr     (ram_address     ),
+	.chipU        (_ram_bhe        ),
+	.chipL        (_ram_ble        ),
+	.chipRW       (_ram_we         ),
+	.chip_dma     (_ram_oe         ),
+	.chipRD       (ramdata_in      ),
+	.chip48       (chip48          )
 );
 
-wire [15:0] tg68_cout2;
-wire        tg68_ramready2;
+wire [15:0] ram_dout2;
+wire        ram_ready2;
 ddram_ctrl ram2
 (
-	.sysclk       (clk_114          ),
-	.reset_in     (pll_locked       ),
+	.sysclk       (clk_114         ),
+	.reset_n      (~reset_s[7]     ),
 
-	.cache_rst    (tg68_rst         ),
-	.cache_inhibit(cache_inhibit    ),
-	.cpu_cache_ctrl(tg68_CACR_out   ),
+	.cache_rst    (cpu_rst         ),
+	.cache_inhibit(cache_inhibit   ),
+	.cpu_cache_ctrl(cpu_CACR_out   ),
 
-	.DDRAM_CLK    (DDRAM_CLK        ),
-	.DDRAM_BUSY   (DDRAM_BUSY       ),
-	.DDRAM_BURSTCNT(DDRAM_BURSTCNT  ),
-	.DDRAM_ADDR   (DDRAM_ADDR       ),
-	.DDRAM_DOUT   (DDRAM_DOUT       ),
+	.DDRAM_CLK    (DDRAM_CLK       ),
+	.DDRAM_BUSY   (DDRAM_BUSY      ),
+	.DDRAM_BURSTCNT(DDRAM_BURSTCNT ),
+	.DDRAM_ADDR   (DDRAM_ADDR      ),
+	.DDRAM_DOUT   (DDRAM_DOUT      ),
 	.DDRAM_DOUT_READY(DDRAM_DOUT_READY),
-	.DDRAM_RD     (DDRAM_RD         ),
-	.DDRAM_DIN    (DDRAM_DIN        ),
-	.DDRAM_BE     (DDRAM_BE         ),
-	.DDRAM_WE     (DDRAM_WE         ),
+	.DDRAM_RD     (DDRAM_RD        ),
+	.DDRAM_DIN    (DDRAM_DIN       ),
+	.DDRAM_BE     (DDRAM_BE        ),
+	.DDRAM_WE     (DDRAM_WE        ),
 
-	.cpuWR        (tg68_dat_out     ),
-	.cpuAddr      (tg68_cad[28:1]   ),
-	.cpuU         (tg68_cuds        ),
-	.cpuL         (tg68_clds        ),
-	.cpustate     (tg68_cpustate    ),
-	.cpuCS        (DDR_EN & tg68_ramcs ),
-	.cpuRD        (tg68_cout2       ),
-	.ramready     (tg68_ramready2   )
+	.cpuWR        (cpu_dout        ),
+	.cpuAddr      (ram_addr        ),
+	.cpuU         (ram_uds         ),
+	.cpuL         (ram_lds         ),
+	.cpustate     (cpu_state       ),
+	.cpuCS        (zram_sel&ram_cs ),
+	.cpuRD        (ram_dout2       ),
+	.ramready     (ram_ready2      )
 );
 
 
@@ -368,18 +379,18 @@ wire  [1:0] ar;
 minimig minimig
 (
 	//m68k pins
-	.cpu_address  (tg68_adr[23:1]   ), // M68K address bus
-	.cpu_data     (tg68_dat_in      ), // M68K data bus
-	.cpudata_in   (tg68_dat_out     ), // M68K data in
-	._cpu_ipl     (tg68_IPL         ), // M68K interrupt request
-	._cpu_as      (tg68_as          ), // M68K address strobe
-	._cpu_uds     (tg68_uds         ), // M68K upper data strobe
-	._cpu_lds     (tg68_lds         ), // M68K lower data strobe
-	.cpu_r_w      (tg68_rw          ), // M68K read / write
-	._cpu_dtack   (tg68_dtack       ), // M68K data acknowledge
-	._cpu_reset   (tg68_rst         ), // M68K reset
-	._cpu_reset_in(tg68_nrst_out    ), // M68K reset out
-	.cpu_vbr      (tg68_VBR_out     ), // M68K VBR
+	.cpu_address  (cpu_addr[23:1]   ), // M68K address bus
+	.cpu_data     (cpu_din          ), // M68K data bus
+	.cpudata_in   (cpu_dout         ), // M68K data in
+	._cpu_ipl     (cpu_IPL          ), // M68K interrupt request
+	._cpu_as      (cpu_as           ), // M68K address strobe
+	._cpu_uds     (cpu_uds          ), // M68K upper data strobe
+	._cpu_lds     (cpu_lds          ), // M68K lower data strobe
+	.cpu_r_w      (cpu_rw           ), // M68K read / write
+	._cpu_dtack   (cpu_dtack        ), // M68K data acknowledge
+	._cpu_reset   (cpu_rst          ), // M68K reset
+	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out
+	.cpu_vbr      (cpu_VBR_out      ), // M68K VBR
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus
@@ -392,7 +403,7 @@ minimig minimig
 	.chip48       (chip48           ), // big chipram read
 
 	//system  pins
-	.rst_ext      (buttons[1]       ), // reset from ctrl block
+	.rst_ext      (reset_s[7]       ), // reset from ctrl block
 	.rst_out      (                 ), // minimig reset status
 	.clk          (clk_sys          ), // output clock c1 ( 28.687500MHz)
 	.clk7_en      (clk7_en          ), // 7MHz clock enable
@@ -458,14 +469,7 @@ minimig minimig
 	.memcfg       (memcfg           ), // memory config
 	.turbochipram (turbochipram     ), // turbo chipRAM
 	.turbokick    (turbokick        ), // turbo kickstart
-	.bootrom      (bootrom          ), // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
-
-	.trackdisp    (                 ), // floppy track number
-	.secdisp      (                 ), // sector
-	.floppy_fwr   (                 ), // floppy fifo writing
-	.floppy_frd   (                 ), // floppy fifo reading
-	.hd_fwr       (                 ), // hd fifo writing
-	.hd_frd       (                 )  // hd fifo reading
+	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 );
 
 assign VGA_DE = hde & vde;
