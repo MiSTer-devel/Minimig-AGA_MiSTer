@@ -105,7 +105,8 @@ always @(posedge sysclk) begin
 end
 
 // cpu cache
-wire ccachehit;
+wire cache_rd_ack;
+wire cache_wr_ack;
 wire cache_req;
 cpu_cache_new cpu_cache
 (
@@ -122,8 +123,8 @@ cpu_cache_new cpu_cache
 	.cpu_dr           (cpustate == 2),         // cpu data read
 	.cpu_dat_w        (cpuWR),                 // cpu write data
 	.cpu_dat_r        (cpuRD),                 // cpu read data
-	.cpu_ack          (ccachehit),             // cpu acknowledge
-	.wb_en            (writebuffer_cache_ack), // writebuffer enable
+	.cpu_ack          (cache_rd_ack),          // cpu acknowledge
+	.wb_en            (cache_wr_ack),          // write enable
 	.sdr_dat_r        (sdata_reg),             // sdram read data
 	.sdr_read_req     (cache_req),             // sdram read request from cache
 	.sdr_read_ack     (cache_fill),            // sdram read acknowledge to cache
@@ -144,59 +145,50 @@ always @ (posedge sysclk) begin
 	end
 end
 
-
-// writebuffer: enables CPU to continue while a write is in progress
-reg        writebuffer_req;
-reg        writebuffer_ena;
-reg  [1:0] writebuffer_dqm;
-reg [22:1] writebufferAddr;
-reg [15:0] writebufferWR;
-wire       writebuffer_cache_ack;
-reg        writebuffer_hold;
-reg  [1:0] writebuffer_state;
+// write buffer, enables CPU to continue while a write is in progress
+reg        write_ena;
+reg        write_req;
+reg        write_ack;
+reg  [1:0] write_dqm;
+reg [22:1] writeAddr;
+reg [15:0] writeDat;
 
 always @ (posedge sysclk) begin
-	if(!reset) begin
-		writebuffer_req   <= 0;
-		writebuffer_ena   <= 0;
-		writebuffer_state <= WAITING;
+	reg  [1:0] write_state;
+
+	if(~reset_n) begin
+		write_req   <= 0;
+		write_ena   <= 0;
+		write_state <= 0;
 	end else begin
-		case(writebuffer_state)
-			WAITING : begin
-				// CPU write cycle, no cycle already pending
-				if(cpuCS && cpustate == 3) begin
-					writebufferAddr <= cpuAddr;
-					writebufferWR   <= cpuWR;
-					writebuffer_dqm <= {cpuU, cpuL};
-					writebuffer_req <= 1;
-					if(writebuffer_cache_ack) begin
-						writebuffer_ena   <= 1;
-						writebuffer_state <= WRITE1;
+		case(write_state)
+			default:
+				if(~write_ena && cpuCS && cpustate == 3) begin
+					writeAddr <= cpuAddr;
+					writeDat  <= cpuWR;
+					write_dqm <= {cpuU, cpuL};
+					write_req <= 1;
+					if(cache_wr_ack) begin
+						write_state <= 1;
 					end
 				end
-			end
-			WRITE1 : begin
-				if(writebuffer_hold) begin
-					// The SDRAM controller has picked up the request
-					writebuffer_req   <= 0;
-					writebuffer_state <= WRITE2;
+
+			1: if(write_ack) begin
+					write_req   <= 0;
+					write_state <= 2;
 				end
-			end
-			WRITE2 : begin
-				if(!writebuffer_hold) begin
-					// Wait for write cycle to finish, so it's safe to update the signals
-					writebuffer_state <= WAITING;
+
+			2: if(!write_ack) begin
+					write_ena   <= 1;
+					write_state <= 0;
 				end
-			end
-			default : begin
-				writebuffer_state <= WAITING;
-			end
 		endcase
-		if(~cpuCS) writebuffer_ena <= 0;
+
+		if(~cpuCS) write_ena <= 0;
 	end
 end
 
-assign ramready = ccachehit || writebuffer_ena;
+assign ramready = cache_rd_ack || write_ena;
 
 //// chip line read ////
 reg [15:0] chip48_1, chip48_2, chip48_3;
@@ -262,37 +254,37 @@ always @ (posedge sysclk) begin
 	reg  [3:0] rcnt;
 
 	if(~sdram_state[0]) begin
-		sd_ras                     <= 1;
-		sd_cas                     <= 1;
-		sd_we                      <= 1;
-		sdata                      <= 16'hZZZZ;
-		chipWE                     <= 0;
+		sd_ras                <= 1;
+		sd_cas                <= 1;
+		sd_we                 <= 1;
+		sdata                 <= 16'hZZZZ;
+		chipWE                <= 0;
 	end
 
 	if(sdram_state[0]) sdata_reg  <= sdata;
 
 	if(!init_done) begin
-		slot_type                  <= IDLE;
-		casaddr                    <= 0;
-		rcnt                       <= 0;
+		slot_type             <= IDLE;
+		casaddr               <= 0;
+		rcnt                  <= 0;
 		if(sdram_state == 0) begin
 			case(initstate)
 				4 : begin // PRECHARGE
-					sdaddr[10]        <= 1; // all banks
-					sd_ras            <= 0;
-					sd_cas            <= 1;
-					sd_we             <= 0;
+					sdaddr[10]   <= 1; // all banks
+					sd_ras       <= 0;
+					sd_cas       <= 1;
+					sd_we        <= 0;
 				end
 				8,10 : begin // AUTOREFRESH
-					sd_ras            <= 0;
-					sd_cas            <= 0;
-					sd_we             <= 1;
+					sd_ras       <= 0;
+					sd_cas       <= 0;
+					sd_we        <= 1;
 				end
 				13 : begin // LOAD MODE REGISTER
-					sd_ras            <= 0;
-					sd_cas            <= 0;
-					sd_we             <= 0;
-					sdaddr            <= 13'b0001000100010; // CL=2, BURST=4
+					sd_ras       <= 0;
+					sd_cas       <= 0;
+					sd_we        <= 0;
+					sdaddr       <= 13'b0001000100010; // CL=2, BURST=4
 				end
 			endcase
 		end
@@ -302,61 +294,62 @@ always @ (posedge sysclk) begin
 
 			// RAS
 			0 : begin
-				cas_sd_cas           <= 1;
-				cas_sd_we            <= 1;
-				cas_dqm              <= 0;
-				slot_type            <= IDLE;
+				cas_sd_cas      <= 1;
+				cas_sd_we       <= 1;
+				cas_dqm         <= 0;
+				slot_type       <= IDLE;
 
-				if(~&rcnt) rcnt      <= rcnt + 1'd1;
+				if(~&rcnt) rcnt <= rcnt + 1'd1;
 
 				// we give the chipset first priority
 				// (this includes anything on the "motherboard" - chip RAM, slow RAM and Kickstart, turbo modes notwithstanding)
 				if(!chip_dma || !chipRW) begin
-					slot_type         <= CHIP;
+					slot_type    <= CHIP;
 					{sdaddr,casaddr[8:0]} <= chipAddr;
-					sd_ras            <= 0;
-					cas_dqm           <= {chipU,chipL};
-					cas_sd_cas        <= 0;
-					cas_sd_we         <= chipRW;
-					datawr            <= chipWR;
-					chipWE            <= !chipRW;
+					sd_ras       <= 0;
+					cas_dqm      <= {chipU,chipL};
+					cas_sd_cas   <= 0;
+					cas_sd_we    <= chipRW;
+					datawr       <= chipWR;
+					chipWE       <= !chipRW;
 				end
-				else if(writebuffer_req) begin
-					slot_type         <= CPU_WRITECACHE;
-					{sdaddr,casaddr[8:0]} <= writebufferAddr;
-					sd_ras            <= 0;
-					cas_dqm           <= writebuffer_dqm;
-					cas_sd_we         <= 0;
-					cas_sd_cas        <= 0;
-					writebuffer_hold  <= 1; // let the write buffer know we're about to write
-					datawr            <= writebufferWR;
+				else if(write_req) begin
+					slot_type    <= CPU_WRITECACHE;
+					{sdaddr,casaddr[8:0]} <= writeAddr;
+					sd_ras       <= 0;
+					cas_dqm      <= write_dqm;
+					cas_sd_we    <= 0;
+					cas_sd_cas   <= 0;
+					write_ack    <= 1; // let the write buffer know we're about to write
+					datawr       <= writeDat;
 				end
 				// request from read cache
 				else if(cache_req) begin
-					slot_type         <= CPU_READCACHE;
+					slot_type    <= CPU_READCACHE;
 					{sdaddr,casaddr[8:0]} <= cpuAddr;
-					sd_ras            <= 0;
-					cas_sd_cas        <= 0;
+					sd_ras       <= 0;
+					cas_sd_cas   <= 0;
 				end
 				else if(&rcnt) begin
 					// REFRESH
-					sd_ras            <= 0;
-					sd_cas            <= 0;
-					rcnt              <= 0;
+					sd_ras       <= 0;
+					sd_cas       <= 0;
+					rcnt         <= 0;
 				end
 			end
 
 			// CAS
 			2 : begin
-				sdaddr               <= {1'b1, casaddr}; // AUTO PRECHARGE
-				sd_cas               <= cas_sd_cas;
+				sdaddr          <= {1'b1, casaddr}; // AUTO PRECHARGE
+				sd_cas          <= cas_sd_cas;
 				if(!cas_sd_we) begin
-					sdata             <= datawr;
-					sdaddr[12:11]     <= cas_dqm;
-					sd_we             <= 0;
+					sdata        <= datawr;
+					sdaddr[12:11]<= cas_dqm;
+					sd_we        <= 0;
 				end
-				writebuffer_hold     <= 0; // indicate to WriteBuffer that it's safe to accept the next write
 			end
+
+			12: write_ack      <= 0; // indicate to write that it's safe to accept the next write
 		endcase
 	end
 end
