@@ -1276,7 +1276,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		end if;
 		-- if exec(to_CCR)='1' and exec(to_SR)='1' then
 		if exec(to_SR) = '1' then
-		  FlagsSR(7 downto 0) <= SRin; --SR
+		  FlagsSR(7 downto 0) <= SRin and x"f7"; -- write back SR and mask out the unused bit
 		  FC(2) <= SRin(5);
 		  -- end if;
 		elsif exec(update_FC) = '1' then
