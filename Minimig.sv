@@ -201,12 +201,12 @@ always @(posedge clk_sys, posedge reset) begin
 end
 
 //// amiga clocks ////
-wire        clk7_en;
-wire        clk7n_en;
-wire        c1;
-wire        c3;
-wire        cck;
-wire  [9:0] eclk;
+wire       clk7_en;
+wire       clk7n_en;
+wire       c1;
+wire       c3;
+wire       cck;
+wire [9:0] eclk;
 
 amiga_clk amiga_clk
 (
@@ -220,63 +220,105 @@ amiga_clk amiga_clk
 	.reset_n  ( ~reset     )
 );
 
-wire        cache_inhibit;
+
+reg cpu_ph1;
+reg cpu_ph2;
+reg ram_cs;
+
+always @(posedge clk_114) begin
+	reg [3:0] div;
+	reg       c1d;
+	reg       en;
+
+	div <= div + 1'd1;
+	 
+	c1d <= c1;
+	if (~c1d & c1) div <= 3;
+	
+	if (~cpu_rst) begin
+		en <= 0;
+		cpu_ph1 <= 0;
+		cpu_ph2 <= 0;
+	end
+	else begin
+		en <= !div[1:0];
+		if (div[1] & ~div[0]) begin
+			cpu_ph1 <= 0;
+			cpu_ph2 <= 0;
+			case (div[3:2])
+				0: cpu_ph1 <= 1;
+				2: cpu_ph2 <= 1;
+			endcase
+		end
+	end
+
+	ram_cs <= ~(ram_ready & en) & ram_sel;
+end
+
+
 wire  [1:0] cpu_state;
 wire        cpu_nrst_out;
-wire  [3:0] cpu_CACR_out;
-wire [31:0] cpu_VBR_out;
+wire  [3:0] cpu_cacr;
+wire [31:0] cpu_vbr;
 wire        cpu_rst;
-wire [15:0] cpu_din;
-wire [15:0] cpu_dout;
-wire [31:0] cpu_addr;
-wire  [2:0] cpu_IPL;
-wire        cpu_dtack;
-wire        cpu_as;
-wire        cpu_uds;
-wire        cpu_lds;
-wire        cpu_rw;
+
+wire  [2:0] chip_ipl;
+wire        chip_dtack;
+wire        chip_as;
+wire        chip_uds;
+wire        chip_lds;
+wire        chip_rw;
+wire [15:0] chip_dout;
+wire [15:0] chip_din;
+wire [23:1] chip_addr;
 
 wire [28:1] ram_addr;
-wire        ram_cs;
+wire        ram_sel;
 wire        ram_lds;
 wire        ram_uds;
+wire [15:0] ram_din;
 wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
 wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
 wire        zram_sel  = |ram_addr[28:27];
 
 cpu_wrapper cpu_wrapper
 (
-	.clk          (clk_114         ),
 	.reset        (cpu_rst         ),
-	.nResetOut    (cpu_nrst_out    ),
-	.ce_7         (c1              ),
-	.IPL          (cpu_IPL         ),
-	.dtack        (cpu_dtack       ),
-	.addr         (cpu_addr        ),
-	.data_read    (cpu_din         ),
-	.data_write   (cpu_dout        ),
-	.as           (cpu_as          ),
-	.uds          (cpu_uds         ),
-	.lds          (cpu_lds         ),
-	.rw           (cpu_rw          ),
-	.cpu          (cpu_config[1:0] ),
+	.reset_out    (cpu_nrst_out    ),
+
+	.clk          (clk_sys         ),
+	.ph1          (cpu_ph1         ),
+	.ph2          (cpu_ph2         ),
+
+	.chip_addr    (chip_addr       ),
+	.chip_dout    (chip_dout       ),
+	.chip_din     (chip_din        ),
+	.chip_as      (chip_as         ),
+	.chip_uds     (chip_uds        ),
+	.chip_lds     (chip_lds        ),
+	.chip_rw      (chip_rw         ),
+	.chip_dtack   (chip_dtack      ),
+	.chip_ipl     (chip_ipl        ),
+
+	.cpucfg       (cpucfg          ),
 	.turbochipram (turbochipram    ),
 	.turbokick    (turbokick       ),
-	.cache_inhibit(cache_inhibit   ),
+	.dcache       (cachecfg[2]     ),
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
 
+	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
-	.ramcs        (ram_cs          ),
 	.ramlds       (ram_lds         ),
 	.ramuds       (ram_uds         ),
-	.fromram      (ram_dout        ),
+	.ramdout      (ram_dout        ),
+	.ramdin       (ram_din         ),
 	.ramready     (ram_ready       ),
  
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
-	.CACR_out     (cpu_CACR_out    ),
-	.VBR_out      (cpu_VBR_out     )
+	.cacr         (cpu_cacr        ),
+	.vbr          (cpu_vbr         )
 );
 
 
@@ -292,19 +334,18 @@ sdram_ctrl ram1
 	.c_7m         (c1              ),
 
 	.cache_rst    (cpu_rst         ),
-	.cache_inhibit(cache_inhibit   ),
-	.cpu_cache_ctrl(cpu_CACR_out   ),
+	.cpu_cache_ctrl(cpu_cacr       ),
 
-	.sdata        (SDRAM_DQ        ),
-	.sdaddr       (SDRAM_A         ),
-	.dqm          ({SDRAM_DQMH, SDRAM_DQML}),
+	.sd_data      (SDRAM_DQ        ),
+	.sd_addr      (SDRAM_A         ),
+	.sd_dqm       ({SDRAM_DQMH, SDRAM_DQML}),
 	.sd_cs        (SDRAM_nCS       ),
-	.ba           (SDRAM_BA        ),
+	.sd_ba        (SDRAM_BA        ),
 	.sd_we        (SDRAM_nWE       ),
 	.sd_ras       (SDRAM_nRAS      ),
 	.sd_cas       (SDRAM_nCAS      ),
 
-	.cpuWR        (cpu_dout        ),
+	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr[22:1]  ),
 	.cpuU         (ram_uds         ),
 	.cpuL         (ram_lds         ),
@@ -318,7 +359,7 @@ sdram_ctrl ram1
 	.chipU        (_ram_bhe        ),
 	.chipL        (_ram_ble        ),
 	.chipRW       (_ram_we         ),
-	.chip_dma     (_ram_oe         ),
+	.chipDMA      (_ram_oe         ),
 	.chipRD       (ramdata_in      ),
 	.chip48       (chip48          )
 );
@@ -331,8 +372,7 @@ ddram_ctrl ram2
 	.reset_n      (~reset_s[7]     ),
 
 	.cache_rst    (cpu_rst         ),
-	.cache_inhibit(cache_inhibit   ),
-	.cpu_cache_ctrl(cpu_CACR_out   ),
+	.cpu_cache_ctrl(cpu_cacr       ),
 
 	.DDRAM_CLK    (DDRAM_CLK       ),
 	.DDRAM_BUSY   (DDRAM_BUSY      ),
@@ -345,7 +385,7 @@ ddram_ctrl ram2
 	.DDRAM_BE     (DDRAM_BE        ),
 	.DDRAM_WE     (DDRAM_WE        ),
 
-	.cpuWR        (cpu_dout        ),
+	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr        ),
 	.cpuU         (ram_uds         ),
 	.cpuL         (ram_lds         ),
@@ -357,7 +397,8 @@ ddram_ctrl ram2
 
 
 //// minimig top ////
-wire  [3:0] cpu_config;
+wire  [1:0] cpucfg;
+wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
 wire        turbochipram;
 wire        turbokick;
@@ -379,23 +420,23 @@ wire  [1:0] ar;
 minimig minimig
 (
 	//m68k pins
-	.cpu_address  (cpu_addr[23:1]   ), // M68K address bus
-	.cpu_data     (cpu_din          ), // M68K data bus
-	.cpudata_in   (cpu_dout         ), // M68K data in
-	._cpu_ipl     (cpu_IPL          ), // M68K interrupt request
-	._cpu_as      (cpu_as           ), // M68K address strobe
-	._cpu_uds     (cpu_uds          ), // M68K upper data strobe
-	._cpu_lds     (cpu_lds          ), // M68K lower data strobe
-	.cpu_r_w      (cpu_rw           ), // M68K read / write
-	._cpu_dtack   (cpu_dtack        ), // M68K data acknowledge
+	.cpu_address  (chip_addr        ), // M68K address bus
+	.cpu_data     (chip_dout        ), // M68K data bus
+	.cpudata_in   (chip_din         ), // M68K data in
+	._cpu_ipl     (chip_ipl         ), // M68K interrupt request
+	._cpu_as      (chip_as          ), // M68K address strobe
+	._cpu_uds     (chip_uds         ), // M68K upper data strobe
+	._cpu_lds     (chip_lds         ), // M68K lower data strobe
+	.cpu_r_w      (chip_rw          ), // M68K read / write
+	._cpu_dtack   (chip_dtack       ), // M68K data acknowledge
 	._cpu_reset   (cpu_rst          ), // M68K reset
 	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out
-	.cpu_vbr      (cpu_VBR_out      ), // M68K VBR
+	.cpu_vbr      (cpu_vbr          ), // M68K VBR
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus
 	.ramdata_in   (ramdata_in       ), // SRAM data bus in
-	.ram_address  (ram_address[23:1]), // SRAM address bus
+	.ram_address  (ram_address      ), // SRAM address bus
 	._ram_bhe     (_ram_bhe         ), // SRAM upper byte select
 	._ram_ble     (_ram_ble         ), // SRAM lower byte select
 	._ram_we      (_ram_we          ), // SRAM write enable
@@ -465,7 +506,8 @@ minimig minimig
 	.aud_mix      (AUDIO_MIX        ),
 
 	//user i/o
-	.cpu_config   (cpu_config       ), // CPU config
+	.cpucfg       (cpucfg           ), // CPU config
+	.cachecfg     (cachecfg         ), // Cache config
 	.memcfg       (memcfg           ), // memory config
 	.turbochipram (turbochipram     ), // turbo chipRAM
 	.turbokick    (turbokick        ), // turbo kickstart

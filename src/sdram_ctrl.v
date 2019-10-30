@@ -38,20 +38,20 @@ module sdram_ctrl
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
 	// sdram
-	output reg [12:0] sdaddr,
-	output      [1:0] ba,
+	output reg [12:0] sd_addr,
+	output      [1:0] sd_ba,
 	output            sd_cs,
 	output reg        sd_we,
 	output reg        sd_ras,
 	output reg        sd_cas,
-	output      [1:0] dqm,
-	inout  reg [15:0] sdata,
+	output reg  [1:0] sd_dqm,
+	inout  reg [15:0] sd_data,
 	// chip
-	input      [22:1] chipAddr, //we only use the first 8M block of the RAM for non-fastram
+	input      [22:1] chipAddr,
 	input             chipL,
 	input             chipU,
 	input             chipRW,
-	input             chip_dma,
+	input             chipDMA,
 	input      [15:0] chipWR,
 	output reg [15:0] chipRD,
 	output     [47:0] chip48,
@@ -66,16 +66,10 @@ module sdram_ctrl
 	output            ramready
 );
 
-assign dqm   = sdaddr[12:11];
-assign ba    = 0;
+assign sd_ba = 0;
 assign sd_cs = 0;
 
 //// parameters ////
-localparam [1:0]
-	WAITING = 0,
-	WRITE1 = 1,
-	WRITE2 = 2;
-
 localparam [2:0]
 	IDLE = 0,
 	CHIP = 1,
@@ -169,6 +163,7 @@ always @ (posedge sysclk) begin
 					write_dqm <= {cpuU, cpuL};
 					write_req <= 1;
 					if(cache_wr_ack) begin
+						write_ena   <= 1;
 						write_state <= 1;
 					end
 				end
@@ -179,7 +174,6 @@ always @ (posedge sysclk) begin
 				end
 
 			2: if(!write_ack) begin
-					write_ena   <= 1;
 					write_state <= 0;
 				end
 		endcase
@@ -257,20 +251,21 @@ always @ (posedge sysclk) begin
 		sd_ras                <= 1;
 		sd_cas                <= 1;
 		sd_we                 <= 1;
-		sdata                 <= 16'hZZZZ;
+		sd_data               <= 16'hZZZZ;
 		chipWE                <= 0;
 	end
 
-	if(sdram_state[0]) sdata_reg  <= sdata;
+	if(sdram_state[0]) sdata_reg <= sd_data;
 
 	if(!init_done) begin
 		slot_type             <= IDLE;
 		casaddr               <= 0;
 		rcnt                  <= 0;
+		sd_dqm                <= 3;
 		if(sdram_state == 0) begin
 			case(initstate)
 				4 : begin // PRECHARGE
-					sdaddr[10]   <= 1; // all banks
+					sd_addr[10]  <= 1; // all banks
 					sd_ras       <= 0;
 					sd_cas       <= 1;
 					sd_we        <= 0;
@@ -284,7 +279,7 @@ always @ (posedge sysclk) begin
 					sd_ras       <= 0;
 					sd_cas       <= 0;
 					sd_we        <= 0;
-					sdaddr       <= 13'b0001000100010; // CL=2, BURST=4
+					sd_addr      <= 13'b0001000100010; // CL=2, BURST=4
 				end
 			endcase
 		end
@@ -297,15 +292,16 @@ always @ (posedge sysclk) begin
 				cas_sd_cas      <= 1;
 				cas_sd_we       <= 1;
 				cas_dqm         <= 0;
+				sd_dqm          <= 3;
 				slot_type       <= IDLE;
 
 				if(~&rcnt) rcnt <= rcnt + 1'd1;
 
 				// we give the chipset first priority
 				// (this includes anything on the "motherboard" - chip RAM, slow RAM and Kickstart, turbo modes notwithstanding)
-				if(!chip_dma || !chipRW) begin
+				if(~chipDMA | ~chipRW) begin
 					slot_type    <= CHIP;
-					{sdaddr,casaddr[8:0]} <= chipAddr;
+					{sd_addr,casaddr[8:0]} <= chipAddr;
 					sd_ras       <= 0;
 					cas_dqm      <= {chipU,chipL};
 					cas_sd_cas   <= 0;
@@ -315,7 +311,7 @@ always @ (posedge sysclk) begin
 				end
 				else if(write_req) begin
 					slot_type    <= CPU_WRITECACHE;
-					{sdaddr,casaddr[8:0]} <= writeAddr;
+					{sd_addr,casaddr[8:0]} <= writeAddr;
 					sd_ras       <= 0;
 					cas_dqm      <= write_dqm;
 					cas_sd_we    <= 0;
@@ -326,7 +322,7 @@ always @ (posedge sysclk) begin
 				// request from read cache
 				else if(cache_req) begin
 					slot_type    <= CPU_READCACHE;
-					{sdaddr,casaddr[8:0]} <= cpuAddr;
+					{sd_addr,casaddr[8:0]} <= cpuAddr;
 					sd_ras       <= 0;
 					cas_sd_cas   <= 0;
 				end
@@ -340,16 +336,17 @@ always @ (posedge sysclk) begin
 
 			// CAS
 			2 : begin
-				sdaddr          <= {1'b1, casaddr}; // AUTO PRECHARGE
+				sd_addr         <= {1'b1, casaddr}; // AUTO PRECHARGE
 				sd_cas          <= cas_sd_cas;
+				sd_dqm          <= 0;
 				if(!cas_sd_we) begin
-					sdata        <= datawr;
-					sdaddr[12:11]<= cas_dqm;
+					sd_data      <= datawr;
+					sd_addr[12:11]<= cas_dqm;
+					sd_dqm       <= cas_dqm;
 					sd_we        <= 0;
 				end
+				write_ack       <= 0; // indicate to write that it's safe to accept the next write
 			end
-
-			12: write_ack      <= 0; // indicate to write that it's safe to accept the next write
 		endcase
 	end
 end

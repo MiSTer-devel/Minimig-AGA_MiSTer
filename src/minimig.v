@@ -237,7 +237,8 @@ module minimig
 	output  [1:0] aud_mix,
 
 	//user i/o
-	output  [3:0] cpu_config,
+	output  [1:0] cpucfg,
+	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output 	     turbochipram,
 	output 	     turbokick,
@@ -429,11 +430,11 @@ assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
 
-// turbo chipram only when in AGA mode, no overlay is active, cpu_config[2] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
-assign turbochipram = chipset_config[4] && !ovl && (cpu_config[2] && cpu_custom) && (&memory_config[1:0]);
+// turbo chipram only when in AGA mode, no overlay is active, cachecfg[0] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
+assign turbochipram = !ovl && (cachecfg[0] && cpu_custom) && (&memory_config[1:0]);
 
-// turbo kickstart only when no overlay is active and cpu_config[3] (fast kick) enabled or AGA mode is enabled
-assign turbokick = rom_readonly && !ovl && (cpu_config[3] || chipset_config[4]);
+// turbo kickstart only when no overlay is active and cachecfg[1] (fast kick) enabled or AGA mode is enabled
+assign turbokick = rom_readonly && !ovl && cachecfg[1];
 //writing to the ROM area is not implemented in turbo mode (see tg68k.vhd)
    
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
@@ -584,7 +585,8 @@ userio USERIO1
 	.ar(ar),
 	.blver(blver),
 	.ide_config(ide_config),
-	.cpu_config(cpu_config),
+	.cpu_config(cpucfg),
+	.cache_config(cachecfg),
 	.usrrst(usrrst),
 	.cpurst(cpurst),
 	.cpuhlt(cpuhlt),
@@ -773,7 +775,6 @@ cart CART1
   .clk7_en        (clk7_en        ),
   .clk7n_en       (clk7n_en       ),
   .cpu_rst        (!_cpu_reset    ),
-  .cpu_address    (cpu_address    ),
   .cpu_address_in (cpu_address_out),
   ._cpu_as        (_cpu_as        ),
   .cpu_rd         (cpu_rd         ),

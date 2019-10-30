@@ -230,10 +230,11 @@ assign bls = dbs & ~l_as & l_dtack;
 
 // --------------------------------------------------------------------------------------
 
+reg [15:0] cpudatain_r;
+always @(posedge clk) cpudatain_r <= cpudatain;
+
 // data_out multiplexer and latch   
-//always @(data)
-//  data_out <= wrdata;
-assign data_out = !halt ? cpudatain : host_wdat;
+assign data_out = !halt ? cpudatain_r : host_wdat;
 
 //always @(clk or data_in)
 //  if (!clk)
@@ -250,9 +251,9 @@ always @(posedge clk)
 assign data[15:0] = ldata_in;
 assign host_rdat = ldata_in;
 
-//always @(posedge clk)
-//	address_out[23:1] <= address[23:1];
-assign 	address_out[23:1] = !halt ? address[23:1] : host_adr[23:1];
+reg [23:1] address_r;
+always @(posedge clk) address_r <= address;
+assign 	address_out[23:1] = !halt ? address_r : host_adr[23:1];
 
 
 endmodule

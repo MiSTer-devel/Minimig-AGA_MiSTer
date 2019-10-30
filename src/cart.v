@@ -45,7 +45,6 @@ module cart
   input wire 		clk7_en,
   input wire 		clk7n_en,
   input wire 		cpu_rst,
-  input wire [ 24-1:1] 	cpu_address,
   input wire [ 24-1:1] 	cpu_address_in,
   input wire 		_cpu_as,
   input wire 		cpu_rd,
