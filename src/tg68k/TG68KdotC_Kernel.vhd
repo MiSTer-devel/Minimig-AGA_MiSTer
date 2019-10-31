@@ -3246,7 +3246,6 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		set(opcMULU) <= '1';
 		if opcode(15) = '0' and (MUL_Mode = 1 or MUL_Mode = 2) then
 		  dest_2ndHbits <= '1';
-		  source_2ndLbits <= '1';--???
 		  set(write_lowlong) <= '1';
 		  if sndOPC(10) = '1' then
 			setstate <= "01";
