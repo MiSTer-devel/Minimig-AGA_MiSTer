@@ -822,7 +822,7 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
   -------------------------------------------------------------------------------
   ---- MULU/MULS
   -------------------------------------------------------------------------------
-  process (exe_opcode, OP2out, muls_msb, mulu_reg, FAsign, mulu_sign, reg_QA, faktorB, result_mulu, signedOP)
+  process (exe_opcode, OP2out, muls_msb, mulu_reg, FAsign, mulu_sign, reg_QA, faktorB, result_mulu, signedOP, micro_state, sndOPC)
   begin
 	if (signedOP = '1' and faktorB(31) = '1') OR FAsign = '1' then
 	  muls_msb <= mulu_reg(63);
@@ -846,7 +846,7 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 		  result_mulu(63 downto 47) <= (muls_msb & mulu_reg(63 downto 48) + (mulu_sign & faktorB(31 downto 16)));
 		end if;
 	  end if;
-	else -- 32 Bit
+	elsif micro_state /= idle or exe_opcode(15) = '1' or sndOPC(10) = '0' then -- 32 Bit, don't run in idle for MULU.L 64
 	  result_mulu <= muls_msb & mulu_reg(63 downto 1);
 	  if mulu_reg(0) = '1' then
 		if FAsign = '1' then
@@ -855,6 +855,8 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 		  result_mulu(63 downto 31) <= (muls_msb & mulu_reg(63 downto 32) + (mulu_sign & faktorB));
 		end if;
 	  end if;
+	else
+	  result_mulu <= mulu_reg;
 	end if;
 	if exe_opcode(15) = '1' OR MUL_Mode = 0 then
 	  faktorB(31 downto 16) <= OP2out(15 downto 0);
@@ -883,7 +885,7 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 			FAsign <= '0';
 			mulu_reg(31 downto 0) <= reg_QA;
 		  end if;
-		elsif exec(opcMULU) = '0' then
+		else
 		  mulu_reg <= result_mulu;
 		end if;
 	  end if;
