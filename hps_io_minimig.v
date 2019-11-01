@@ -47,6 +47,7 @@ module hps_io_minimig #(parameter STRLEN=0)
 
 	output      [1:0] BUTTONS,
 	input             new_vmode,
+	output            forced_scandoubler,
 
 	input      [11:0] scr_hbl_l, scr_hbl_r,
 	input      [11:0] scr_hsize,
@@ -63,13 +64,17 @@ module hps_io_minimig #(parameter STRLEN=0)
 	// [14]: debug mode: [8]: 1 - phase up, 0 - phase down. [7:0]: amount of shift.
 	output reg [15:0] sdram_sz,
 
-	output reg [63:0] RTC
+	output reg [63:0] RTC,
+
+	inout      [21:0] gamma_bus
 );
 
 assign FPGA_ENA  = HPS_BUS[35];
 assign UIO_ENA   = HPS_BUS[34];
 assign IO_STROBE = HPS_BUS[33];
-assign IO_DIN    = HPS_BUS[31:16];
+wire [15:0] io_din = HPS_BUS[31:16];
+
+assign IO_DIN = io_din;
 
 assign HPS_BUS[37]   = FPGA_WAIT;
 assign HPS_BUS[36]   = clk_sys;
@@ -95,31 +100,40 @@ video_calc video_calc
 	.dout(vc_dout)
 );
 
+/////////////////////////////////////////////////////////
+
+assign     gamma_bus[20:0] = {clk_sys, gamma_en, gamma_wr, gamma_wr_addr, gamma_value};
+reg        gamma_en;
+reg        gamma_wr;
+reg  [9:0] gamma_wr_addr;
+reg  [7:0] gamma_value;
+
 //////////////////////////////////////////////////////////
 
-reg [15:0] joystick0;
-reg [15:0] joystick1;
-reg [15:0] joystick2;
-reg [15:0] joystick3;
+reg [15:0] joystick_0;
+reg [15:0] joystick_1;
+reg [15:0] joystick_2;
+reg [15:0] joystick_3;
 
-reg [7:0] but_sw;
+reg [7:0] cfg;
 
 reg       kbd_mouse_level;
 reg [1:0] kbd_mouse_type;
 reg [7:0] kbd_mouse_data;
 reg [2:0] mouse_buttons;
 
-assign JOY0 = joystick0;
-assign JOY1 = joystick1;
-assign JOY2 = joystick2;
-assign JOY3 = joystick3;
+assign JOY0 = joystick_0;
+assign JOY1 = joystick_1;
+assign JOY2 = joystick_2;
+assign JOY3 = joystick_3;
 
 assign KBD_MOUSE_DATA = kbd_mouse_data; // 8 bit movement data
 assign KBD_MOUSE_TYPE = kbd_mouse_type; // 0=mouse x,1=mouse y, 2=keycode, 3=OSD kbd
 assign KMS_LEVEL = kbd_mouse_level;     // toggle on new data
 assign MOUSE_BUTTONS = mouse_buttons;   // state of the two mouse buttons
 
-assign BUTTONS = but_sw[1:0];
+assign BUTTONS = cfg[1:0];
+assign forced_scandoubler = cfg[4];
 
 reg [15:0] io_dout;
 reg  [5:0] byte_cnt;
@@ -140,77 +154,88 @@ always@(posedge clk_sys) begin
 		if(~&byte_cnt) byte_cnt <= byte_cnt + 1'd1;
 
 		if(byte_cnt == 0) begin
-			cmd <= IO_DIN[7:0];
-			if(IO_DIN[7:0] == 4) kbd_mouse_type <= 0;  // first mouse axis
-			if(IO_DIN[7:0] == 5) kbd_mouse_type <= 2;  // keyboard
-			if(IO_DIN[7:0] == 6) kbd_mouse_type <= 3;  // OSD keyboard	
-			if(IO_DIN[7:0] == 'h2B) io_dout <= 1;
-			if(IO_DIN[7:0] == 'h2F) io_dout <= 1;
-		end
-
-		// first payload byte
-		if(byte_cnt == 1) begin
-			if(cmd == 1) but_sw <= IO_DIN[7:0];
-			if(cmd == 2) joystick0 <= IO_DIN; 
-			if(cmd == 3) joystick1 <= IO_DIN; 
-			if(cmd == 'h10) joystick2 <= IO_DIN;
-			if(cmd == 'h11) joystick3 <= IO_DIN;
-
-			// mouse, keyboard or OSD
-			if((cmd == 4)||(cmd == 5)||(cmd == 6)) begin
-				kbd_mouse_data <= IO_DIN[7:0];
-				kbd_mouse_level <= ~kbd_mouse_level;
-			end
-		end	
-
-		// mouse handling
-		if(cmd == 4) begin
-			// second byte contains movement data
-			if(byte_cnt == 2) begin
-				kbd_mouse_data <= IO_DIN[7:0];
-				kbd_mouse_type <= 1;
-				kbd_mouse_level <= ~kbd_mouse_level; 
-			end
-
-			// third byte contains the buttons
-			if(byte_cnt == 3) begin
-				mouse_buttons <= IO_DIN[2:0];
-			end
-		end
-		
-		// reading config string, returning a byte from string
-		if(cmd == 'h14 && (byte_cnt < STRLEN + 1)) io_dout[7:0] <= conf_str[(STRLEN - byte_cnt)<<3 +:8];
-
-		if(cmd == 'h22 && byte_cnt > 0) RTC[(byte_cnt-6'd1)<<4 +:16] <= IO_DIN;
-		
-		if(cmd == 'h23 && byte_cnt > 0 && !byte_cnt[5:4]) io_dout <= vc_dout;
-
-		if(cmd == 'h2C) begin
-			case(byte_cnt)
-				1: io_dout <= {1'b1, scr_flg, 6'd0, scr_res};
-				2: io_dout <= scr_hsize;
-				3: io_dout <= scr_vsize;
-				4: io_dout <= scr_hbl_l;
-				5: io_dout <= scr_hbl_r;
-			   6: io_dout <= scr_vbl_t;
-			   7: io_dout <= scr_vbl_b;
+			cmd <= io_din[7:0];
+			case(io_din[7:0])
+				'h04: kbd_mouse_type <= 0;  // first mouse axis
+				'h05: kbd_mouse_type <= 2;  // keyboard
+				'h06: kbd_mouse_type <= 3;  // OSD keyboard	
+				'h2B: io_dout <= 1;
+				'h2F: io_dout <= 1;
+				'h32: io_dout <= gamma_bus[21];
 			endcase
 		end
+		else begin
+		
+			case(cmd)
+				'h01: cfg <= io_din[7:0];
+				'h02: if(byte_cnt==1) joystick_0[15:0] <= io_din;
+				'h03: if(byte_cnt==1) joystick_1[15:0] <= io_din;
+				'h16: if(byte_cnt==1) joystick_2[15:0] <= io_din;
+				'h17: if(byte_cnt==1) joystick_3[15:0] <= io_din;
+				
+				// mouse, keyboard or OSD
+				'h05,
+				'h06:
+					if(byte_cnt == 1) begin
+						kbd_mouse_data <= io_din[7:0];
+						kbd_mouse_level <= ~kbd_mouse_level;
+					end
+				
+				'h04:
+					if(byte_cnt == 1) begin
+						kbd_mouse_data <= io_din[7:0];
+						kbd_mouse_level <= ~kbd_mouse_level;
+					end
+					else if(byte_cnt == 2) begin
+						// second byte contains movement data
+						kbd_mouse_data <= io_din[7:0];
+						kbd_mouse_type <= 1;
+						kbd_mouse_level <= ~kbd_mouse_level; 
+					end
+					else if(byte_cnt == 3) begin
+						// third byte contains the buttons
+						mouse_buttons <= io_din[2:0];
+					end
+					
+				'h14: if(byte_cnt < STRLEN + 1) io_dout[7:0] <= conf_str[(STRLEN - byte_cnt)<<3 +:8];
+				'h22: if(byte_cnt > 0) RTC[(byte_cnt-6'd1)<<4 +:16] <= io_din;
+				'h23: if(byte_cnt > 0 && !byte_cnt[5:4]) io_dout <= vc_dout;
 
-		if(cmd == 'h2D) begin
-			case(byte_cnt)
-				1: shbl_l <= IO_DIN[11:0];
-				2: shbl_r <= IO_DIN[11:0];
-			   3: svbl_t <= IO_DIN[11:0];
-			   4: svbl_b <= IO_DIN[11:0];
+				'h2C:
+					case(byte_cnt)
+						1: io_dout <= {1'b1, scr_flg, 6'd0, scr_res};
+						2: io_dout <= scr_hsize;
+						3: io_dout <= scr_vsize;
+						4: io_dout <= scr_hbl_l;
+						5: io_dout <= scr_hbl_r;
+						6: io_dout <= scr_vbl_t;
+						7: io_dout <= scr_vbl_b;
+					endcase
+
+				'h2D:
+					case(byte_cnt)
+						1: shbl_l <= io_din[11:0];
+						2: shbl_r <= io_din[11:0];
+						3: svbl_t <= io_din[11:0];
+						4: svbl_b <= io_din[11:0];
+					endcase
+
+				//UART flags
+				'h28: io_dout <= 16'b000_11111_000_11111;
+
+				//sdram size set
+				'h31: if(byte_cnt == 1) sdram_sz <= io_din;
+			
+				// Gamma
+				'h32: gamma_en <= io_din[0];
+				'h33:
+					begin
+						gamma_wr_addr <= {(byte_cnt[1:0]-1'b1),io_din[15:8]};
+						{gamma_wr, gamma_value} <= {1'b1,io_din[7:0]};
+						if (byte_cnt[1:0] == 3) byte_cnt <= 1;
+					end
 			endcase
 		end
-
-		//UART flags
-		if(cmd == 'h28) io_dout <= 16'b000_11111_000_11111;
-
-		//sdram size set
-		if(cmd == 'h31 && byte_cnt == 1) sdram_sz <= IO_DIN;
 	end
 end
 
