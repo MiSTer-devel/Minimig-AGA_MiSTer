@@ -1228,7 +1228,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
   ------------------------------------------------------------------------------
   --SR op
   ------------------------------------------------------------------------------
-  process (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
+  process (clk, Reset, FlagsSR, last_data_read, OP2out, exec, cpu)
   begin
 	if exec(andisR) = '1' then
 	  SRin <= FlagsSR and last_data_read(15 downto 8);
