@@ -529,7 +529,7 @@ always @(posedge CLK_VIDEO) begin
 end
 
 wire [2:0] fx;
-wire       scandoubler = ~lace && (fx || forced_scandoubler);
+wire       scandoubler = fx || forced_scandoubler;
 
 video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 (
@@ -559,7 +559,7 @@ assign VGA_F1 = field1;
 assign CLK_VIDEO = clk_114;
 
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
-assign VGA_SL = {~lace,~lace} & sl[1:0]; 
+assign VGA_SL = sl[1:0];
 
 reg  hde;
 wire vde = ~(fvbl | svbl);
