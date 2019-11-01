@@ -42,6 +42,7 @@ module agnus_beamcounter
 	output	reg _hsync,				// horizontal sync
 	output	reg _vsync,				// vertical sync
 	output       field1,          // 
+	output   reg lace,
 	output	_csync,					// composite sync
 	output	reg hblank,				// video blanking
 	output	reg vblank,				// video blanking
@@ -57,7 +58,6 @@ module agnus_beamcounter
 
 // local beam position counters
 reg		ersy;
-reg		lace;
 
 //local signals for beam counters and sync generator
 reg		long_frame;		// 1 : long frame (313 lines); 0 : normal frame (312 lines)

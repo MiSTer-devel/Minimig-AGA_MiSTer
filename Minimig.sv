@@ -136,12 +136,15 @@ wire [15:0] fpga_dout;
 wire        ce_pix;
 wire [15:0] sdram_sz;
 wire  [1:0] buttons;
+wire        forced_scandoubler;
 
 wire        io_strobe;
 wire        io_wait;
 wire        io_fpga;
 wire        io_uio;
 wire [15:0] io_din;
+
+wire [21:0] gamma_bus;
 
 hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -160,8 +163,6 @@ hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
 );
 
 
-assign SDRAM_CKE    = 1;
-
 assign AUDIO_L      = {ldata, 1'b0};
 assign AUDIO_R      = {rdata, 1'b0};
 assign AUDIO_S      = 1;
@@ -169,15 +170,8 @@ assign AUDIO_S      = 1;
 assign LED_POWER[1] = 1;
 assign LED_DISK[1]  = 1;
 
-assign VGA_HS       = ~hs;
-assign VGA_VS       = ~vs;
 assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
 assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
-assign CE_PIXEL     = ce_out;
-assign CLK_VIDEO    = clk_57;
-
-reg ce_out = 0;
-always @(posedge CLK_VIDEO) ce_out <= ~ce_out;
 
 wire clk_57, clk_114;
 wire clk_sys;
@@ -321,7 +315,7 @@ cpu_wrapper cpu_wrapper
 	.vbr          (cpu_vbr         )
 );
 
-
+assign SDRAM_CKE = 1;
 assign SDRAM_CLK = clk_57;
 
 wire [15:0] ram_dout1;
@@ -489,14 +483,15 @@ minimig minimig
 	//video
 	._hsync       (hs               ), // horizontal sync
 	._vsync       (vs               ), // vertical sync
-	.field1       (VGA_F1           ),
-	.red          (VGA_R            ), // red
-	.green        (VGA_G            ), // green
-	.blue         (VGA_B            ), // blue
+	.field1       (field1           ),
+	.lace         (lace             ),
+	.red          (r                ), // red
+	.green        (g                ), // green
+	.blue         (b                ), // blue
 	.hblank       (hblank           ),
 	.vblank       (vbl              ),
 	.ar           (ar               ),
-	.scanline     (VGA_SL           ),
+	.scanline     (fx               ),
 	.ce_pix       (ce_pix           ),
 	.res          (res              ),
 
@@ -514,12 +509,63 @@ minimig minimig
 	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 );
 
-assign VGA_DE = hde & vde;
+reg ce_out = 0;
+always @(posedge CLK_VIDEO) begin
+	reg [3:0] div;
+	reg [3:0] add;
+	reg old_vs;
+	
+	div <= div + add;
+
+	old_vs <= vs;
+	if(old_vs & ~vs) begin
+		div <= 0;
+		add <= 1; // 7MHz
+		if(res[0]) add <= 2; // 14MHz
+		if(res[1] | ~scandoubler) add <= 4; // 28MHz
+	end
+
+	ce_out <= div[3] & !div[2:0];
+end
+
+wire [2:0] fx;
+wire       scandoubler = ~lace && (fx || forced_scandoubler);
+
+video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
+(
+	.*,
+
+	.clk_vid(CLK_VIDEO),
+	.ce_pix(ce_out),
+	.ce_pix_out(CE_PIXEL),
+
+	.scanlines(0),
+	.hq2x(fx==1),
+
+	.mono(0),
+
+	.R(r),
+	.G(g),
+	.B(b),
+
+	// Positive pulses.
+	.HSync(~hs),
+	.VSync(~vs),
+	.HBlank(~hde),
+	.VBlank(~vde)
+);
+
+assign VGA_F1 = field1;
+assign CLK_VIDEO = clk_114;
+
+wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
+assign VGA_SL = {~lace,~lace} & sl[1:0]; 
 
 reg  hde;
 wire vde = ~(fvbl | svbl);
 
 wire [7:0] red, green, blue, r,g,b;
+wire lace, field1;
 wire hblank, vbl;
 wire vblank = vbl | ~vs;
 reg  fhbl, fvbl, shbl, svbl;
@@ -555,7 +601,7 @@ always @(posedge clk_sys) begin
 	if(hcnt == 8)         fhbl <= 0;
 	if(hcnt == hmax-4'd8) fhbl <= 1;
 	
-	if(~old_hblank & hblank & ~VGA_F1 & (vcnt == vsta+1'd1)) hsize <= hcnt - hend;
+	if(~old_hblank & hblank & ~field1 & (vcnt == vsta+1'd1)) hsize <= hcnt - hend;
 end
 
 reg [11:0] vbl_t=0, vbl_b=0;
@@ -572,7 +618,7 @@ always @(posedge clk_sys) begin
 	if(old_hs & ~hs) vcnt <= vcnt + 1'd1;
 	if(~vs) vcnt <= 0;
 
-	if(~VGA_F1) begin
+	if(~field1) begin
 		if(old_vblank & ~vblank) vend <= vcnt;
 		if(~old_vblank & vblank) vsta <= vcnt;
 		if(old_vs & ~vs)         vmax <= vcnt;

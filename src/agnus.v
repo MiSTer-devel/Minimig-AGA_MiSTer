@@ -73,6 +73,7 @@ module agnus
   output  _vsync,            // vertical sync
   output  _csync,            // composite sync
   output  field1,
+  output  lace,
   output  hblank,            // video blanking
   output  vblank,            // video blanking
   output  hde,              // video horizontal data enable
@@ -474,6 +475,7 @@ agnus_beamcounter  bc1
   ._vsync(_vsync),
   ._csync(_csync),
   .field1(field1),
+  .lace(lace),
   .hblank(hblank),
   .vblank(vblank),
   .vbl(vbl),

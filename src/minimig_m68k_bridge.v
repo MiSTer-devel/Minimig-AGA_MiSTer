@@ -32,7 +32,6 @@ module minimig_m68k_bridge
 	input	clk,					// 28 MHz system clock
   input clk7_en,
   input clk7n_en,
-  input blk,
 	input	c1,						// clock enable signal
 	input	c3,						// clock enable signal
 	input	[9:0] eclk,				// ECLK enable signal

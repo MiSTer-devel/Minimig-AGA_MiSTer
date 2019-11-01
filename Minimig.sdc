@@ -4,10 +4,13 @@ derive_clock_uncertainty
 set_multicycle_path -from {emu|cpu_wrapper|cpu|*} -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -setup 2
 set_multicycle_path -from {emu|cpu_wrapper|cpu|*} -to [get_clocks {*|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -hold 1
 
-set_max_delay 14.5 -from {emu|amiga_clk|cck*} -to {emu|ram1|*}
-set_max_delay 14.5 -from {emu|minimig|*} -to {emu|ram1|*}
+set_multicycle_path -from {emu|amiga_clk|cck*} -to {emu|ram1|*} -setup 2
+set_multicycle_path -from {emu|amiga_clk|cck*} -to {emu|ram1|*} -hold 1
+set_multicycle_path -from {emu|minimig|*} -to {emu|ram1|*} -setup 2
+set_multicycle_path -from {emu|minimig|*} -to {emu|ram1|*} -hold 1
 
-set_max_delay  9.0 -from {emu|ram*|cpu_cache|*} -to {emu|cpu_wrapper|*}
+set_multicycle_path -from {emu|ram*|cpu_cache|*} -to {emu|cpu_wrapper|*} -start -setup 2
+set_multicycle_path -from {emu|ram*|cpu_cache|*} -to {emu|cpu_wrapper|*} -start -hold 1
 
 set_false_path -from {emu|cpu_wrapper|z3ram_*}
 set_false_path -from {emu|cpu_wrapper|z2ram_*}

@@ -221,13 +221,14 @@ module minimig
 	output 	     _vsync,      // vertical sync
 	output 	     _csync,      // composite sync
 	output 	     field1,
+	output        lace,
 	output 	     hblank,
 	output 	     vblank,
 	output  [7:0] red,
 	output  [7:0] green,
 	output  [7:0] blue,
 	output  [1:0] ar,
-	output  [1:0] scanline,
+	output  [2:0] scanline,
 	output 	     ce_pix,
 	output  [1:0] res,
 
@@ -467,6 +468,7 @@ agnus AGNUS1
 	._csync(_csync),
 	.hde(hde),
 	.field1(field1),
+	.lace(lace),
 	.hblank(hbl),
 	.vblank(vblank),
 	.sol(sol),
@@ -688,7 +690,6 @@ minimig_m68k_bridge CPU1
 	.clk(clk),
 	.clk7_en(clk7_en),
 	.clk7n_en(clk7n_en),
-	.blk(scanline[1]),
 	.c1(c1),
 	.c3(c3),
 	.cck(cck),

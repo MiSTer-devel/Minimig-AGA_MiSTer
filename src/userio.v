@@ -51,7 +51,7 @@ module userio (
 	output reg [ 8-1:0]  memory_config,
 	output reg [ 5-1:0]  chipset_config,
 	output reg [ 4-1:0]  floppy_config,
-	output reg [ 2-1:0]  scanline,
+	output reg [   2:0]  scanline,
 	output reg [ 2-1:0]  ar,
 	output reg [ 2-1:0]  blver,
 	output reg [ 5-1:0]  ide_config,
@@ -433,7 +433,7 @@ always @(posedge clk) begin
 				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[4:0];
 				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[4:0];
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];
-				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[1:0]};
+				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
 				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[4:0];
 				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
