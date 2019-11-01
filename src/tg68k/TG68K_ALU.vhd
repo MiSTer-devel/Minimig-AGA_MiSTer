@@ -761,9 +761,11 @@ process (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 			Flags(3 downto 0) <= set_flags;
 		  elsif exec(opcDIVU) = '1' and DIV_Mode /= 3 then
 			if V_Flag = '1' then
+			  -- TODO: check N flag in 68000 mode
+			  -- in 68020, not (signedOP xor set_flags(3)) passes WinUAE cpu test
 			  Flags(3 downto 0) <= "1010";
 			else
-			  Flags(3 downto 0) <= OP1in(15) & flag_z(1) & "00";
+			  Flags(3 downto 0) <= set_flags(3) & flag_z(1) & "00";
 			end if;
 		  elsif exec(write_reminder) = '1' and MUL_Mode /= 3 then -- z-flag MULU.l
 			Flags(3) <= set_flags(3);
