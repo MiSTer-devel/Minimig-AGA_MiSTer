@@ -136,7 +136,7 @@ assign BUTTONS = cfg[1:0];
 assign forced_scandoubler = cfg[4];
 
 reg [15:0] io_dout;
-reg  [5:0] byte_cnt;
+reg  [9:0] byte_cnt;
 
 always@(posedge clk_sys) begin
 	reg [7:0] cmd;
