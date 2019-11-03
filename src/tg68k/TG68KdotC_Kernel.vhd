@@ -1492,7 +1492,7 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 	end if;
 
 	------------------------------------------------------------------------------
-	--prepere opcode
+	--prepare opcode
 	------------------------------------------------------------------------------
 	case opcode(15 downto 12) is
 	  -- 0000 ----------------------------------------------------------------------------
@@ -1520,6 +1520,13 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 		  end if;
 		else
 		  if opcode(8) = '1' or opcode(11 downto 9) = "100" then --Bits
+			if opcode(5 downto 3) = "001" -- ea An illegal mode
+				or (opcode(8 downto 2) = "1001111" and opcode(1 downto 0) /= "00") -- BTST bit number dynamic illegal modes
+				or (opcode(8 downto 3) = "000111" and opcode(2) /= '0') -- BTST bit number static illegal modes
+				or (opcode(7 downto 6) /= "00" and opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00") then -- BCHG, BCLR, BSET illegal modes
+			  trap_illegal <= '1';
+			  trapmake <= '1';
+			else
 			set_exec(opcBITS) <= '1';
 			set_exec(ea_data_OP1) <= '1';
 			if opcode(7 downto 6) /= "00" then
@@ -1542,64 +1549,116 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 			else
 			  ea_build_now <= '1';
 			end if;
-		  elsif opcode(11 downto 9) = "111" then --MOVES not in 68000
-			trap_illegal <= '1';
-			-- trap_addr_error <= '1';
-			trapmake <= '1';
-		  else --andi, ...xxxi
-			if opcode(11 downto 9) = "000" then --orI
-			  set_exec(opcor) <= '1';
 			end if;
-			if opcode(11 downto 9) = "001" then --andI
-			  set_exec(opcand) <= '1';
-			end if;
-			if opcode(11 downto 9) = "010" or opcode(11 downto 9) = "011" then --SUBI, ADDI
-			  set_exec(opcADD) <= '1';
-			end if;
-			if opcode(11 downto 9) = "101" then --EorI
-			  set_exec(opcEor) <= '1';
-			end if;
-			if opcode(11 downto 9) = "110" then --CMPI
-			  set_exec(opcCMP) <= '1';
-			end if;
-			if opcode(7) = '0' and opcode(5 downto 0) = "111100" and (set_exec(opcand) or set_exec(opcor) or set_exec(opcEor)) = '1' then --SR
-			  if decodeOPC = '1' and SVmode = '0' and opcode(6) = '1' then --SR
+		  elsif opcode(11 downto 9) = "111" then --MOVES
+			if VBR_Stackframe = 0 or (cpu(0) = '0' and VBR_Stackframe = 2) then -- not in 68000
+			  trap_illegal <= '1';
+			  trapmake <= '1';
+			else
+			  if opcode(7 downto 6) = "11" or opcode(5 downto 4) = "00" or (opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00") then
+				trap_illegal <= '1';
+				trapmake <= '1';
+			  elsif SVmode = '0' then
 				trap_priv <= '1';
 				trapmake <= '1';
 			  else
-				set(no_Flags) <= '1';
-				if decodeOPC = '1' then
-				  if opcode(6) = '1' then
-					set(to_SR) <= '1';
-				  end if;
-				  set(to_CCR) <= '1';
-				  set(andisR) <= set_exec(opcand);
-				  set(eorisR) <= set_exec(opcEor);
-				  set(orisR) <= set_exec(opcor);
-				  setstate <= "01";
-				  next_micro_state <= nopnop;
-				end if;
+				-- TODO: implement MOVES
+				trap_illegal <= '1';
+				trapmake <= '1';
 			  end if;
+			end if;
+		  else --andi, ...xxxi
+			if opcode(5 downto 3) = "001" then -- ea An
+			  trap_illegal <= '1';
+			  trapmake <= '1';
 			else
-			  if decodeOPC = '1' then
-				next_micro_state <= andi;
-				set(ea_build) <= '1';
-				set_direct_data <= '1';
-				if datatype = "10" then
-				  set(longaktion) <= '1';
+			  if opcode(11 downto 9) = "000" then --orI
+				if opcode(7 downto 6) = "11" or (opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00" and opcode(2 downto 0) /= "100") then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  set_exec(opcor) <= '1';
 				end if;
 			  end if;
-			  if opcode(5 downto 4) /= "00" then
-				set_exec(ea_data_OP1) <= '1';
-			  end if;
-			  if opcode(11 downto 9) /= "110" then --CMPI
-				if opcode(5 downto 4) = "00" then
-				  set_exec(Regwrena) <= '1';
+			  if opcode(11 downto 9) = "001" then --andI
+				if opcode(7 downto 6) = "11" or (opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00" and opcode(2 downto 0) /= "100") then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  set_exec(opcand) <= '1';
 				end if;
-				write_back <= '1';
 			  end if;
-			  if opcode(10 downto 9) = "10" then --CMPI, SUBI
-				set(addsub) <= '1';
+			  if opcode(11 downto 9) = "010" or opcode(11 downto 9) = "011" then --SUBI, ADDI
+				if opcode(7 downto 6) = "11" or (opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00") then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  set_exec(opcADD) <= '1';
+				end if;
+			  end if;
+			  if opcode(11 downto 9) = "101" then --EorI
+				if opcode(7 downto 6) = "11" or (opcode(5 downto 3) = "111" and opcode(2 downto 1) /= "00" and opcode(2 downto 0) /= "100") then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  set_exec(opcEor) <= '1';
+				end if;
+			  end if;
+			  if opcode(11 downto 9) = "110" then --CMPI
+				if opcode(7 downto 6) = "11" or (opcode(5 downto 3) = "111" and opcode(2) /= '0') then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  set_exec(opcCMP) <= '1';
+				end if;
+			  end if;
+			  if (set_exec(opcor) or set_exec(opcand) or set_exec(opcADD) or set_exec(opcEor) or set_exec(opcCMP)) = '1' then
+				if opcode(7) = '0' and opcode(5 downto 0) = "111100" and (set_exec(opcand) or set_exec(opcor) or set_exec(opcEor)) = '1' then --SR
+				  if decodeOPC = '1' and SVmode = '0' and opcode(6) = '1' then --SR
+					trap_priv <= '1';
+					trapmake <= '1';
+				  else
+					set(no_Flags) <= '1';
+					if decodeOPC = '1' then
+					  if opcode(6) = '1' then
+						set(to_SR) <= '1';
+					  end if;
+					  set(to_CCR) <= '1';
+					  set(andisR) <= set_exec(opcand);
+					  set(eorisR) <= set_exec(opcEor);
+					  set(orisR) <= set_exec(opcor);
+					  setstate <= "01";
+					  next_micro_state <= nopnop;
+					end if;
+				  end if;
+				elsif opcode(7) = '1' and opcode(5 downto 0) = "111100" and (set_exec(opcand) or set_exec(opcor) or set_exec(opcEor)) = '1' then
+				  trap_illegal <= '1';
+				  trapmake <= '1';
+				else
+				  if decodeOPC = '1' then
+					next_micro_state <= andi;
+					set(ea_build) <= '1';
+					set_direct_data <= '1';
+					if datatype = "10" then
+					  set(longaktion) <= '1';
+					end if;
+				  end if;
+				  if opcode(5 downto 4) /= "00" then
+					set_exec(ea_data_OP1) <= '1';
+				  end if;
+				  if opcode(11 downto 9) /= "110" then --CMPI
+					if opcode(5 downto 4) = "00" then
+					  set_exec(Regwrena) <= '1';
+					end if;
+					write_back <= '1';
+				  end if;
+				  if opcode(10 downto 9) = "10" then --CMPI, SUBI
+					set(addsub) <= '1';
+				  end if;
+				end if;
+			  else
+				trap_illegal <= '1';
+				trapmake <= '1';
 			  end if;
 			end if;
 		  end if;
