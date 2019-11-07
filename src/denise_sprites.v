@@ -114,12 +114,15 @@ always @ (*) begin
   endcase
 end
 
+wire clk7n_en = c1 & c3;
+
 
 // instantiate sprite 0
 denise_sprites_shifter sps0
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr0),
   .address(reg_address_in[2:1]),
@@ -137,6 +140,7 @@ denise_sprites_shifter sps1
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr1),
   .address(reg_address_in[2:1]),
@@ -154,6 +158,7 @@ denise_sprites_shifter sps2
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr2),
   .address(reg_address_in[2:1]),
@@ -171,6 +176,7 @@ denise_sprites_shifter sps3
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr3),
   .address(reg_address_in[2:1]),
@@ -188,6 +194,7 @@ denise_sprites_shifter sps4
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr4),
   .address(reg_address_in[2:1]),
@@ -205,6 +212,7 @@ denise_sprites_shifter sps5
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr5),
   .address(reg_address_in[2:1]),
@@ -222,6 +230,7 @@ denise_sprites_shifter sps6
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr6),
   .address(reg_address_in[2:1]),
@@ -239,6 +248,7 @@ denise_sprites_shifter sps7
 (
   .clk(clk),
   .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
   .reset(reset),
   .aen(selspr7),
   .address(reg_address_in[2:1]),
