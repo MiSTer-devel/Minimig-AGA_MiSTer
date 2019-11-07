@@ -28,7 +28,7 @@ end;
 
 architecture RTL of RAM_LUT is
 
-  type regfile_t is ARRAY(0 TO 15) OF std_logic_vector(31 downto 0);
+  type regfile_t is ARRAY(0 TO (2**g_depth) - 1) OF std_logic_vector(g_width-1 downto 0);
   signal regfile                : regfile_t := (OTHERS => (OTHERS => '0'));
   attribute ramstyle            : string;
   attribute ramstyle of regfile : signal is "logic";
