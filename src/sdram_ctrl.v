@@ -230,7 +230,7 @@ always @ (posedge sysclk) begin
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
-	if(~old_7m & c_7m) sdram_state <= 1;
+	if(~old_7m & c_7m) sdram_state <= 15;
 end
 
 //// sdram control ////
