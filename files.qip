@@ -8,7 +8,6 @@ set_global_assignment -name QIP_FILE src/denise.qip
 set_global_assignment -name VERILOG_FILE src/gary.v
 set_global_assignment -name VERILOG_FILE src/userio.v
 set_global_assignment -name VERILOG_FILE src/cart.v
-set_global_assignment -name VHDL_FILE src/bram.vhd
 set_global_assignment -name VERILOG_FILE src/amiga_clk.v
 set_global_assignment -name VERILOG_FILE src/minimig_syscontrol.v
 set_global_assignment -name VERILOG_FILE src/minimig_sram_bridge.v
