@@ -20,6 +20,11 @@
 { "" "" "" "Ignored filter at sys_top.sdc(16): vip\|output_inst\|vid_clk could not be matched with a net" {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Ignored create_generated_clock at sys_top.sdc(15): Argument <targets> is an empty collection" {  } {  } 0 332049 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "Ignored filter at sys_top.sdc(34): VID_CLK could not be matched with a clock" {  } {  } 0 332174 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at m68k.vhd(125): object \"regfile\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at m68k.vhd(134): object \"memaddr_delta_sel\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at m68k.vhd(143): object \"data_write_sel\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at m68k.vhd(209): object \"byte\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
+{ "" "" "" "Verilog HDL or VHDL warning at m68k_alu.vhd(117): object \"OP2out_cmp2_t1\" assigned a value but never read" {  } {  } 0 10036 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "*" {  } {  } 0 276027 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68K.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}
 { "" "" "" "TG68KdotC_Kernel.vhd" {  } {  } 0 9999 "" 0 0 "Design Software" 0 -1 0 ""}

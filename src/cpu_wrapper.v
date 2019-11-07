@@ -116,7 +116,7 @@ wire cpu_req = (cpustate != 1);
 
 wire [15:0] cpu_dout;
 wire [31:0] cpu_addr;
-
+/*
 TG68KdotC_Kernel
 #(
 	.sr_read(2),        // 0=>user,   1=>privileged,    2=>switchable with CPU(0)
@@ -147,6 +147,33 @@ cpu
   .cacr_out(cacr),
   .vbr_out(vbr)
 );
+*/
+
+M68K_Core cpu
+(
+	.i_clk(clk),
+	.i_ena(~cpu_req | chipready | ramready),
+
+	.i_rst(~reset),        // note active high
+	.o_reset_l(reset_out),
+
+	.i_cpu_type(cpucfg),
+
+	.i_ipl_l(cpu_ipl),
+	.i_ipl_autovector(1),
+
+	.i_data(ramsel ? ramdout : chipdout),
+	.o_addr(cpu_addr),
+	.o_data(cpu_dout),
+	.o_wr_l(wr),
+	.o_uds_l(uds_in),
+	.o_lds_l(lds_in),
+	.o_busstate(cpustate), // 00-> fetch code 10->read data 11->write data 01->no memaccess
+
+	.o_cacr(cacr),
+	.o_vbr(vbr)
+);
+
 
 wire cchip = turbochip_d & (!cpustate | dcache_d);
 wire ckick = turbokick_d & (!cpustate | dcache_d);
