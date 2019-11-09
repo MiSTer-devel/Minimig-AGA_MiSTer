@@ -27,7 +27,7 @@
 module cpu_wrapper
 (
 	input             reset,
-	output            reset_out,
+	output reg        reset_out,
 
 	input             clk,
 	input             ph1,
@@ -58,9 +58,9 @@ module cpu_wrapper
 	output            ramlds,
 	output            ramuds,
 
-	output      [1:0] cpustate,
-	output      [3:0] cacr,
-	output     [31:0] vbr
+	output reg  [1:0] cpustate,
+	output reg  [3:0] cacr,
+	output reg [31:0] vbr
 );   
 
 assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram);
@@ -108,15 +108,22 @@ assign ramaddr[22:19] = cpu_addr[22:19];
 assign ramaddr[18]    = (sel_kicklower & bootrom) | cpu_addr[18];
 assign ramaddr[17:1]  = cpu_addr[17:1];
 
-wire wr;
-wire uds_in;
-wire lds_in;
+reg [31:0] cpu_addr;
+reg [15:0] cpu_dout;
+reg        wr;
+reg        uds_in;
+reg        lds_in;
 
-wire cpu_req = (cpustate != 1);
+wire [15:0] cpu_dout_tg;
+wire [31:0] cpu_addr_tg;
+wire  [1:0] cpustate_tg;
+wire  [3:0] cacr_tg;
+wire [31:0] vbr_tg;
+wire        wr_tg;
+wire        uds_in_tg;
+wire        lds_in_tg;
+wire        reset_out_tg;
 
-wire [15:0] cpu_dout;
-wire [31:0] cpu_addr;
-/*
 TG68KdotC_Kernel
 #(
 	.sr_read(2),        // 0=>user,   1=>privileged,    2=>switchable with CPU(0)
@@ -126,7 +133,7 @@ TG68KdotC_Kernel
 	.div_mode(2),       // 0=>16Bit,  1=>32Bit,         2=>switchable with CPU(1),  3=>no DIV,
 	.bitfield(2)        // 0=>no,     1=>yes,           2=>switchable with CPU(1)
 )
-cpu
+cpu_inst_tg68k
 (
   .clk(clk),
   .nreset(reset),
@@ -135,27 +142,36 @@ cpu
   .ipl(cpu_ipl),
   .ipl_autovector(1),
   .regin_out(),
-  .addr_out(cpu_addr),
-  .data_write(cpu_dout),
-  .nwr(wr),
-  .nuds(uds_in),
-  .nlds(lds_in),
-  .nresetout(reset_out),
+  .addr_out(cpu_addr_tg),
+  .data_write(cpu_dout_tg),
+  .nwr(wr_tg),
+  .nuds(uds_in_tg),
+  .nlds(lds_in_tg),
+  .nresetout(reset_out_tg),
   
   .cpu(cpucfg),
-  .busstate(cpustate),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
-  .cacr_out(cacr),
-  .vbr_out(vbr)
+  .busstate(cpustate_tg),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
+  .cacr_out(cacr_tg),
+  .vbr_out(vbr_tg)
 );
-*/
 
-M68K_Core cpu
+wire [15:0] cpu_dout_m;
+wire [31:0] cpu_addr_m;
+wire  [1:0] cpustate_m;
+wire  [3:0] cacr_m;
+wire [31:0] vbr_m;
+wire        wr_m;
+wire        uds_in_m;
+wire        lds_in_m;
+wire        reset_out_m;
+
+M68K_Core cpu_inst_m68k
 (
 	.i_clk(clk),
 	.i_ena(~cpu_req | chipready | ramready),
 
 	.i_rst(~reset),        // note active high
-	.o_reset_l(reset_out),
+	.o_reset_l(reset_out_m),
 
 	.i_cpu_type(cpucfg),
 
@@ -163,17 +179,43 @@ M68K_Core cpu
 	.i_ipl_autovector(1),
 
 	.i_data(ramsel ? ramdout : chipdout),
-	.o_addr(cpu_addr),
-	.o_data(cpu_dout),
-	.o_wr_l(wr),
-	.o_uds_l(uds_in),
-	.o_lds_l(lds_in),
-	.o_busstate(cpustate), // 00-> fetch code 10->read data 11->write data 01->no memaccess
+	.o_addr(cpu_addr_m),
+	.o_data(cpu_dout_m),
+	.o_wr_l(wr_m),
+	.o_uds_l(uds_in_m),
+	.o_lds_l(lds_in_m),
+	.o_busstate(cpustate_m), // 00-> fetch code 10->read data 11->write data 01->no memaccess
 
-	.o_cacr(cacr),
-	.o_vbr(vbr)
+	.o_cacr(cacr_m),
+	.o_vbr(vbr_m)
 );
 
+always @* begin
+	if(cpucfg[1]) begin
+		cpu_dout  = cpu_dout_m;
+		cpu_addr  = cpu_addr_m;
+		cpustate  = cpustate_m;
+		cacr      = cacr_m;
+		vbr       = vbr_m;
+		wr        = wr_m;
+		uds_in    = uds_in_m;
+		lds_in    = lds_in_m;
+		reset_out = reset_out_m;
+	end
+	else begin
+		cpu_dout  = cpu_dout_tg;
+		cpu_addr  = cpu_addr_tg;
+		cpustate  = cpustate_tg;
+		cacr      = cacr_tg;
+		vbr       = vbr_tg;
+		wr        = wr_tg;
+		uds_in    = uds_in_tg;
+		lds_in    = lds_in_tg;
+		reset_out = reset_out_tg;
+	end
+end
+
+wire cpu_req = (cpustate != 1);
 
 wire cchip = turbochip_d & (!cpustate | dcache_d);
 wire ckick = turbokick_d & (!cpustate | dcache_d);
