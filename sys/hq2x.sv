@@ -309,12 +309,12 @@ module Blend
 	output [23:0] Result
 );
 
-	localparam BLEND1 = 7'b110_10_00; // (A * 12 + B * 4) >> 4
-	localparam BLEND2 = 7'b100_10_10; // (A * 8 + B * 4 + C * 4) >> 4
+	localparam BLEND1 = 7'b110_10_00; // (A * 12 + B * 4        ) >> 4
+	localparam BLEND2 = 7'b100_10_10; // (A *  8 + B * 4 + C * 4) >> 4
 	localparam BLEND3 = 7'b101_10_01; // (A * 10 + B * 4 + C * 2) >> 4
 	localparam BLEND4 = 7'b110_01_01; // (A * 12 + B * 2 + C * 2) >> 4
-	localparam BLEND5 = 7'b010_11_11; // (A * 4 + (B + C) * 6) >> 4
-	localparam BLEND6 = 7'b111_00_00; // (A * 14 + B + C) >> 4
+	localparam BLEND5 = 7'b010_11_11; // (A *  4 + B * 6 + C * 6) >> 4
+	localparam BLEND6 = 7'b111_00_00; // (A * 14 + B * 1 + C * 1) >> 4
 
 	reg [23:0] a,b,d,e,h,f;
 	reg  [3:0] bl_rule;
@@ -332,9 +332,9 @@ module Blend
 	always @(posedge clk) if (clk_en) begin
 		i10 <= e;
 		case({!is_diff, bl_rule})
-		1,11,12,13,17: {op0, i20, i30} <= {BLEND1, a, b};
-		      2,14,18: {op0, i20, i30} <= {BLEND1, d, b};
-		      3,15,19: {op0, i20, i30} <= {BLEND1, b, d};
+		1,11,12,13,17: {op0, i20, i30} <= {BLEND1, a, 24'd0};
+		      2,14,18: {op0, i20, i30} <= {BLEND1, d, 24'd0};
+		      3,15,19: {op0, i20, i30} <= {BLEND1, b, 24'd0};
 			4,20,24,27: {op0, i20, i30} <= {BLEND2, d, b};
 			      5,21: {op0, i20, i30} <= {BLEND2, a, b};
 			      6,22: {op0, i20, i30} <= {BLEND2, a, d};
@@ -343,7 +343,7 @@ module Blend
 			        28: {op0, i20, i30} <= {BLEND4, d, b};
 			        30: {op0, i20, i30} <= {BLEND3, b, d};
 			        31: {op0, i20, i30} <= {BLEND3, d, b};
-		      default: {op0, i20, i30} <= {BLEND2, e, e}; 
+		      default: {op0, i20, i30} <= {BLEND1, e, 24'd0}; 
 		endcase
 	end
 
@@ -358,9 +358,9 @@ module Blend
 		input   [2:0] op2;
 	begin
 		mul24x3 = 0;
-		if(op2[0]) mul24x3 = mul24x3 + {3'b000, op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0]};
-		if(op2[1]) mul24x3 = mul24x3 + {2'b00, op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0], 1'b0};
-		if(op2[2]) mul24x3 = mul24x3 + {1'b0, op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0], 2'b00};
+		if(op2[0]) mul24x3 = mul24x3 + {op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0]};
+		if(op2[1]) mul24x3 = mul24x3 + {op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0], 1'b0};
+		if(op2[2]) mul24x3 = mul24x3 + {op1[23:16], 4'b0000, op1[15:8], 4'b0000, op1[7:0], 2'b00};
 	end
 	endfunction
 
