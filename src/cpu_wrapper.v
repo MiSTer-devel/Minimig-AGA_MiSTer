@@ -61,7 +61,10 @@ module cpu_wrapper
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
 	output reg [31:0] vbr
-);   
+);
+
+// Uncomment to use M68K for 68020 mode
+// `define M68K20
 
 assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram);
 
@@ -108,11 +111,11 @@ assign ramaddr[22:19] = cpu_addr[22:19];
 assign ramaddr[18]    = (sel_kicklower & bootrom) | cpu_addr[18];
 assign ramaddr[17:1]  = cpu_addr[17:1];
 
-reg [31:0] cpu_addr;
-reg [15:0] cpu_dout;
-reg        wr;
-reg        uds_in;
-reg        lds_in;
+wire [31:0] cpu_addr = {cpucfg[1] ? cpu_a[31:24] : 8'd0, cpu_a[23:0]};
+reg  [15:0] cpu_dout;
+reg         wr;
+reg         uds_in;
+reg         lds_in;
 
 wire [15:0] cpu_dout_tg;
 wire [31:0] cpu_addr_tg;
@@ -155,6 +158,7 @@ cpu_inst_tg68k
   .vbr_out(vbr_tg)
 );
 
+`ifdef M68K20
 wire [15:0] cpu_dout_m;
 wire [31:0] cpu_addr_m;
 wire  [1:0] cpustate_m;
@@ -189,11 +193,14 @@ M68K_Core cpu_inst_m68k
 	.o_cacr(cacr_m),
 	.o_vbr(vbr_m)
 );
+`endif
 
+reg [31:0] cpu_a;
 always @* begin
+`ifdef M68K20
 	if(cpucfg[1]) begin
 		cpu_dout  = cpu_dout_m;
-		cpu_addr  = cpu_addr_m;
+		cpu_a     = cpu_addr_m;
 		cpustate  = cpustate_m;
 		cacr      = cacr_m;
 		vbr       = vbr_m;
@@ -202,9 +209,11 @@ always @* begin
 		lds_in    = lds_in_m;
 		reset_out = reset_out_m;
 	end
-	else begin
+	else 
+`endif
+	begin
 		cpu_dout  = cpu_dout_tg;
-		cpu_addr  = cpu_addr_tg;
+		cpu_a     = cpu_addr_tg;
 		cpustate  = cpustate_tg;
 		cacr      = cacr_tg;
 		vbr       = vbr_tg;
@@ -236,17 +245,19 @@ always @(posedge clk) begin
 	end
 end
 
+wire cfg_z3 = fastramcfg[2] & cpucfg[1];
+
 reg [3:0] autocfg_data;
 always @(*) begin
 	autocfg_data = 4'b1111;
   
 	if (autocfg_card) begin
-		if (~fastramcfg[2]) begin
+		if (~cfg_z3) begin
 			// Zorro II RAM (Up to 8 meg at 0x200000)
 			case (cpu_addr[6:1])
 				6'b000000: autocfg_data = 4'b1110;	// Zorro-II card, add mem, no ROM
 				6'b000001:
-					case (fastramcfg[1:0])
+					case (fastramcfg)
 							   1: autocfg_data = 4'b0110; // 2MB
 							   2: autocfg_data = 4'b0111; // 4MB
 						default: autocfg_data = 4'b0000; // 8MB
@@ -294,7 +305,7 @@ always @(posedge clk) begin
 		z3ram_base1 <= 1;
 	end
 	else if (sel_autoconfig && ~wr && ~uds_in && chipready) begin
-		if (~fastramcfg[2]) begin
+		if (~cfg_z3) begin
 			if (cpu_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
 				z2ram_ena <= 1;
 				autocfg_card <= 0;
