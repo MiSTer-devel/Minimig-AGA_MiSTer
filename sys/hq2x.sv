@@ -149,13 +149,27 @@ reg [AWIDTH:0] offs;
 always @(posedge clk) begin
 	reg old_reset_line;
 	reg old_reset_frame;
-	reg [2:0] wrdata_finished;
+	reg [3:0] wrdata_finished;
 	reg [AWIDTH+1:0] waddr; 
 
 	wrout_en <= 0;
 	wrin_en  <= 0;
 
 	if(ce_in) begin
+
+		// blend_result has been delayed by 4 cycles
+		case(cyc)
+			0: wrdata[DWIDTH:0]                   <= blend_result;
+			1: wrdata[DWIDTH1+DWIDTH:DWIDTH1]     <= blend_result;
+			2: wrdata[DWIDTH1*3+DWIDTH:DWIDTH1*3] <= blend_result;
+			3: wrdata[DWIDTH1*2+DWIDTH:DWIDTH1*2] <= blend_result;
+		endcase
+
+		wrdata_finished <= wrdata_finished << 1;
+		if(wrdata_finished[3]) begin
+			wrout_en <= 1;
+			wrout_addr <= waddr;
+		end
 
 		if(~&offs) begin
 			if (cyc == 1) begin
@@ -167,24 +181,10 @@ always @(posedge clk) begin
 				wrin_en <= 1;
 			end
 
-			// blend_result has been delayed by 3 cycles
-			case(cyc)
-				3: wrdata[DWIDTH:0]                   <= blend_result;
-				0: wrdata[DWIDTH1+DWIDTH:DWIDTH1]     <= blend_result;
-				1: wrdata[DWIDTH1*3+DWIDTH:DWIDTH1*3] <= blend_result;
-				2: wrdata[DWIDTH1*2+DWIDTH:DWIDTH1*2] <= blend_result;
-			endcase
-
-			wrdata_finished <= wrdata_finished << 1;
 			if(cyc==3) begin
 				offs <= offs + 1'd1;
 				waddr <= {offs, curbuf};
 				wrdata_finished[0] <= 1;
-			end
-
-			if(wrdata_finished[2]) begin
-				wrout_en <= 1;
-				wrout_addr <= waddr;
 			end
 		end
 
@@ -249,15 +249,15 @@ endmodule
 
 module hq2x_buf #(parameter NUMWORDS, parameter AWIDTH, parameter DWIDTH)
 (
-	input                   clock,
-	input        [DWIDTH:0] data,
-	input        [AWIDTH:0] rdaddress,
-	input        [AWIDTH:0] wraddress,
-	input                   wren,
-	output logic [DWIDTH:0] q
+	input                 clock,
+	input      [DWIDTH:0] data,
+	input      [AWIDTH:0] rdaddress,
+	input      [AWIDTH:0] wraddress,
+	input                 wren,
+	output reg [DWIDTH:0] q
 );
 
-logic [DWIDTH:0] ram[0:NUMWORDS-1];
+reg [DWIDTH:0] ram[0:NUMWORDS-1];
 
 always_ff@(posedge clock) begin
 	if(wren) ram[wraddress] <= data;
@@ -279,8 +279,7 @@ module DiffCheck
 	wire [7:0] g = rgb1[15:9]  - rgb2[15:9];
 	wire [7:0] b = rgb1[23:17] - rgb2[23:17];
 	wire [8:0] t = $signed(r) + $signed(b);
-	wire [8:0] gx = {g[7], g};
-	wire [9:0] y = $signed(t) + $signed(gx);
+	wire [9:0] y = $signed(t) + $signed({g[7], g});
 	wire [8:0] u = $signed(r) - $signed(b);
 	wire [9:0] v = $signed({g, 1'b0}) - $signed(t);
 
@@ -288,7 +287,7 @@ module DiffCheck
 	wire y_inside = (y < 10'h60 || y >= 10'h3a0);
 
 	// if u is inside (-16, 16)
-	wire u_inside = (u < 9'h10 || u >= 9'h1f0);
+	wire u_inside = (!u[8:4] || &u[8:4]); //(u < 9'h10 || u >= 9'h1f0);
 
 	// if v is inside (-24, 24)
 	wire v_inside = (v < 10'h18 || v >= 10'h3e8);
@@ -328,24 +327,30 @@ module Blend
 	wire is_diff;
 	DiffCheck diff_checker(df_rule[1] ? b : h, df_rule[0] ? d : f, is_diff);
 
+	reg [23:0] i10,i20,i30;
+	reg  [6:0] op0;
+	always @(posedge clk) if (clk_en) begin
+		i10 <= e;
+		case({!is_diff, bl_rule})
+		1,11,12,13,17: {op0, i20, i30} <= {BLEND1, a, b};
+		      2,14,18: {op0, i20, i30} <= {BLEND1, d, b};
+		      3,15,19: {op0, i20, i30} <= {BLEND1, b, d};
+			4,20,24,27: {op0, i20, i30} <= {BLEND2, d, b};
+			      5,21: {op0, i20, i30} <= {BLEND2, a, b};
+			      6,22: {op0, i20, i30} <= {BLEND2, a, d};
+		        25,29: {op0, i20, i30} <= {BLEND5, d, b};
+			        26: {op0, i20, i30} <= {BLEND6, d, b};
+			        28: {op0, i20, i30} <= {BLEND4, d, b};
+			        30: {op0, i20, i30} <= {BLEND3, b, d};
+			        31: {op0, i20, i30} <= {BLEND3, d, b};
+		      default: {op0, i20, i30} <= {BLEND2, e, e}; 
+		endcase
+	end
+
 	reg [23:0] i1,i2,i3;
 	reg  [6:0] op;
 	always @(posedge clk) if (clk_en) begin
-		i1 <= e;
-		case({!is_diff, bl_rule})
-		1,11,12,13,17: {op, i2, i3} <= {BLEND1, a, b};
-		      2,14,18: {op, i2, i3} <= {BLEND1, d, b};
-		      3,15,19: {op, i2, i3} <= {BLEND1, b, d};
-			4,20,24,27: {op, i2, i3} <= {BLEND2, d, b};
-			      5,21: {op, i2, i3} <= {BLEND2, a, b};
-			      6,22: {op, i2, i3} <= {BLEND2, a, d};
-		        25,29: {op, i2, i3} <= {BLEND5, d, b};
-			        26: {op, i2, i3} <= {BLEND6, d, b};
-			        28: {op, i2, i3} <= {BLEND4, d, b};
-			        30: {op, i2, i3} <= {BLEND3, b, d};
-			        31: {op, i2, i3} <= {BLEND3, d, b};
-		      default: {op, i2, i3} <= {BLEND2, e, e}; 
-		endcase
+		op <= op0; i1 <= i10; i2 <= i20; i3 <= i30;
 	end
 
 	function  [34:0] mul24x3;
