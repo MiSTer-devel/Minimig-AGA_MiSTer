@@ -73,8 +73,8 @@ paula_audio_volume sv3
 // channel muxing
 // !!! this is 28MHz clock !!!
 always @ (posedge clk) begin
-  ldatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
-  rdatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
+  rdatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
+  ldatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
 end
 
 
