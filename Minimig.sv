@@ -243,13 +243,13 @@ always @(posedge clk_114) begin
 			cpu_ph1 <= 0;
 			cpu_ph2 <= 0;
 			case (div[3:2])
-				0: cpu_ph1 <= 1;
-				2: cpu_ph2 <= 1;
+				0: cpu_ph2 <= 1;
+				2: cpu_ph1 <= 1;
 			endcase
 		end
 	end
 
-	ram_cs <= ~(ram_ready & en) & ram_sel;
+	ram_cs <= ~(ram_ready & en & cpucfg[1]) & ram_sel;
 end
 
 

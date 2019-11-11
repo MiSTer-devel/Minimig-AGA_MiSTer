@@ -53,6 +53,8 @@ module ddram_ctrl
 	output            ramready
 );
 
+wire ramsel = cpuCS & (~&cpustate | ~cpuU | ~cpuL);
+
 wire cache_hit;
 wire cache_req;
 reg  cache_fill;
@@ -65,7 +67,7 @@ cpu_cache_new cpu_cache
 	.cache_en         (1),                      // cache enable
 	.cpu_cache_ctrl   (cpu_cache_ctrl),         // CPU cache control
 	.cache_inhibit    (cache_inhibit),          // cache inhibit
-	.cpu_cs           (cpuCS),                  // cpu activity
+	.cpu_cs           (ramsel),                 // cpu activity
 	.cpu_adr          (cpuAddr),                // cpu address
 	.cpu_bs           (~{cpuU, cpuL}),          // cpu byte selects
 	.cpu_we           (cpustate == 3),          // cpu write
@@ -98,7 +100,7 @@ always @ (posedge sysclk) begin
 	end else begin
 		case(write_state)
 			default:
-				if(cpuCS && cpustate == 3) begin
+				if(ramsel && cpustate == 3) begin
 					writeAddr <= cpuAddr;
 					writeDat  <= cpuWR;
 					writeBE   <= ~{cpuU, cpuL};
@@ -117,7 +119,7 @@ always @ (posedge sysclk) begin
 
 			2: if(!write_ack) write_state <= 0;
 		endcase
-		if(~cpuCS) write_ena <= 0;
+		if(~ramsel) write_ena <= 0;
 	end
 end
 

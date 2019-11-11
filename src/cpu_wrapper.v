@@ -72,7 +72,6 @@ assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickra
 reg [31:0] NMI_addr;
 always @(posedge clk) NMI_addr <= reset ? (vbr + 32'h7c) : 32'h7c;
 
-wire sel_autoconfig = fastramcfg && cpu_addr[23:19] == 5'b11101 && autocfg_card; 		//$E80000 - $EFFFFF
 wire sel_z3ram0 = (cpu_addr[31:27] == z3ram_base0) && z3ram_ena0;
 wire sel_z3ram1 = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;
 wire sel_z2ram  = !cpu_addr[31:24] && (cpu_addr[23] ^ |cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4
@@ -111,21 +110,91 @@ assign ramaddr[22:19] = cpu_addr[22:19];
 assign ramaddr[18]    = (sel_kicklower & bootrom) | cpu_addr[18];
 assign ramaddr[17:1]  = cpu_addr[17:1];
 
-wire [31:0] cpu_addr = {cpucfg[1] ? cpu_a[31:24] : 8'd0, cpu_a[23:0]};
+reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
+wire [15:0] cpu_din = ramsel ? ramdout : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
 reg         wr;
 reg         uds_in;
 reg         lds_in;
+reg  [15:0] chip_data;
 
-wire [15:0] cpu_dout_tg;
-wire [31:0] cpu_addr_tg;
-wire  [1:0] cpustate_tg;
-wire  [3:0] cacr_tg;
-wire [31:0] vbr_tg;
-wire        wr_tg;
-wire        uds_in_tg;
-wire        lds_in_tg;
-wire        reset_out_tg;
+always @* begin
+	if(cpucfg[1]) begin
+		cpu_dout  = cpu_dout_p;
+		cpu_addr  = cpu_addr_p;
+		cpustate  = cpustate_p;
+		cacr      = cacr_p;
+		vbr       = vbr_p;
+		wr        = wr_p;
+		uds_in    = uds_p;
+		lds_in    = lds_p;
+		reset_out = reset_out_p;
+		chip_as   = c_as;
+		chip_rw   = c_rw;
+		chip_uds  = c_uds;
+		chip_lds  = c_lds;
+		chip_addr = cpu_addr_p[23:1];
+		chip_din  = cpu_dout_p;
+		chip_data = chipdout_i;
+	end
+	else begin
+		cpu_dout  = cpu_dout_o;
+		cpu_addr  = {cpu_addr_o,1'b0};
+		cpustate  = as_o ? 2'b01 : ~{wr_o,wr_o};
+		cacr      = 1;
+		vbr       = 0;
+		wr        = wr_o;
+		uds_in    = uds_o;
+		lds_in    = lds_o;
+		reset_out = reset_out_o;
+		chip_as   = ramsel | as_o;
+		chip_rw   = wr_o;
+		chip_uds  = uds_o;
+		chip_lds  = lds_o;
+		chip_addr = cpu_addr_o[23:1];
+		chip_din  = cpu_dout_o;
+		chip_data = chip_dout;
+	end
+end
+
+wire [15:0] cpu_dout_p;
+wire [31:0] cpu_addr_p;
+wire  [1:0] cpustate_p;
+wire  [3:0] cacr_p;
+wire [31:0] vbr_p;
+wire        wr_p;
+wire        uds_p;
+wire        lds_p;
+wire        reset_out_p;
+
+`ifdef M68K20
+
+M68K_Core cpu_inst_p
+(
+	.i_clk(clk),
+	.i_ena(~cpu_req | chipready | ramready),
+
+	.i_rst(~reset),        // note active high
+	.o_reset_l(reset_out_p),
+
+	.i_cpu_type(cpucfg),
+
+	.i_ipl_l(cpu_ipl),
+	.i_ipl_autovector(1),
+
+	.i_data(cpu_din),
+	.o_addr(cpu_addr_p),
+	.o_data(cpu_dout_p),
+	.o_wr_l(wr_p),
+	.o_uds_l(uds_p),
+	.o_lds_l(lds_p),
+	.o_busstate(cpustate_p), // 00-> fetch code 10->read data 11->write data 01->no memaccess
+
+	.o_cacr(cacr_p),
+	.o_vbr(vbr_p)
+);
+
+`else
 
 TG68KdotC_Kernel
 #(
@@ -136,93 +205,70 @@ TG68KdotC_Kernel
 	.div_mode(2),       // 0=>16Bit,  1=>32Bit,         2=>switchable with CPU(1),  3=>no DIV,
 	.bitfield(2)        // 0=>no,     1=>yes,           2=>switchable with CPU(1)
 )
-cpu_inst_tg68k
+cpu_inst_p
 (
   .clk(clk),
   .nreset(reset),
   .clkena_in(~cpu_req | chipready | ramready),
-  .data_in(ramsel ? ramdout : chipdout),
+  .data_in(cpu_din),
   .ipl(cpu_ipl),
   .ipl_autovector(1),
   .regin_out(),
-  .addr_out(cpu_addr_tg),
-  .data_write(cpu_dout_tg),
-  .nwr(wr_tg),
-  .nuds(uds_in_tg),
-  .nlds(lds_in_tg),
-  .nresetout(reset_out_tg),
+  .addr_out(cpu_addr_p),
+  .data_write(cpu_dout_p),
+  .nwr(wr_p),
+  .nuds(uds_p),
+  .nlds(lds_p),
+  .nresetout(reset_out_p),
   
   .cpu(cpucfg),
-  .busstate(cpustate_tg),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
-  .cacr_out(cacr_tg),
-  .vbr_out(vbr_tg)
+  .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
+  .cacr_out(cacr_p),
+  .vbr_out(vbr_p)
 );
 
-`ifdef M68K20
-wire [15:0] cpu_dout_m;
-wire [31:0] cpu_addr_m;
-wire  [1:0] cpustate_m;
-wire  [3:0] cacr_m;
-wire [31:0] vbr_m;
-wire        wr_m;
-wire        uds_in_m;
-wire        lds_in_m;
-wire        reset_out_m;
+`endif
 
-M68K_Core cpu_inst_m68k
+wire [15:0] cpu_dout_o;
+wire [23:1] cpu_addr_o;
+wire  [2:0] fc_o;
+wire        wr_o;
+wire        as_o;
+wire        uds_o;
+wire        lds_o;
+wire        reset_out_o;
+
+fx68k cpu_inst_fx68k
 (
-	.i_clk(clk),
-	.i_ena(~cpu_req | chipready | ramready),
+	.clk(clk),
+	.enPhi1(ph1),
+	.enPhi2(ph2),
 
-	.i_rst(~reset),        // note active high
-	.o_reset_l(reset_out_m),
+	.extReset(~reset),
+	.pwrUp(~reset),
+	.oRESETn(reset_out_o),
 
-	.i_cpu_type(cpucfg),
+	.eRWn(wr_o),
+	.ASn(as_o),
+	.LDSn(lds_o),
+	.UDSn(uds_o),
+	.DTACKn(ramsel ? ~ramready : chip_dtack),
 
-	.i_ipl_l(cpu_ipl),
-	.i_ipl_autovector(1),
+	.FC0(fc_o[0]),
+	.FC1(fc_o[1]),
+	.FC2(fc_o[2]), 
 
-	.i_data(ramsel ? ramdout : chipdout),
-	.o_addr(cpu_addr_m),
-	.o_data(cpu_dout_m),
-	.o_wr_l(wr_m),
-	.o_uds_l(uds_in_m),
-	.o_lds_l(lds_in_m),
-	.o_busstate(cpustate_m), // 00-> fetch code 10->read data 11->write data 01->no memaccess
-
-	.o_cacr(cacr_m),
-	.o_vbr(vbr_m)
+	.VPAn(~&fc_o),
+	.BERRn(1),
+	.BRn(1),
+	.BGACKn(1),
+	.IPL0n(chip_ipl[0]),
+	.IPL1n(chip_ipl[1]),
+	.IPL2n(chip_ipl[2]),
+	.iEdb(cpu_din),
+	.oEdb(cpu_dout_o),
+	.eab(cpu_addr_o)
 );
-`endif
-
-reg [31:0] cpu_a;
-always @* begin
-`ifdef M68K20
-	if(cpucfg[1]) begin
-		cpu_dout  = cpu_dout_m;
-		cpu_a     = cpu_addr_m;
-		cpustate  = cpustate_m;
-		cacr      = cacr_m;
-		vbr       = vbr_m;
-		wr        = wr_m;
-		uds_in    = uds_in_m;
-		lds_in    = lds_in_m;
-		reset_out = reset_out_m;
-	end
-	else 
-`endif
-	begin
-		cpu_dout  = cpu_dout_tg;
-		cpu_a     = cpu_addr_tg;
-		cpustate  = cpustate_tg;
-		cacr      = cacr_tg;
-		vbr       = vbr_tg;
-		wr        = wr_tg;
-		uds_in    = uds_in_tg;
-		lds_in    = lds_in_tg;
-		reset_out = reset_out_tg;
-	end
-end
 
 wire cpu_req = (cpustate != 1);
 
@@ -239,8 +285,8 @@ always @(posedge clk) begin
 		dcache_d <= 0;
 	end
 	else if (~cpu_req) begin	// No mem access, so safe to switch chipram access mode
-		turbochip_d <= turbochipram;
-		turbokick_d <= turbokick;
+		turbochip_d <= turbochipram & cpucfg[1];
+		turbokick_d <= turbokick & cpucfg[1];
 		dcache_d <= dcache;
 	end
 end
@@ -254,7 +300,7 @@ always @(*) begin
 	if (autocfg_card) begin
 		if (~cfg_z3) begin
 			// Zorro II RAM (Up to 8 meg at 0x200000)
-			case (cpu_addr[6:1])
+			case (chip_addr[6:1])
 				6'b000000: autocfg_data = 4'b1110;	// Zorro-II card, add mem, no ROM
 				6'b000001:
 					case (fastramcfg)
@@ -272,7 +318,7 @@ always @(*) begin
 		end
 		else begin
 			// Zorro III RAM 128MB/256MB
-			case (cpu_addr[6:1])
+			case (chip_addr[6:1])
 				6'b000000: autocfg_data = 4'b1010;	// Zorro-III card, add mem, no ROM
 				6'b000001: autocfg_data = autocfg_card[1] ? 4'b0011 : 4'b0100;	// 128MB or 256MB, extended
 				6'b000010: autocfg_data = 4'b1110;	// ProductID=0x10 (only setting upper nibble)
@@ -289,6 +335,8 @@ always @(*) begin
 	end
 end
 
+wire sel_autoconfig = fastramcfg && chip_addr[23:19] == 5'b11101 && autocfg_card; //$E80000 - $EFFFFF
+
 reg [1:0] autocfg_card;
 reg       z2ram_ena;
 reg [4:0] z3ram_base0;
@@ -296,6 +344,9 @@ reg [3:0] z3ram_base1;
 reg       z3ram_ena0;
 reg       z3ram_ena1;
 always @(posedge clk) begin
+	reg old_uds;
+	old_uds <= chip_uds;
+
 	if (~reset | ~reset_out) begin
 		autocfg_card <= 1;		//autoconfig on
 		z2ram_ena <= 0;
@@ -304,14 +355,14 @@ always @(posedge clk) begin
 		z3ram_base0 <= 1;
 		z3ram_base1 <= 1;
 	end
-	else if (sel_autoconfig && ~wr && ~uds_in && chipready) begin
+	else if (sel_autoconfig && ~chip_rw && ~chip_uds && old_uds) begin
 		if (~cfg_z3) begin
-			if (cpu_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
+			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
 				z2ram_ena <= 1;
 				autocfg_card <= 0;
 			end
 		end
-		else if (cpu_addr[6:1] == 6'b100010)	begin // Register 0x44, assign base address to ZIII RAM.
+		else if (chip_addr[6:1] == 6'b100010)	begin // Register 0x44, assign base address to ZIII RAM.
 			if (autocfg_card == 1) begin
 				z3ram_base1 <= cpu_dout[15:12];
 				z3ram_ena1 <= 1;
@@ -327,13 +378,9 @@ always @(posedge clk) begin
 end
 
 reg        chipreq;
-reg [15:0] chipdout;
 reg  [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chip_din   <= cpu_dout;
-	chip_addr  <= cpu_addr[23:1];
 	chipreq    <= cpu_req & ~ramsel;
-	chipdout   <= {sel_autoconfig ? autocfg_data : chipdout_i[15:12], chipdout_i[11:0]};
 	cpu_ipl    <= ipl_i;
 end
 
@@ -346,6 +393,7 @@ end
 reg        chipready;
 reg [15:0] chipdout_i;
 reg  [2:0] ipl_i;
+reg        c_as,c_rw,c_uds,c_lds;
 always @(negedge clk, negedge reset) begin
 	reg [1:0] stage;
 	reg waitm;
@@ -353,38 +401,38 @@ always @(negedge clk, negedge reset) begin
 
 	if(~reset) begin
 		stage <= 0;
-		chip_as <= 1;
-		chip_rw <= 1;
-		chip_uds <= 1;
-		chip_lds <= 1;
+		c_as <= 1;
+		c_rw <= 1;
+		c_uds <= 1;
+		c_lds <= 1;
 		ready <= 0;
 	end
 	else begin
-		if (ph1n) begin
+		if (ph2n) begin
 			waitm <= chip_dtack;
 			if(~stage[0]) ipl_i <= chip_ipl;
 		end
 
 		chipready <= 0;
-		if (ph2n) begin
+		if (ph1n) begin
 			chipready <= ready;
 			ready <= 0;
 			case (stage)
 				0: if (chipreq) begin
-						chip_as <= 0;
-						chip_rw <= wr;
-						chip_uds <= uds_in;
-						chip_lds <= lds_in;
+						c_as <= 0;
+						c_rw <= wr;
+						c_uds <= uds_in;
+						c_lds <= lds_in;
 						stage <= 1;
 					end
 				1: stage <= 2;
 				2: begin
 						chipdout_i <= chip_dout;
 						if (~waitm) begin
-							chip_as <= 1;
-							chip_rw <= 1;
-							chip_uds <= 1;
-							chip_lds <= 1;
+							c_as <= 1;
+							c_rw <= 1;
+							c_uds <= 1;
+							c_lds <= 1;
 							ready <= 1;
 							stage <= 3;
 						end

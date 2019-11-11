@@ -39,7 +39,7 @@ module sdram_ctrl
 	input       [3:0] cpu_cache_ctrl,
 	// sdram
 	output reg [12:0] sd_addr,
-	output      [1:0] sd_ba,
+	output reg  [1:0] sd_ba,
 	output            sd_cs,
 	output reg        sd_we,
 	output reg        sd_ras,
@@ -47,7 +47,7 @@ module sdram_ctrl
 	output reg  [1:0] sd_dqm,
 	inout  reg [15:0] sd_data,
 	// chip
-	input      [22:1] chipAddr,
+	input      [24:1] chipAddr,
 	input             chipL,
 	input             chipU,
 	input             chipRW,
@@ -56,7 +56,7 @@ module sdram_ctrl
 	output reg [15:0] chipRD,
 	output     [47:0] chip48,
 	// cpu
-	input      [22:1] cpuAddr,
+	input      [24:1] cpuAddr,
 	input             cpuCS,
 	input       [1:0] cpustate,
 	input             cpuL,
@@ -66,7 +66,6 @@ module sdram_ctrl
 	output            ramready
 );
 
-assign sd_ba = 0;
 assign sd_cs = 0;
 
 //// parameters ////
@@ -98,6 +97,8 @@ always @(posedge sysclk) begin
 	end
 end
 
+wire ramsel = cpuCS & (~&cpustate | ~cpuU | ~cpuL);
+
 // cpu cache
 wire cache_rd_ack;
 wire cache_wr_ack;
@@ -109,7 +110,7 @@ cpu_cache_new cpu_cache
 	.cache_en         (1'b1),                  // cache enable
 	.cpu_cache_ctrl   (cpu_cache_ctrl),        // CPU cache control
 	.cache_inhibit    (cache_inhibit),         // cache inhibit
-	.cpu_cs           (cpuCS),                 // cpu activity
+	.cpu_cs           (ramsel),                // cpu activity
 	.cpu_adr          (cpuAddr),               // cpu address
 	.cpu_bs           ({!cpuU, !cpuL}),        // cpu byte selects
 	.cpu_we           (cpustate == 3),         // cpu write
@@ -144,7 +145,7 @@ reg        write_ena;
 reg        write_req;
 reg        write_ack;
 reg  [1:0] write_dqm;
-reg [22:1] writeAddr;
+reg [24:1] writeAddr;
 reg [15:0] writeDat;
 
 always @ (posedge sysclk) begin
@@ -157,7 +158,7 @@ always @ (posedge sysclk) begin
 	end else begin
 		case(write_state)
 			default:
-				if(~write_ena && cpuCS && cpustate == 3) begin
+				if(~write_ena && ramsel && cpustate == 3) begin
 					writeAddr <= cpuAddr;
 					writeDat  <= cpuWR;
 					write_dqm <= {cpuU, cpuL};
@@ -178,7 +179,7 @@ always @ (posedge sysclk) begin
 				end
 		endcase
 
-		if(~cpuCS) write_ena <= 0;
+		if(~ramsel) write_ena <= 0;
 	end
 end
 
@@ -262,6 +263,7 @@ always @ (posedge sysclk) begin
 		casaddr               <= 0;
 		rcnt                  <= 0;
 		sd_dqm                <= 3;
+		sd_ba                 <= 0;
 		if(sdram_state == 0) begin
 			case(initstate)
 				4 : begin // PRECHARGE
@@ -301,7 +303,7 @@ always @ (posedge sysclk) begin
 				// (this includes anything on the "motherboard" - chip RAM, slow RAM and Kickstart, turbo modes notwithstanding)
 				if(~chipDMA | ~chipRW) begin
 					slot_type    <= CHIP;
-					{sd_addr,casaddr[8:0]} <= chipAddr;
+					{sd_ba,sd_addr,casaddr[8:0]} <= chipAddr;
 					sd_ras       <= 0;
 					cas_dqm      <= {chipU,chipL};
 					cas_sd_cas   <= 0;
@@ -311,7 +313,7 @@ always @ (posedge sysclk) begin
 				end
 				else if(write_req) begin
 					slot_type    <= CPU_WRITECACHE;
-					{sd_addr,casaddr[8:0]} <= writeAddr;
+					{sd_ba,sd_addr,casaddr[8:0]} <= writeAddr;
 					sd_ras       <= 0;
 					cas_dqm      <= write_dqm;
 					cas_sd_we    <= 0;
@@ -322,7 +324,7 @@ always @ (posedge sysclk) begin
 				// request from read cache
 				else if(cache_req) begin
 					slot_type    <= CPU_READCACHE;
-					{sd_addr,casaddr[8:0]} <= cpuAddr;
+					{sd_ba,sd_addr,casaddr[8:0]} <= cpuAddr;
 					sd_ras       <= 0;
 					cas_sd_cas   <= 0;
 				end
