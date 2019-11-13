@@ -719,7 +719,7 @@ begin
 
         if state = "11" then
           exec_write_back <= '0';
-        elsif setstate = "10" and write_back = '1' and next_micro_state = idle then
+        elsif setstate = "10" and write_back = '1' and (opcode(15 downto 12)/="0100" or next_micro_state = idle) then  	--this shut be a fix for pinball --thanks slingshot
           exec_write_back <= '1';
         end if;
 
