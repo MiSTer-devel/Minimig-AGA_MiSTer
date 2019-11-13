@@ -386,10 +386,10 @@ module fx68k(
 			rFC <= '0;
 		else if( enT1 & Nanod.permStart) begin		// S0 phase of bus cycle
 			rFC[2] <= pswS;
-			// PC relativ access is marked as FC type 'n' (0) at ucode.
+			// If FC is type 'n' (0) at ucode, access type depends on PC relative mode		
 			// We don't care about RZ in this case. Those uinstructions with RZ don't start a bus cycle.
-			rFC[1] <= microLatch[ 16] | ( ~microLatch[ 15] & ~Irdecod.isPcRel);
-			rFC[0] <= microLatch[ 15] | ( ~microLatch[ 16] & Irdecod.isPcRel);
+			rFC[1] <= microLatch[ 16] | ( ~microLatch[ 15] & Irdecod.isPcRel);
+			rFC[0] <= microLatch[ 15] | ( ~microLatch[ 16] & ~Irdecod.isPcRel);
 		end
 	end
 	

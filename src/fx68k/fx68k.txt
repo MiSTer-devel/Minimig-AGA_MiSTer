@@ -72,3 +72,16 @@ set_multicycle_path -setup -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/micr
 set_multicycle_path -hold -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/nanoAddr_reg*/D] 1
 set_multicycle_path -hold -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/microAddr_reg*/D] 1
 
+
+The update of the CCR flags is also time critical. Some compilers might benefit with the following constraints, but this wasn't fully verified yet:
+
+
+# Altera/Intel
+# set_multicycle_path -start -setup -from [fx68k:fx68k|nanoLatch[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 2
+# set_multicycle_path -start -setup -from [fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|oper[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 2
+# set_multicycle_path -start -hold -from [fx68k:fx68k|nanoLatch[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 1
+# set_multicycle_path -start -hold -from [fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|oper[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 1
