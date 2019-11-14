@@ -35,9 +35,7 @@ module cpu_wrapper
 
 	input       [1:0] cpucfg,
 	input       [2:0] fastramcfg,
-	input             turbochipram,
-	input             turbokick,
-	input             dcache,
+	input       [2:0] cachecfg,
 	input             bootrom,
 
 	output reg [23:1] chip_addr,
@@ -282,12 +280,12 @@ always @(posedge clk) begin
 	if (~reset | ~reset_out) begin
 		turbochip_d <= 0;
 		turbokick_d <= 0;
-		dcache_d <= 0;
+		dcache_d    <= 0;
 	end
 	else if (~cpu_req) begin	// No mem access, so safe to switch chipram access mode
-		turbochip_d <= turbochipram & cpucfg[1];
-		turbokick_d <= turbokick & cpucfg[1];
-		dcache_d <= dcache;
+		turbochip_d <= cachecfg[0] & cpucfg[1];
+		turbokick_d <= cachecfg[1] & cpucfg[1];
+		dcache_d    <= cachecfg[2];
 	end
 end
 
@@ -377,11 +375,11 @@ always @(posedge clk) begin
 	end
 end
 
-reg        chipreq;
-reg  [2:0] cpu_ipl;
+reg       chipreq;
+reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq    <= cpu_req & ~ramsel;
-	cpu_ipl    <= ipl_i;
+	chipreq <= cpu_req & ~ramsel;
+	cpu_ipl <= ipl_i;
 end
 
 reg ph1n, ph2n;

@@ -241,8 +241,6 @@ module minimig
 	output  [1:0] cpucfg,
 	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
-	output 	     turbochipram,
-	output 	     turbokick,
 	output        bootrom,     // enable bootrom magic in gary.v
 
 	// fifo / track display
@@ -293,13 +291,11 @@ wire        cpu_lwr;				//cpu low byte write enable
 wire  [8:1] reg_address; 		//main register address bus
 
 //rest of local signals
-wire        reset;				//global reset
 wire        cpu_custom;
 wire        dbr;					//data bus request, Agnus tells CPU that she is using the bus
 wire        dbwe;					//data bus write enable, Agnus tells the RAM it's writing data
 wire        dbs;					//data bus slow down, used for slowing down CPU access to chip, slow and custor register address space
 wire        xbs;					//cross bridge access (memory and custom registers)
-wire        ovl;					//kickstart overlay enable
 wire        _led;					//power led
 wire  [3:0] sel_chip;			//chip ram select
 wire  [2:0] sel_slow;			//slow ram select
@@ -410,7 +406,7 @@ wire        host_ack;
 wire        sys_reset;    		//reset output from minimig_syscontrol.v
 wire        rom_readonly; 		//writeprotect $f8-ff in gary.v
 
-assign      reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
+wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -427,14 +423,8 @@ end
 assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
+assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};
 
-// turbo chipram only when in AGA mode, no overlay is active, cachecfg[0] (fast chip) is enabled or Agnus allows CPU on the bus and chipRAM=2MB
-assign turbochipram = !ovl && (cachecfg[0] && cpu_custom) && (&memory_config[1:0]);
-
-// turbo kickstart only when no overlay is active and cachecfg[1] (fast kick) enabled or AGA mode is enabled
-assign turbokick = rom_readonly && !ovl && cachecfg[1];
-//writing to the ROM area is not implemented in turbo mode (see tg68k.vhd)
-   
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
 
@@ -552,6 +542,7 @@ paula PAULA1
 	.floppy_frd (floppy_frd)
 );
 
+wire [2:0] cachecfg_pre;
 //instantiate user IO
 userio USERIO1 
 (	
@@ -584,7 +575,7 @@ userio USERIO1
 	.blver(blver),
 	.ide_config(ide_config),
 	.cpu_config(cpucfg),
-	.cache_config(cachecfg),
+	.cache_config(cachecfg_pre),
 	.usrrst(usrrst),
 	.cpurst(cpurst),
 	.cpuhlt(cpuhlt),
@@ -628,6 +619,9 @@ denise DENISE1
 );
 
 //instantiate cia A
+wire [3:0] porta_out;
+assign {_fire1_dat,_fire0_dat,_led} = porta_out[3:1];
+
 ciaa CIAA1
 (
 	.clk(clk),
@@ -644,7 +638,7 @@ ciaa CIAA1
 	.eclk(eclk[8]),
 	.irq(int2),
 	.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),
-	.porta_out({_fire1_dat,_fire0_dat,_led,ovl}),
+	.porta_out(porta_out),
 	.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]}),
 	.kbd_mouse_type(kbd_mouse_type),
 	.kms_level(kms_level),
@@ -871,6 +865,11 @@ minimig_syscontrol CONTROL1
 	.reset(sys_reset)
 );
 
+reg ovl; //kickstart overlay enable
+always @(posedge clk) begin
+	if(~_cpu_reset | ~_cpu_reset_in)       ovl <= 1;
+	else if(sel_cia_a & (cpu_lwr|cpu_hwr)) ovl <= 0;
+end
 
 //-------------------------------------------------------------------------------------
 

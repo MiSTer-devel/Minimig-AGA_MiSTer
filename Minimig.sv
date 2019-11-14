@@ -298,9 +298,7 @@ cpu_wrapper cpu_wrapper
 	.chip_ipl     (chip_ipl        ),
 
 	.cpucfg       (cpucfg          ),
-	.turbochipram (turbochipram    ),
-	.turbokick    (turbokick       ),
-	.dcache       (cachecfg[2]     ),
+	.cachecfg     (cachecfg        ),
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
 
@@ -397,8 +395,6 @@ ddram_ctrl ram2
 wire  [1:0] cpucfg;
 wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
-wire        turbochipram;
-wire        turbokick;
 wire        bootrom;   
 wire [15:0] ram_data;      // sram data bus
 wire [15:0] ramdata_in;    // sram data bus in
@@ -507,8 +503,6 @@ minimig minimig
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config
 	.memcfg       (memcfg           ), // memory config
-	.turbochipram (turbochipram     ), // turbo chipRAM
-	.turbokick    (turbokick        ), // turbo kickstart
 	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 );
 
