@@ -60,7 +60,7 @@ module cpu_wrapper
 
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
-	output reg [31:0] vbr
+	output reg [31:0] nmi_addr
 );
 
 // Uncomment to use M68K for 68020 mode
@@ -69,8 +69,7 @@ module cpu_wrapper
 assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram);
 
 // NMI
-reg [31:0] NMI_addr;
-always @(posedge clk) NMI_addr <= reset ? (vbr + 32'h7c) : 32'h7c;
+always @(posedge clk) nmi_addr <= vbr + 32'h7c;
 
 wire sel_z3ram0 = (cpu_addr[31:27] == z3ram_base0) && z3ram_ena0;
 wire sel_z3ram1 = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;
@@ -83,9 +82,9 @@ wire sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (cpu_addr[23:19] =
 wire sel_kicklower = !cpu_addr[31:24] && (cpu_addr[23:18] == 6'b111110);
 wire sel_chipram   = !cpu_addr[31:21] && cchip; 		             //$000000 - $1FFFFF
 
-//  we route everything hrtmon related through cart.v (needs a couple of signals to
-//  decide what to do, would not be good style to replicate that here). 
-wire sel_nmi_vector = (cpu_addr[31:2] == NMI_addr[31:2]) && (cpustate == 2);
+// we route everything hrtmon related through cart.v (needs a couple of signals to
+// decide what to do, would not be good style to replicate that here). 
+wire sel_nmi_vector = (cpu_addr[31:2] == nmi_addr[31:2]) && (cpustate == 2);
 
 assign ramlds = lds_in;
 assign ramuds = uds_in;
@@ -117,6 +116,7 @@ reg         wr;
 reg         uds_in;
 reg         lds_in;
 reg  [15:0] chip_data;
+reg  [31:0] vbr;
 
 always @* begin
 	if(cpucfg[1]) begin
@@ -238,7 +238,7 @@ wire        uds_o;
 wire        lds_o;
 wire        reset_out_o;
 
-fx68k cpu_inst_fx68k
+fx68k cpu_inst_o
 (
 	.clk(clk),
 	.enPhi1(ph1),

@@ -256,7 +256,7 @@ end
 wire  [1:0] cpu_state;
 wire        cpu_nrst_out;
 wire  [3:0] cpu_cacr;
-wire [31:0] cpu_vbr;
+wire [31:0] cpu_nmi_addr;
 wire        cpu_rst;
 
 wire  [2:0] chip_ipl;
@@ -315,7 +315,7 @@ cpu_wrapper cpu_wrapper
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
 	.cacr         (cpu_cacr        ),
-	.vbr          (cpu_vbr         )
+	.nmi_addr     (cpu_nmi_addr    )
 );
 
 assign SDRAM_CKE = 1;
@@ -428,7 +428,7 @@ minimig minimig
 	._cpu_dtack   (chip_dtack       ), // M68K data acknowledge
 	._cpu_reset   (cpu_rst          ), // M68K reset
 	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out
-	.cpu_vbr      (cpu_vbr          ), // M68K VBR
+	.nmi_addr     (cpu_nmi_addr     ), // M68K NMI address
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus

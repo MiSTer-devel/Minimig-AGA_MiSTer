@@ -25,50 +25,51 @@
 
 
 
-module userio (
-	input 		     clk, // bus clock
-	input 		     reset, // reset
-	input 		     clk7_en,
+module userio
+(
+	input             clk,        // bus clock
+	input             reset,      // reset
+	input             clk7_en,
 
-	input [ 9-1:1] 	     reg_address_in, // register adress inputs
-	input [ 16-1:0]      data_in, // bus data in
-	output reg [ 16-1:0] data_out, // bus data out
-	output 		     _fire0, // joystick 0 fire output (to CIA)
-	output 		     _fire1, // joystick 1 fire output (to CIA)
-	input 		     _fire0_dat,
-	input 		     _fire1_dat,
-	input [ 15:0] 	     _joy1, // joystick 1 in (default mouse port)
-	input [ 15:0] 	     _joy2, // joystick 2 in (default joystick port)
-	input [ 3-1:0] 	     mouse_btn,
-	input 		     kms_level,
-	input [ 2-1:0] 	     kbd_mouse_type,
-	input [ 8-1:0] 	     kbd_mouse_data,
-	output reg [1:0] aud_mix,
-	input 		     IO_ENA,
-	input 		     IO_STROBE,
-	output reg 	     IO_WAIT,
-	input [15:0] 	     IO_DIN,
-	output reg [ 8-1:0]  memory_config,
-	output reg [ 5-1:0]  chipset_config,
-	output reg [ 4-1:0]  floppy_config,
-	output reg [   2:0]  scanline,
-	output reg [ 2-1:0]  ar,
-	output reg [ 2-1:0]  blver,
-	output reg [ 5-1:0]  ide_config,
-	output reg [   1:0]  cpu_config,
-	output reg [   2:0]  cache_config,
-	output reg           bootrom =0, // do the A1000 bootrom magic in gary.v
-	output reg 	     usrrst, // user reset from osd module
-	output reg 	     cpurst,
-	output reg 	     cpuhlt,
+	input       [8:1] reg_address_in, // register adress inputs
+	input      [15:0] data_in,    // bus data in
+	output reg [15:0] data_out,   // bus data out
+	output            _fire0,     // joystick 0 fire output (to CIA)
+	output            _fire1,     // joystick 1 fire output (to CIA)
+	input             _fire0_dat,
+	input             _fire1_dat,
+	input      [15:0] _joy1,      // joystick 1 in (default mouse port)
+	input      [15:0] _joy2,      // joystick 2 in (default joystick port)
+	input       [2:0] mouse_btn,
+	input             kms_level,
+	input       [1:0] kbd_mouse_type,
+	input       [7:0] kbd_mouse_data,
+	output reg  [1:0] aud_mix,
+	input             IO_ENA,
+	input             IO_STROBE,
+	output reg        IO_WAIT,
+	input      [15:0] IO_DIN,
+	output reg  [7:0] memory_config,
+	output reg  [4:0] chipset_config,
+	output reg  [3:0] floppy_config,
+	output reg  [2:0] scanline,
+	output reg  [1:0] ar,
+	output reg  [1:0] blver,
+	output reg  [4:0] ide_config,
+	output reg  [1:0] cpu_config,
+	output reg  [2:0] cache_config,
+	output reg        bootrom =0, // do the A1000 bootrom magic in gary.v
+	output reg        usrrst,     // user reset from osd module
+	output reg        cpurst,
+	output reg        cpuhlt,
 	// host
-	output reg 	     host_cs,
-	output reg [ 24-1:0] host_adr,
-	output reg 	     host_we,
-	output [ 2-1:0]      host_bs,
-	output reg [ 16-1:0] host_wdat,
-	input [ 16-1:0]      host_rdat,
-	input 		     host_ack
+	output reg        host_cs,
+	output reg [23:0] host_adr,
+	output reg        host_we,
+	output      [1:0] host_bs,
+	output reg [15:0] host_wdat,
+	input      [15:0] host_rdat,
+	input             host_ack
 );
 
 
@@ -96,16 +97,16 @@ reg   [15:0] _djoy1;        // synchronized joystick 1 signals
 reg   [15:0] _sjoy2;        // synchronized joystick 2 signals
 reg   [15:0] _djoy2;        // synchronized joystick 2 signals
 reg   [15:0] potreg;        // POTGO write
-wire  [15:0] mouse0dat;     //mouse counters
+wire  [15:0] mouse0dat;     // mouse counters
 wire   [7:0] mouse0scr = 0; // mouse scroller
 reg   [15:0] dmouse0dat;    // docking mouse counters
 reg   [15:0] dmouse1dat;    // docking mouse counters
-wire         _mleft;        //left mouse button
-wire         _mthird;       //middle mouse button
-wire         _mright;       //right mouse buttons
-reg           joy1enable;   //joystick 1 enable (mouse/joy switch)
-wire         test_load;     //load test value to mouse counter
-wire  [15:0] test_data;     //mouse counter test value
+wire         _mleft;        // left mouse button
+wire         _mthird;       // middle mouse button
+wire         _mright;       // right mouse buttons
+reg           joy1enable;   // joystick 1 enable (mouse/joy switch)
+wire         test_load;     // load test value to mouse counter
+wire  [15:0] test_data;     // mouse counter test value
 reg          cd32pad;
 reg          joy_swap;
 
@@ -114,12 +115,8 @@ reg          joy_swap;
 
 // POTGO register
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			potreg <= 0;
-		else if (reg_address_in[8:1]==POTGO[8:1])
-			potreg[15:0] <= data_in[15:0];
-	end
+	if (reset) potreg <= 0;
+	else if (reg_address_in[8:1]==POTGO[8:1]) potreg[15:0] <= data_in[15:0];
 end
 
 wire joy2_pin5 = ~(potreg[13] & ~potreg[12]);
@@ -128,95 +125,71 @@ wire joy1_pin5 = ~(potreg[9]  & ~potreg[8]);
 // potcap reg
 reg  [4-1:0] potcap;
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			potcap <= 0;
-		else begin
-			if (cd32pad & ~joy2_pin5) begin
-				potcap[3] <= cd32pad2_reg[7];
-			end else begin
-				potcap[3] <= _djoy2[5] & ~(potreg[15] & ~potreg[14]);
-			end
-			potcap[2] <= joy2_pin5;
-
-			if(joy1enable & cd32pad & ~joy1_pin5) begin
-				potcap[1] <= cd32pad1_reg[7];
-			end else begin
-				potcap[1] <= _mright & _djoy1[5] & ~(potreg[11] & ~potreg[10]);
-			end
-			potcap[0] <= _mthird & joy1_pin5;
+	if (reset)
+		potcap <= 0;
+	else if (clk7_en) begin
+		if (cd32pad & ~joy2_pin5) begin
+			potcap[3] <= cd32pad2_reg[7];
+		end else begin
+			potcap[3] <= _djoy2[5] & ~(potreg[15] & ~potreg[14]);
 		end
+		potcap[2] <= joy2_pin5;
+
+		if(joy1enable & cd32pad & ~joy1_pin5) begin
+			potcap[1] <= cd32pad1_reg[7];
+		end else begin
+			potcap[1] <= _mright & _djoy1[5] & ~(potreg[11] & ~potreg[10]);
+		end
+		potcap[0] <= _mthird & joy1_pin5;
 	end
 end
 
 // cd32pad1 reg
 reg fire1_d;
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			fire1_d <= 1;
-		else
-			fire1_d <= _fire0_dat;
-	end
+	if (reset) fire1_d <= 1;
+	else fire1_d <= _fire0_dat;
 end
 
 wire cd32pad1_reg_load  = joy1_pin5;
 wire cd32pad1_reg_shift = _fire0_dat && !fire1_d;
 reg [8-1:0] cd32pad1_reg;
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			cd32pad1_reg <= 8'hff;
-		else if (cd32pad1_reg_load)
-			cd32pad1_reg <= {_djoy1[5], _djoy1[4], _djoy1[6], _djoy1[7], _djoy1[8], _djoy1[9], _djoy1[10], 1'b1};
-		else if (cd32pad1_reg_shift)
-			cd32pad1_reg <= {cd32pad1_reg[6:0], 1'b0};
-	end
+	if (reset)                   cd32pad1_reg <= 8'hff;
+	else if (cd32pad1_reg_load)  cd32pad1_reg <= {_djoy1[5], _djoy1[4], _djoy1[6], _djoy1[7], _djoy1[8], _djoy1[9], _djoy1[10], 1'b1};
+	else if (cd32pad1_reg_shift) cd32pad1_reg <= {cd32pad1_reg[6:0], 1'b0};
 end
 
 // cd32pad2 reg
 reg fire2_d;
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			fire2_d <= 1;
-		else
-			fire2_d <= _fire1_dat;
-	end
+	if (reset) fire2_d <= 1;
+	else fire2_d <= _fire1_dat;
 end
 
 wire cd32pad2_reg_load  = joy2_pin5;
 wire cd32pad2_reg_shift = _fire1_dat && !fire2_d;
 reg [8-1:0] cd32pad2_reg;
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (reset)
-			cd32pad2_reg <= 8'hff;
-		else if (cd32pad2_reg_load)
-			cd32pad2_reg <= {_djoy2[5], _djoy2[4], _djoy2[6], _djoy2[7], _djoy2[8], _djoy2[9], _djoy2[10], 1'b1};
-		else if (cd32pad2_reg_shift)
-			cd32pad2_reg <= {cd32pad2_reg[6:0], 1'b0};
-	end
+	if (reset)                   cd32pad2_reg <= 8'hff;
+	else if (cd32pad2_reg_load)  cd32pad2_reg <= {_djoy2[5], _djoy2[4], _djoy2[6], _djoy2[7], _djoy2[8], _djoy2[9], _djoy2[10], 1'b1};
+	else if (cd32pad2_reg_shift) cd32pad2_reg <= {cd32pad2_reg[6:0], 1'b0};
 end
 
 // input synchronization of external signals
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		_sjoy1 <= joy_swap ? _joy1 : _joy2;
-		_djoy1 <= _sjoy1;
-		_sjoy2 <= joy_swap ? _joy2 : _joy1;
-		_djoy2 <= _sjoy2;
-	end
+	_sjoy1 <= joy_swap ? _joy1 : _joy2;
+	_djoy1 <= _sjoy1;
+	_sjoy2 <= joy_swap ? _joy2 : _joy1;
+	_djoy2 <= _sjoy2;
 end
 
 // port 1 automatic mouse/joystick switch
 always @ (posedge clk) begin
-	if (clk7_en) begin
-		if (!_mleft || reset)//when left mouse button pushed, switch to mouse (default)
-			joy1enable = 0;
-		else if (!_sjoy1[4])//when joystick 1 fire pushed, switch to joystick
-			joy1enable = 1;
-	end
+	//when left mouse button pushed, switch to mouse (default)
+	if (!_mleft || reset) joy1enable = 0;
+	//when joystick 1 fire pushed, switch to joystick
+	else if (!_sjoy1[4]) joy1enable = 1;
 end
 
 // Port 1
@@ -310,42 +283,24 @@ assign test_data = data_in[15:0];
 
 
 //// mouse ////
-reg  [ 2:0] kms_level_sync;
-wire        kms;
-reg  [ 7:0] kmd_sync[0:1];
-reg  [ 1:0] kmt_sync[0:1];
 reg  [ 7:0] xcount;
 reg  [ 7:0] ycount;
 
-// sync kms_level to clk28
-always @ (posedge clk) begin
-	kms_level_sync <= {kms_level_sync[1:0], kms_level};
-end
-
-//recreate kbd_mouse strobe in clk28 domain
-assign kms = kms_level_sync[2] ^ kms_level_sync[1];
-
-// sync kbd_mouse_data to clk28
-always @ (posedge clk) begin
-	kmd_sync[0] <= kbd_mouse_data;
-	kmd_sync[1] <= kmd_sync[0];
-	kmt_sync[0] <= kbd_mouse_type;
-	kmt_sync[1] <= kmt_sync[0];
-end
-
 // mouse counters
 always @(posedge clk) begin
+	reg old_level;
+	
+	old_level <= kms_level;
+
 	if(reset) begin
 		xcount <= 0;
 		ycount <= 0;
 	end else if (test_load && clk7_en) begin
 		ycount[7:2] <= test_data[15:10];
 		xcount[7:2] <= test_data[7:2];
-	end else if (kms) begin
-		if(kmt_sync[1] == 0)
-			xcount[7:0] <= xcount[7:0] + kmd_sync[1];
-		else if(kmt_sync[1] == 1)
-			ycount[7:0] <= ycount[7:0] + kmd_sync[1];
+	end else if (old_level ^ kms_level) begin
+		if(kbd_mouse_type == 0) xcount[7:0] <= xcount[7:0] + kbd_mouse_data;
+		if(kbd_mouse_type == 1) ycount[7:0] <= ycount[7:0] + kbd_mouse_data;
 	end
 end
 
@@ -370,22 +325,18 @@ reg [4:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk) begin
-	if (clk7_en) begin
-		if (reset) begin
-			chipset_config <= t_chipset_config;
-			ide_config <= t_ide_config;
-			cpu_config[1:0] <= t_cpu_config[1:0];
-			memory_config[5:0] <= t_memory_config[5:0];
-			memory_config[7] <= t_memory_config[7];
-		end
+	if (reset) begin
+		chipset_config <= t_chipset_config;
+		ide_config <= t_ide_config;
+		cpu_config[1:0] <= t_cpu_config[1:0];
+		memory_config[5:0] <= t_memory_config[5:0];
+		memory_config[7] <= t_memory_config[7];
 	end
 end
 
 always @(posedge clk) begin
-	if (clk7_en) begin
-		cache_config[2:0] <= t_cpu_config[4:2];
-		memory_config[6] <= t_memory_config[6];
-	end
+	cache_config[2:0] <= t_cpu_config[4:2];
+	memory_config[6] <= t_memory_config[6];
 end
 
 reg [7:0] cmd;
@@ -449,7 +400,7 @@ always @(posedge clk) begin
 				endcase
 
 				if(bcnt[2]) begin
-				      // If OSD writes to $f80000, it could be a bootrom. When a Kickstart is loaded, $fe0000 is also written.
+				   // If OSD writes to $f80000, it could be a bootrom. When a Kickstart is loaded, $fe0000 is also written.
 				   if (host_adr == 24'hF80000) bootrom <= 1; 
 				   if (host_adr == 24'hFE0000) bootrom <= 0;  
 					btoggle <= ~btoggle;

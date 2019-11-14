@@ -160,7 +160,7 @@ module minimig
 	output 	     _cpu_dtack,  // m68k data acknowledge
 	output 	     _cpu_reset,  // m68k reset
 	input 	     _cpu_reset_in,//m68k reset in
-	input  [31:0] cpu_vbr,     // m68k VBR
+	input  [31:0] nmi_addr,    // m68k NMI address
 	output 	     ovr,         // NMI address decoding override
 
 	//sram pins
@@ -373,9 +373,6 @@ wire [15:0] cart_data_out;
 
 wire        usrrst;				//user reset from osd interface
 wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
-//wire        aron;				//Action Replay is enabled
-wire        cpu_speed;			//requests CPU to switch speed mode
-wire        turbo;				//CPU is working in turbo mode
 wire  [7:0] memory_config;		//memory configuration
 wire  [3:0] floppy_config;		//floppy drives configuration (drive number and speed)
 wire  [4:0] chipset_config;	//chipset features selection
@@ -413,7 +410,7 @@ wire        host_ack;
 wire        sys_reset;    		//reset output from minimig_syscontrol.v
 wire        rom_readonly; 		//writeprotect $f8-ff in gary.v
 
-assign      reset = sys_reset  | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
+assign      reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -489,8 +486,7 @@ agnus AGNUS1
 	.a1k(chipset_config[2]),
 	.ecs(|chipset_config[4:3]),
 	.aga(chipset_config[4]),
-	.floppy_speed(floppy_config[0]),
-	.turbo(turbo)
+	.floppy_speed(floppy_config[0])
 );
 
 //instantiate paula
@@ -602,14 +598,9 @@ userio USERIO1
 	.host_ack     (host_ack         )
 );
 
-//assign cpu_speed = (chipset_config[0] & ~int7 & ~freeze & ~ovr);
-assign cpu_speed = 1'b0;
-
-assign ce_pix = (shres & |chipset_config[4:3]) | (hires & clk7n_en) | clk7_en;
-
-assign res = {shres & |chipset_config[4:3], hires};
-
 wire shres;
+assign ce_pix = (shres & |chipset_config[4:3]) | (hires & clk7n_en) | clk7_en;
+assign res = {shres & |chipset_config[4:3], hires};
 
 //instantiate Denise
 denise DENISE1
@@ -700,9 +691,7 @@ minimig_m68k_bridge CPU1
 	.xbs(xbs),
 	.nrdy(gayle_nrdy),
 	.bls(bls),
-	.cpu_speed(cpu_speed & ~int7 & ~ovr & ~usrrst),
 	.memory_config(memory_config[3:0]),
-	.turbo(turbo),
 	._as(_cpu_as),
 	._lds(_cpu_lds),
 	._uds(_cpu_uds),
@@ -742,8 +731,6 @@ minimig_bankmapper BMAP1
 	.kick1mb(sel_kick1mb),
 	.kick256kmirror(sel_kick256kmirror),
  	.cart(sel_cart),
-//	.aron(aron),
-	.ecs(|chipset_config[4:3]),
 	.memory_config(memory_config[3:0]),
 	.bank(bank)
 );
@@ -781,7 +768,7 @@ cart CART1
   .cpu_rd         (cpu_rd         ),
   .cpu_hwr        (cpu_hwr        ),
   .cpu_lwr        (cpu_lwr        ),
-  .cpu_vbr        (cpu_vbr        ),
+  .nmi_addr       (nmi_addr       ),
   .reg_address_in (reg_address    ),
   .reg_data_in    (custom_data_in ),
   .dbr            (dbr            ),
@@ -791,7 +778,6 @@ cart CART1
   .int7           (int7           ),
   .sel_cart       (sel_cart       ),
   .ovr            (ovr            ),
-//  .aron           (aron           ),
   .cpuhlt         (cpuhlt)
 );
 
@@ -881,7 +867,7 @@ minimig_syscontrol CONTROL1
 	.clk(clk),
 	.clk7_en(clk7_en),
 	.cnt(sof),
-	.mrst(usrrst | rst_ext),// | ~_cpu_reset_in),
+	.mrst(usrrst | rst_ext),
 	.reset(sys_reset)
 );
 
@@ -905,7 +891,7 @@ assign custom_data_out[15:0] = agnus_data_out[15:0]
 //--------------------------------------------------------------------------------------
 
 //cpu reset and clock
-assign _cpu_reset = ~(cpurst || sys_reset); //~(reset || cpurst);
+assign _cpu_reset = ~(cpurst || sys_reset);
 
 //--------------------------------------------------------------------------------------
 
@@ -914,4 +900,3 @@ assign rst_out = reset;
 
 
 endmodule
-

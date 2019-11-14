@@ -95,7 +95,7 @@ module ciaa
 	input  [7:2] porta_in,      // porta in
 	output [3:0] porta_out,     // porta out
 	input  [7:0] portb_in,      // portb in
-	input        keyboard_disabled,  // disable keystrokes
+
 	input        kms_level,
 	input  [1:0] kbd_mouse_type,
 	input  [7:0] kbd_mouse_data,
@@ -133,21 +133,21 @@ wire  enable;
 assign enable = aen & (rd | wr);
 
 // decoder
-assign  pra  = (enable && rs==4'h0) ? 1'b1 : 1'b0;
-assign  prb  = (enable && rs==4'h1) ? 1'b1 : 1'b0;
-assign  ddra = (enable && rs==4'h2) ? 1'b1 : 1'b0;
-assign  ddrb = (enable && rs==4'h3) ? 1'b1 : 1'b0;
-assign  talo = (enable && rs==4'h4) ? 1'b1 : 1'b0;
-assign  tahi = (enable && rs==4'h5) ? 1'b1 : 1'b0;
-assign  tblo = (enable && rs==4'h6) ? 1'b1 : 1'b0;
-assign  tbhi = (enable && rs==4'h7) ? 1'b1 : 1'b0;
-assign  tdlo = (enable && rs==4'h8) ? 1'b1 : 1'b0;
-assign  tdme = (enable && rs==4'h9) ? 1'b1 : 1'b0;
-assign  tdhi = (enable && rs==4'hA) ? 1'b1 : 1'b0;
-assign  sdr  = (enable && rs==4'hC) ? 1'b1 : 1'b0;
-assign  icrs = (enable && rs==4'hD) ? 1'b1 : 1'b0;
-assign  cra  = (enable && rs==4'hE) ? 1'b1 : 1'b0;
-assign  crb  = (enable && rs==4'hF) ? 1'b1 : 1'b0;
+assign  pra  = enable && rs==4'h0;
+assign  prb  = enable && rs==4'h1;
+assign  ddra = enable && rs==4'h2;
+assign  ddrb = enable && rs==4'h3;
+assign  talo = enable && rs==4'h4;
+assign  tahi = enable && rs==4'h5;
+assign  tblo = enable && rs==4'h6;
+assign  tbhi = enable && rs==4'h7;
+assign  tdlo = enable && rs==4'h8;
+assign  tdme = enable && rs==4'h9;
+assign  tdhi = enable && rs==4'hA;
+assign  sdr  = enable && rs==4'hC;
+assign  icrs = enable && rs==4'hD;
+assign  cra  = enable && rs==4'hE;
+assign  crb  = enable && rs==4'hF;
 
 //----------------------------------------------------------------------------------
 // data_out multiplexer
@@ -157,22 +157,19 @@ assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | 
 //----------------------------------------------------------------------------------
 // instantiate keyboard module
 //----------------------------------------------------------------------------------
-wire        keystrobe;
-wire  [7:0] keydat;
-reg   [7:0] sdr_latch;
+reg        keystrobe;
+wire [7:0] keydat;
+reg  [7:0] sdr_latch;
 
 reg    freeze_reg=0;
 assign freeze = freeze_reg;
-
-reg keystrobe_reg;
-assign keystrobe = keystrobe_reg && ((kbd_mouse_type == 2) || (kbd_mouse_type == 3));
 
 // generate a keystrobe which is valid exactly one clk cycle
 always @(posedge clk) begin
 	reg kms_levelD;
 	if (clk7n_en) begin
 		kms_levelD <= kms_level;
-		keystrobe_reg <= kms_level ^ kms_levelD;
+		keystrobe <= (kms_level ^ kms_levelD) && (kbd_mouse_type == 2);
 	end
 end
 
@@ -180,19 +177,18 @@ end
 // sdr register
 // !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
 always @(posedge clk) begin
-  if (clk7_en) begin
-    if (reset) begin
-      sdr_latch[7:0] <= 8'h00;
-      freeze_reg <= #1 1'b0;
-     end else begin
-      if (keystrobe && (kbd_mouse_type == 2) && ~keyboard_disabled) begin
-        sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
-        if (hrtmon_en && (kbd_mouse_data == 8'h5f)) freeze_reg <= #1 1'b1;
-        else freeze_reg <= #1 1'b0;
-      end else if (wr & sdr)
-        sdr_latch[7:0] <= data_in[7:0];
-    end
-  end
+	if (reset) begin
+		sdr_latch[7:0] <= 0;
+		freeze_reg <= 0;
+	end
+	else if (clk7_en) begin
+		if (keystrobe) begin
+			sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
+			if (hrtmon_en && (kbd_mouse_data == 8'h5f)) freeze_reg <= 1;
+			else freeze_reg <= 0;
+		end
+		else if (wr & sdr) sdr_latch[7:0] <= data_in[7:0];
+	end
 end
 
 // sdr register read
@@ -323,7 +319,7 @@ cia_int cnt
   .tb(tb),
   .alrm(alrm),
   .flag(1'b0),
-  .ser(keystrobe & ~keyboard_disabled | ser_tx_irq),
+  .ser(keystrobe | ser_tx_irq),
   .data_in(data_in),
   .data_out(icr_out),
   .irq(irq)

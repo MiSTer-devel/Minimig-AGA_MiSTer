@@ -10,7 +10,6 @@ module agnus_diskdma
 	input	dmal,					//Paula requests dma
 	input	dmas,					//Paula special dma
 	input	speed,
-	input	turbo,
 	input	[8:0] hpos,				//horizontal beam counter (advanced by 4 CCKs)
 	output	wr,						//write (disk dma writes to memory)
 	input 	[8:1] reg_address_in,	//register address inputs
@@ -47,7 +46,7 @@ always @(*)
 	endcase
 
 //dma request
-assign dma = dmal & (dmaslot & ~(turbo & speed) & hpos[0] | turbo & speed & ~hpos[0]);
+assign dma = dmal & dmaslot & hpos[0];
 //write signal
 assign wr = ~dmas;
 

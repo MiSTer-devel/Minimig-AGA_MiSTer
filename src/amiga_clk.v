@@ -21,22 +21,22 @@ reg       clk7_en_reg = 1'b1;
 reg       clk7n_en_reg = 1'b1;
 reg [9:0] shifter;
 always @ (posedge clk_28, negedge reset_n) begin
-  if (!reset_n) begin
-    clk7_cnt     <= 2'b10;
-    clk7_en_reg  <= 1'b1;
-    clk7n_en_reg <= 1'b1;
-	 cck          <= 1;
-	 shifter      <= 1;
-  end else begin
-    clk7_cnt     <= clk7_cnt + 2'b01;
-    clk7_en_reg  <= (clk7_cnt == 2'b00);
-    clk7n_en_reg <= (clk7_cnt == 2'b10);
-	 if(clk7_cnt == 2'b01) begin
-		cck <= ~cck;
-		shifter <= {shifter[8:0],shifter[9]};
-		if(!shifter) shifter <= 1;
-	 end
-  end
+	if (!reset_n) begin
+		clk7_cnt     <= 2'b10;
+		clk7_en_reg  <= 1'b1;
+		clk7n_en_reg <= 1'b1;
+		cck          <= 1;
+		shifter      <= 1;
+	end else begin
+		clk7_cnt     <= clk7_cnt + 2'b01;
+		clk7_en_reg  <= (clk7_cnt == 2'b00);
+		clk7n_en_reg <= (clk7_cnt == 2'b10);
+		if(clk7_cnt == 2'b01) begin
+			cck <= ~cck;
+			shifter <= {shifter[8:0],shifter[9]};
+			if(!shifter) shifter <= 1;
+		end
+	end
 end
 
 wire   clk_7 = clk7_cnt[1];

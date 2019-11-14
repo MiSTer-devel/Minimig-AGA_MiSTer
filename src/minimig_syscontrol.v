@@ -16,41 +16,24 @@
 
 module minimig_syscontrol
 (
-	input	clk,			//bus clock
-  input clk7_en,
-	input	cnt,			//pulses for counting
-	input	mrst,			//master/user reset input
-	output	reset			//global synchronous system reset
+	input	 clk,     //bus clock
+	input  clk7_en,
+	input	 cnt,     //pulses for counting
+	input	 mrst,    //master/user reset input
+	output reset    //global synchronous system reset
 );
 
-//local signals
-reg		smrst0, smrst1;					//registered input
-reg		[2:0] rst_cnt = 0;		//reset timer SHOULD BE CLEARED BY CONFIG
-wire	_rst;					//local reset signal
-
-//asynchronous mrst input synchronizer
-always @(posedge clk) begin
-  if (clk7_en) begin
-    smrst0 <= mrst;
-  	smrst1 <= smrst0;
-  end
-end
+reg [2:0] rst_cnt = 0; //reset timer SHOULD BE CLEARED BY CONFIG
 
 //reset timer and mrst control
 always @(posedge clk) begin
-  if (clk7_en) begin
-  	if (smrst1)
-  		rst_cnt <= 3'd0;
-  	else if (!_rst && cnt)
-  		rst_cnt <= rst_cnt + 3'd1;
-  end
+	if (clk7_en) begin
+		if (mrst) rst_cnt <= 0;
+		else if (reset && cnt) rst_cnt <= rst_cnt + 3'd1;
+	end
 end
 
-assign _rst = rst_cnt[2];
-
 //global reset output
-assign reset = ~_rst;
-
+assign reset = ~rst_cnt[2];
 
 endmodule
-
