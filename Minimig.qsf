@@ -51,7 +51,7 @@ set_global_assignment -name ALM_REGISTER_PACKING_EFFORT LOW
 set_global_assignment -name SYNTH_PROTECT_SDC_CONSTRAINT ON
 set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 6.0
 set_global_assignment -name FITTER_AGGRESSIVE_ROUTABILITY_OPTIMIZATION NEVER
-set_global_assignment -name SEED 1
+set_global_assignment -name SEED 4
 
 source sys/sys.tcl
 source sys/sys_analog.tcl
