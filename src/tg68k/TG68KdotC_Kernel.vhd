@@ -21,6 +21,9 @@
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 
+-- 25.11.2019 TG bugfix ILLEGAL.B handling
+-- 24.11.2019 TG next try CMP2 and CHK2.l
+-- 24.11.2019 retrofun(RF) commit ILLEGAL.B handling 
 -- 18.11.2019 TG insert CMP2 and CHK2.l
 -- 17.11.2019 TG insert CAS and CAS2
 -- 10.11.2019 TG insert TRAPcc
@@ -67,12 +70,15 @@
 -- (CALLM)
 -- (RETM)
 
--- CAS, CAS2
+-- bugfix DIVS.W
+-- bugfix CHK2, CMP2
+-- rework barrel shifter 
 -- CHK2
 -- CMP2
 -- cpXXX Coprozessor stuff
 
 -- done 020:
+-- CAS, CAS2
 -- TRAPcc
 -- PACK
 -- UNPK
@@ -266,7 +272,6 @@ architecture logic of TG68KdotC_Kernel is
 	signal trap_1111			: bit;
 	signal trap_trap			: bit;
 	signal trap_trapv			: bit;
-	signal trap_trapcc		: bit;
 	signal trap_interrupt	: bit;
 	signal trapmake			: bit;
 	signal trapd				: bit;
@@ -724,7 +729,7 @@ PROCESS (clk)
 				IF set_direct_data='1' THEN
 					direct_data <= '1';
 					use_direct_data <= '1';
-				ELSIF endOPC='1' THEN	
+				ELSIF endOPC='1' OR set(ea_data_OP2)='1' THEN	
 					use_direct_data <= '0';
 				END IF;	
 				exec_DIRECT <= set_exec(opcMOVE);
@@ -956,7 +961,7 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 -- PC Calc + fetch opcode
 -----------------------------------------------------------------------------
 PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro_state, stop, make_trace, make_berr, IPL_nr, FlagsSR, set_rot_cnt, opcode, writePCbig, set_exec, exec,
-        PC_dataa, PC_datab, setnextpass, last_data_read, TG68_PC_brw, TG68_PC_word, Z_error, trap_trap, trap_trapv, trap_trapcc, interrupt, tmp_TG68_PC, TG68_PC)
+        PC_dataa, PC_datab, setnextpass, last_data_read, TG68_PC_brw, TG68_PC_word, Z_error, trap_trap, trap_trapv, interrupt, tmp_TG68_PC, TG68_PC)
 	BEGIN
 	
 		PC_dataa <= TG68_PC;
@@ -1201,15 +1206,6 @@ PROCESS (clk, IPL, setstate, state, exec_write_back, set_direct_data, next_micro
 						END IF;
 					END IF;
 
--- why do not I need this ??? What are the immediate data for ???					
---					IF	trap_trapcc='1' THEN
---						IF opcode(2 downto 0)="100" THEN
---							exe_pc <= (others => '0');
---						ELSE
---							exe_pc <= last_data_read;
---						END IF;
---					END IF;
-	
 					IF decodeOPC='1' OR interrupt='1' THEN
 						trap_SR <= FlagsSR;
 					END IF;
@@ -1384,7 +1380,7 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state, decodeOPC, state, setexecOPC, Flags, FlagsSR, direct_data, build_logical,
 		 build_bcd, set_Z_error, trapd, movem_run, last_data_read, set, set_V_Flag, z_error, trap_trace, trap_interrupt,
 		 SVmode, preSVmode, stop, long_done, ea_only, setstate, execOPC, exec_write_back, exe_datatype,
-		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, trap_trapcc, last_data_in, use_VBR_Stackframe,
+		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, last_data_in, use_VBR_Stackframe,
 		 long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr)
 	BEGIN
 		TG68_PC_brw <= '0';	
@@ -1428,7 +1424,6 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		trap_1111 <='0';
 		trap_trap <='0';
 		trap_trapv <= '0';
-		trap_trapcc <= '0';
 		trapmake <='0';
 		set_vectoraddr <='0';
 		writeSR <= '0';
@@ -1659,7 +1654,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					IF cpu(1)='1' THEN
 						IF opcode(11)='1' THEN					--CAS/CAS2
 							IF (opcode(10 downto 9)/="00" AND --CAS illegal size
-							   opcode(5 downto 2)/="00" AND (opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00")) OR --ea illegal modes
+							   opcode(5 downto 4)/="00" AND (opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00")) OR --ea illegal modes
 							   (opcode(10)='1' AND opcode(5 downto 0)="111100") THEN --CAS2
 								CASE opcode(10 downto 9) IS
 									WHEN "01" => datatype <= "00";		--Byte
@@ -1707,7 +1702,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 								END IF;
 								IF micro_state=idle AND nextpass='1' THEN
 									setstate <= "10";
-									next_micro_state <= chk21;
+									set(hold_OP2) <='1';
+									next_micro_state <= chk20;
 								END IF;
 							ELSE
 								trap_illegal <= '1';
@@ -2227,7 +2223,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 										datatype <= "10";
 
 	 --no FPGA Multiplier
-									ELSIF opcode(8 downto 7)="00" AND opcode(5 downto 3)/="001" AND --ea An illegal mode
+									ELSIF opcode(8 downto 7)="00" AND opcode(5 downto 3)/="001" AND (opcode(5 downto 2)/="1111" OR opcode(1 downto 0)="00") AND --ea An illegal mode
 									   ((opcode(6)='1' AND (DIV_Mode=1 OR (cpu(1)='1' AND DIV_Mode=2))) OR
 									   (opcode(6)='0' AND (MUL_Mode=1 OR (cpu(1)='1' AND MUL_Mode=2)))) THEN
 										IF decodeOPC='1' THEN
@@ -2396,7 +2392,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 										setstate <="11";
 										next_micro_state <= nopnop;
 									END IF;
--- achtung buggefahr								
+								
 									IF micro_state=ld_AnXn1 AND brief(8)='0'THEN			--JMP/JSR n(Ax,Dn)
 										skipFetch <= '1';
 									END IF;
@@ -2613,7 +2609,6 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 										setstate <= "01";
 									END IF;
 								END IF;
-								trap_trapcc<='1';
 								IF exe_condition='1' AND decodeOPC='0' THEN
 									trap_trapv <= '1';
 									trapmake <= '1';
@@ -3436,7 +3431,14 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 						END IF;	
 					END IF;
 
-				WHEN chk21 =>
+				WHEN chk20 =>			--if C is set -> signed compare
+					set(ea_data_OP1) <= '1';
+					set(addsub) <= '1';
+					set(alu_exec) <= '1';
+					set(alu_setFlags) <= '1';
+					setstate <="01";
+					next_micro_state <= chk21;
+				WHEN chk21 =>			-- check lower bound
 					dest_2ndHbits <= '1';
 					IF sndOPC(15)='1' THEN
 						set_datatype <="10";	--long
@@ -3445,15 +3447,14 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 							set(opcEXTB) <= '1';
 						END IF;
 					END IF;
-					set(hold_dwr) <= '1';
-					set(hold_OP2) <='1';
 					set(addsub) <= '1';
 					set(alu_exec) <= '1';
 					set(alu_setFlags) <= '1';
 					setstate <="01";
 					next_micro_state <= chk22;
-				WHEN chk22 =>
+				WHEN chk22 =>			--check upper bound
 					dest_2ndHbits <= '1';
+					set(ea_data_OP2) <= '1';
 					IF sndOPC(15)='1' THEN
 						set_datatype <="10";	--long
 						dest_LDRareg <= '1';
@@ -3471,9 +3472,9 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 						next_micro_state <= chk24;
 				WHEN chk24 =>
 					IF Flags(0)='1'THEN
---						set(trap_chk) <= '1';	
 						trapmake <= '1';
 					END IF;
+					
 					
 				WHEN cas1 =>
 						setstate <="01";

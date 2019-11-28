@@ -93,6 +93,7 @@ architecture logic of TG68K_ALU is
 	signal flag_z				: std_logic_vector(2 downto 0);
 	signal set_Flags			: std_logic_vector(3 downto 0);	--NZVC
 	signal CCRin				: std_logic_vector(7 downto 0);
+	signal last_Flags1		: std_logic_vector(3 downto 0);	--NZVC
     
 --BCD
 	signal bcd_pur				: std_logic_vector(9 downto 0);
@@ -137,7 +138,7 @@ architecture logic of TG68K_ALU is
 	signal div_over			: std_logic_vector(32 downto 0);
 	signal nozero				: std_logic;
 	signal div_qsign			: std_logic;
-	signal divisor				: std_logic_vector(63 downto 0);
+	signal divident			: std_logic_vector(63 downto 0);
 	signal divs					: std_logic;
 	signal signedOP			: std_logic;
 	signal OP1_sign			: std_logic;
@@ -974,6 +975,7 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 						Flags(3 downto 0) <= "0100";
 					END IF;		
 				ELSIF exec(no_Flags)='0' THEN
+					last_Flags1 <= Flags(3 downto 0);
 					IF exec(opcADD)='1' THEN
 						Flags(4) <= set_flags(0);
 					ELSIF exec(opcROT)='1' AND rot_bits/="11" AND exec(rot_nop)='0' THEN
@@ -1024,9 +1026,15 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 					ELSIF exec(opcBITS)='1' THEN
 						Flags(2) <= NOT one_bit_in;	
 					ELSIF exec(opcCHK2)='1' THEN
-						Flags(0) <= (NOT Flags(0) AND NOT Flags(2)) OR set_flags(0);
-						Flags(3) <= NOT flags(3) OR set_flags(3);
+						Flags(0) <= '0';
 						Flags(2) <= Flags(2) OR set_flags(2);
+----lower bound first
+						IF last_Flags1(0)='0' THEN			--unsigned OP
+							Flags(0) <= Flags(0) OR (NOT set_flags(0) AND NOT set_flags(2));
+						ELSE										--signed OP
+							Flags(0) <= (Flags(3) AND NOT Flags(1)) OR (NOT Flags(3) AND Flags(1)) OR																				--LT
+										   (set_flags(3) AND set_flags(1) AND NOT set_flags(2)) OR (NOT set_flags(3) AND NOT set_flags(1) AND NOT set_flags(2));	--GT
+						END IF;
 					ELSIF exec(opcCHK)='1' THEN
 						IF exe_datatype="01" THEN 						--Word
 							Flags(3) <= OP1out(15);
@@ -1039,7 +1047,6 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 							Flags(2) <='0';
 						END IF;	
 						Flags(1) <= '0';
---						Flags(0) <= NOT set_flags(0);
 						Flags(0) <= '0';
 					END IF;
 				END IF;	
@@ -1182,14 +1189,14 @@ PROCESS (execOPC, OP1out, OP2out, div_reg, div_neg, div_bit, div_sub, div_quot, 
 	     signedOP, nozero, div_qsign, OP2outext)
 	BEGIN
 		divs <= (opcode(15) AND opcode(8)) OR (NOT opcode(15) AND sndOPC(11));
-		divisor(15 downto 0) <= (OTHERS=> '0');
-		divisor(63 downto 32) <= (OTHERS=> divs AND reg_QA(31));
+		divident(15 downto 0) <= (OTHERS=> '0');
+		divident(63 downto 32) <= (OTHERS=> divs AND reg_QA(31));
 		IF exe_opcode(15)='1' OR DIV_Mode=0 THEN
-			divisor(47 downto 16) <= reg_QA;
+			divident(47 downto 16) <= reg_QA;
 		ELSE		
-			divisor(31 downto 0) <= reg_QA;
+			divident(31 downto 0) <= reg_QA;
 			IF exe_opcode(14)='1' AND sndOPC(10)='1' THEN
-				divisor(63 downto 32) <= reg_QB;
+				divident(63 downto 32) <= reg_QB;
 			END IF;
 		END IF;
 		IF signedOP='1' OR opcode(15)='0' THEN 
@@ -1231,12 +1238,12 @@ PROCESS (clk)
 				signedOP <= divs;
 				IF micro_state=div1 THEN
 					nozero <= '0';
-					IF divs='1' AND divisor(63)='1' THEN				-- Neg divisor
+					IF divs='1' AND divident(63)='1' THEN				-- Neg divident
 						OP1_sign <= '1';
-						div_reg <= 0-divisor;
+						div_reg <= 0-divident;
 					ELSE
 						OP1_sign <= '0';
-						div_reg <= divisor;
+						div_reg <= divident;
 					END IF;	
 				ELSE
 					div_reg <= div_quot;	
