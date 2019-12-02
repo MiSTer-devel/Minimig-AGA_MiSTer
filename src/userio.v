@@ -325,13 +325,19 @@ reg [4:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk) begin
+	reg [4:0] ide_cfg = 0;
+	reg [1:0] cpu_cfg = 0;
+
 	if (reset) begin
 		chipset_config <= t_chipset_config;
-		ide_config <= t_ide_config;
-		cpu_config[1:0] <= t_cpu_config[1:0];
+		ide_cfg <= t_ide_config;
+		cpu_cfg <= t_cpu_config[1:0];
 		memory_config[5:0] <= t_memory_config[5:0];
 		memory_config[7] <= t_memory_config[7];
 	end
+	
+	ide_config <= ide_cfg;
+	cpu_config <= cpu_cfg;
 end
 
 always @(posedge clk) begin
@@ -359,6 +365,7 @@ always @(posedge clk) begin
 	reg       btoggle;
 	reg       old_ack;
 	reg [2:0] bcnt;
+	reg       bootrom_r;
 
 	old_ack <= host_ack;
 	if (old_ack & ~host_ack) begin
@@ -401,8 +408,8 @@ always @(posedge clk) begin
 
 				if(bcnt[2]) begin
 				   // If OSD writes to $f80000, it could be a bootrom. When a Kickstart is loaded, $fe0000 is also written.
-				   if (host_adr == 24'hF80000) bootrom <= 1; 
-				   if (host_adr == 24'hFE0000) bootrom <= 0;  
+				   if (host_adr == 24'hF80000) bootrom_r <= 1; 
+				   if (host_adr == 24'hFE0000) bootrom_r <= 0;  
 					btoggle <= ~btoggle;
 					if(btoggle) begin
 						host_wdat[7:0] <= IO_DIN[7:0];
@@ -419,6 +426,8 @@ always @(posedge clk) begin
 		host_we <= mrx;
 		if(host_ack) mrx <= 0;
 	end
+	
+	bootrom <= bootrom_r;
 end
 
 endmodule

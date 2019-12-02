@@ -20,7 +20,7 @@ module minimig_syscontrol
 	input  clk7_en,
 	input	 cnt,     //pulses for counting
 	input	 mrst,    //master/user reset input
-	output reset    //global synchronous system reset
+	output reg reset    //global synchronous system reset
 );
 
 reg [2:0] rst_cnt = 0; //reset timer SHOULD BE CLEARED BY CONFIG
@@ -29,11 +29,9 @@ reg [2:0] rst_cnt = 0; //reset timer SHOULD BE CLEARED BY CONFIG
 always @(posedge clk) begin
 	if (clk7_en) begin
 		if (mrst) rst_cnt <= 0;
-		else if (reset && cnt) rst_cnt <= rst_cnt + 3'd1;
+		else if (~rst_cnt[2] && cnt) rst_cnt <= rst_cnt + 3'd1;
+		reset <= ~rst_cnt[2];
 	end
 end
-
-//global reset output
-assign reset = ~rst_cnt[2];
 
 endmodule
