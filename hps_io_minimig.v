@@ -169,16 +169,22 @@ always@(posedge clk_sys) begin
 				'h03: if(byte_cnt==1) joystick_1[15:0] <= io_din;
 				'h16: if(byte_cnt==1) joystick_2[15:0] <= io_din;
 				'h17: if(byte_cnt==1) joystick_3[15:0] <= io_din;
-				
+
 				// keyboard
-				'h05,
-				'h06:
+				'h05:
 					if(byte_cnt == 1) begin
 						kbd_mouse_data <= io_din[7:0];
 						kbd_mouse_type <= 2;
 						kbd_mouse_level <= ~kbd_mouse_level;
 					end
-				
+
+				'h06:
+					if(byte_cnt == 1) begin
+						kbd_mouse_data <= io_din[7:0];
+						kbd_mouse_type <= 3;
+						kbd_mouse_level <= ~kbd_mouse_level;
+					end
+
 				// mouse
 				'h04:
 					if(byte_cnt == 1) begin
