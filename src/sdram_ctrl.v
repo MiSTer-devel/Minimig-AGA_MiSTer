@@ -46,6 +46,8 @@ module sdram_ctrl
 	output reg        sd_cas,
 	output reg  [1:0] sd_dqm,
 	inout  reg [15:0] sd_data,
+	output reg        sd_clk,
+	output            sd_cke,
 	// chip
 	input      [24:1] chipAddr,
 	input             chipL,
@@ -67,6 +69,7 @@ module sdram_ctrl
 );
 
 assign sd_cs = 0;
+assign sd_cke = 1;
 
 //// parameters ////
 localparam [2:0]
@@ -189,12 +192,15 @@ assign ramready = cache_rd_ack || write_ena;
 reg [15:0] chip48_1, chip48_2, chip48_3;
 
 always @ (posedge sysclk) begin
+	reg [15:0] sdata_chip;
+
+	sdata_chip <= sdata_reg;
 	if(slot_type == CHIP) begin
 		case(sdram_state)
-			 8: chipRD   <= sdata_reg;
-			10: chip48_1 <= sdata_reg;
-			12: chip48_2 <= sdata_reg;
-			14: chip48_3 <= sdata_reg;
+			 9: chipRD   <= sdata_chip;
+			11: chip48_1 <= sdata_chip;
+			13: chip48_2 <= sdata_chip;
+			15: chip48_3 <= sdata_chip;
 		endcase
 	end
 end
@@ -231,7 +237,7 @@ always @ (posedge sysclk) begin
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
-	if(~old_7m & c_7m) sdram_state <= 15;
+	if(~old_7m & c_7m) sdram_state <= 0;
 end
 
 //// sdram control ////
@@ -247,6 +253,8 @@ always @ (posedge sysclk) begin
 	reg [15:0] datawr;
 	reg  [9:0] casaddr;
 	reg  [3:0] rcnt;
+	
+	sd_clk <= sdram_state[0];
 
 	if(~sdram_state[0]) begin
 		sd_ras                <= 1;

@@ -184,8 +184,7 @@ pll pll
 (
 	.refclk(CLK_50M),
 	.outclk_0(clk_114),
-	.outclk_1(clk_57),
-	.outclk_2(clk_sys),
+	.outclk_1(clk_sys),
 	.locked(locked)
 );
 
@@ -316,9 +315,6 @@ cpu_wrapper cpu_wrapper
 	.nmi_addr     (cpu_nmi_addr    )
 );
 
-assign SDRAM_CKE = 1;
-assign SDRAM_CLK = clk_57;
-
 wire [15:0] ram_dout1;
 wire        ram_ready1;
 
@@ -339,6 +335,8 @@ sdram_ctrl ram1
 	.sd_we        (SDRAM_nWE       ),
 	.sd_ras       (SDRAM_nRAS      ),
 	.sd_cas       (SDRAM_nCAS      ),
+	.sd_cke       (SDRAM_CKE       ),
+	.sd_clk       (SDRAM_CLK       ),
 
 	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr[22:1]  ),
