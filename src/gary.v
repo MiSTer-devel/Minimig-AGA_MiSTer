@@ -158,22 +158,14 @@ begin
 	end
 end
 
-assign t_sel_slow[0] = cpu_address_in[23:19]==5'b1100_0; //$C00000 - $C7FFFF
-assign t_sel_slow[1] = cpu_address_in[23:19]==5'b1100_1; //$C80000 - $CFFFFF
-assign t_sel_slow[2] = cpu_address_in[23:19]==5'b1101_0; //$D00000 - $D7FFFF
-
-// 512kb extra rom area at $e0 and $f0 write able only at a1k chipset mode
-//assign t_sel_slow[2] = (cpu_address_in[23:19]==5'b1110_0 || cpu_address_in[23:19]==5'b1111_0) && (a1k | cpu_rd) ? 1'b1 : 1'b0; //$E00000 - $E7FFFF & $F00000 - $F7FFFF
-
-assign sel_xram = ((t_sel_slow[0] & (memory_config[2] | memory_config[3]))
-        | (t_sel_slow[1] & memory_config[3])
-        | (t_sel_slow[2] & memory_config[2] & memory_config[3]));
-
+assign t_sel_slow[0] = (cpu_address_in[23:19]==5'b1100_0) && |memory_config[3:2]; //$C00000 - $C7FFFF
+assign t_sel_slow[1] = (cpu_address_in[23:19]==5'b1100_1) &&  memory_config[3];   //$C80000 - $CFFFFF
+assign t_sel_slow[2] = (cpu_address_in[23:19]==5'b1101_0) && &memory_config[3:2]; //$D00000 - $D7FFFF
 
 assign sel_ide   = hdc_ena && cpu_address_in[23:16]==8'b1101_1010;        //IDE registers at $DA0000 - $DAFFFF	
 assign sel_gayle = hdc_ena && cpu_address_in[23:12]==12'b1101_1110_0001;  //GAYLE registers at $DE1000 - $DE1FFF
 assign sel_rtc   = cpu_address_in[23:16]==8'b1101_1100;                   //RTC registers at $DC0000 - $DCFFFF
-assign sel_reg   = cpu_address_in[23:21]==3'b110 ? ~(sel_xram | sel_rtc | sel_ide | sel_gayle) : 1'b0;		//chip registers at $DF0000 - $DFFFFF
+assign sel_reg   = cpu_address_in[23:21]==3'b110 ? ~(|t_sel_slow | sel_rtc | sel_ide | sel_gayle) : 1'b0;	//chip registers at $DF0000 - $DFFFFF
 assign sel_cia   = cpu_address_in[23:20]==4'b1011; // $Bxxxxx
 assign sel_cia_a = sel_cia & ~cpu_address_in[12];
 assign sel_cia_b = sel_cia & ~cpu_address_in[13];
