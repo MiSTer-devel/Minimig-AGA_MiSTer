@@ -167,8 +167,8 @@ always@(posedge clk_sys) begin
 				'h01: cfg <= io_din[7:0];
 				'h02: if(byte_cnt==1) joystick_0[15:0] <= io_din;
 				'h03: if(byte_cnt==1) joystick_1[15:0] <= io_din;
-				'h16: if(byte_cnt==1) joystick_2[15:0] <= io_din;
-				'h17: if(byte_cnt==1) joystick_3[15:0] <= io_din;
+				'h10: if(byte_cnt==1) joystick_2[15:0] <= io_din;
+				'h11: if(byte_cnt==1) joystick_3[15:0] <= io_din;
 
 				// keyboard
 				'h05:
