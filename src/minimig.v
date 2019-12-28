@@ -423,7 +423,7 @@ end
 assign pwr_led = ~(_led & led_dim);
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
-assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};
+assign cachecfg = {cachecfg_pre[2], (rom_readonly && !ovl && cachecfg_pre[1]), (!ovl && (cachecfg_pre[0] && cpu_custom) && (&memory_config[1:0]))};
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
