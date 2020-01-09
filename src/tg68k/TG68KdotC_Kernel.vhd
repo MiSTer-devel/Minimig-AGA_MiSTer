@@ -517,7 +517,14 @@ PROCESS (long_start, reg_QB, data_write_tmp, exec, data_read, data_write_mux, me
 		ELSIF memmaskmux(3)='0' THEN	
 			data_write <= data_write_mux(31 downto 16);
 		ELSE
-			data_write <= data_write_mux(15 downto 0);
+                        -- a single byte shows up on both bus halfs
+                        IF memmaskmux(5 downto 4) = "10" THEN
+			        data_write <= data_write_mux(7 downto 0) & data_write_mux(7 downto 0);
+                        ELSIF memmaskmux(5 downto 4) = "01" THEN
+			        data_write <= data_write_mux(15 downto 8) & data_write_mux(15 downto 8);
+                        ELSE
+			        data_write <= data_write_mux(15 downto 0);
+		        END IF;
 		END IF;
 		IF exec(mem_byte)='1' THEN	--movep
 			data_write(7 downto 0) <= data_write_tmp(15 downto 8);
