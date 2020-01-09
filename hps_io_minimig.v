@@ -88,6 +88,7 @@ video_calc video_calc
 (
 	.clk_100(HPS_BUS[43]),
 	.clk_vid(clk_sys),
+	.clk_sys(clk_sys),
 	.ce_pix(ce_pix),
 	.de(HPS_BUS[40]),
 	.hs(HPS_BUS[39]),
