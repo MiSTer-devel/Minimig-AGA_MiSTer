@@ -84,8 +84,8 @@ localparam [2:0]
 ////////////////////////////////////////
 
 reg reset;
+reg [7:0] reset_cnt;
 always @(posedge sysclk) begin
-	reg [7:0] reset_cnt;
 
 	if(!reset_n) begin
 		reset_cnt     <= 0;
@@ -151,8 +151,9 @@ reg  [1:0] write_dqm;
 reg [24:1] writeAddr;
 reg [15:0] writeDat;
 
+reg  [1:0] write_state;
+
 always @ (posedge sysclk) begin
-	reg  [1:0] write_state;
 
 	if(~reset_n) begin
 		write_req   <= 0;
@@ -191,8 +192,8 @@ assign ramready = cache_rd_ack || write_ena;
 //// chip line read ////
 reg [15:0] chip48_1, chip48_2, chip48_3;
 
+reg [15:0] sdata_chip;
 always @ (posedge sysclk) begin
-	reg [15:0] sdata_chip;
 
 	sdata_chip <= sdata_reg;
 	if(slot_type == CHIP) begin
@@ -231,9 +232,8 @@ end
 
 //// sdram state ////
 reg [3:0] sdram_state;
+reg old_7m;
 always @ (posedge sysclk) begin
-	reg old_7m;
-
 	sdram_state <= sdram_state + 1'd1;
 
 	old_7m <= c_7m;
@@ -246,14 +246,14 @@ reg  [2:0] slot_type = IDLE;
 reg [15:0] sdata_reg;
 reg        chipWE;
 
+reg        cas_sd_cas;
+reg        cas_sd_we;
+reg  [1:0] cas_dqm;
+reg [15:0] datawr;
+reg  [9:0] casaddr;
+reg  [3:0] rcnt;
 always @ (posedge sysclk) begin
-	reg        cas_sd_cas;
-	reg        cas_sd_we;
-	reg  [1:0] cas_dqm;
-	reg [15:0] datawr;
-	reg  [9:0] casaddr;
-	reg  [3:0] rcnt;
-	
+
 	sd_clk <= sdram_state[0];
 
 	if(~sdram_state[0]) begin

@@ -287,9 +287,9 @@ reg  [ 7:0] xcount;
 reg  [ 7:0] ycount;
 
 // mouse counters
+reg old_level;
 always @(posedge clk) begin
-	reg old_level;
-	
+
 	old_level <= kms_level;
 
 	if(reset) begin
@@ -324,10 +324,10 @@ reg [4:0] t_cpu_config = 0;
 reg [4:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
-always @(posedge clk) begin
-	reg [4:0] ide_cfg = 0;
-	reg [1:0] cpu_cfg = 0;
+reg [4:0] ide_cfg = 0;
+reg [1:0] cpu_cfg = 0;
 
+always @(posedge clk) begin
 	if (reset) begin
 		chipset_config <= t_chipset_config;
 		ide_cfg <= t_ide_config;
@@ -359,14 +359,14 @@ wire floppy_cfg_sel   = (cmd[3:0] == 7); // XXXXXFFS || floppy config   | FF - d
 wire harddisk_cfg_sel = (cmd[3:0] == 8); // XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
 wire joystick_cfg_sel = (cmd[3:0] == 9); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
 
-always @(posedge clk) begin
-	reg       has_cmd;
-	reg       mrx;
-	reg       btoggle;
-	reg       old_ack;
-	reg [2:0] bcnt;
-	reg       bootrom_r;
+reg       has_cmd;
+reg       mrx;
+reg       btoggle;
+reg       old_ack;
+reg [2:0] bcnt;
+reg       bootrom_r;
 
+always @(posedge clk) begin
 	old_ack <= host_ack;
 	if (old_ack & ~host_ack) begin
 		IO_WAIT  <= 0;

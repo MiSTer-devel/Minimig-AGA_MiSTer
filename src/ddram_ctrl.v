@@ -90,8 +90,8 @@ reg  [1:0] writeBE;
 reg [28:1] writeAddr;
 reg [15:0] writeDat;
 
+reg [1:0] write_state = 0;
 always @ (posedge sysclk) begin
-	reg  [1:0] write_state;
 
 	if(~reset_n) begin
 		write_req   <= 0;
@@ -130,11 +130,11 @@ assign DDRAM_BURSTCNT = 1;
 
 reg [15:0] ddr_data;
 
-always @ (posedge sysclk) begin
-	reg  [2:0] state = 0;
-	reg  [1:0] ba;
-	reg [63:0] dout;
+reg  [2:0] state;
+reg  [1:0] ba;
+reg [63:0] dout;
 
+always @ (posedge sysclk) begin
 	cache_fill <= 0;
 	ddr_data <= dout[{ba, 4'b0000} +:16];
 
