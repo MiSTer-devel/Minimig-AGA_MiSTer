@@ -578,7 +578,6 @@ agnus_blitter_adrgen address_generator_1
 	.clk(clk),
   .clk7_en(clk7_en),
 	.reset(reset),
-  .first_line_pixel(line && first_line_pixel),
 	.ptrsel(ptrsel),
 	.modsel(modsel),
 	.enaptr(enaptr),
@@ -606,6 +605,11 @@ always @(*)
 assign 	enable = enadma & clkena;
 assign 	reqdma = dma_req & enable;
 assign	dma_ack = ackdma;
+
+wire   lineinc = (bltcon1[4] && !bltcon1[2] || !bltcon1[4] && !bltcon1[3] && !sign_del) && ash==4'b1111 ? 1'b1 : 1'b0;
+wire   linedec = (bltcon1[4] &&  bltcon1[2] || !bltcon1[4] &&  bltcon1[3] && !sign_del) && ash==4'b0000 ? 1'b1 : 1'b0;
+wire   lineadd = !bltcon1[4] && !bltcon1[2] ||  bltcon1[4] && !bltcon1[3] && !sign_del ? 1'b1 : 1'b0;
+wire   linesub = !bltcon1[4] &&  bltcon1[2] ||  bltcon1[4] &&  bltcon1[3] && !sign_del ? 1'b1 : 1'b0;
 
 // blitter FSM
 always @(posedge clk)
@@ -811,11 +815,11 @@ always @(*)
 			chsel = CHC;
 			ptrsel = CHC;
 			modsel = CHC;
-			enaptr = enable; // no pointer increment
-			incptr = 0;
-			decptr = 0;
-			addmod = 0;
-			submod = 0;
+			enaptr = enable;   // no pointer increment except first pixel
+			incptr = first_line_pixel ? lineinc : 1'b0;
+			decptr = first_line_pixel ? linedec : 1'b0;
+			addmod = first_line_pixel ? lineadd : 1'b0;
+			submod = first_line_pixel ? linesub : 1'b0;
 			dma_req = usec;
 			
 			if (enable)
@@ -825,15 +829,15 @@ always @(*)
 		end
 		
 		BLT_L3: // free cycle (data propagates from source holding registers to channel D hold register - no pipelining)
-		begin
+		begin   // increment D pointer except first pixel
 			chsel = CHA;
-			ptrsel = CHA;
-			modsel = CHA;
-			enaptr = 0;
-			incptr = 0;
-			decptr = 0;
-			addmod = 0;
-			submod = 0;
+			ptrsel = CHD;   //CHA;
+			modsel = CHD;   //CHA;
+			enaptr = first_line_pixel ? 1'b0 : enable;   //0;
+			incptr = lineinc;   //0;
+			decptr = linedec;   //0;
+			addmod = lineadd;   //0;
+			submod = linesub;   //0;
 			dma_req = 0;
 
 			if (enable)
@@ -845,13 +849,13 @@ always @(*)
 		BLT_L4: // store cycle - initial write @ D ptr, all succesive @ C ptr, always modulo C used
 		begin
 			chsel = CHD;
-			ptrsel = CHC;
-			modsel = CHC;
+			ptrsel = first_line_pixel ? CHD : CHC;
+			modsel = first_line_pixel ? CHD : CHC;
 			enaptr = enable;
-			incptr = (bltcon1[4] && !bltcon1[2] || !bltcon1[4] && !bltcon1[3] && !sign_del) && ash==4'b1111 ? 1'b1 : 1'b0;
-			decptr = (bltcon1[4] &&  bltcon1[2] || !bltcon1[4] &&  bltcon1[3] && !sign_del) && ash==4'b0000 ? 1'b1 : 1'b0;
-			addmod = !bltcon1[4] && !bltcon1[2] ||  bltcon1[4] && !bltcon1[3] && !sign_del ? 1'b1 : 1'b0;
-			submod = !bltcon1[4] &&  bltcon1[2] ||  bltcon1[4] &&  bltcon1[3] && !sign_del ? 1'b1 : 1'b0;
+			incptr = lineinc;
+			decptr = linedec;
+			addmod = lineadd;
+			submod = linesub;
 			// in 'one dot' mode this might be a free bus cycle
 			dma_req = usec & (~bltcon1[1] | ~bltcon1[4] | first_pixel); // request DMA cycle
 			

@@ -4,9 +4,8 @@
 module agnus_blitter_adrgen
 (
 	input	clk,					// bus clock
-  input clk7_en,
+	input clk7_en,
 	input	reset,					// reset
-  input first_line_pixel,
 	input	[1:0] ptrsel,			// pointer register selection
 	input	[1:0] modsel,			// modulo register selection
 	input	enaptr,					// enable pointer selection and update
@@ -82,7 +81,7 @@ assign bltptl_out = bltptl[bltptr_sel];
 
 assign bltptr_out = {bltpth_out, bltptl_out};	
 	
-assign address_out = enaptr && first_line_pixel ? {bltpth[CHD], bltptl[CHD]} : bltptr_out;
+assign address_out = bltptr_out;
     
 //--------------------------------------------------------------------------------------
 
