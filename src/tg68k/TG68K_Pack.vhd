@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 --                                                                          --
--- Copyright (c) 2009-2019 Tobias Gubener                                   -- 
+-- Copyright (c) 2009-2020 Tobias Gubener                                   -- 
 -- Patches by MikeJ, Till Harbaum, Rok Krajnk, ...                          --
 -- Subdesign fAMpIGA by TobiFlex                                            --
 --                                                                          --
