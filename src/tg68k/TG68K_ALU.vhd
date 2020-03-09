@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 --                                                                          --
--- Copyright (c) 2009-2019 Tobias Gubener                                   -- 
+-- Copyright (c) 2009-2020 Tobias Gubener                                   -- 
 -- Patches by MikeJ, Till Harbaum, Rok Krajnk, ...                          --
 -- Subdesign fAMpIGA by TobiFlex                                            --
 --                                                                          --
@@ -104,6 +104,7 @@ architecture logic of TG68K_ALU is
 	signal bcd_a				: std_logic_vector(8 downto 0);
 	signal result_mulu		: std_logic_vector(127 downto 0);
 	signal result_div			: std_logic_vector(63 downto 0);
+	signal result_div_pre	: std_logic_vector(31 downto 0);
 	signal set_mV_Flag		: std_logic;
 	signal V_Flag				: bit;
 	
@@ -984,7 +985,6 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 						Flags(4) <= BS_X; 	
 					END IF;
 					
---					IF (exec(opcADD) OR exec(opcCMP))='1' OR exec(alu_setFlags)='1' THEN
 					IF (exec(opcCMP) OR exec(alu_setFlags))='1' THEN
 						Flags(3 downto 0) <= set_flags;
 					ELSIF exec(opcDIVU)='1' AND DIV_Mode/=3 THEN
@@ -1186,18 +1186,20 @@ PROCESS (clk)
 -------------------------------------------------------------------------------
 		
 PROCESS (execOPC, OP1out, OP2out, div_reg, div_neg, div_bit, div_sub, div_quot, OP1_sign, div_over, result_div, reg_QA, opcode, sndOPC, divs, exe_opcode, reg_QB, 
-	     signedOP, nozero, div_qsign, OP2outext)
+	     signedOP, nozero, div_qsign, OP2outext, result_div_pre)
 	BEGIN
 		divs <= (opcode(15) AND opcode(8)) OR (NOT opcode(15) AND sndOPC(11));
 		divident(15 downto 0) <= (OTHERS=> '0');
 		divident(63 downto 32) <= (OTHERS=> divs AND reg_QA(31));
-		IF exe_opcode(15)='1' OR DIV_Mode=0 THEN
+		IF exe_opcode(15)='1' OR DIV_Mode=0 THEN --DIV.W
 			divident(47 downto 16) <= reg_QA;
-		ELSE		
+			div_qsign <= result_div_pre(15);
+		ELSE												  --DIV.l
 			divident(31 downto 0) <= reg_QA;
 			IF exe_opcode(14)='1' AND sndOPC(10)='1' THEN
 				divident(63 downto 32) <= reg_QB;
 			END IF;
+			div_qsign <= result_div_pre(31);
 		END IF;
 		IF signedOP='1' OR opcode(15)='0' THEN 
 			OP2outext <= OP2out(31 downto 16);
@@ -1221,8 +1223,14 @@ PROCESS (execOPC, OP1out, OP2out, div_reg, div_neg, div_bit, div_sub, div_quot, 
 		END IF;	
 		div_quot(31 downto 0) <= div_reg(30 downto 0)&NOT div_bit;
 		
+		IF div_neg='1' THEN
+			result_div_pre(31 downto 0) <= 0-div_quot(31 downto 0);
 
-		IF ((nozero='1' AND signedOP='1' AND (OP2out(31) XOR OP1_sign XOR div_neg XOR div_qsign)='1' )	--Overflow DIVS
+		ELSE
+			result_div_pre(31 downto 0) <= div_quot(31 downto 0);
+		END IF;	
+		
+		IF (((nozero='1' OR div_bit='0') AND signedOP='1' AND (OP2out(31) XOR OP1_sign XOR div_qsign)='1' )	--Overflow DIVS
 			OR (signedOP='0' AND div_over(32)='0')) AND DIV_Mode/=3 THEN	--Overflow DIVU
 			set_V_Flag <= '1';
 		ELSE	
@@ -1250,7 +1258,6 @@ PROCESS (clk)
 					nozero <= NOT div_bit OR nozero;
 				END IF;
 				IF micro_state=div2 THEN
-					div_qsign <= NOT div_bit;
 					div_neg <= signedOP AND (OP2out(31) XOR OP1_sign);
 					IF DIV_Mode=0 THEN
 						div_over(32 downto 16) <= ('0'&div_reg(47 downto 32))-('0'&OP2out(15 downto 0));
@@ -1259,13 +1266,7 @@ PROCESS (clk)
 					END IF;	
 				END IF;
 				IF exec(write_reminder)='0' THEN
---				IF exec_DIVU='0' THEN
-					IF div_neg='1' THEN
-						result_div(31 downto 0) <= 0-div_quot(31 downto 0);
-					ELSE
-						result_div(31 downto 0) <= div_quot(31 downto 0);
-					END IF;	
-					
+					result_div(31 downto 0) <= result_div_pre;
 					IF OP1_sign='1' THEN
 						result_div(63 downto 32) <= 0-div_quot(63 downto 32);
 					ELSE
