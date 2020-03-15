@@ -139,7 +139,7 @@ architecture logic of TG68K_ALU is
 	signal div_over			: std_logic_vector(32 downto 0);
 	signal nozero				: std_logic;
 	signal div_qsign			: std_logic;
-	signal divident			: std_logic_vector(63 downto 0);
+	signal dividend			: std_logic_vector(63 downto 0);
 	signal divs					: std_logic;
 	signal signedOP			: std_logic;
 	signal OP1_sign			: std_logic;
@@ -1189,15 +1189,15 @@ PROCESS (execOPC, OP1out, OP2out, div_reg, div_neg, div_bit, div_sub, div_quot, 
 	     signedOP, nozero, div_qsign, OP2outext, result_div_pre)
 	BEGIN
 		divs <= (opcode(15) AND opcode(8)) OR (NOT opcode(15) AND sndOPC(11));
-		divident(15 downto 0) <= (OTHERS=> '0');
-		divident(63 downto 32) <= (OTHERS=> divs AND reg_QA(31));
+		dividend(15 downto 0) <= (OTHERS=> '0');
+		dividend(63 downto 32) <= (OTHERS=> divs AND reg_QA(31));
 		IF exe_opcode(15)='1' OR DIV_Mode=0 THEN --DIV.W
-			divident(47 downto 16) <= reg_QA;
+			dividend(47 downto 16) <= reg_QA;
 			div_qsign <= result_div_pre(15);
 		ELSE												  --DIV.l
-			divident(31 downto 0) <= reg_QA;
+			dividend(31 downto 0) <= reg_QA;
 			IF exe_opcode(14)='1' AND sndOPC(10)='1' THEN
-				divident(63 downto 32) <= reg_QB;
+				dividend(63 downto 32) <= reg_QB;
 			END IF;
 			div_qsign <= result_div_pre(31);
 		END IF;
@@ -1246,12 +1246,12 @@ PROCESS (clk)
 				signedOP <= divs;
 				IF micro_state=div1 THEN
 					nozero <= '0';
-					IF divs='1' AND divident(63)='1' THEN				-- Neg divident
+					IF divs='1' AND dividend(63)='1' THEN				-- Neg dividend
 						OP1_sign <= '1';
-						div_reg <= 0-divident;
+						div_reg <= 0-dividend;
 					ELSE
 						OP1_sign <= '0';
-						div_reg <= divident;
+						div_reg <= dividend;
 					END IF;	
 				ELSE
 					div_reg <= div_quot;	
