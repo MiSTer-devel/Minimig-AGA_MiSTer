@@ -3345,7 +3345,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					
 				WHEN st_AnXn2 =>
 					setstate <= "11";
-					setdisp <= '1';		--brief	
+					setdisp <= '1';		--brief
+					set(hold_dwr) <= '1';
 					next_micro_state <= nop;
 					
 -------------------------------------------------------------------------------------					
