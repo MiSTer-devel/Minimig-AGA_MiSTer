@@ -531,7 +531,7 @@ always @(posedge CLK_VIDEO) begin
 end
 
 wire [2:0] fx;
-wire       scandoubler = fx || forced_scandoubler;
+wire       scandoubler = (fx || forced_scandoubler) & ~lace;
 
 video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 (
