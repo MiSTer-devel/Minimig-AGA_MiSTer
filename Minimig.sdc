@@ -16,3 +16,10 @@ set_false_path -from {emu|minimig|USERIO1|cpu_config*}
 set_false_path -from {emu|minimig|USERIO1|ide_config*}
 set_false_path -from {emu|minimig|USERIO1|bootrom}
 set_false_path -from {emu|minimig|CPU1|halt}
+
+#these constraints aren't really correct, but help fitting.
+#28MHz pixel clock might be affected when scandoubler fx is used.
+set_multicycle_path -to {*Hq2x*} -setup 2
+set_multicycle_path -to {*Hq2x*} -hold 1
+set_multicycle_path -from [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -to {ascal|*} -setup 2
+set_multicycle_path -from [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -to {ascal|*} -hold 1
