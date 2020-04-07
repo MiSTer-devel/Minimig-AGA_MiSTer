@@ -10,10 +10,11 @@ module denise_colortable
   input  wire           clk7_en,          // 7MHz clock enable
   input  wire [  9-1:1] reg_address_in,   // register adress inputs
   input  wire [ 12-1:0] data_in,          // bus data in
+  input  wire           rdram,            // read the color table instead of writing to it
   input  wire [  8-1:0] select,           // colour select input
   input  wire [  8-1:0] bplxor,           // clut address xor value
   input  wire [  3-1:0] bank,             // color bank select
-  input  wire           loct,             // 12-bit pallete select
+  input  wire           loct,             // 12-bit palette select
   input  wire           ehb_en,           // EHB enable
   output reg  [ 24-1:0] rgb               // RGB output
 );
@@ -27,10 +28,10 @@ wire [ 8-1:0] select_xored = select;// ^ bplxor;
 
 // color ram
 wire [ 8-1:0] wr_adr = {bank[2:0], reg_address_in[5:1]};
-wire          wr_en  = (reg_address_in[8:6] == COLORBASE[8:6]) && clk7_en;
+wire          wr_en  = (reg_address_in[8:6] == COLORBASE[8:6]) && clk7_en && !rdram;
 wire [32-1:0] wr_dat = {4'b0, data_in[11:0], 4'b0, data_in[11:0]};
 wire [ 4-1:0] wr_bs  = loct ? 4'b0011 : 4'b1111;
-wire [ 8-1:0] rd_adr = ehb_en ? {3'b000, select_xored[4:0]} : select_xored;
+wire [ 8-1:0] rd_adr = rdram ? wr_adr : ehb_en ? {3'b000, select_xored[4:0]} : select_xored;
 wire [32-1:0] rd_dat;
 reg           ehb_sel;
 
