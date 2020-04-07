@@ -62,6 +62,7 @@ parameter BPLCON3  = 9'h106;
 parameter BPLCON4  = 9'h10c;
 parameter DENISEID = 9'h07c;
 parameter BPL1DAT  = 9'h110;
+parameter COLORBASE = 9'h180;
 
 
 // local signals
@@ -84,14 +85,15 @@ reg    [7:0] clut_data;    // colour table colour select in
 reg    window;          // window enable signal
 
 wire  [15:0] deniseid_out;   // deniseid data_out
-wire  [15:0] col_out;      // colision detection data_out
+wire  [15:0] col_out;      // collision detection data_out
+wire  [15:0] rgb_out;      // RGB data_out (rdram)
 
 reg    display_ena;          // in OCS sprites are visible between first write to BPL1DAT and end of scanline
 
 //--------------------------------------------------------------------------------------
 
-// data out mulitplexer
-assign data_out = col_out | deniseid_out;
+// data out multiplexer
+assign data_out = col_out | deniseid_out | rgb_out;
 
 //--------------------------------------------------------------------------------------
 
@@ -167,6 +169,7 @@ end
 
 // BPLCON2 register
 reg  [16-1:0] bplcon2;    // bplcon2 register
+wire          rdram;      // read the color table instead of writing to it
 wire          killehb;    // disable ehb mode
 
 always @(posedge clk) begin
@@ -178,7 +181,12 @@ always @(posedge clk) begin
   end
 end
 
-assign killehb  = bplcon2[9] && ecs;
+assign rdram = bplcon2[8] & aga;
+assign rgb_out = (reg_address_in[8:6] == COLORBASE[8:6]) && rdram
+                   ? {4'b0000, loct ? {clut_rgb[19:16], clut_rgb[11:8], clut_rgb[3:0]}
+                                    : {clut_rgb[23:20], clut_rgb[15:12], clut_rgb[7:4]}}
+                   : 16'h0000;
+assign killehb = bplcon2[9] & ecs;
 
 // BPLCON3 register
 reg  [16-1:0] bplcon3;    // bplcon3 register
@@ -381,6 +389,7 @@ denise_colortable clut0
   .clk7_en(clk7_en),
   .reg_address_in(reg_address_in),
   .data_in(data_in[11:0]),
+  .rdram(rdram),
   .select(clut_data),
   .bplxor(bplxor),
   .bank(bank),
