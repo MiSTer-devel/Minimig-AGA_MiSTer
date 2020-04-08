@@ -63,6 +63,8 @@ end
 always @(*) begin
 	if (reg_address_in[8:1]==INTENAR[8:1])
 		intenar[15:0] = {1'b0,intena[14:0]};
+	else if (reg_address_in[8:1]==INTENA[8:1])
+		intenar = 16'hffff;
 	else
 		intenar = 16'd0;
 end
@@ -71,6 +73,8 @@ end
 always @(*) begin
 	if (reg_address_in[8:1]==INTREQR[8:1])
 		intreqr[15:0] = {1'b0,intreq[14:0]};
+	else if (reg_address_in[8:1]==INTREQ[8:1])
+		intreqr = 16'hffff;
 	else
 		intreqr = 16'd0;
 end
