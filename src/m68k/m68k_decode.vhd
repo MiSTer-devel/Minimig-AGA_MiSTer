@@ -1821,7 +1821,7 @@ begin
             p(o).setnextpass <= '1';
           else
             p(o).setstate <= "10";
-            p(o).setaddrvalue='1';
+            p(o).setaddrvalue <='1';
             p(o).set.longaktion <= '1';
             p(o).next_micro_state <= ld_229_3;
           end if;
@@ -1830,7 +1830,7 @@ begin
       when ld_229_2 => -- (bd,An,Xn)=>, --(bd,PC,Xn)=>
         p(o).setdisp <= '1'; -- add Index
         p(o).setstate <= "10";
-        p(o).setaddrvalue='1';
+        p(o).setaddrvalue <='1';
         p(o).set.longaktion <= '1';
         p(o).next_micro_state <= ld_229_3;
 
