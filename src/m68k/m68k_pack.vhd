@@ -163,6 +163,7 @@ Package M68K_Pack is
       set_exec               : r_Opc;
       setnextpass            : bit1;
       setstate               : word(1 downto 0);
+      setaddrvalue           : bit1;
       getbrief               : bit1;
       setstackaddr           : bit1;
       set_Suppress_Base      : bit1;
@@ -214,6 +215,7 @@ Package M68K_Pack is
     (others => '0'),
     '0',
     (others => '0'),
+    '0',
     '0',
     '0',
     '0',
