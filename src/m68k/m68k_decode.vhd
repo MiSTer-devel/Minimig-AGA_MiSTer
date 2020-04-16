@@ -286,7 +286,7 @@ begin
   end process;
 
   process (cpu, opcode, rot_cnt, decodeOPC, setexecOPC, SVmode,
-           nextpass, micro_state, c_out, OP1out, OP2out, exec, state, direct_data, movem_run, brief,
+           nextpass, micro_state, c_out, OP1out, OP2out, exec, state, addrvalue, direct_data, movem_run, brief,
            long_done, stop, Flags, trap_interrupt, trap_trace, Z_error, set_V_Flag, set_Cmp2_Flags, last_data_read, p, sndOPC )
     constant i : integer := 1;
     constant o : integer := 2;
