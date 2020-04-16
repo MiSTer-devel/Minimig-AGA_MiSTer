@@ -1465,10 +1465,11 @@ begin
             p(o).dest_hbits <= '1';
           end if;
         else
-          if opcode(7 downto 6) = "00" and opcode(5 downto 3) = "001" then -- illegal, word/long only
-            p(o).trap_illegal <= '1'; p(o).trap_make <= '1';
-          end if;
-
+          -- addx.b / subx.b -(An),-(An) are legal see 
+          -- MC68020_32-Bit_Microprocessor_Users_Manual_1984.pdf
+          --if opcode(7 downto 6) = "00" and opcode(5 downto 3) = "001" then -- illegal, word/long only
+          --  p(o).trap_illegal <= '1'; p(o).trap_make <= '1';
+          --end if;
           if opcode(8) = '1' and opcode(5 downto 4) = "00" then --addx, subx
             build_bcd <= '1';
           else --sub, add
@@ -1886,6 +1887,7 @@ begin
       when st_AnXn2 =>
         p(o).setstate <= "11";
         p(o).setdisp <= '1'; --brief
+        p(o).set.hold_dwr <= '1';
         p(o).next_micro_state <= nop;
 
         -------------------------------------------------------------------------------------
@@ -1989,6 +1991,9 @@ begin
             p(o).setstate <= "01";
           if opcode(5 downto 3) = "100" then
             p(o).set.mem_addsub <= '1';
+            if cpu(1)='1' then
+              p(o).set.Regwrena <= '1';
+            end if;
           end if;
           p(o).next_micro_state <= movem2;
         end if;

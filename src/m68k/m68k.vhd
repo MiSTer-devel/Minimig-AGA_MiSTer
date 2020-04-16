@@ -461,7 +461,14 @@ begin
     elsif memmaskmux(3) = '0' then
       data_write <= data_write_mux(31 downto 16);
     else
-      data_write <= data_write_mux(15 downto 0);
+-- a single byte shows up on both bus halfs
+     if memmaskmux(5 downto 4) = "10" then
+       data_write <= data_write_mux(7 downto 0) & data_write_mux(7 downto 0);
+     elsif memmaskmux(5 downto 4) = "01" then
+       data_write <= data_write_mux(15 downto 8) & data_write_mux(15 downto 8);
+     else
+       data_write <= data_write_mux(15 downto 0);
+     end if;
     end if;
 
     if exec.mem_byte = '1' then --movep
