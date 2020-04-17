@@ -425,9 +425,9 @@ assign vblend = vpos==vbstop;
 //composite display blanking
 always @(posedge clk) begin
 	if (clk7_en) begin
-		if (hpos==hbstrt + 8'd12)//start of blanking (active line=51.88us)
+		if (hpos==hbstrt)//start of blanking (active line=51.88us)
 			hblank <= 1;
-		else if (hpos==hbstop + 8'd12) begin //end of blanking (back porch=5.78us)
+		else if (hpos==hbstop) begin //end of blanking (back porch=5.78us)
 			vblank <= vbl;
 			hblank <= 0;
 		end
