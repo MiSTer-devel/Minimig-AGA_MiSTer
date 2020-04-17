@@ -1433,6 +1433,9 @@ begin
                 p(o).setstate <= "10";
                 p(o).set.update_ld <= '1';
                 p(o).set.presub <= '1';
+                if opcode(2 downto 0) = "111" then
+                  p(o).set.use_SP <= '1';
+                end if;
                 p(o).next_micro_state <= pack1;
                 p(o).dest_areg <= '1'; --???
               end if;
