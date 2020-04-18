@@ -1,9 +1,8 @@
 /********************************************/
 /* minimig.sv                               */
 /* MiSTer glue logic                        */
-/* 2017-2019 Alexey Melnikov                */
+/* 2017-2020 Alexey Melnikov                */
 /********************************************/
-
 
 module emu
 (
@@ -128,16 +127,13 @@ wire [15:0] JOY0;
 wire [15:0] JOY1;
 wire [15:0] JOY2;
 wire [15:0] JOY3;
-wire  [7:0] KBD_MOUSE_DATA;
-wire        KMS_LEVEL;
-wire  [1:0] KBD_MOUSE_TYPE;
-wire  [2:0] MOUSE_BUTTONS;
+wire  [7:0] kbd_mouse_data;
+wire        kbd_mouse_level;
+wire  [1:0] kbd_mouse_type;
+wire  [2:0] mouse_buttons;
 wire [63:0] RTC;
 
-wire [15:0] uio_dout;
-wire [15:0] fpga_dout;
 wire        ce_pix;
-wire [15:0] sdram_sz;
 wire  [1:0] buttons;
 wire        forced_scandoubler;
 
@@ -146,24 +142,35 @@ wire        io_wait;
 wire        io_fpga;
 wire        io_uio;
 wire [15:0] io_din;
+wire [15:0] fpga_dout;
 
 wire [21:0] gamma_bus;
 
-hps_io_minimig #(.STRLEN($size(CONF_STR)>>3)) hps_io
+hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
-	.*,
+	.clk_sys(clk_sys),
+	.HPS_BUS({HPS_BUS[45:42],ce_pix,HPS_BUS[40:0]}),
+
 	.conf_str(CONF_STR),
 
-	.IO_STROBE(io_strobe),
-	.IO_DIN(io_din),
-	.UIO_ENA(io_uio),
-	.FPGA_ENA(io_fpga),
-	.FPGA_DOUT(fpga_dout),
-	.FPGA_WAIT(io_wait),
-	
-	.BUTTONS(buttons),
-	.new_vmode()
+	.joystick_0(JOY0),
+	.joystick_1(JOY1),
+	.joystick_2(JOY2),
+	.joystick_3(JOY3),
+
+	.ioctl_wait(io_wait),
+
+	.buttons(buttons),
+	.forced_scandoubler(forced_scandoubler),
+
+	.RTC(RTC),
+	.gamma_bus(gamma_bus),
+
+	.EXT_BUS(EXT_BUS)
 );
+
+wire [35:0] EXT_BUS;
+hps_ext hps_ext(.*);
 
 
 assign AUDIO_L      = {ldata, 1'b0};
@@ -467,10 +474,10 @@ minimig minimig
 	._joy2        (~JOY1            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
 	._joy3        (~JOY2            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right]
 	._joy4        (~JOY3            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right]
-	.mouse_btn    (MOUSE_BUTTONS    ), // mouse buttons
-	.kbd_mouse_data (KBD_MOUSE_DATA ), // mouse direction data, keycodes
-	.kbd_mouse_type (KBD_MOUSE_TYPE ), // type of data
-	.kms_level    (KMS_LEVEL        ),
+	.mouse_btn    (mouse_buttons    ), // mouse buttons
+	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
+	.kbd_mouse_type (kbd_mouse_type ), // type of data
+	.kms_level    (kbd_mouse_level  ),
 	.pwr_led      (LED_POWER[0]     ), // power led
 	.fdd_led      (LED_USER         ),
 	.hdd_led      (LED_DISK[0]      ),
@@ -654,32 +661,32 @@ always @(posedge clk_sys) begin
 	reg old_level;
 	reg alt = 0;
 
-	old_level <= KMS_LEVEL;
-	if((old_level ^ KMS_LEVEL) && (KBD_MOUSE_TYPE==3)) begin
-		if(KBD_MOUSE_DATA == 'h41) begin //backspace
+	old_level <= kbd_mouse_level;
+	if((old_level ^ kbd_mouse_level) && (kbd_mouse_type==3)) begin
+		if(kbd_mouse_data == 'h41) begin //backspace
 			vbl_t <= 0; vbl_b <= 0;
 			hbl_l <= 0; hbl_r <= 0;
 		end
-		else if(KBD_MOUSE_DATA == 'h4c) begin //up
+		else if(kbd_mouse_data == 'h4c) begin //up
 			if(alt) vbl_b <= vbl_b + 1'd1;
 			else    vbl_t <= vbl_t + 1'd1;
 		end
-		else if(KBD_MOUSE_DATA == 'h4d) begin //down
+		else if(kbd_mouse_data == 'h4d) begin //down
 			if(alt) vbl_b <= vbl_b - 1'd1;
 			else    vbl_t <= vbl_t - 1'd1;
 		end
-		else if(KBD_MOUSE_DATA == 'h4f) begin //left
+		else if(kbd_mouse_data == 'h4f) begin //left
 			if(alt) hbl_r <= hbl_r + 3'd4;
 			else    hbl_l <= hbl_l + 3'd4;
 		end
-		else if(KBD_MOUSE_DATA == 'h4e) begin //right
+		else if(kbd_mouse_data == 'h4e) begin //right
 			if(alt) hbl_r <= hbl_r - 3'd4;
 			else    hbl_l <= hbl_l - 3'd4;
 		end
-		else if(KBD_MOUSE_DATA == 'h64 || KBD_MOUSE_DATA == 'h65) begin //alt press
+		else if(kbd_mouse_data == 'h64 || kbd_mouse_data == 'h65) begin //alt press
 			alt <= 1;
 		end
-		else if(KBD_MOUSE_DATA == 'hE4 || KBD_MOUSE_DATA == 'hE5) begin //alt release
+		else if(kbd_mouse_data == 'hE4 || kbd_mouse_data == 'hE5) begin //alt release
 			alt <= 0;
 		end
 	end
