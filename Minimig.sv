@@ -163,6 +163,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.buttons(buttons),
 	.forced_scandoubler(forced_scandoubler),
 
+	.uart_mode(16'b000_11111_000_11111),
+
 	.RTC(RTC),
 	.gamma_bus(gamma_bus),
 
