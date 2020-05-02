@@ -372,11 +372,12 @@ always @(posedge clk) begin
 end
 
 //vertical sync and vertical blanking
+// PAL: Long field Vsync line 3 - 5.5, Short field: line 2.5 - 5
 always @(posedge clk) begin
 	if (clk7_en) begin
-		if ((vpos==vsstrt && hpos==hsstrt && !long_frame) || (vpos==vsstrt && hpos==hcenter && long_frame))
+		if ((vpos==vsstrt+1 && hpos==hsstrt && long_frame) || (vpos==vsstrt && hpos==hcenter && !long_frame))
 			_vsync <= 1'b0;
-		else if ((vpos==vsstop && hpos==hcenter && !long_frame) || (vpos==vsstop+1 && hpos==hsstrt && long_frame))
+		else if ((vpos==vsstop && hpos==hcenter && long_frame) || (vpos==vsstop && hpos==hsstrt && !long_frame))
 			_vsync <= 1'b1;		
 	end
 end
