@@ -612,11 +612,11 @@ always @(posedge clk_sys) begin
 	if(hcnt == 8)         fhbl <= 0;
 	if(hcnt == hmax-4'd8) fhbl <= 1;
 	
-	if(~old_hblank & hblank & ~field1 & (vcnt == vsta+1'd1)) hsize <= hcnt - hend;
+	if(~old_hblank & hblank & ~field1 & (vcnt == 1'd1)) hsize <= hcnt - hend;
 end
 
 reg [11:0] vbl_t=0, vbl_b=0;
-reg [11:0] vsta, vend, vmax, f1_vend, f1_vsize, vcnt;
+reg [11:0] vend, vmax, f1_vend, f1_vsize, vcnt, vs_end;
 reg [11:0] vsize;
 always @(posedge clk_sys) begin
 	reg old_vs;
@@ -627,14 +627,14 @@ always @(posedge clk_sys) begin
 	old_vblank <= vblank;
 	
 	if(old_hs & ~hs) vcnt <= vcnt + 1'd1;
-	if(~vs) vcnt <= 0;
+	if(~old_vblank & vblank) vcnt <= 0;
 
-	if(~field1) begin
+	if(~lace | ~field1) begin
 		if(old_vblank & ~vblank) vend <= vcnt;
-		if(~old_vblank & vblank) vsta <= vcnt;
-		if(old_vs & ~vs)         vmax <= vcnt;
+		if(~old_vs & vs)         vs_end <= vcnt;
 		
 		if(~old_vblank & vblank) begin
+			vmax <= vcnt;
 			vsize <= vcnt - vend + f1_vsize;
 			f1_vsize <= 0;
 		end
@@ -647,13 +647,13 @@ always @(posedge clk_sys) begin
 	end
 
 	old_hbl <= hbl;
-	if(old_hbl & ~hbl) begin
-		if(vcnt == vend+vbl_t-1'd1) svbl <= 0;
-		if(vcnt == vsta+vbl_b-1'd1) svbl <= 1;
+	if((old_hbl & ~hbl) | !vcnt) begin
+		if(vcnt == vend+vbl_t) svbl <= 0;
+		if(vcnt == (vbl_b[11] ? vmax+vbl_b : vbl_b) ) svbl <= 1;
 
 		//force vblank
-		if(vcnt == 1)         fvbl <= 0;
-		if(vcnt == vmax-4'd3) fvbl <= 1;
+		if(vcnt == vmax-1)    fvbl <= 1;
+		if(vcnt == vs_end+2)  fvbl <= 0;
 	end
 	
 	hde <= ~hbl;
