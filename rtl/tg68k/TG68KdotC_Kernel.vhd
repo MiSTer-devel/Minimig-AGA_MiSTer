@@ -21,6 +21,7 @@
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 
+-- 17.03.2020 TG bugfix move data to (extended address)
 -- 13.03.2020 TG bugfix extended addess mode - thanks Adam Polkosnik
 -- 15.02.2020 TG bugfix DIVS.W with result $8000
 -- 08.01.2020 TH fix the byte-mirroring
@@ -3345,7 +3346,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					
 				WHEN st_AnXn2 =>
 					setstate <= "11";
-					setdisp <= '1';		--brief
+					setdisp <= '1';		--brief	
 					set(hold_dwr) <= '1';
 					next_micro_state <= nop;
 					
