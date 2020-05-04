@@ -1,5 +1,0 @@
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) ram_lut.vhd ]
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) m68k_pack.vhd ]
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) m68k_alu.vhd ]
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) m68k_decode.vhd ]
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) m68k.vhd ]

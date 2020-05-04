@@ -61,9 +61,6 @@ module cpu_wrapper
 	output reg [31:0] nmi_addr
 );
 
-// Uncomment to use M68K for 68020 mode
-// `define M68K20
-
 assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram);
 
 // NMI
@@ -165,35 +162,6 @@ wire        uds_p;
 wire        lds_p;
 wire        reset_out_p;
 
-`ifdef M68K20
-
-M68K_Core cpu_inst_p
-(
-	.i_clk(clk),
-	.i_ena(~cpu_req | chipready | ramready),
-
-	.i_rst(~reset),        // note active high
-	.o_reset_l(reset_out_p),
-
-	.i_cpu_type(cpucfg),
-
-	.i_ipl_l(cpu_ipl),
-	.i_ipl_autovector(1),
-
-	.i_data(cpu_din),
-	.o_addr(cpu_addr_p),
-	.o_data(cpu_dout_p),
-	.o_wr_l(wr_p),
-	.o_uds_l(uds_p),
-	.o_lds_l(lds_p),
-	.o_busstate(cpustate_p), // 00-> fetch code 10->read data 11->write data 01->no memaccess
-
-	.o_cacr(cacr_p),
-	.o_vbr(vbr_p)
-);
-
-`else
-
 TG68KdotC_Kernel
 #(
 	.sr_read(2),        // 0=>user,   1=>privileged,    2=>switchable with CPU(0)
@@ -224,8 +192,6 @@ cpu_inst_p
   .cacr_out(cacr_p),
   .vbr_out(vbr_p)
 );
-
-`endif
 
 wire [15:0] cpu_dout_o;
 wire [23:1] cpu_addr_o;
