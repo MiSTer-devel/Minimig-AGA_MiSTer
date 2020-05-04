@@ -131,6 +131,8 @@ typedef struct {
 
 module fx68k(
 	input clk,
+	input HALTn,					// Used for single step only. Force high if not used
+	// input logic HALTn = 1'b1,			// Not all tools support default port values
 	
 	// These two signals don't need to be registered. They are not async reset.
 	input extReset,			// External sync reset on emulated system
@@ -195,8 +197,8 @@ module fx68k(
 	// We synchronize some signals half clock earlier. We compensate later
 	reg rDtack, rBerr;
 	reg [2:0] rIpl, iIpl;
-	reg Vpai, BeI, BRi, BgackI, BeiDelay;
-	// reg rBR;
+	reg Vpai, BeI, Halti, BRi, BgackI, BeiDelay;
+	// reg rBR, rHALT;
 	wire BeDebounced = ~( BeI | BeiDelay);
 
 	always_ff @( posedge Clks.clk) begin
@@ -210,16 +212,20 @@ module fx68k(
 			rIpl <= ~{ IPL2n, IPL1n, IPL0n};
 			iIpl <= rIpl;
 			
-			// rBR <= BRn;			// Needed for cycle accuracy but only if BR is changed on the wrong edge of the clock
+			// Needed for cycle accuracy but only if BR or HALT are asserted on the wrong edge of the clock			
+			// rBR <= BRn;
+			// rHALT <= HALTn;
 		end
 		else if( Clks.enPhi1) begin
 			Vpai <= VPAn;
 			BeI <= rBerr;
 			BeiDelay <= BeI;
+			BgackI <= BGACKn;
 			
 			BRi <= BRn;
-			BgackI <= BGACKn;
+			Halti <= HALTn;
 			// BRi <= rBR;
+			// Halti <= rHALT;			
 		end	
 	end
 
@@ -356,7 +362,7 @@ module fx68k(
 		.rDtack, .BeDebounced, .Vpai,
 		.ASn, .LDSn, .UDSn, .eRWn);
 		
-	busArbiter busArbiter( .Clks, .BRi, .BgackI, .Halti( 1'b1), .bgBlock, .busAvail, .BGn);
+	busArbiter busArbiter( .Clks, .BRi, .BgackI, .Halti, .bgBlock, .busAvail, .BGn);
 		
 		
 	// Output reset & halt control
