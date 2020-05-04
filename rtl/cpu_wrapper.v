@@ -211,6 +211,7 @@ fx68k cpu_inst_o
 	.extReset(~reset),
 	.pwrUp(~reset),
 	.oRESETn(reset_out_o),
+	.HALTn(1),
 
 	.eRWn(wr_o),
 	.ASn(as_o),
