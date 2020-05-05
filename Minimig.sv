@@ -250,7 +250,8 @@ always @(posedge CLK_50M) begin
 				//end
 			5: begin
 					cfg_address <= 7;
-					cfg_data <= ntsc_r ? 32'h29E3FEC3 : 32'h147E3BF0;
+					cfg_data <= ntsc_r ? 32'h29E3FEC3 :	// 28.63636 MHz core clock for NTSC. (114.54544 MHz SDRAM clock).
+										 32'h147E3BF0;	// 28.37516 MHz core clock for PAL.  (113.50064 MHz SDRAM clock).
 					cfg_write <= 1;
 				end
 			7: begin
