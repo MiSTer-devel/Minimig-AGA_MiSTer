@@ -194,8 +194,74 @@ pll pll
 	.refclk(CLK_50M),
 	.outclk_0(clk_114),
 	.outclk_1(clk_sys),
+	.reconfig_to_pll(reconfig_to_pll),
+	.reconfig_from_pll(reconfig_from_pll),
 	.locked(locked)
 );
+
+wire [63:0] reconfig_to_pll;
+wire [63:0] reconfig_from_pll;
+wire        cfg_waitrequest;
+reg         cfg_write;
+reg   [5:0] cfg_address;
+reg  [31:0] cfg_data;
+
+pll_cfg pll_cfg
+(
+	.mgmt_clk(CLK_50M),
+	.mgmt_reset(0),
+	.mgmt_waitrequest(cfg_waitrequest),
+	.mgmt_read(0),
+	.mgmt_readdata(),
+	.mgmt_write(cfg_write),
+	.mgmt_address(cfg_address),
+	.mgmt_writedata(cfg_data),
+	.reconfig_to_pll(reconfig_to_pll),
+	.reconfig_from_pll(reconfig_from_pll)
+);
+
+
+always @(posedge CLK_50M) begin
+	reg ntscd = 0, ntscd2 = 0;
+	reg [2:0] state = 0;
+	reg ntsc_r;
+
+	ntscd <= ntsc;
+	ntscd2 <= ntscd;
+
+	cfg_write <= 0;
+	if(ntscd2 == ntscd && ntscd2 != ntsc_r) begin
+		state <= 1;
+		ntsc_r <= ntscd2;
+	end
+
+	if(!cfg_waitrequest) begin
+		if(state) state<=state+1'd1;
+		case(state)
+			1: begin
+					cfg_address <= 0;
+					cfg_data <= 0;
+					cfg_write <= 1;
+				end
+			//3: begin
+					//cfg_address <= 4;
+					//cfg_data <= ntsc_r ? 'h20504 : 'h404;
+					//cfg_write <= 1;
+				//end
+			5: begin
+					cfg_address <= 7;
+					cfg_data <= ntsc_r ? 32'h29E3FEC3 : 32'h147E3BF0;
+					cfg_write <= 1;
+				end
+			7: begin
+					cfg_address <= 2;
+					cfg_data <= 0;
+					cfg_write <= 1;
+				end
+		endcase
+	end
+end
+
 
 wire reset = ~locked | buttons[1] | RESET;
 
@@ -517,8 +583,11 @@ minimig minimig
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config
 	.memcfg       (memcfg           ), // memory config
-	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
+	.bootrom      (bootrom          ), // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
+	.ntsc         (ntsc             )
 );
+
+wire ntsc;
 
 reg ce_out = 0;
 always @(posedge CLK_VIDEO) begin
