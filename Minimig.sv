@@ -291,7 +291,8 @@ wire        ram_uds;
 wire [15:0] ram_din;
 wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
 wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
-wire        zram_sel  = |ram_addr[28:27];
+wire        zram_sel  = |ram_addr[28:26];
+wire        ramshared;
 
 cpu_wrapper cpu_wrapper
 (
@@ -324,7 +325,8 @@ cpu_wrapper cpu_wrapper
 	.ramdout      (ram_dout        ),
 	.ramdin       (ram_din         ),
 	.ramready     (ram_ready       ),
- 
+	.ramshared    (ramshared       ),
+
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
 	.cacr         (cpu_cacr        ),
@@ -401,6 +403,7 @@ ddram_ctrl ram2
 	.cpustate     (cpu_state       ),
 	.cpuCS        (zram_sel&ram_cs ),
 	.cpuRD        (ram_dout2       ),
+	.ramshared    (ramshared       ),
 	.ramready     (ram_ready2      )
 );
 

@@ -19,7 +19,6 @@ module cpu_cache_new
   // system
   input             clk,            // clock
   input             rst,            // cache reset
-  input             cache_en,       // cache enable
   input       [3:0] cpu_cache_ctrl, // CPU cache control
   input             cache_inhibit,  // cache inhibit
 

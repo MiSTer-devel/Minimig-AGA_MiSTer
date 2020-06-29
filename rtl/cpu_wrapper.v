@@ -55,13 +55,15 @@ module cpu_wrapper
 	input             ramready,
 	output            ramlds,
 	output            ramuds,
+	output            ramshared,
 
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
 	output reg [31:0] nmi_addr
 );
 
-assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram);
+assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd);
+assign ramshared = sel_dd;
 
 // NMI
 always @(posedge clk) nmi_addr <= vbr + 32'h7c;
@@ -70,6 +72,7 @@ wire sel_z3ram0 = (cpu_addr[31:27] == z3ram_base0) && z3ram_ena0;
 wire sel_z3ram1 = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;
 wire sel_z2ram  = !cpu_addr[31:24] && (cpu_addr[23] ^ |cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4
 wire sel_zram   = sel_z3ram0 | sel_z3ram1 | sel_z2ram;
+wire sel_dd     = (cpu_addr[31:16] == 16'h00DD) && (cpu_addr[15:13] == 'b010);
 
 
 // don't sel_kickram when writing
@@ -85,12 +88,13 @@ assign ramlds = lds_in;
 assign ramuds = uds_in;
 assign ramdin = cpu_dout;
 
-//       Main  8M  128M  256M
-//       ----  --  ----  ----
-//        SDR  Z2  Z3_0  Z3_1
-// 28      0    1    0     1
-// 27      0    1    1     X
-// 26-23   0    0    X     X
+//       Main  DDx  8M  128M  256M
+//       ----  ---  --  ----  ----
+//        SDR  DDR  Z2  Z3_0  Z3_1
+// 28      0    0    1    0     1
+// 27      0    0    1    1     X
+// 26      0    1    0    X     X
+// 25-23   0    1    0    X     X
 // supported configs: SDR + (Z2, Z3_1, Z3_0+Z3_1)
 
 // This is the mapping to the sram
@@ -99,10 +103,11 @@ assign ramdin = cpu_dout;
 // All Zorro RAM goes to DDR3
 assign ramaddr[28]    = sel_zram & ~sel_z3ram0;
 assign ramaddr[27]    = sel_zram & (~sel_z3ram1 | cpu_addr[27]);
-assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpu_addr[26:23] : 4'b0000;
-assign ramaddr[22:19] = cpu_addr[22:19];
-assign ramaddr[18]    = (sel_kicklower & bootrom) | cpu_addr[18];
-assign ramaddr[17:1]  = cpu_addr[17:1];
+assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpu_addr[26:23] : {4{sel_dd}};
+assign ramaddr[22:19] = {4{sel_dd}} | cpu_addr[22:19];
+assign ramaddr[18]    =    sel_dd   | (sel_kicklower & bootrom) | cpu_addr[18];
+assign ramaddr[17:16] = {2{sel_dd}} | cpu_addr[17:16];
+assign ramaddr[15:1]  = cpu_addr[15:1];
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;

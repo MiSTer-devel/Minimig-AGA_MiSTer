@@ -50,6 +50,7 @@ module ddram_ctrl
 	input             cpuU,
 	input      [15:0] cpuWR,
 	output     [15:0] cpuRD,
+	input             ramshared,
 	output            ramready
 );
 
@@ -63,10 +64,9 @@ wire cache_ack;
 cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                 // clock
-	.rst              (~reset_n | ~cache_rst), // cache reset
-	.cache_en         (1),                      // cache enable
+	.rst              (~reset_n | ~cache_rst),  // cache reset
 	.cpu_cache_ctrl   (cpu_cache_ctrl),         // CPU cache control
-	.cache_inhibit    (cache_inhibit),          // cache inhibit
+	.cache_inhibit    (cache_inhibit | ramshared), // cache inhibit
 	.cpu_cs           (ramsel),                 // cpu activity
 	.cpu_adr          (cpuAddr),                // cpu address
 	.cpu_bs           (~{cpuU, cpuL}),          // cpu byte selects
@@ -77,7 +77,7 @@ cpu_cache_new cpu_cache
 	.cpu_dat_r        (cpuRD),                  // cpu read data
 	.cpu_ack          (cache_hit),              // cpu acknowledge
 	.wb_en            (cache_ack),              // write enable
-	.sdr_dat_r        (ddr_data),               // sdram read data
+	.sdr_dat_r        (ddr_swap ? {ddr_data[7:0], ddr_data[15:8]} : ddr_data), // sdram read data
 	.sdr_read_req     (cache_req),              // sdram read request from cache
 	.sdr_read_ack     (cache_fill)              // sdram read acknowledge to cache
 );
@@ -102,8 +102,8 @@ always @ (posedge sysclk) begin
 			default:
 				if(ramsel && cpustate == 3) begin
 					writeAddr <= cpuAddr;
-					writeDat  <= cpuWR;
-					writeBE   <= ~{cpuU, cpuL};
+					writeDat  <= ramshared ? {cpuWR[7:0],cpuWR[15:8]} : cpuWR;
+					writeBE   <= ramshared ? ~{cpuL, cpuU} : ~{cpuU, cpuL};
 					write_req <= 1;
 					if(cache_ack) begin
 						write_ena   <= 1;
@@ -128,6 +128,7 @@ assign ramready = cache_hit || write_ena;
 assign DDRAM_CLK = sysclk;
 assign DDRAM_BURSTCNT = 1;
 
+reg        ddr_swap;
 reg [15:0] ddr_data;
 
 always @ (posedge sysclk) begin
@@ -163,6 +164,7 @@ always @ (posedge sysclk) begin
 						DDRAM_RD   <= 1;
 						ba         <= cpuAddr[2:1];
 						state      <= 1;
+						ddr_swap   <= ramshared;
 					end
 				end
 			1: if(~DDRAM_BUSY & DDRAM_DOUT_READY) begin

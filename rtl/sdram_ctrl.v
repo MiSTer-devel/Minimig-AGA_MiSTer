@@ -110,7 +110,6 @@ cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                // clock
 	.rst              (!reset || !cache_rst),  // cache reset
-	.cache_en         (1'b1),                  // cache enable
 	.cpu_cache_ctrl   (cpu_cache_ctrl),        // CPU cache control
 	.cache_inhibit    (cache_inhibit),         // cache inhibit
 	.cpu_cs           (ramsel),                // cpu activity
