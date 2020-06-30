@@ -98,7 +98,6 @@ reg   [15:0] _sjoy2;        // synchronized joystick 2 signals
 reg   [15:0] _djoy2;        // synchronized joystick 2 signals
 reg   [15:0] potreg;        // POTGO write
 wire  [15:0] mouse0dat;     // mouse counters
-wire   [7:0] mouse0scr = 0; // mouse scroller
 reg   [15:0] dmouse0dat;    // docking mouse counters
 reg   [15:0] dmouse1dat;    // docking mouse counters
 wire         _mleft;        // left mouse button
@@ -285,22 +284,33 @@ assign test_data = data_in[15:0];
 //// mouse ////
 reg  [ 7:0] xcount;
 reg  [ 7:0] ycount;
+reg  [ 7:0] mouse0scr;
 
 // mouse counters
 always @(posedge clk) begin
 	reg old_level;
+	reg wheel;
 	
 	old_level <= kms_level;
 
 	if(reset) begin
 		xcount <= 0;
 		ycount <= 0;
+		mouse0scr <= 0;
+		wheel <= 0;
 	end else if (test_load && clk7_en) begin
 		ycount[7:2] <= test_data[15:10];
 		xcount[7:2] <= test_data[7:2];
 	end else if (old_level ^ kms_level) begin
-		if(kbd_mouse_type == 0) xcount[7:0] <= xcount[7:0] + kbd_mouse_data;
-		if(kbd_mouse_type == 1) ycount[7:0] <= ycount[7:0] + kbd_mouse_data;
+		if(kbd_mouse_type == 0) begin
+			wheel <= 0;
+			xcount[7:0] <= xcount[7:0] + kbd_mouse_data;
+		end
+		if(kbd_mouse_type == 1) begin
+			wheel <= 1;
+			if(wheel) mouse0scr <= mouse0scr + kbd_mouse_data;
+			else ycount[7:0] <= ycount[7:0] + kbd_mouse_data;
+		end
 	end
 end
 

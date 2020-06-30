@@ -109,6 +109,11 @@ always@(posedge clk_sys) begin
 								// third byte contains the buttons
 								mouse_buttons <= io_din[2:0];
 							end
+						4: begin
+								// wheel
+								kbd_mouse_data <= io_din[7:0];
+								kbd_mouse_level <= ~kbd_mouse_level; 
+							end
 					endcase
 
 				UIO_KEYBOARD:
