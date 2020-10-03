@@ -186,6 +186,8 @@ architecture logic of TG68KdotC_Kernel is
 	signal addr					: std_logic_vector(31 downto 0);
 	signal memaddr_reg		: std_logic_vector(31 downto 0);
 	signal memaddr_delta		: std_logic_vector(31 downto 0);
+	signal memaddr_delta_rega	: std_logic_vector(31 downto 0);
+	signal memaddr_delta_regb	: std_logic_vector(31 downto 0);
 	signal use_base			: bit;
 	
 	signal ea_data				: std_logic_vector(31 downto 0);
@@ -854,7 +856,7 @@ PROCESS (brief, OP1out, OP1outbrief, cpu)
 -- MEM_IO 
 -----------------------------------------------------------------------------
 PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatype, interrupt, rIPL_nr, IPL_vec,
-         memaddr_reg, reg_QA, use_base, VBR, last_data_read, trap_vector, exec, set, cpu, use_VBR_Stackframe)
+         memaddr_reg, memaddr_delta_rega, memaddr_delta_regb, reg_QA, use_base, VBR, last_data_read, trap_vector, exec, set, cpu, use_VBR_Stackframe)
 	BEGIN
 		
 		IF rising_edge(clk) THEN
@@ -934,24 +936,26 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 					tmp_TG68_PC <= addr;
 				END IF;
 				use_base <= '0'; 
+				memaddr_delta_regb <= (others => '0');
 				IF memmaskmux(3)='0' OR exec(mem_addsub)='1' THEN
-					memaddr_delta <= addsub_q;	
+					memaddr_delta_rega <= addsub_q;
 				ELSIF set(restore_ADDR)='1' THEN			
-					memaddr_delta <= tmp_TG68_PC;
+					memaddr_delta_rega <= tmp_TG68_PC;
 				ELSIF exec(direct_delta)='1' THEN
-					memaddr_delta <= data_read;
+					memaddr_delta_rega <= data_read;
 				ELSIF exec(ea_to_pc)='1' AND setstate="00" THEN
-					memaddr_delta <= addr;
+					memaddr_delta_rega <= addr;
 				ELSIF set(addrlong)='1' THEN
-					memaddr_delta <= last_data_read;
+					memaddr_delta_rega <= last_data_read;
 				ELSIF setstate="00" THEN	
-					memaddr_delta <= TG68_PC_add;
+					memaddr_delta_rega <= TG68_PC_add;
 				ELSIF exec(dispouter)='1' THEN
-					memaddr_delta <= ea_data+memaddr_a;
+					memaddr_delta_rega <= ea_data;
+					memaddr_delta_regb <= memaddr_a;
 				ELSIF set_vectoraddr='1' THEN	
-					memaddr_delta <= trap_vector_vbr;
+					memaddr_delta_rega <= trap_vector_vbr;
 				ELSE 
-					memaddr_delta <= memaddr_a;
+					memaddr_delta_rega <= memaddr_a;
 					IF interrupt='0' AND Suppress_Base='0' THEN
 --					IF interrupt='0' AND Suppress_Base='0' AND setstate(1)='1' THEN
 						use_base <= '1';
@@ -966,6 +970,7 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 			END IF;
 		END IF;
 
+		memaddr_delta <= memaddr_delta_rega + memaddr_delta_regb;
 		-- if access done, and not aligned, don't increment
 		addr <= memaddr_reg+memaddr_delta;
 		addr_out <= memaddr_reg + memaddr_delta;
