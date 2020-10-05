@@ -840,7 +840,49 @@ process (OP1out, OP2out, opcode, bit_nr, bit_msb, bs_shift, bs_shift_mod, ring, 
 		END IF;
 
 -- calc shift count		
-		bs_shift_mod <= std_logic_vector(unsigned(bs_shift) rem unsigned(ring)); 
+		-- bs_shift_mod <= std_logic_vector(unsigned(bs_shift) rem unsigned(ring));
+		-- replace the divider with logic
+		CASE ring IS
+			WHEN "001001" =>
+				IF bs_shift = 63 THEN
+					bs_shift_mod <= "000000";
+				ELSIF bs_shift > 6*9-1 THEN
+					bs_shift_mod <= bs_shift - 6*9;
+				ELSIF bs_shift > 5*9-1 THEN
+					bs_shift_mod <= bs_shift - 5*9;
+				ELSIF bs_shift > 4*9-1 THEN
+					bs_shift_mod <= bs_shift - 4*9;
+				ELSIF bs_shift > 3*9-1 THEN
+					bs_shift_mod <= bs_shift - 3*9;
+				ELSIF bs_shift > 2*9-1 THEN
+					bs_shift_mod <= bs_shift - 2*9;
+				ELSIF bs_shift > 9-1 THEN
+					bs_shift_mod <= bs_shift - 9;
+				ELSE
+					bs_shift_mod <= bs_shift;
+				END IF;
+			WHEN "010001" =>
+				IF bs_shift > 3*17-1 THEN
+					bs_shift_mod <= bs_shift - 3*17;
+				ELSIF bs_shift > 2*17-1 THEN
+					bs_shift_mod <= bs_shift - 2*17;
+				ELSIF bs_shift > 17-1 THEN
+					bs_shift_mod <= bs_shift - 17;
+				ELSE
+					bs_shift_mod <= bs_shift;
+				END IF;
+			WHEN "100001" =>
+				IF bs_shift > 32 THEN
+					bs_shift_mod <= bs_shift - 33;
+				ELSE
+					bs_shift_mod <= bs_shift;
+				END IF;
+			WHEN "001000" => bs_shift_mod <= "000" & bs_shift(2 downto 0);
+			WHEN "010000" => bs_shift_mod <=  "00" & bs_shift(3 downto 0);
+			WHEN "100000" => bs_shift_mod <=   "0" & bs_shift(4 downto 0);
+			WHEN OTHERS => bs_shift_mod <= (OTHERS => '0');
+		END CASE;
+
 		bit_nr <= bs_shift_mod(5 downto 0);
 		IF exe_opcode(8)='0' THEN  --right shift
 			bit_nr <= ring-bs_shift_mod;
