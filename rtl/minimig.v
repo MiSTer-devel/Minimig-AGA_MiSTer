@@ -249,7 +249,9 @@ module minimig
 	output 	     floppy_fwr,
 	output 	     floppy_frd,
 	output 	     hd_fwr,
-	output 	     hd_frd
+	output 	     hd_frd,
+	
+	output reg   ntsc		//PAL/NTSC video mode selection
 );
 
 //--------------------------------------------------------------------------------------
@@ -391,8 +393,6 @@ wire        hdd_data_wr;		//data port write strobe
 wire        hdd_data_rd;		//data port read strobe
 
 wire	[7:0] bank;					//memory bank select
-
-reg         ntsc = NTSC;		//PAL/NTSC video mode selection
 
 // host interface
 wire        host_cs;
