@@ -44,6 +44,7 @@ generic(
 		exec_tas					: in std_logic;
 		long_start				: in bit;
 		non_aligned				: in std_logic;
+		check_aligned			: in std_logic;
 		movem_presub			: in bit;
 		set_stop					: in bit;
 		Z_error 					: in bit;
@@ -286,7 +287,7 @@ PROCESS (OP2out, reg_QB, opcode, OP1out, OP1in, exe_datatype, addsub_q, execOPC,
 -- addsub
 -----------------------------------------------------------------------------
 PROCESS (OP1out, OP2out, execOPC, Flags, long_start, movem_presub, exe_datatype, exec, addsub_a, addsub_b, opaddsub,
-	     notaddsub_b, add_result, c_in, sndOPC, non_aligned)
+	     notaddsub_b, add_result, c_in, sndOPC, non_aligned, check_aligned)
 	BEGIN
 		addsub_a <= OP1out;
 		IF exec(get_bfoffset)='1' THEN	
@@ -327,7 +328,7 @@ PROCESS (OP1out, OP2out, execOPC, Flags, long_start, movem_presub, exe_datatype,
 		END IF;
 
 		-- patch for un-aligned movem --mikej
-		if (exec(movem_action) = '1') then
+		if exec(movem_action)='1' OR check_aligned='1' then
 		  if (movem_presub = '0') then -- up
 			if (non_aligned = '1') and (long_start = '0') then -- hold
 			  addsub_b <= (others => '0');
@@ -1011,12 +1012,15 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 				IF exec(to_CCR)='1' THEN
 					Flags(7 downto 0) <= CCRin(7 downto 0);			--CCR
 				ELSIF Z_error='1' THEN
-					IF exe_opcode(8)='0' THEN
+					IF micro_state = trap0 THEN
+						-- Undocumented behavior (flags when div by zero)
+						IF exe_opcode(8)='0' THEN
 --						Flags(3 downto 0) <= reg_QA(31)&"000";
-						Flags(3 downto 0) <= '0'&NOT reg_QA(31)&"00";
-					ELSE
-						Flags(3 downto 0) <= "0100";
-					END IF;		
+							Flags(3 downto 0) <= '0'&NOT reg_QA(31)&"00";
+						ELSE
+							Flags(3 downto 0) <= "0100";
+						END IF;
+					END IF;
 				ELSIF exec(no_Flags)='0' THEN
 					last_Flags1 <= Flags(3 downto 0);
 					IF exec(opcADD)='1' THEN
@@ -1067,16 +1071,19 @@ PROCESS (clk, Reset, exe_opcode, exe_datatype, Flags, last_data_read, OP2out, fl
 						Flags(1) <= BS_V;
 					ELSIF exec(opcBITS)='1' THEN
 						Flags(2) <= NOT one_bit_in;	
-					ELSIF exec(opcCHK2)='1' THEN
-						Flags(0) <= '0';
-						Flags(2) <= Flags(2) OR set_flags(2);
+					ELSIF exec(opcCHK2)='1' THEN		--micro_state = chk23
+--micro_state	 chk21   chk22   chk23
+--OP1out      		UB		R			R
+--OP2out				LB		LB			UB					
 ----lower bound first
 						IF last_Flags1(0)='0' THEN			--unsigned OP
 							Flags(0) <= Flags(0) OR (NOT set_flags(0) AND NOT set_flags(2));
 						ELSE										--signed OP
-							Flags(0) <= (Flags(3) AND NOT Flags(1)) OR (NOT Flags(3) AND Flags(1)) OR																				--LT
-										   (set_flags(3) AND set_flags(1) AND NOT set_flags(2)) OR (NOT set_flags(3) AND NOT set_flags(1) AND NOT set_flags(2));	--GT
+							Flags(0) <= (Flags(0) XOR set_flags(0)) AND  NOT Flags(2) AND NOT set_flags(2);
 						END IF;
+						Flags(1) <= '0';
+						Flags(2) <= Flags(2) OR set_flags(2);
+						Flags(3) <= NOT last_Flags1(0); 
 					ELSIF exec(opcCHK)='1' THEN
 						IF exe_datatype="01" THEN 						--Word
 							Flags(3) <= OP1out(15);
@@ -1284,7 +1291,9 @@ PROCESS (clk)
 	BEGIN
 		IF rising_edge(clk) THEN
 			IF clkena_lw='1' THEN
-				V_Flag <= set_V_Flag;
+				IF micro_state/=div_end2 THEN
+					V_Flag <= set_V_Flag;
+				END IF;
 				signedOP <= divs;
 				IF micro_state=div1 THEN
 					nozero <= '0';
@@ -1304,7 +1313,7 @@ PROCESS (clk)
 					IF DIV_Mode=0 THEN
 						div_over(32 downto 16) <= ('0'&div_reg(47 downto 32))-('0'&OP2out(15 downto 0));
 					ELSE	
-						div_over <= ('0'&div_reg(63 downto 32))-('0'&OP2out);
+						div_over <= ('0'&div_reg(63 downto 32))-('0'&OP2outext(15 downto 0)&OP2out(15 downto 0));
 					END IF;	
 				END IF;
 				IF exec(write_reminder)='0' THEN

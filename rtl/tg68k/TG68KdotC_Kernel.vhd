@@ -21,6 +21,12 @@
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 
+-- 14.10.2020 TG bugfix chk2.b
+-- 13.10.2020 TG go back to old aligned design and bugfix chk2
+-- 11.10.2020 TG next try CHK2 flags
+-- 10.10.2020 TG bugfix division N-flag
+-- 09.10.2020 TG bugfix division overflow
+-- 2/3.10.2020 some tweaks by retrofun, gyurco and robinsonb5
 -- 17.03.2020 TG bugfix move data to (extended address)
 -- 13.03.2020 TG bugfix extended addess mode - thanks Adam Polkosnik
 -- 15.02.2020 TG bugfix DIVS.W with result $8000
@@ -319,6 +325,7 @@ architecture logic of TG68KdotC_Kernel is
 	signal long_start			: bit;
 	signal long_start_alu	: bit;
 	signal non_aligned		: std_logic;
+	signal check_aligned		: std_logic;
 	signal long_done			: bit;
 	signal memmask				: std_logic_vector(5 downto 0);
 	signal set_memmask		: std_logic_vector(5 downto 0);
@@ -380,6 +387,7 @@ ALU: TG68K_ALU
 		exec_tas => exec_tas,				--: in std_logic;
 		long_start => long_start_alu,		--: in bit;
 		non_aligned => non_aligned,
+		check_aligned => check_aligned,
 		movem_presub => movem_presub,		--: in bit;
 		set_stop => set_stop,				--: in bit;
 		Z_error => Z_error,					--: in bit;
@@ -756,7 +764,7 @@ PROCESS (clk)
 				IF endOPC='1' THEN
 					store_in_tmp <='0';
 					Z_error <= '0';
-					writepcnext <= '0';
+					writePCnext <= '0';
 				ELSE
 					IF set_Z_error='1'  THEN
 						Z_error <= '1';
@@ -939,7 +947,7 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 				memaddr_delta_regb <= (others => '0');
 				IF memmaskmux(3)='0' OR exec(mem_addsub)='1' THEN
 					memaddr_delta_rega <= addsub_q;
-				ELSIF set(restore_ADDR)='1' THEN			
+				ELSIF set(restore_ADDR)='1' THEN
 					memaddr_delta_rega <= tmp_TG68_PC;
 				ELSIF exec(direct_delta)='1' THEN
 					memaddr_delta_rega <= data_read;
@@ -947,12 +955,12 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 					memaddr_delta_rega <= addr;
 				ELSIF set(addrlong)='1' THEN
 					memaddr_delta_rega <= last_data_read;
-				ELSIF setstate="00" THEN	
+				ELSIF setstate="00" THEN
 					memaddr_delta_rega <= TG68_PC_add;
 				ELSIF exec(dispouter)='1' THEN
 					memaddr_delta_rega <= ea_data;
 					memaddr_delta_regb <= memaddr_a;
-				ELSIF set_vectoraddr='1' THEN	
+				ELSIF set_vectoraddr='1' THEN
 					memaddr_delta_rega <= trap_vector_vbr;
 				ELSE 
 					memaddr_delta_rega <= memaddr_a;
@@ -1369,7 +1377,7 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 						SVmode <= preSVmode;
 					END IF;	
 				END IF;
-				IF trap_berr='1' or trap_illegal='1' or trap_addr_error='1' or trap_priv='1' THEN
+				IF trap_berr='1' OR trap_illegal='1' OR trap_addr_error='1' OR trap_priv='1' OR trap_1010='1' OR trap_1111='1' THEN
 					make_trace <= '0';
 					FlagsSR(7) <= '0';
 				END IF;
@@ -1467,6 +1475,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 --		illegal_read_mode <= '0';
 --		illegal_byteaddr <= '0';
 		set_Z_error <= '0';
+		check_aligned <='0';
 
 		next_micro_state <= idle;
 		build_logical <= '0';
@@ -1737,6 +1746,9 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 								IF micro_state=idle AND nextpass='1' THEN
 									setstate <= "10";
 									set(hold_OP2) <='1';
+									IF exe_datatype/="00" THEN
+										check_aligned <='1';
+									END IF;
 									next_micro_state <= chk20;
 								END IF;
 							ELSE
@@ -1765,7 +1777,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 				ELSE								--andi, ...xxxi
 					IF opcode(7 downto 6)/="11" AND opcode(5 downto 3)/="001" THEN --ea An illegal mode
 						IF opcode(11 downto 9)="000" THEN	--ORI
-							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR opcode(2 downto 0)="100" THEN
+							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR (opcode(2 downto 0)="100" AND opcode(7)='0') THEN
 								set_exec(opcOR) <= '1';
 							ELSE
 								trap_illegal <= '1';
@@ -1773,7 +1785,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 							END IF;
 						END IF;
 						IF opcode(11 downto 9)="001" THEN	--ANDI
-							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR opcode(2 downto 0)="100" THEN
+							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR (opcode(2 downto 0)="100" AND opcode(7)='0') THEN
 								set_exec(opcAND) <= '1';
 							ELSE
 								trap_illegal <= '1';
@@ -1789,7 +1801,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 							END IF;
 						END IF;
 						IF opcode(11 downto 9)="101" THEN	--EORI
-							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR opcode(2 downto 0)="100" THEN
+							IF opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00" OR (opcode(2 downto 0)="100" AND opcode(7)='0') THEN
 								set_exec(opcEOR) <= '1';
 							ELSE
 								trap_illegal <= '1';
@@ -2645,7 +2657,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 								trap_illegal <= '1';
 								trapmake <= '1';
 							END IF;
-						ELSE				--Scc
+						ELSIF (opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00") THEN --Scc
 							datatype <= "00";			--Byte
 							ea_build_now <= '1';
 							write_back <= '1';
@@ -2656,6 +2668,9 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 							IF opcode(5 downto 4)="00" THEN
 								set_exec(Regwrena) <= '1';
 							END IF;
+						ELSE
+							trap_illegal <= '1';
+							trapmake <= '1';
 						END IF;
 					ELSE					--addq, subq
 						IF opcode(7 downto 3)/="00001" AND
