@@ -1387,7 +1387,7 @@ assign hde_emu  = de_emu;
 `endif
 
 wire        fb_en;
-wire  [4:0] fb_fmt;
+wire  [5:0] fb_fmt;
 wire [11:0] fb_width;
 wire [11:0] fb_height;
 wire [31:0] fb_base;

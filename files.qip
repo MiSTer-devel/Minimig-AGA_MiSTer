@@ -7,6 +7,7 @@ set_global_assignment -name QIP_FILE rtl/gayle.qip
 set_global_assignment -name QIP_FILE rtl/paula.qip
 set_global_assignment -name QIP_FILE rtl/denise.qip
 set_global_assignment -name VERILOG_FILE rtl/gary.v
+set_global_assignment -name VERILOG_FILE rtl/rtg.v
 set_global_assignment -name VERILOG_FILE rtl/userio.v
 set_global_assignment -name VERILOG_FILE rtl/cart.v
 set_global_assignment -name VERILOG_FILE rtl/amiga_clk.v
