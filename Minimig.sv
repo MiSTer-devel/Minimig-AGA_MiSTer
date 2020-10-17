@@ -38,7 +38,7 @@ module emu
 	
 	// Framebuffer control
 	output        FB_EN,
-	output  [5:0] FB_FORMAT,
+	output  [4:0] FB_FORMAT,
 	output [11:0] FB_WIDTH,
 	output [11:0] FB_HEIGHT,
 	output [31:0] FB_BASE,

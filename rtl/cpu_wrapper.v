@@ -84,9 +84,12 @@ wire sel_chipram   = !cpu_addr[31:21] && cchip; 		             //$000000 - $1FFF
 // decide what to do, would not be good style to replicate that here). 
 wire sel_nmi_vector = (cpu_addr[31:2] == nmi_addr[31:2]) && (cpustate == 2);
 
-assign ramlds = lds_in;
-assign ramuds = uds_in;
-assign ramdin = cpu_dout;
+wire [15:0] ramdat;
+
+assign ramlds = sel_rtg ? uds_in : lds_in;
+assign ramuds = sel_rtg ? lds_in : uds_in;
+assign ramdin = sel_rtg ? {cpu_dout[7:0],cpu_dout[15:8]} : cpu_dout;
+assign ramdat = sel_rtg ? {ramdout[7:0], ramdout[15:8]}  : ramdout;
 
 //       Main  DDx  RTG  8M  128M  256M
 //       ----  ---  ---  --  ----  ----
@@ -111,7 +114,7 @@ assign ramaddr[15:1]  = cpu_addr[15:1];
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel ? ramdout : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire [15:0] cpu_din = ramsel ? ramdat : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
 reg         wr;
 reg         uds_in;
 reg         lds_in;

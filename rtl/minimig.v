@@ -236,7 +236,7 @@ module minimig
 	output        rtg_ena,
 	output [11:0] rtg_hsize,
 	output [11:0] rtg_vsize,
-	output [5:0]  rtg_format,
+	output [4:0]  rtg_format,
 	output [31:0] rtg_base,
 	output [13:0] rtg_stride,
 	output        rtg_pal_clk,
@@ -595,13 +595,13 @@ userio USERIO1
 	.cpurst(cpurst),
 	.cpuhlt(cpuhlt),
 	.bootrom(bootrom),
-	.host_cs      (host_cs          ),
-	.host_adr     (host_adr         ),
-	.host_we      (host_we          ),
-	.host_bs      (host_bs          ),
-	.host_wdat    (host_wdat        ),
-	.host_rdat    (host_rdat        ),
-	.host_ack     (host_ack         )
+	.host_cs(host_cs),
+	.host_adr(host_adr),
+	.host_we(host_we),
+	.host_bs(host_bs),
+	.host_wdat(host_wdat),
+	.host_rdat(host_rdat),
+	.host_ack(host_ack)
 );
 
 wire shres;
@@ -688,7 +688,7 @@ rtg rtg
 (
 	.clk(clk),
 	.clk7_en(clk7_en),
-	.aen(sel_rtg),
+	.aen(sel_rtg & cpucfg[1]), // enable only for 68020
 	.rd(cpu_rd),
 	.wr(cpu_hwr|cpu_lwr),
 	.reset(reset),
@@ -792,26 +792,26 @@ minimig_sram_bridge RAM1
 
 cart CART1
 (
-  .clk            (clk            ),
-  .clk7_en        (clk7_en        ),
-  .clk7n_en       (clk7n_en       ),
-  .cpu_rst        (!_cpu_reset    ),
-  .cpu_address_in (cpu_address_out),
-  ._cpu_as        (_cpu_as        ),
-  .cpu_rd         (cpu_rd         ),
-  .cpu_hwr        (cpu_hwr        ),
-  .cpu_lwr        (cpu_lwr        ),
-  .nmi_addr       (nmi_addr       ),
-  .reg_address_in (reg_address    ),
-  .reg_data_in    (custom_data_in ),
-  .dbr            (dbr            ),
-  .ovl            (ovl            ),
-  .freeze         (freeze         ),
-  .cart_data_out  (cart_data_out  ),
-  .int7           (int7           ),
-  .sel_cart       (sel_cart       ),
-  .ovr            (ovr            ),
-  .cpuhlt         (cpuhlt)
+  .clk(clk),
+  .clk7_en(clk7_en),
+  .clk7n_en(clk7n_en),
+  .cpu_rst(!_cpu_reset),
+  .cpu_address_in(cpu_address_out),
+  ._cpu_as(_cpu_as),
+  .cpu_rd(cpu_rd),
+  .cpu_hwr(cpu_hwr),
+  .cpu_lwr(cpu_lwr),
+  .nmi_addr(nmi_addr),
+  .reg_address_in(reg_address),
+  .reg_data_in(custom_data_in),
+  .dbr(dbr),
+  .ovl(ovl),
+  .freeze(freeze),
+  .cart_data_out(cart_data_out),
+  .int7(int7),
+  .sel_cart(sel_cart),
+  .ovr(ovr),
+  .cpuhlt(cpuhlt)
 );
 
 //level 7 interrupt for CPU

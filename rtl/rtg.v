@@ -32,28 +32,28 @@
 
 module rtg
 (
-	input         clk,           // clock
-	input         clk7_en,
-	input         aen,           // adress enable
-	input         rd,            // read enable
-	input         wr,            // write enable
-	input         reset,         // reset
-	input  [11:0] rs,            // register select (address)
+	input             clk,           // clock
+	input             clk7_en,
+	input             aen,           // adress enable
+	input             rd,            // read enable
+	input             wr,            // write enable
+	input             reset,         // reset
+	input      [11:0] rs,            // register select (address)
 
-	input  [15:0] data_in,       // bus data in
+	input      [15:0] data_in,       // bus data in
 	output reg [15:0] data_out,      // bus data out
 
 	output reg        rtg_ena,
 	output reg [11:0] rtg_hsize,
 	output reg [11:0] rtg_vsize,
-	output reg [5:0]  rtg_format,
+	output reg [4:0]  rtg_format,
 	output reg [31:0] rtg_base,
 	output reg [13:0] rtg_stride,
-	output        rtg_pal_clk,
-	output [23:0] rtg_pal_dw,
-	input  [23:0] rtg_pal_dr,
-	output [7:0]  rtg_pal_a,
-	output        rtg_pal_wr
+	output            rtg_pal_clk,
+	output     [23:0] rtg_pal_dw,
+	input      [23:0] rtg_pal_dr,
+	output     [7:0]  rtg_pal_a,
+	output            rtg_pal_wr
 );
 
 wire enable = aen & (rd | wr);
@@ -79,7 +79,7 @@ always @(posedge clk)
     else if (wr) begin
        if (r_ahi) rtg_base[31:16]<=data_in;
        if (r_alo) rtg_base[15:0] <=data_in;
-       if (r_fmt) rtg_format<=data_in[5:0];
+       if (r_fmt) rtg_format<=data_in[4:0];
        if (r_ena) rtg_ena<=data_in[0];
        if (r_hs ) rtg_hsize <=data_in[11:0];
        if (r_vs ) rtg_vsize <=data_in[11:0];
@@ -96,7 +96,7 @@ always @(*) begin
    data_out<=16'b0;
    if (r_ahi) data_out<=rtg_base[31:16];
    if (r_alo) data_out<=rtg_base[15:0];
-   if (r_fmt) data_out[5:0]<=rtg_format;
+   if (r_fmt) data_out[4:0]<=rtg_format;
    if (r_ena) data_out[0]<=rtg_ena;
    if (r_hs)  data_out[11:0]<=rtg_hsize;
    if (r_vs)  data_out[11:0]<=rtg_vsize;

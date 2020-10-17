@@ -42,7 +42,7 @@
 --  [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
 --  [3]   : 0=16bits 565 1=16bits 1555
 --  [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
---  [5]   : 16 bits swap
+--  [5]   : TBD
 
 --------------------------------------------
 -- Image header. When HEADER = TRUE
@@ -555,64 +555,50 @@ ARCHITECTURE rtl OF ascal IS
                        shift  : unsigned(0 TO N_DW+15);
                        dr     : unsigned(N_DW-1 DOWNTO 0);
                        format : unsigned(5 DOWNTO 0)) RETURN unsigned IS
-    VARIABLE dr_v : unsigned(N_DW-1 DOWNTO 0);
     VARIABLE shift_v : unsigned(0 TO N_DW+15);
   BEGIN
-    dr_v:=dr;
-    IF format(5)='1' THEN
-      dr_v(63 DOWNTO 0):=dr(55 DOWNTO 48) & dr(63 DOWNTO 56) &
-                         dr(39 DOWNTO 32) & dr(47 DOWNTO 40) &
-                         dr(23 DOWNTO 16) & dr(31 DOWNTO 24) &
-                         dr(7 DOWNTO 0)   & dr(15 DOWNTO 8);
-      IF N_DW=128 THEN
-        dr_v(127 DOWNTO 64):=dr(64+55 DOWNTO 64+48) & dr(64+63 DOWNTO 64+56) &
-                             dr(64+39 DOWNTO 64+32) & dr(64+47 DOWNTO 64+40) &
-                             dr(64+23 DOWNTO 64+16) & dr(64+31 DOWNTO 64+24) &
-                             dr(64+7 DOWNTO 64)     & dr(64+15 DOWNTO 64+8);
-      END IF;
-    END IF;
     CASE format(2 DOWNTO 0) IS
       WHEN "011" => -- 8bpp
         IF (N_DW=128 AND acpt=0) OR (N_DW=64 AND (acpt MOD 8)=0) THEN
-          shift_v:=dr_v & dr_v(15 DOWNTO 0);
+          shift_v:=dr & dr(15 DOWNTO 0);
         ELSE
-          shift_v:=shift(8 TO N_DW+15) & dr_v(7 DOWNTO 0);
+          shift_v:=shift(8 TO N_DW+15) & dr(7 DOWNTO 0);
         END IF;
         
       WHEN "100" => -- 16bpp
         IF (N_DW=128 AND (acpt MOD 8)=0) OR (N_DW=64 AND (acpt MOD 4)=0) THEN
-          shift_v:=dr_v & dr_v(15 DOWNTO 0);
+          shift_v:=dr & dr(15 DOWNTO 0);
         ELSE
-          shift_v:=shift(16 TO N_DW+15) & dr_v(15 DOWNTO 0);
+          shift_v:=shift(16 TO N_DW+15) & dr(15 DOWNTO 0);
         END IF;
         
       WHEN "101" => -- 24bpp
         IF N_DW=128 THEN
           IF acpt=0 THEN
-            shift_v:=dr_v & dr_v(15 DOWNTO 0);
+            shift_v:=dr & dr(15 DOWNTO 0);
           ELSIF acpt=5 THEN
-            shift_v:=shift(24 TO 31) & dr_v & dr_v(7 DOWNTO 0);
+            shift_v:=shift(24 TO 31) & dr & dr(7 DOWNTO 0);
           ELSIF acpt=10 THEN
-            shift_v:=shift(24 TO 39) & dr_v;
+            shift_v:=shift(24 TO 39) & dr;
           ELSE
-            shift_v:=shift(24 TO N_DW+15) & dr_v(23 DOWNTO 0);
+            shift_v:=shift(24 TO N_DW+15) & dr(23 DOWNTO 0);
           END IF;
         ELSE -- N_DW=64
           IF (acpt MOD 8)=0 THEN
-            shift_v:=dr_v & dr_v(15 DOWNTO 0);
+            shift_v:=dr & dr(15 DOWNTO 0);
           ELSIF (acpt MOD 8)=2 THEN
-            shift_v:=shift(24 TO 39) & dr_v;
+            shift_v:=shift(24 TO 39) & dr;
           ELSIF (acpt MOD 8)=5 THEN
-            shift_v:=shift(24 TO 31) & dr_v & dr_v(7 DOWNTO 0);
+            shift_v:=shift(24 TO 31) & dr & dr(7 DOWNTO 0);
           ELSE
-            shift_v:=shift(24 TO N_DW+15) & dr_v(23 DOWNTO 0);
+            shift_v:=shift(24 TO N_DW+15) & dr(23 DOWNTO 0);
           END IF;
         END IF;
       WHEN OTHERS => -- 32bpp
         IF (N_DW=128 AND (acpt MOD 4)=0) OR (N_DW=64 AND (acpt MOD 2)=0) THEN
-          shift_v:=dr_v & dr_v(15 DOWNTO 0);
+          shift_v:=dr & dr(15 DOWNTO 0);
         ELSE
-          shift_v:=shift(32 TO N_DW+15) & dr_v(31 DOWNTO 0);
+          shift_v:=shift(32 TO N_DW+15) & dr(31 DOWNTO 0);
         END IF;
     END CASE;
     RETURN shift_v;
