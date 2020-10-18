@@ -1,4 +1,5 @@
 ; Minimig.card - P96 RTG driver for the Minimig Amiga core
+; MiSTer specific version
 
 ; Adapted by Alastair M. Robinson from a similar project
 ; for the Replay board - WWW.FPGAArcade.COM
@@ -15,21 +16,14 @@
 
         machine 68020
 
-        incdir  "text_include:"
-
         include P96/P96BoardInfo.i
         include P96/P96ModeInfo.i
         include P96/P96CardStruct.i
-        include hardware/custom.i
 
-        include lvo/exec_lib.i
-        include lvo/intuition_lib.i
-        include lvo/expansion_lib.i
-        include exec/exec.i
-        include intuition/intuitionbase.i
-        include libraries/expansionbase.i
+        include hardware/custom.i
         include hardware/intbits.i
-        include exec/interrupts.i
+        include exec/exec.i
+        include lvo/exec_lib.i
 
 ; If you define the Debug Symbol make sure the monitor file is in
 ; sys:storage/monitors - debug output seems to crash the system if
@@ -125,27 +119,27 @@ ProgStart:
         IFD     debug
         bra.b   _bugprintf_end
 bugprintf:
-                movem.l d0-d1/a0-a3/a6,-(sp)
-                move.l  $4.w,a6
-                move.l  28(sp),a0
-                lea     32(sp),a1
-                lea     .putch(pc),a2
-                move.l  a6,a3
-                jsr     beacon
-                jsr     -522(a6)                ; _LVORawDoFmt
+        movem.l d0-d1/a0-a3/a6,-(sp)
+        move.l  $4.w,a6
+        move.l  28(sp),a0
+        lea     32(sp),a1
+        lea     .putch(pc),a2
+        move.l  a6,a3
+        jsr     beacon
+        jsr     -522(a6)                ; _LVORawDoFmt
 
-.skip           move.l  28(sp),a0
-.end:           move.b  (a0)+,d0
-                bne.b   .end
-                move.l  a0,d0
-                addq.l  #1,d0
-                and.l   #$fffffffe,d0
-                move.l  d0,28(sp)
-                movem.l (sp)+,d0-d1/a0-a3/a6
-                rts
+.skip   move.l  28(sp),a0
+.end:   move.b  (a0)+,d0
+        bne.b   .end
+        move.l  a0,d0
+        addq.l  #1,d0
+        and.l   #$fffffffe,d0
+        move.l  d0,28(sp)
+        movem.l (sp)+,d0-d1/a0-a3/a6
+        rts
 
-.putch:         move.l  a3,a6
-                jmp     -516(a6)                ; _LVORawPutChar (execPrivate9)
+.putch: move.l  a3,a6
+        jmp     -516(a6)                ; _LVORawPutChar (execPrivate9)
 _bugprintf_end:
         rts
         ENDC
