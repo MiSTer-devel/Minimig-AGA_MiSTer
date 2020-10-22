@@ -60,7 +60,7 @@ On Linux side the folder is "shared" inside Amiga folder.
 
 * install [Picasso96.lha](http://aminet.net/package/driver/video/Picasso96) Choose uaegfx while installing.
 * remove uaegfx (or whatever driver you choose in install) from SYS:Devs/Monitors
-* extract 'extra\rtg_driver\MiSTer_RTG.lha' and copy content to SYS:
+* extract [MiSTer_RTG.lha](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/raw/MiSTer/extra/rtg_driver/MiSTer_RTG.lha) and copy content to SYS:
 * reboot
 
 New video modes will appear in ScreenMode preference. For more screen modes use Picasso96Mode preference (attn: it has awkward interface!)
