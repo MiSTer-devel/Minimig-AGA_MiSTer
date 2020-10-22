@@ -17,6 +17,7 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 * slowRAM : 0.0MB - 1.5MB
 * fastRAM : 0.0MB - 384MB
 * CPU core : 68000, 68020
+* RTG
 * kickstart : 1.2 - 3.1 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
 * floppy disks : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
@@ -54,6 +55,19 @@ On Amiga:
 - MiSTer drive will appear on main WB screen. If it will work, then you can add this command into user-startup file, and it will be mounted at every boot.
 
 On Linux side the folder is "shared" inside Amiga folder.
+
+### RTG
+
+* install [Picasso96.lha](http://aminet.net/package/driver/video/Picasso96) Choose uaegfx while installing.
+* remove uaegfx (or whatever driver you choose in install) from SYS:Devs/Monitors
+* extract 'extra\rtg_driver\MiSTer_RTG.lha' and copy content to SYS:
+* reboot
+
+New video modes will appear in ScreenMode preference. For more screen modes use Picasso96Mode preference (attn: it has awkward interface!)
+
+**Note: RTG outputs to HDMI primarily as it uses scaler.**
+If you want to see RTG video on VGA output, then set vga_scaler=1 in MiSTer.ini.
+RTG is available only for 68020 CPU.
 
 ### Software
 To use the core, you will need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM. Minimig also supports the [AROS](http://aros.sourceforge.net/) kickstart ROM replacement.
