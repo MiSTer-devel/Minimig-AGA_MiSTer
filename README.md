@@ -17,13 +17,13 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 * slowRAM : 0.0MB - 1.5MB
 * fastRAM : 0.0MB - 384MB
 * CPU core : 68000, 68020
-* RTG
 * kickstart : 1.2 - 3.1 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
 * floppy disks : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
 * hard disks : 1-2 hard disk images (supports whole disk images, partition images, using whole SD card and using SD card partition)
 * video standard : PAL / NTSC
 * supports almost all OCS/ECS/AGA custom resolutions
+* RTG with up to 1920x1080 and 1600x1200 resolutions
 * peripherals : USB keyboards, USB mice, USB gamepads
 * serial connection to Linux with ability to connect to internet.
 * shared folder for rapid file exchange between Linux and Amiga.
