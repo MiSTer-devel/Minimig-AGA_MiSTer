@@ -24,8 +24,8 @@ module emu
 	output        CE_PIXEL,
 	
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] VIDEO_ARX,
-	output  [7:0] VIDEO_ARY,
+	output [11:0] VIDEO_ARX,
+	output [11:0] VIDEO_ARY,
 	
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -140,7 +140,7 @@ localparam CONF_STR = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-;", // (c) voodoo technology!
+	"----;", // (c) voodoo technology!
 	"V,v",`BUILD_DATE
 };
 
@@ -203,8 +203,8 @@ assign AUDIO_S      = 1;
 assign LED_POWER[1] = 1;
 assign LED_DISK[1]  = 1;
 
-assign VIDEO_ARX    = ar[0] ? 8'd16 : 8'd4;
-assign VIDEO_ARY    = ar[0] ? 8'd9  : 8'd3;
+assign VIDEO_ARX    = FB_EN ? FB_WIDTH  : (!ar) ? 8'd4 : (ar - 1'd1);
+assign VIDEO_ARY    = FB_EN ? FB_HEIGHT : (!ar) ? 8'd3 : 8'd0;
 
 wire clk_57, clk_114;
 wire clk_sys;
