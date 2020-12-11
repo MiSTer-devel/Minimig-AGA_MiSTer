@@ -265,6 +265,27 @@ struct SetCommentResponse
 	long error_code;
 };
 
+struct ExamineFhRequest
+{
+	long sz;
+	long type;
+	long arg1;
+};
+
+struct ExamineFhResponse
+{
+	long sz;
+	long success;
+	long error_code;
+
+	long disk_key;
+	long entry_type;
+	int size;
+	int protection;
+	int date[3];
+	char file_name[1];
+};
+
 struct DiskInfoRequest
 {
 	long sz;
