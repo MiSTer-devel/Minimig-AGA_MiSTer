@@ -265,6 +265,21 @@ struct SetCommentResponse
 	long error_code;
 };
 
+struct SameLockRequest
+{
+	long sz;
+	long type;
+	long key1;
+	long key2;
+};
+
+struct SameLockResponse
+{
+	long sz;
+	long success;
+	long error_code;
+};
+
 struct ExamineFhRequest
 {
 	long sz;
