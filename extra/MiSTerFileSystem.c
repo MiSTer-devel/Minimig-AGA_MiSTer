@@ -28,6 +28,15 @@
 
 #define DEBUG 0
 
+// Not defined if using NDK13
+#ifndef ACTION_EXAMINE_FH
+#define ACTION_EXAMINE_FH 1034
+#endif
+
+#ifndef ACTION_SAME_LOCK
+#define ACTION_SAME_LOCK 40
+#endif
+
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct MsgPort *mp;
@@ -543,6 +552,52 @@ void action_examine_next(struct DosPacket *dp)
 	reply_packet(dp);
 }
 
+void action_examine_fh(struct DosPacket *dp)
+{
+	ULONG arg1 = dp->dp_Arg1;
+	struct FileInfoBlock *fib = (struct FileInfoBlock *)BADDR(dp->dp_Arg2);
+
+	dbg("ACTION_EXAMINE_FH\n");
+	dbg("  arg1 = $l\n", arg1);
+	dbg("  fib = $l\n", fib);
+
+	struct ExamineFhRequest *req = (struct ExamineFhRequest *)request_buffer;
+	req->type = dp->dp_Type;
+	req->arg1 = arg1;
+
+	write_req_and_wait_for_res(sizeof(struct ExamineFhRequest));
+
+	struct ExamineFhResponse *res = (struct ExamineFhResponse *)request_buffer;
+	if (!res->success)
+	{
+		dbg("  Failed, error code $l\n", (LONG)res->error_code);
+		dp->dp_Res1 = DOSFALSE;
+		dp->dp_Res2 = res->error_code;
+	}
+	else
+	{
+		int nlen = (unsigned char)(res->file_name[0]);
+		memcpy(fib->fib_FileName, res->file_name, nlen + 1);
+		fib->fib_FileName[nlen + 1] = 0;
+
+		fib->fib_DiskKey = res->disk_key;
+		fib->fib_DirEntryType = res->entry_type;
+		fib->fib_EntryType = res->entry_type;
+		fib->fib_Protection = res->protection;
+		fib->fib_Size = res->size;
+		fib->fib_NumBlocks = (res->size + 511) >> 9;
+		fib->fib_Date.ds_Days = res->date[0];
+		fib->fib_Date.ds_Minute = res->date[1];
+		fib->fib_Date.ds_Tick = res->date[2];
+		fib->fib_Comment[0] = 0;
+
+		dp->dp_Res1 = DOSTRUE;
+		dp->dp_Res2 = 0;
+	}
+
+	reply_packet(dp);
+}
+
 void action_findxxx(struct DosPacket *dp)
 {
 	struct FileHandle *fh = (struct FileHandle *)BADDR(dp->dp_Arg1);
@@ -950,6 +1005,28 @@ void action_set_comment(struct DosPacket *dp)
 	reply_packet(dp);
 }
 
+void action_same_lock(struct DosPacket *dp)
+{
+	struct FileLock *lock1 = (struct FileLock *)BADDR(dp->dp_Arg1);
+	struct FileLock *lock2 = (struct FileLock *)BADDR(dp->dp_Arg2);
+
+	dbg("ACTION_SAME_LOCK\n");
+	dbg("  locks to compare = $l $l\n", lock1, lock2);
+
+	struct SameLockRequest *req = (struct SameLockRequest *)request_buffer;
+	req->type = dp->dp_Type;
+	req->key1 = lock1->fl_Key;
+	req->key2 = lock2->fl_Key;
+
+	write_req_and_wait_for_res(sizeof(struct SameLockRequest));
+
+	struct SameLockResponse *res = (struct SameLockResponse *)request_buffer;
+	dp->dp_Res1 = res->success ? DOSTRUE : DOSFALSE;
+	dp->dp_Res2 = res->error_code;
+
+	reply_packet(dp);
+}
+
 void fill_info_data(struct DosPacket *dp, struct InfoData *id)
 {
 	struct DiskInfoRequest *req = (struct DiskInfoRequest *)request_buffer;
@@ -1022,6 +1099,7 @@ void start(__reg("a0") struct DosPacket *startup_packet)
 		case ACTION_PARENT: action_parent(dp); break;
 		case ACTION_EXAMINE_OBJECT: action_examine_object(dp); break;
 		case ACTION_EXAMINE_NEXT: action_examine_next(dp); break;
+		case ACTION_EXAMINE_FH: action_examine_fh(dp); break;
 
 		case ACTION_FINDUPDATE: action_findxxx(dp); break;
 		case ACTION_FINDINPUT: action_findxxx(dp); break;
@@ -1040,6 +1118,7 @@ void start(__reg("a0") struct DosPacket *startup_packet)
 		case ACTION_SET_COMMENT: action_set_comment(dp); break;
 		//case ACTION_SET_DATE: action_set_date(dp); break;
 
+		case ACTION_SAME_LOCK: action_same_lock(dp); break;
 		case ACTION_DISK_INFO: action_disk_info(dp); break;
 		case ACTION_INFO: action_info(dp); break;
 
