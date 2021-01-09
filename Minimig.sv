@@ -130,17 +130,23 @@ module emu
 );
 
 assign ADC_BUS  = 'Z;
-assign USER_OUT = '1;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign BUTTONS = 0;
 
 `include "build_id.v" 
-localparam CONF_STR = {
-	"Minimig;;",
+localparam CONF_STR1 = {
+	"Minimig;UART115200,MIDI;",
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-;", // (c) voodoo technology!
+	"-;",
+	"I,",
+	"MT32-pi: "
+};
+
+localparam CONF_STR2 =
+{
+	";",
 	"V,v",`BUILD_DATE
 };
 
@@ -156,6 +162,7 @@ wire [63:0] RTC;
 
 wire        ce_pix;
 wire  [1:0] buttons;
+wire [63:0] status;
 wire        forced_scandoubler;
 
 wire        io_strobe;
@@ -167,12 +174,18 @@ wire [15:0] fpga_dout;
 
 wire [21:0] gamma_bus;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
+wire  [7:0] uart_mode;
+
+hps_io #(.STRLEN(($size(CONF_STR1) + $size(mt32_curmode) + $size(CONF_STR2))>>3)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS({HPS_BUS[45:42],ce_pix,HPS_BUS[40:0]}),
 
-	.conf_str(CONF_STR),
+	.conf_str({CONF_STR1, mt32_curmode, CONF_STR2}),
+	.status(status),
+	.status_menumask({mt32_cfg,mt32_available}),
+	.info_req(mt32_info_req),
+	.info(1),
 
 	.joystick_0(JOY0),
 	.joystick_1(JOY1),
@@ -184,7 +197,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.buttons(buttons),
 	.forced_scandoubler(forced_scandoubler),
 
-	.uart_mode(16'b000_11111_000_11111),
+	.uart_mode(uart_mode),
 
 	.RTC(RTC),
 	.gamma_bus(gamma_bus),
@@ -194,11 +207,6 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*);
-
-
-assign AUDIO_L      = {ldata, 1'b0};
-assign AUDIO_R      = {rdata, 1'b0};
-assign AUDIO_S      = 1;
 
 assign LED_POWER[1] = 1;
 assign LED_DISK[1]  = 1;
@@ -431,6 +439,21 @@ ddram_ctrl ram2
 	.ramready     (ram_ready2      )
 );
 
+////////////////////////////  UART  //////////////////////////////////// 
+
+wire uart_cts, uart_dsr, uart_rts, uart_dtr;
+wire uart_tx, uart_rx;
+
+wire hps_mpu = (uart_mode >= 3);
+
+assign UART_RTS = ~hps_mpu & uart_rts;
+assign UART_DTR = ~hps_mpu & uart_dtr;
+assign uart_cts = ~hps_mpu & UART_CTS;
+assign uart_dsr = ~hps_mpu & UART_DSR;
+assign uart_rx  = ~hps_mpu ? UART_RXD : midi_rx;
+assign UART_TXD = ~hps_mpu ? uart_tx : (uart_tx & ~mt32_use);
+
+///////////////////////////////////////////////////////////////////////
 
 //// minimig top ////
 wire  [1:0] cpucfg;
@@ -489,13 +512,13 @@ minimig minimig
 	.eclk         (eclk             ), // 0.709379 MHz clock enable output (clk domain pulse)
 
 	//rs232 pins
-	.rxd          (UART_RXD         ), // RS232 receive
-	.txd          (UART_TXD         ), // RS232 send
-	.cts          (UART_CTS         ), // RS232 clear to send
-	.rts          (UART_RTS         ), // RS232 request to send
-	.dtr          (UART_DTR         ), // RS232 Data Terminal Ready
-	.dsr          (UART_DSR         ), // RS232 Data Set Ready
-	.cd           (UART_DSR         ), // RS232 Carrier Detect
+	.rxd          (uart_rx          ), // RS232 receive
+	.txd          (uart_tx          ), // RS232 send
+	.cts          (uart_cts         ), // RS232 clear to send
+	.rts          (uart_rts         ), // RS232 request to send
+	.dtr          (uart_dtr         ), // RS232 Data Terminal Ready
+	.dsr          (uart_dsr         ), // RS232 Data Set Ready
+	.cd           (uart_dsr         ), // RS232 Carrier Detect
 	.ri           (1                ), // RS232 Ring Indicator
 
 	//I/O
@@ -586,10 +609,15 @@ end
 
 wire [2:0] fx;
 wire       scandoubler = (fx || forced_scandoubler) & ~lace;
+wire [7:0] R,G,B;
 
 video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 (
 	.*,
+	
+	.VGA_R(R),
+	.VGA_G(G),
+	.VGA_B(B),
 
 	.clk_vid(CLK_VIDEO),
 	.ce_pix(ce_out),
@@ -611,8 +639,11 @@ video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 	.VBlank(~vde)
 );
 
-assign VGA_F1 = field1;
 assign CLK_VIDEO = clk_114;
+assign VGA_F1    = field1;
+assign VGA_R     = mt32_lcd ? {{2{mt32_lcd_pix}},R[7:2]} : R;
+assign VGA_G     = mt32_lcd ? {{2{mt32_lcd_pix}},G[7:2]} : G;
+assign VGA_B     = mt32_lcd ? {{2{mt32_lcd_pix}},B[7:2]} : B;
 
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 assign VGA_SL = sl[1:0];
@@ -767,5 +798,110 @@ always @(posedge clk_sys) begin
 		if(scr_res != res || scr_vsize != vsize || scr_hsize != hsize) scr_flg <= scr_flg + 1'd1;
 	end
 end
+
+////////////////////////////  MT32pi  ////////////////////////////////// 
+
+wire        mt32_reset    = status[32] | reset;
+wire        mt32_disable  = status[33];
+wire        mt32_mode_req = status[34];
+wire  [1:0] mt32_rom_req  = status[36:35];
+wire  [7:0] mt32_sf_req   = status[39:37];
+wire  [1:0] mt32_info     = status[41:40];
+wire        midi_tx       = uart_tx;
+
+wire [15:0] mt32_i2s_r, mt32_i2s_l;
+wire  [7:0] mt32_mode, mt32_rom, mt32_sf;
+wire        mt32_lcd_en, mt32_lcd_pix, mt32_lcd_update;
+wire        midi_rx;
+
+wire mt32_newmode;
+wire mt32_available;
+wire mt32_use  = mt32_available & ~mt32_disable;
+wire mt32_mute = mt32_available &  mt32_disable;
+
+mt32pi mt32pi
+(
+	.*,
+	.CE_PIXEL(ce_pix_mt32),
+	.reset(mt32_reset),
+	.midi_tx(midi_tx | mt32_mute)
+);
+
+wire [87:0] mt32_curmode = {(mt32_mode == 'hA2)                  ? {"SoundFont ", {5'b00110, mt32_sf[2:0]}} :
+                            (mt32_mode == 'hA1 && mt32_rom == 0) ?  "   MT-32 v1" :
+                            (mt32_mode == 'hA1 && mt32_rom == 1) ?  "   MT-32 v2" :
+                            (mt32_mode == 'hA1 && mt32_rom == 2) ?  "     CM-32L" :
+                                                                    "    Unknown" };
+
+wire  [4:0] mt32_cfg = (mt32_mode == 'hA2) ? {mt32_sf[2:0],  2'b10} :
+                       (mt32_mode == 'hA1) ? {mt32_rom[1:0], 2'b01} : 5'd0;
+
+reg mt32_info_req;
+always @(posedge clk_sys) begin
+	reg old_mode;
+
+	old_mode <= mt32_newmode;
+	mt32_info_req <= (old_mode ^ mt32_newmode) && (mt32_info == 1);
+end
+
+reg mt32_lcd_on;
+always @(posedge CLK_VIDEO) begin
+	int to;
+	reg old_update;
+
+	old_update <= mt32_lcd_update;
+	if(to) to <= to - 1;
+
+	if(mt32_info == 2) mt32_lcd_on <= 1;
+	else if(mt32_info != 3) mt32_lcd_on <= 0;
+	else begin
+		if(!to) mt32_lcd_on <= 0;
+		if(old_update ^ mt32_lcd_update) begin
+			mt32_lcd_on <= 1;
+			to <= 114000000 * 2;
+		end
+	end
+end
+
+wire mt32_lcd = mt32_lcd_on & mt32_lcd_en;
+
+reg ce_pix_mt32;
+always @(posedge CLK_VIDEO) begin
+	reg [3:0] div;
+	
+	div <= div + 1'd1;
+	ce_pix_mt32 <= !div;
+end
+
+/* ------------------------------------------------------------------------------ */
+
+reg [15:0] aud_l, aud_r;
+always @(posedge CLK_AUDIO) begin
+	reg [15:0] old_l0, old_l1, old_r0, old_r1;
+	
+	old_l0 <= {ldata[14],ldata};
+	old_l1 <= old_l0;
+	if(old_l0 == old_l1) aud_l <= old_l1;
+
+	old_r0 <= {rdata[14],rdata};
+	old_r1 <= old_r0;
+	if(old_r0 == old_r1) aud_r <= old_r1;
+end
+
+reg [15:0] out_l, out_r;
+always @(posedge CLK_AUDIO) begin
+	reg [16:0] tmp_l, tmp_r;
+
+	tmp_l <= {aud_l[15],aud_l} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	tmp_r <= {aud_r[15],aud_r} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+
+	// clamp the output
+	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
+	out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
+end
+
+assign AUDIO_S = 1;
+assign AUDIO_L = out_l;
+assign AUDIO_R = out_r;
 
 endmodule
