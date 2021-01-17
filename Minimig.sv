@@ -139,7 +139,7 @@ localparam CONF_STR1 = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-;",
+	"-      ;",
 	"I,",
 	"MT32-pi: "
 };

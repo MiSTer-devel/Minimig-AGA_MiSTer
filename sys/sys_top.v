@@ -247,8 +247,8 @@ wire        io_ss2 = gp_outr[20];
 wire io_osd_hdmi = io_ss1 & ~io_ss0;
 `endif
 
-wire io_fpga = ~io_ss1 & io_ss0;
-wire io_uio  = ~io_ss1 & io_ss2;
+wire io_fpga     = ~io_ss1 & io_ss0;
+wire io_uio      = ~io_ss1 & io_ss2;
 
 reg  io_ack;
 reg  rack;
@@ -285,6 +285,7 @@ cyclonev_hps_interface_mpu_general_purpose h2f_gp
 
 
 reg [15:0] cfg;
+
 reg        cfg_set      = 0;
 wire       vga_fb       = cfg[12] | vga_force_scaler;
 wire [1:0] hdmi_limited = {cfg[11],cfg[8]};
