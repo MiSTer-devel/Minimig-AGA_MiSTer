@@ -27,6 +27,7 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 * peripherals : USB keyboards, USB mice, USB gamepads
 * serial connection to Linux with ability to connect to internet.
 * shared folder for rapid file exchange between Linux and Amiga.
+* MIDI: both MiSTer internal emulation and external through USER_IO port (MT32-pi and generic MIDI device)
 
 
 ## Usage
@@ -68,6 +69,10 @@ New video modes will appear in ScreenMode preference. For more screen modes use 
 **Note: RTG outputs to HDMI primarily as it uses scaler.**
 If you want to see RTG video on VGA output, then set vga_scaler=1 in MiSTer.ini.
 RTG is available only for 68020 CPU.
+
+### MIDI
+Supported internal MiSTer emulation and external devices such as MT32-pi or generic MIDI though USER_IO.
+For MIDI-IN support through USER_IO set UART mode to None in OSD settings.
 
 ### Software
 To use the core, you will need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM. Minimig also supports the [AROS](http://aros.sourceforge.net/) kickstart ROM replacement.

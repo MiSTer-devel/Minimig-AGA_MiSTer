@@ -8,36 +8,43 @@ module emu
 (
 	//Master input clock
 	input         CLK_50M,
-	
+
 	//Async reset from top-level module.
 	//Can be used as initial reset.
 	input         RESET,
-	
+
 	//Must be passed to hps_io module
 	inout  [45:0] HPS_BUS,
-	
+
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
-	
+
 	//Multiple resolutions are supported using different CE_PIXEL rates.
 	//Must be based on CLK_VIDEO
 	output        CE_PIXEL,
-	
+
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
 	output [11:0] VIDEO_ARX,
 	output [11:0] VIDEO_ARY,
-	
+
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
 	output  [7:0] VGA_B,
 	output        VGA_HS,
 	output        VGA_VS,
-	output        VGA_DE,     // = ~(VBlank | HBlank)
+	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
-	output  [1:0] VGA_SL,
+	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
 
-	// Framebuffer control
+`ifdef USE_FB
+	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
+	// FB_FORMAT:
+	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
+	//    [3]   : 0=16bits 565 1=16bits 1555
+	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
+	//
+	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of pixel size (in bytes)
 	output        FB_EN,
 	output  [4:0] FB_FORMAT,
 	output [11:0] FB_WIDTH,
@@ -47,7 +54,7 @@ module emu
 	input         FB_VBL,
 	input         FB_LL,
 	output        FB_FORCE_BLANK,
-	
+
 	// Palette control for 8bit modes.
 	// Ignored for other video modes.
 	output        FB_PAL_CLK,
@@ -55,9 +62,10 @@ module emu
 	output [23:0] FB_PAL_DOUT,
 	input  [23:0] FB_PAL_DIN,
 	output        FB_PAL_WR,
-	
+`endif
+
 	output        LED_USER,  // 1 - ON, 0 - OFF.
-	
+
 	// b[1]: 0 - LED status is system status OR'd with b[0]
 	//       1 - LED status is controled solely by b[0]
 	// hint: supply 2'b00 to let the system control the LED.
@@ -72,19 +80,20 @@ module emu
 	input         CLK_AUDIO, // 24.576 MHz
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
-	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
+	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
 	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
-	
+
 	//ADC
 	inout   [3:0] ADC_BUS,
-	
+
 	//SD-SPI
 	output        SD_SCK,
 	output        SD_MOSI,
 	input         SD_MISO,
 	output        SD_CS,
 	input         SD_CD,
-	
+
+`ifdef USE_DDRAM
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
 	output        DDRAM_CLK,
@@ -97,7 +106,9 @@ module emu
 	output [63:0] DDRAM_DIN,
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
-	
+`endif
+
+`ifdef USE_SDRAM
 	//SDRAM interface with lower latency
 	output        SDRAM_CLK,
 	output        SDRAM_CKE,
@@ -110,14 +121,28 @@ module emu
 	output        SDRAM_nCAS,
 	output        SDRAM_nRAS,
 	output        SDRAM_nWE,
-	
+`endif
+
+`ifdef DUAL_SDRAM
+	//Secondary SDRAM
+	input         SDRAM2_EN,
+	output        SDRAM2_CLK,
+	output [12:0] SDRAM2_A,
+	output  [1:0] SDRAM2_BA,
+	inout  [15:0] SDRAM2_DQ,
+	output        SDRAM2_nCS,
+	output        SDRAM2_nCAS,
+	output        SDRAM2_nRAS,
+	output        SDRAM2_nWE,
+`endif
+
 	input         UART_CTS,
 	output        UART_RTS,
 	input         UART_RXD,
 	output        UART_TXD,
 	output        UART_DTR,
 	input         UART_DSR,
-	
+
 	// Open-drain User port.
 	// 0 - D+/RX
 	// 1 - D-/TX
@@ -139,7 +164,7 @@ localparam CONF_STR1 = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-      ;",
+	"-;",
 	"I,",
 	"MT32-pi: "
 };
@@ -450,8 +475,8 @@ assign UART_RTS = ~hps_mpu & uart_rts;
 assign UART_DTR = ~hps_mpu & uart_dtr;
 assign uart_cts = ~hps_mpu & UART_CTS;
 assign uart_dsr = ~hps_mpu & UART_DSR;
-assign uart_rx  = ~hps_mpu ? UART_RXD : midi_rx;
-assign UART_TXD = ~hps_mpu ? uart_tx : (uart_tx & ~mt32_use);
+assign uart_rx  = uart_mode ? UART_RXD : midi_rx;
+assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 
 ///////////////////////////////////////////////////////////////////////
 
