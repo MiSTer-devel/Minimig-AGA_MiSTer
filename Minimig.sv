@@ -24,8 +24,9 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output [11:0] VIDEO_ARX,
-	output [11:0] VIDEO_ARY,
+	//if VIDEO_ARX[12] or VIDEO_ARY[12] is set then [11:0] contains scaled size instead of aspect ratio.
+	output [12:0] VIDEO_ARX,
+	output [12:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -36,6 +37,9 @@ module emu
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
+
+	input  [11:0] HDMI_WIDTH,
+	input  [11:0] HDMI_HEIGHT,
 
 `ifdef USE_FB
 	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
@@ -164,7 +168,7 @@ localparam CONF_STR1 = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-;",
+	"- ;",
 	"I,",
 	"MT32-pi: "
 };
@@ -236,8 +240,6 @@ hps_ext hps_ext(.*);
 assign LED_POWER[1] = 1;
 assign LED_DISK[1]  = 1;
 
-assign VIDEO_ARX    = FB_EN ? FB_WIDTH  : (!ar) ? 8'd4 : (ar - 1'd1);
-assign VIDEO_ARY    = FB_EN ? FB_HEIGHT : (!ar) ? 8'd3 : 8'd0;
 assign VGA_SCALER   = FB_EN;
 
 wire clk_57, clk_114;
@@ -580,7 +582,7 @@ minimig minimig
 	.vblank       (vbl              ),
 	.ar           (ar               ),
 	.scanline     (fx               ),
-	.ce_pix       (ce_pix           ),
+	//.ce_pix       (ce_pix           ),
 	.res          (res              ),
 
 	//RTG framebuffer control
@@ -618,7 +620,7 @@ always @(posedge CLK_VIDEO) begin
 	reg old_vs;
 	
 	div <= div + add;
-	fs_res <= fs_res | res;
+	if(~hblank & ~vblank) fs_res <= fs_res | res;
 
 	old_vs <= vs;
 	if(old_vs & ~vs) begin
@@ -626,11 +628,13 @@ always @(posedge CLK_VIDEO) begin
 		div <= 0;
 		add <= 1; // 7MHz
 		if(fs_res[0]) add <= 2; // 14MHz
-		if(fs_res[1] | ~scandoubler) add <= 4; // 28MHz
+		if(fs_res[1] | (~status[42] & ~scandoubler)) add <= 4; // 28MHz
 	end
 
 	ce_out <= div[3] & !div[2:0];
 end
+
+assign ce_pix = ce_out;
 
 wire [2:0] fx;
 wire       scandoubler = (fx || forced_scandoubler) & ~lace;
@@ -640,24 +644,17 @@ video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 (
 	.*,
 	
+	.hq2x(fx==1),
+
+	.VGA_DE(vga_de),
 	.VGA_R(R),
 	.VGA_G(G),
 	.VGA_B(B),
 
-	.clk_vid(CLK_VIDEO),
 	.ce_pix(ce_out),
-	.ce_pix_out(CE_PIXEL),
-
-	.scanlines(0),
-	.hq2x(fx==1),
-
-	.mono(0),
-
 	.R(r),
 	.G(g),
 	.B(b),
-
-	// Positive pulses.
 	.HSync(~hs),
 	.VSync(~vs),
 	.HBlank(~hde),
@@ -669,6 +666,18 @@ assign VGA_F1    = field1;
 assign VGA_R     = mt32_lcd ? {{2{mt32_lcd_pix}},R[7:2]} : R;
 assign VGA_G     = mt32_lcd ? {{2{mt32_lcd_pix}},G[7:2]} : G;
 assign VGA_B     = mt32_lcd ? {{2{mt32_lcd_pix}},B[7:2]} : B;
+
+wire vga_de;
+video_freak video_freak
+(
+	.*,
+	.VGA_DE_IN(vga_de),
+	.ARX(FB_EN ? FB_WIDTH  : (!ar) ? 8'd4 : (ar - 1'd1)),
+	.ARY(FB_EN ? FB_HEIGHT : (!ar) ? 8'd3 : 8'd0),
+	.CROP_SIZE(0),
+	.CROP_OFF(0),
+	.SCALE(FB_EN ? 2'b00 : status[44:43])
+);
 
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 assign VGA_SL = sl[1:0];
