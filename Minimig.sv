@@ -668,16 +668,49 @@ assign VGA_G     = mt32_lcd ? {{2{mt32_lcd_pix}},G[7:2]} : G;
 assign VGA_B     = mt32_lcd ? {{2{mt32_lcd_pix}},B[7:2]} : B;
 
 wire vga_de;
+wire [12:0] arx,ary;
 video_freak video_freak
 (
 	.*,
 	.VGA_DE_IN(vga_de),
-	.ARX(FB_EN ? FB_WIDTH  : (!ar) ? 8'd4 : (ar - 1'd1)),
-	.ARY(FB_EN ? FB_HEIGHT : (!ar) ? 8'd3 : 8'd0),
+	.ARX((!ar) ? 12'd4 : (ar - 1'd1)),
+	.ARY((!ar) ? 12'd3 : 12'd0),
+	.VIDEO_ARX(arx),
+	.VIDEO_ARY(ary),
 	.CROP_SIZE(0),
 	.CROP_OFF(0),
-	.SCALE(FB_EN ? 2'b00 : status[44:43])
+	.SCALE(status[44:43])
 );
+
+reg [11:0] fb_arx, fb_ary;
+always @(posedge CLK_VIDEO) begin
+	reg [11:0] x, y, x1, y1;
+	reg [1:0] cnt;
+	
+	cnt <= cnt + 1'd1;
+	case(cnt)
+		0: begin
+				x1 <= FB_WIDTH;
+				y1 <= FB_HEIGHT;
+				x  <= FB_WIDTH;
+				y  <= FB_HEIGHT;
+			end
+
+		1: if(x && ((x+x1) <= HDMI_WIDTH) && y && ((y+y1) <= HDMI_HEIGHT)) begin
+				x <= x+x1;
+				y <= y+y1;
+				cnt <= 1;
+			end
+
+		2: begin
+				fb_arx <= x;
+				fb_ary <= y;
+			end
+	endcase
+end
+
+assign VIDEO_ARX = FB_EN ? {status[46], fb_arx} : arx;
+assign VIDEO_ARY = FB_EN ? {status[46], fb_ary} : ary;
 
 wire [2:0] sl = fx ? fx - 1'd1 : 3'd0;
 assign VGA_SL = sl[1:0];
