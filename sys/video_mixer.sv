@@ -144,8 +144,21 @@ wire [DWIDTH_SD:0] bt = (scandoubler ? B_sd : B_gamma);
 
 always @(posedge CLK_VIDEO) begin
 	reg [7:0] r,g,b;
-	reg hde,vde,hs,vs;
+	reg hde,vde,hs,vs, old_vs;
 	reg old_hde;
+	reg old_ce;
+	reg ce_osc, fs_osc;
+	
+	old_ce <= ce_pix;
+	ce_osc <= ce_osc | (old_ce ^ ce_pix);
+
+	old_vs <= vs;
+	if(~old_vs & vs) begin
+		fs_osc <= ce_osc;
+		ce_osc <= 0;
+	end
+
+	CE_PIXEL <= scandoubler ? ce_pix_sd : fs_osc ? (~old_ce & ce_pix) : ce_pix;
 
 	if(!GAMMA && HALF_DEPTH) begin
 		r <= {rt,rt};
@@ -162,8 +175,6 @@ always @(posedge CLK_VIDEO) begin
 	vde <= scandoubler ? ~vb_sd : ~vb_g;
 	vs  <= scandoubler ?  vs_sd :  vs_g;
 	hs  <= scandoubler ?  hs_sd :  hs_g;
-
-	CE_PIXEL <= scandoubler ? ce_pix_sd : ce_pix;
 
 	if(CE_PIXEL) begin
 		VGA_R <= r;
