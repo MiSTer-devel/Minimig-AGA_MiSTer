@@ -679,7 +679,7 @@ video_freak video_freak
 	.VIDEO_ARY(ary),
 	.CROP_SIZE(0),
 	.CROP_OFF(0),
-	.SCALE(status[44:43])
+	.SCALE(status[45:43])
 );
 
 reg [11:0] fb_arx, fb_ary;
