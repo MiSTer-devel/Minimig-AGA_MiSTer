@@ -497,6 +497,8 @@ wire        _ram_we;       // sram write enable
 wire        _ram_oe;       // sram output enable
 wire [14:0] ldata;         // left DAC data
 wire [14:0] rdata;         // right DAC data
+wire [9:0]  ldata_okk;     // left DAC data  (PWM vol version)
+wire [9:0]  rdata_okk;     // right DAC data (PWM vol version)
 wire        vs;
 wire        hs;
 wire  [1:0] ar;
@@ -601,6 +603,9 @@ minimig minimig
 	//audio
 	.ldata        (ldata            ), // left DAC data
 	.rdata        (rdata            ), // right DAC data
+	.ldata_okk    (ldata_okk        ), // 9bit
+	.rdata_okk    (rdata_okk        ), // 9bit
+
 	.aud_mix      (AUDIO_MIX        ),
 
 	//user i/o
@@ -942,29 +947,61 @@ end
 
 /* ------------------------------------------------------------------------------ */
 
+wire paula_new_en 	= 1'b1; //~LED_POWER[0];
+wire filter_notch_en 	= 1'b1;
+
+// Audio filter for Paula
+wire [15:0] paula_smp_l = (paula_new_en ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
+wire [15:0] paula_smp_r = (paula_new_en ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
+
+wire [15:0] filter_notch_l;
+wire [15:0] filter_notch_r;
+
+iir_1pole_filter a500_notch_filter
+(
+	.clk		(clk_sys),
+	.clk_en		(clk7_en && cck),
+	.rst		(reset), 	// investigate using the correct reset signal!
+	.left_in	(paula_smp_l),
+	.right_in	(paula_smp_r),
+	.left_out	(filter_notch_l),
+	.right_out	(filter_notch_r)
+);
+
+// Audio clock domain crossing for Paula?!
 reg [15:0] aud_l, aud_r;
+
 always @(posedge CLK_AUDIO) begin
 	reg [15:0] old_l0, old_l1, old_r0, old_r1;
-	
-	old_l0 <= {ldata[14],ldata};
+
+	old_l0 <= (filter_notch_en ? filter_notch_l : paula_smp_l);
 	old_l1 <= old_l0;
 	if(old_l0 == old_l1) aud_l <= old_l1;
 
-	old_r0 <= {rdata[14],rdata};
+	old_r0 <= (filter_notch_en ? filter_notch_r : paula_smp_r);
 	old_r1 <= old_r0;
 	if(old_r0 == old_r1) aud_r <= old_r1;
 end
 
+// Audio mixer
 reg [15:0] out_l, out_r;
+
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15],aud_l} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
-	tmp_r <= {aud_r[15],aud_r} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+	tmp_l <= {aud_l[15], aud_l[15:0]} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15], mt32_i2s_l[15:0]});
+	tmp_r <= {aud_r[15], aud_r[15:0]} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15], mt32_i2s_r[15:0]});
 
-	// clamp the output
-	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
-	out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
+	if (0) begin
+		out_l <= tmp_l[15:0]; // [16:1] if mixing
+		out_r <= tmp_r[15:0]; // [16:1] if mixing
+	end
+
+	else begin
+		// clamp the output
+		out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
+		out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
+	end
 end
 
 assign AUDIO_S = 1;
