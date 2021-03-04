@@ -1,6 +1,6 @@
 // stereo volume control
-// channel 1&2 --> left
-// channel 0&3 --> right
+// channel 0&3 --> left
+// channel 1&2 --> right
 
 
 module paula_audio_mixer (
@@ -73,8 +73,8 @@ paula_audio_volume sv3
 // channel muxing
 // !!! this is 28MHz clock !!!
 always @ (posedge clk) begin
-  rdatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
   ldatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
+  rdatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
 end
 
 

@@ -1,4 +1,5 @@
 //This module handles a single amiga audio channel. attached modes are not supported
+// 2020-09-07: pwm controlled volume gated sample output implemented by OKK
 
 module paula_audio_channel
 (
@@ -12,6 +13,7 @@ module paula_audio_channel
   input   [15:0] data,       //bus data input
   output  [6:0] volume,      //channel volume output
   output  [7:0] sample,      //channel sample output
+  output  [7:0] sample_okk,  //channel sample output (PWM gated by volumectr like suggested in the HW manual)
   output  intreq,          //interrupt request
   input  intpen,          //interrupt pending input
   output  reg dmareq,        //dma request
@@ -35,8 +37,12 @@ reg    [15:0] datbuf;      //audio data buffer
 reg    [2:0] audio_state;    //audio current state
 reg    [2:0] audio_next;     //audio next state
 
-wire  datwrite;        //data register is written
-//reg    volcntrld;        //not used
+wire   datwrite;        //data register is written
+
+reg    [5:0] volcnt;	   // pwm volume counter
+wire   volcount;	      // increase pwm volume counter
+reg    volcntrld;       // not used (BS! Oh yes it's used!!!)
+wire   volgate;		   // pwm pulse for gating sample output
 
 reg    pbufld1;        //load output sample from sample buffer
 
@@ -127,6 +133,21 @@ assign  AUDxIP = intpen;  //audio interrupt pending
 assign intreq = AUDxIR;    //audio interrupt request
 
 
+//volume counter
+always @(posedge clk) begin
+  if (clk7_en) begin
+    if (reset && cck) volcnt <= 6'h00;
+
+    else if (volcntrld && cck)    // load volume counter from audio volume register
+      volcnt[5:0] <= audvol[5:0];
+    else if (volcount && cck)     // volume counter count up
+      volcnt[5:0] <= volcnt[5:0] - 6'd1;
+  end
+end
+
+assign volcount = 1'd1;
+assign volgate = (volcnt < audvol);
+
 //period counter
 always @(posedge clk) begin
   if (clk7_en) begin
@@ -179,9 +200,11 @@ end
 //assign sample[7:0] = penhi ? datbuf[15:8] : datbuf[7:0];
 assign sample[7:0] = silence ? 8'b0 : (penhi ? datbuf[15:8] : datbuf[7:0]);
 
+// By: OKK (The correct way Paula really works!)
+assign sample_okk[7:0] = (silence | !volgate ? 8'b0 : (penhi ? datbuf[15:8] : datbuf[7:0])); // pwm volume gated sample output
+
 //volume output
 assign volume[6:0] = audvol[6:0];
-
 
 //dma request logic
 always @(posedge clk) begin
@@ -253,7 +276,7 @@ always @(*) begin
         dmasen = 1'b1;
         lencntrld = 1'b1;
         pbufld1 = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
       else if (AUDxDAT && !AUDxON && !AUDxIP)  //CPU driven audio playback
       begin
@@ -263,7 +286,7 @@ always @(*) begin
         dmasen = 1'b0;
         lencntrld = 1'b0;
         pbufld1 = 1'b1;
-        //volcntrld = 1'b1;
+        volcntrld = 1'b1;
       end
       else
       begin
@@ -273,7 +296,7 @@ always @(*) begin
         dmasen = 1'b0;
         lencntrld = 1'b0;
         pbufld1 = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
     end
 
@@ -294,7 +317,7 @@ always @(*) begin
         lencount = ~lenfin;
         pbufld1 = 1'b0;  //first data received, discard it since first data access is used to reload pointer
         percntrld = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
       else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
       begin
@@ -304,7 +327,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
       else
       begin
@@ -314,7 +337,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
     end
 
@@ -335,7 +358,7 @@ always @(*) begin
         lencount = ~lenfin;
         pbufld1 = 1'b1;  //new data has been just received so put it in the output buffer
         percntrld = 1'b1;
-        //volcntrld = 1'b1;
+        volcntrld = 1'b1;
       end
       else if (!AUDxON) //audio DMA has been switched off so go to IDLE state
       begin
@@ -345,7 +368,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
       else
       begin
@@ -355,7 +378,7 @@ always @(*) begin
         lencount = 1'b0;
         pbufld1 = 1'b0;
         percntrld = 1'b0;
-        //volcntrld = 1'b0;
+        volcntrld = 1'b0;
       end
     end
 
@@ -370,7 +393,7 @@ always @(*) begin
       lencntrld = lenfin & AUDxON & AUDxDAT;
       pbufld1 = 1'b0;
       penhi = 1'b1;
-      //volcntrld = 1'b0;
+      volcntrld = 1'b0;
 
       if (perfin) //if period counter expired output other sample from buffer
       begin
@@ -393,7 +416,7 @@ always @(*) begin
       lencount = ~lenfin & AUDxON & AUDxDAT;
       lencntrld = lenfin & AUDxON & AUDxDAT;
       penhi = 1'b0;
-      //volcntrld = 1'b0;
+      volcntrld = 1'b0;
 
       if (perfin && (AUDxON || !AUDxIP)) //period counter expired and audio DMA active
       begin
@@ -441,7 +464,7 @@ always @(*) begin
       penhi = 1'b0;
       percount = 1'b0;
       percntrld = 1'b0;
-      //volcntrld = 1'b0;
+      volcntrld = 1'b0;
     end
 
   endcase
