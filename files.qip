@@ -17,8 +17,6 @@ set_global_assignment -name VERILOG_FILE rtl/minimig_m68k_bridge.v
 set_global_assignment -name VERILOG_FILE rtl/minimig_bankmapper.v
 set_global_assignment -name VERILOG_FILE rtl/minimig.v
 set_global_assignment -name VERILOG_FILE rtl/cpu_wrapper.v
-set_global_assignment -name VERILOG_FILE rtl/audio/filter/float27_logic.v
-set_global_assignment -name VERILOG_FILE rtl/audio/filter/iir_1pole_filter.v
 set_global_assignment -name VERILOG_FILE hps_ext.v
 set_global_assignment -name SDC_FILE Minimig.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Minimig.sv

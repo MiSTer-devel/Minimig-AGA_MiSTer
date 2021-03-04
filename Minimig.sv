@@ -495,10 +495,8 @@ wire        _ram_bhe;      // sram upper byte select
 wire        _ram_ble;      // sram lower byte select
 wire        _ram_we;       // sram write enable
 wire        _ram_oe;       // sram output enable
-wire [14:0] ldata;         // left DAC data
-wire [14:0] rdata;         // right DAC data
-wire [9:0]  ldata_okk;     // left DAC data  (PWM vol version)
-wire [9:0]  rdata_okk;     // right DAC data (PWM vol version)
+wire [9:0]  ldata;         // left DAC data  (PWM vol version)
+wire [9:0]  rdata;         // right DAC data (PWM vol version)
 wire        vs;
 wire        hs;
 wire  [1:0] ar;
@@ -601,11 +599,8 @@ minimig minimig
 	.rtg_pal_wr   (FB_PAL_WR        ),
 
 	//audio
-	.ldata        (ldata            ), // left DAC data
-	.rdata        (rdata            ), // right DAC data
-	.ldata_okk    (ldata_okk        ), // 9bit
-	.rdata_okk    (rdata_okk        ), // 9bit
-
+	.ldata_okk    (ldata            ),
+	.rdata_okk    (rdata            ),
 	.aud_mix      (AUDIO_MIX        ),
 
 	//user i/o
@@ -947,61 +942,69 @@ end
 
 /* ------------------------------------------------------------------------------ */
 
-wire paula_new_en 	= 1'b1; //~LED_POWER[0];
-wire filter_notch_en 	= 1'b1;
+wire flt_en = status[47];
 
-// Audio filter for Paula
-wire [15:0] paula_smp_l = (paula_new_en ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
-wire [15:0] paula_smp_r = (paula_new_en ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
-
-wire [15:0] filter_notch_l;
-wire [15:0] filter_notch_r;
-
-iir_1pole_filter a500_notch_filter
-(
-	.clk		(clk_sys),
-	.clk_en		(clk7_en && cck),
-	.rst		(reset), 	// investigate using the correct reset signal!
-	.left_in	(paula_smp_l),
-	.right_in	(paula_smp_r),
-	.left_out	(filter_notch_l),
-	.right_out	(filter_notch_r)
-);
-
-// Audio clock domain crossing for Paula?!
 reg [15:0] aud_l, aud_r;
-
 always @(posedge CLK_AUDIO) begin
 	reg [15:0] old_l0, old_l1, old_r0, old_r1;
 
-	old_l0 <= (filter_notch_en ? filter_notch_l : paula_smp_l);
+	old_l0 <= {ldata[8:0], 7'b0};
 	old_l1 <= old_l0;
 	if(old_l0 == old_l1) aud_l <= old_l1;
 
-	old_r0 <= (filter_notch_en ? filter_notch_r : paula_smp_r);
+	old_r0 <= {rdata[8:0], 7'b0};
 	old_r1 <= old_r0;
 	if(old_r0 == old_r1) aud_r <= old_r1;
 end
 
-// Audio mixer
-reg [15:0] out_l, out_r;
+// 6.144MHz * 2
+reg flt_ce; 
+always @(posedge CLK_AUDIO) flt_ce <= ~flt_ce;
 
+// 48KHz
+reg sample_ce;
+always @(posedge CLK_AUDIO) begin
+	reg [8:0] div = 0;
+
+	div <= div + 1'd1;
+	sample_ce <= !div;
+end
+
+wire [15:0] flt_l, flt_r;
+
+// LPF 4400Hz, 1st order
+IIR_filter #(
+	.coeff_x(0.00624052),               // Base gain value for X. Float. Range: 0.0 ... 0.999(9)
+	.coeff_x0(1),                       // Gain scale factor for X0. Integer. Range -7 ... +7
+	.coeff_x1(0),                       // Gain scale factor for X1. Integer. Range -7 ... +7
+	.coeff_x2(0),                       // Gain scale factor for X2. Integer. Range -7 ... +7
+	.coeff_y0(-0.99551041628535508199), // Coefficient for Y0. Float. Range -3.999(9) ... 3.999(9)
+	.coeff_y1(0),                       // Coefficient for Y1. Float. Range -3.999(9) ... 3.999(9)
+	.coeff_y2(0)                        // Coefficient for Y2. Float. Range -3.999(9) ... 3.999(9)
+)
+filter (
+	.clk(CLK_AUDIO),
+	.reset(reset),
+
+	.ce(flt_ce),
+	.sample_ce(sample_ce), // desired output sample rate
+
+	.input_l(aud_l),
+	.input_r(aud_r),
+	.output_l(flt_l),
+	.output_r(flt_r)
+);
+
+reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15], aud_l[15:0]} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15], mt32_i2s_l[15:0]});
-	tmp_r <= {aud_r[15], aud_r[15:0]} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15], mt32_i2s_r[15:0]});
+	tmp_l <= (flt_en ? {flt_l[15],flt_l} : {aud_l[15],aud_l}) + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	tmp_r <= (flt_en ? {flt_r[15],flt_r} : {aud_r[15],aud_r}) + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
 
-	if (0) begin
-		out_l <= tmp_l[15:0]; // [16:1] if mixing
-		out_r <= tmp_r[15:0]; // [16:1] if mixing
-	end
-
-	else begin
-		// clamp the output
-		out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
-		out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
-	end
+	// clamp the output
+	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
+	out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
 end
 
 assign AUDIO_S = 1;
