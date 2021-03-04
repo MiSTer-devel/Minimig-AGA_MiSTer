@@ -121,7 +121,9 @@ module paula_audio
   output reg  [  4-1:0] dmal,           // dma request
   output reg  [  4-1:0] dmas,           // dma special
   output wire [ 15-1:0] ldata,          // left DAC data
-  output wire [ 15-1:0] rdata           // right DAC data
+  output wire [ 15-1:0] rdata,          // right DAC data
+  output wire [  9-1:0] ldata_okk,      // left DAC data  (PWM volume)
+  output wire [  9-1:0] rdata_okk       // right DAC data (PWM volume)
 );
 
 
@@ -139,6 +141,12 @@ wire  [  8-1:0] sample0;  //channel 0 audio sample
 wire  [  8-1:0] sample1;  //channel 1 audio sample
 wire  [  8-1:0] sample2;  //channel 2 audio sample
 wire  [  8-1:0] sample3;  //channel 3 audio sample
+
+wire  [  8-1:0] sample0_okk;  //channel 0 audio sample (PWM volume gated)
+wire  [  8-1:0] sample1_okk;  //channel 1 audio sample (PWM volume gated)
+wire  [  8-1:0] sample2_okk;  //channel 2 audio sample (PWM volume gated)
+wire  [  8-1:0] sample3_okk;  //channel 3 audio sample (PWM volume gated)
+
 wire  [  7-1:0] vol0;     //channel 0 volume
 wire  [  7-1:0] vol1;     //channel 1 volume
 wire  [  7-1:0] vol2;     //channel 2 volume
@@ -184,6 +192,7 @@ paula_audio_channel ach0
   .data(data_in),
   .volume(vol0),
   .sample(sample0),
+  .sample_okk(sample0_okk),
   .intreq(audint[0]),
   .intpen(audpen[0]),
   .dmareq(dmareq[0]),
@@ -204,6 +213,7 @@ paula_audio_channel ach1
   .data(data_in),
   .volume(vol1),
   .sample(sample1),
+  .sample_okk(sample1_okk),
   .intreq(audint[1]),
   .intpen(audpen[1]),
   .dmareq(dmareq[1]),
@@ -224,6 +234,7 @@ paula_audio_channel ach2
   .data(data_in),
   .volume(vol2),
   .sample(sample2),
+  .sample_okk(sample2_okk),
   .intreq(audint[2]),
   .intpen(audpen[2]),
   .dmareq(dmareq[2]),
@@ -244,6 +255,7 @@ paula_audio_channel ach3
   .data(data_in),
   .volume(vol3),
   .sample(sample3),
+  .sample_okk(sample3_okk),
   .intreq(audint[3]),
   .intpen(audpen[3]),
   .dmareq(dmareq[3]),
@@ -251,11 +263,14 @@ paula_audio_channel ach3
   .strhor(strhor)
 );
 
+// okk mixer
+assign ldata_okk = {sample0_okk[7], sample0_okk[7:0]} + {sample3_okk[7], sample3_okk[7:0]};
+assign rdata_okk = {sample1_okk[7], sample1_okk[7:0]} + {sample2_okk[7], sample2_okk[7:0]};
 
 // instantiate mixer
 paula_audio_mixer mix (
   .clk      (clk),
-  .clk7_en (clk7_en),
+  .clk7_en  (clk7_en),
   .sample0  (sample0),
   .sample1  (sample1),
   .sample2  (sample2),

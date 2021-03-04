@@ -104,7 +104,9 @@ module paula
 	output [15:0] IO_DOUT,
 	//audio outputs
 	output [14:0] ldata,			//left DAC data
-	output [14:0] rdata, 			//right DAC data
+	output [14:0] rdata, 		//right DAC data
+	output [8:0] ldata_okk,		//left DAC data (PWM volume)
+	output [8:0] rdata_okk, 	//right DAC data (PWM volume)
 	// system configuration
 	input	  [1:0] floppy_drives,	//number of extra floppy drives
 	// emulated Hard Disk Drive signals
@@ -312,7 +314,9 @@ paula_audio ad1
 	.dmal(audio_dmal),
 	.dmas(audio_dmas),
 	.ldata(ldata),
-	.rdata(rdata)	
+	.rdata(rdata),	
+	.ldata_okk(ldata_okk),
+	.rdata_okk(rdata_okk)	
 );
 
 

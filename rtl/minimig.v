@@ -248,6 +248,8 @@ module minimig
 	//audio
 	output [14:0] ldata,       // left DAC data
 	output [14:0] rdata,       // right DAC data
+	output [8:0]  ldata_okk,   // left DAC data  (PWM volume)
+	output [8:0]  rdata_okk,   // right DAC data (PWM volume)
 	output  [1:0] aud_mix,
 
 	//user i/o
@@ -538,6 +540,8 @@ paula PAULA1
 	.IO_DOUT(IO_DOUT_PAULA),
 	.ldata(ldata),
 	.rdata(rdata),
+	.ldata_okk(ldata_okk),
+	.rdata_okk(rdata_okk),
 
 	.floppy_drives(floppy_config[3:2]),
 	//ide stuff
