@@ -168,7 +168,7 @@ localparam CONF_STR1 = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-   ;",
+	"-;",
 	"I,",
 	"MT32-pi: "
 };
@@ -964,68 +964,44 @@ wire paula_pwm = status[50];
 wire [15:0] paula_smp_l = (paula_pwm ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
 wire [15:0] paula_smp_r = (paula_pwm ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
 
-reg [15:0] aud_l, aud_r;
-always @(posedge CLK_AUDIO) begin
-	reg [15:0] old_l0, old_l1, old_r0, old_r1;
-
-	old_l0 <= paula_smp_l;
-	old_l1 <= old_l0;
-	if(old_l0 == old_l1) aud_l <= old_l1;
-
-	old_r0 <= paula_smp_r;
-	old_r1 <= old_r0;
-	if(old_r0 == old_r1) aud_r <= old_r1;
-end
-
-reg flt_ce;    // 768000 * 2
-reg sample_ce; // 48KHz
-always @(posedge CLK_AUDIO) begin
-	reg [8:0] div = 0;
-	
-	div <= div + 1'd1;
-
-	flt_ce    <= !div[3:0];
-	sample_ce <= !div;
-end
-
 // LPF 4400Hz, 1st order, 6db/oct
 wire [15:0] lpf4400_l, lpf4400_r;
 IIR_filter #(0) lpf4400
 (
-	.clk(CLK_AUDIO),
+	.clk(clk_sys),
 	.reset(reset),
 
-	.ce(flt_ce),
-	.sample_ce(sample_ce),
+	.ce(clk7_en | clk7n_en),
+	.sample_ce(1),
 
-	.cx (40'd38883915971),
+	.cx (40'd4304835800),
 	.cx0(1),
-	.cy0(-2022986),
+	.cy0(-2088941),
 	
-	.input_l(aud_l),
-	.input_r(aud_r),
+	.input_l(paula_smp_l),
+	.input_r(paula_smp_r),
 	.output_l(lpf4400_l),
 	.output_r(lpf4400_r)
 );
 
-wire [15:0] audm_l = aud_1200 ? aud_l : lpf4400_l;
-wire [15:0] audm_r = aud_1200 ? aud_r : lpf4400_r;
+wire [15:0] audm_l = aud_1200 ? paula_smp_l : lpf4400_l;
+wire [15:0] audm_r = aud_1200 ? paula_smp_r : lpf4400_r;
 
 // LPF 3275Hz, 2nd order, 12db/oct
 wire [15:0] lpf3275_l, lpf3275_r;
 IIR_filter #(0) lpf3275
 (
-	.clk(CLK_AUDIO),
+	.clk(clk_sys),
 	.reset(reset),
 
-	.ce(flt_ce),
-	.sample_ce(sample_ce),
+	.ce(clk7_en | clk7n_en),
+	.sample_ce(1),
 
-	.cx (40'd677784524),
+	.cx (40'd8078735),
 	.cx0(2),
 	.cx1(1),
-	.cy0(-4114848),
-	.cy1(2019173),
+	.cy0(-4185700),
+	.cy1(2088566),
 
 	.input_l(audm_l),
 	.input_r(audm_r),
@@ -1033,12 +1009,25 @@ IIR_filter #(0) lpf3275
 	.output_r(lpf3275_r)
 );
 
+reg [15:0] aud_l, aud_r;
+always @(posedge CLK_AUDIO) begin
+	reg [15:0] old_l0, old_l1, old_r0, old_r1;
+
+	old_l0 <= flt_en ? lpf3275_l : audm_l;
+	old_l1 <= old_l0;
+	if(old_l0 == old_l1) aud_l <= old_l1;
+
+	old_r0 <= flt_en ? lpf3275_r : audm_r;
+	old_r1 <= old_r0;
+	if(old_r0 == old_r1) aud_r <= old_r1;
+end
+
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= (flt_en ? {lpf3275_l[15],lpf3275_l} : {audm_l[15],audm_l}) + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
-	tmp_r <= (flt_en ? {lpf3275_r[15],lpf3275_r} : {audm_r[15],audm_r}) + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+	tmp_l <= {aud_l[15],aud_l} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	tmp_r <= {aud_r[15],aud_r} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
 
 	// clamp the output
 	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
