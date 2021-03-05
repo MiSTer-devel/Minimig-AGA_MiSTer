@@ -428,16 +428,7 @@ wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscon
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 
-// power led control
-reg [5:0] led_cnt;
-reg led_dim;
-
-always @ (posedge clk) begin
-  led_cnt <= led_cnt + 1'd1;
-  led_dim <= |led_cnt[5:2];
-end
-
-assign pwr_led = ~(_led & led_dim);
+assign pwr_led = ~_led;
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
 assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};

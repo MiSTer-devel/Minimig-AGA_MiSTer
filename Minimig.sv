@@ -168,7 +168,7 @@ localparam CONF_STR1 = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"- ;",
+	"-   ;",
 	"I,",
 	"MT32-pi: "
 };
@@ -495,8 +495,10 @@ wire        _ram_bhe;      // sram upper byte select
 wire        _ram_ble;      // sram lower byte select
 wire        _ram_we;       // sram write enable
 wire        _ram_oe;       // sram output enable
-wire [9:0]  ldata;         // left DAC data  (PWM vol version)
-wire [9:0]  rdata;         // right DAC data (PWM vol version)
+wire [14:0] ldata;         // left DAC data
+wire [14:0] rdata;         // right DAC data
+wire [9:0]  ldata_okk;     // left DAC data  (PWM vol version)
+wire [9:0]  rdata_okk;     // right DAC data (PWM vol version)
 wire        vs;
 wire        hs;
 wire  [1:0] ar;
@@ -557,7 +559,7 @@ minimig minimig
 	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
 	.kbd_mouse_type (kbd_mouse_type ), // type of data
 	.kms_level    (kbd_mouse_level  ),
-	.pwr_led      (LED_POWER[0]     ), // power led
+	.pwr_led      (pwr_led          ), // power led
 	.fdd_led      (LED_USER         ),
 	.hdd_led      (LED_DISK[0]      ),
 	.rtc          (RTC              ),
@@ -599,8 +601,11 @@ minimig minimig
 	.rtg_pal_wr   (FB_PAL_WR        ),
 
 	//audio
-	.ldata_okk    (ldata            ),
-	.rdata_okk    (rdata            ),
+	.ldata        (ldata            ), // left DAC data
+	.rdata        (rdata            ), // right DAC data
+	.ldata_okk    (ldata_okk        ), // 9bit
+	.rdata_okk    (rdata_okk        ), // 9bit
+
 	.aud_mix      (AUDIO_MIX        ),
 
 	//user i/o
@@ -609,6 +614,18 @@ minimig minimig
 	.memcfg       (memcfg           ), // memory config
 	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 );
+
+// power led control
+wire pwr_led;
+reg [5:0] led_cnt;
+reg led_dim;
+
+always @ (posedge clk_sys) begin
+  led_cnt <= led_cnt + 1'd1;
+  led_dim <= |led_cnt[5:2];
+end
+
+assign LED_POWER[0] = pwr_led | ~led_dim;
 
 assign FB_FORCE_BLANK = 0;
 
@@ -643,22 +660,20 @@ wire [7:0] R,G,B;
 video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 (
 	.*,
-	
 	.hq2x(fx==1),
-
-	.VGA_DE(vga_de),
-	.VGA_R(R),
-	.VGA_G(G),
-	.VGA_B(B),
-
 	.ce_pix(ce_out),
+
 	.R(r),
 	.G(g),
 	.B(b),
 	.HSync(~hs),
 	.VSync(~vs),
 	.HBlank(~hde),
-	.VBlank(~vde)
+	.VBlank(~vde),
+
+	.VGA_R(R),
+	.VGA_G(G),
+	.VGA_B(B)
 );
 
 assign CLK_VIDEO = clk_114;
@@ -667,12 +682,12 @@ assign VGA_R     = mt32_lcd ? {{2{mt32_lcd_pix}},R[7:2]} : R;
 assign VGA_G     = mt32_lcd ? {{2{mt32_lcd_pix}},G[7:2]} : G;
 assign VGA_B     = mt32_lcd ? {{2{mt32_lcd_pix}},B[7:2]} : B;
 
-wire vga_de;
 wire [12:0] arx,ary;
 video_freak video_freak
 (
 	.*,
-	.VGA_DE_IN(vga_de),
+	.VGA_DE_IN(VGA_DE),
+	.VGA_DE(),
 	.ARX((!ar) ? 12'd4 : (ar - 1'd1)),
 	.ARY((!ar) ? 12'd3 : 12'd0),
 	.VIDEO_ARX(arx),
@@ -942,65 +957,88 @@ end
 
 /* ------------------------------------------------------------------------------ */
 
-wire flt_en = status[47];
+wire flt_en    = ~status[48] ? pwr_led : status[47];
+wire aud_1200  = status[49];
+wire paula_pwm = status[50];
+
+wire [15:0] paula_smp_l = (paula_pwm ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
+wire [15:0] paula_smp_r = (paula_pwm ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
 
 reg [15:0] aud_l, aud_r;
 always @(posedge CLK_AUDIO) begin
 	reg [15:0] old_l0, old_l1, old_r0, old_r1;
 
-	old_l0 <= {ldata[8:0], 7'b0};
+	old_l0 <= paula_smp_l;
 	old_l1 <= old_l0;
 	if(old_l0 == old_l1) aud_l <= old_l1;
 
-	old_r0 <= {rdata[8:0], 7'b0};
+	old_r0 <= paula_smp_r;
 	old_r1 <= old_r0;
 	if(old_r0 == old_r1) aud_r <= old_r1;
 end
 
-// 6.144MHz * 2
-reg flt_ce; 
-always @(posedge CLK_AUDIO) flt_ce <= ~flt_ce;
-
-// 48KHz
-reg sample_ce;
+reg flt_ce;    // 768000 * 2
+reg sample_ce; // 48KHz
 always @(posedge CLK_AUDIO) begin
 	reg [8:0] div = 0;
-
+	
 	div <= div + 1'd1;
+
+	flt_ce    <= !div[3:0];
 	sample_ce <= !div;
 end
 
-wire [15:0] flt_l, flt_r;
-
-// LPF 4400Hz, 1st order
-IIR_filter #(
-	.coeff_x(0.00624052),               // Base gain value for X. Float. Range: 0.0 ... 0.999(9)
-	.coeff_x0(1),                       // Gain scale factor for X0. Integer. Range -7 ... +7
-	.coeff_x1(0),                       // Gain scale factor for X1. Integer. Range -7 ... +7
-	.coeff_x2(0),                       // Gain scale factor for X2. Integer. Range -7 ... +7
-	.coeff_y0(-0.99551041628535508199), // Coefficient for Y0. Float. Range -3.999(9) ... 3.999(9)
-	.coeff_y1(0),                       // Coefficient for Y1. Float. Range -3.999(9) ... 3.999(9)
-	.coeff_y2(0)                        // Coefficient for Y2. Float. Range -3.999(9) ... 3.999(9)
-)
-filter (
+// LPF 4400Hz, 1st order, 6db/oct
+wire [15:0] lpf4400_l, lpf4400_r;
+IIR_filter #(0) lpf4400
+(
 	.clk(CLK_AUDIO),
 	.reset(reset),
 
 	.ce(flt_ce),
-	.sample_ce(sample_ce), // desired output sample rate
+	.sample_ce(sample_ce),
 
+	.cx (40'd38883915971),
+	.cx0(1),
+	.cy0(-2022986),
+	
 	.input_l(aud_l),
 	.input_r(aud_r),
-	.output_l(flt_l),
-	.output_r(flt_r)
+	.output_l(lpf4400_l),
+	.output_r(lpf4400_r)
+);
+
+wire [15:0] audm_l = aud_1200 ? aud_l : lpf4400_l;
+wire [15:0] audm_r = aud_1200 ? aud_r : lpf4400_r;
+
+// LPF 3275Hz, 2nd order, 12db/oct
+wire [15:0] lpf3275_l, lpf3275_r;
+IIR_filter #(0) lpf3275
+(
+	.clk(CLK_AUDIO),
+	.reset(reset),
+
+	.ce(flt_ce),
+	.sample_ce(sample_ce),
+
+	.cx (40'd677784524),
+	.cx0(2),
+	.cx1(1),
+	.cy0(-4114848),
+	.cy1(2019173),
+
+	.input_l(audm_l),
+	.input_r(audm_r),
+	.output_l(lpf3275_l),
+	.output_r(lpf3275_r)
 );
 
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= (flt_en ? {flt_l[15],flt_l} : {aud_l[15],aud_l}) + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
-	tmp_r <= (flt_en ? {flt_r[15],flt_r} : {aud_r[15],aud_r}) + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+	tmp_l <= (flt_en ? {lpf3275_l[15],lpf3275_l} : {audm_l[15],audm_l}) + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	tmp_r <= (flt_en ? {lpf3275_r[15],lpf3275_r} : {audm_r[15],audm_r}) + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
 
 	// clamp the output
 	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
