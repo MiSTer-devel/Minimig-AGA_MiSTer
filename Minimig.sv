@@ -987,7 +987,7 @@ IIR_filter #(0) lpf4400
 wire [15:0] audm_l = aud_1200 ? paula_smp_l : lpf4400_l;
 wire [15:0] audm_r = aud_1200 ? paula_smp_r : lpf4400_r;
 
-// LPF 3275Hz, 2nd order, 12db/oct
+// LPF 3000Hz 1st + 3400Hz 1st
 wire [15:0] lpf3275_l, lpf3275_r;
 IIR_filter #(0) lpf3275
 (
@@ -997,11 +997,11 @@ IIR_filter #(0) lpf3275
 	.ce(clk7_en | clk7n_en),
 	.sample_ce(1),
 
-	.cx (40'd8078735),
+	.cx (40'd8536629),
 	.cx0(2),
 	.cx1(1),
-	.cy0(-4185700),
-	.cy1(2088566),
+	.cy0(-4182432),
+	.cy1(2085297),
 
 	.input_l(audm_l),
 	.input_r(audm_r),
