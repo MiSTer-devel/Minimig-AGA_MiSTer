@@ -73,14 +73,13 @@ always @(posedge CLK_VIDEO) begin
 	arx <= ARX;
 	ary <= ARY;
 
-	vsize <= vcrop;
+	vsize <= vcrop ? vcrop : vtot;
 	
 	mul_start <= 0;
 
 	if(!vcrop || !ary || !arx) begin
 		arxo  <= arx;
 		aryo  <= ary;
-		vsize <= vtot;
 	end
 	else if (vcalc) begin
 		if(~mul_start & ~mul_run) begin
