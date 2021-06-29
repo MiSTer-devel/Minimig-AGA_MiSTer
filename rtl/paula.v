@@ -95,7 +95,6 @@ module paula
 	output        _wprot,					//disk is write-protected
 	output        index,          // disk index pulse
 	output        fdd_led,				//disk activity LED, active when DMA is on
-	output        hdd_led,
 	//flash drive host controller interface	(SPI)
 	input         IO_ENA,
 	input         IO_STROBE,
@@ -109,16 +108,6 @@ module paula
 	output [8:0] rdata_okk, 	//right DAC data (PWM volume)
 	// system configuration
 	input	  [1:0] floppy_drives,	//number of extra floppy drives
-	// emulated Hard Disk Drive signals
-	input	        hdd_cmd_req,      // command request
-	input	        hdd_dat_req,     // data request
-	output  [2:0] hdd_addr,     // task file register address
-	output [15:0] hdd_data_out,  // data bus output
-	input  [15:0] hdd_data_in,   // data bus input
-	output        hdd_wr,         // task file write enable
-	output        hdd_status_wr,      // drive status write enable
-	output        hdd_data_wr,      // data port write enable
-	output        hdd_data_rd,        // data port read enable
 	// fifo / track display
 	output  [7:0] trackdisp,
 	output [13:0] secdisp,
@@ -279,18 +268,8 @@ paula_floppy pf1
 	.IO_DIN(IO_DIN),
 	.IO_DOUT(IO_DOUT),
 	.fdd_led(fdd_led),
-	.hdd_led(hdd_led),
 	.floppy_drives(floppy_drives),
 
-	.hdd_cmd_req(hdd_cmd_req),
-	.hdd_dat_req(hdd_dat_req),
-	.hdd_addr(hdd_addr),
-	.hdd_data_out(hdd_data_out),
-	.hdd_data_in(hdd_data_in),
-	.hdd_wr(hdd_wr),
-	.hdd_status_wr(hdd_status_wr),
-	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd),
 	// fifo / track display
 	.trackdisp(trackdisp),
 	.secdisp(secdisp),

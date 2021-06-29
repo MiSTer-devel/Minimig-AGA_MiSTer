@@ -57,6 +57,7 @@ module minimig_m68k_bridge
 	input  [15:0] cpudatain,
 	output [15:0] data_out,      // internal data bus output
 	input  [15:0] data_in,       // internal data bus input
+	output        rd_cyc,        // early rd signal can be used to delay DTACK
 
 	// UserIO interface
 	input         _cpu_reset,
@@ -159,6 +160,7 @@ wire   enable = ~l_as & ~l_dtack & ~cck;
 assign rd = enable & lr_w;
 assign hwr = enable & ~lr_w & ~l_uds;
 assign lwr = enable & ~lr_w & ~l_lds;
+assign rd_cyc = ~l_as & lr_w;
 
 //blitter slow down signalling, asserted whenever CPU is missing bus access to chip ram, slow ram and custom registers 
 assign bls = dbs & ~l_as & l_dtack;

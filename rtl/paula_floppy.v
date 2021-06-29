@@ -78,7 +78,8 @@ module paula_floppy
 	input  [15:0] data_in,			// bus data in
 	output [15:0] data_out,			// bus data out
 	output        dmal,				// dma request output
-	output        dmas,				// dma special output 
+	output        dmas,				// dma special output
+
 	//disk control signals from cia and user
 	input	        _step,				// step heads of disk
 	input	        direc,				// step heads direction
@@ -104,18 +105,7 @@ module paula_floppy
 	output reg [15:0] IO_DOUT,
 
 	output        fdd_led,			//disk activity LED, active when DMA is on
-	output        hdd_led,
 	input	[1:0]   floppy_drives,	//floppy drive number
-
-	input	        hdd_cmd_req,		//HDD requests service (command register has been written)
-	input	        hdd_dat_req,		//HDD requests data tansfer
-	output  [2:0] hdd_addr,			//task file register address
-	output [15:0] hdd_data_out,	//data from HDD to HDC
-	input	 [15:0] hdd_data_in,		//data from HDC to HDD
-	output        hdd_wr,			//task file register write strobe
-	output        hdd_status_wr,	//status register write strobe (MCU->HDD)
-	output        hdd_data_wr,		//data write strobe
-	output        hdd_data_rd,		//data read strobe
 
 	// fifo / track display
 	output  [7:0] trackdisp,
@@ -137,21 +127,21 @@ reg  [15:0] dsklen;			//disk dma length, direction and enable
 reg   [6:0] dsktrack[3:0];	//track select
 wire  [7:0] track;
 
-reg         dmaon;					//disk dma read/write enabled
-wire        lenzero;				//disk length counter is zero
-reg         trackwr;				//write track (command to host)
-reg         trackrd;				//read track (command to host)
+reg         dmaon;			//disk dma read/write enabled
+wire        lenzero;			//disk length counter is zero
+reg         trackwr;			//write track (command to host)
+reg         trackrd;			//read track (command to host)
 
-wire        _dsktrack0;				//disk heads are over track 0
-wire        dsktrack79;       //disk heads are over track 0
+wire        _dsktrack0;		//disk heads are over track 0
+wire        dsktrack79;    //disk heads are over track 0
 
 wire [15:0] fifo_in;			//fifo data in
 wire [15:0] fifo_out; 		//fifo data out
-wire        fifo_wr;					//fifo write enable
-reg         fifo_wr_del;				//fifo write enable delayed
-wire        fifo_rd;					//fifo read enable
-wire        fifo_empty;				//fifo is empty
-wire        fifo_full;				//fifo is full
+wire        fifo_wr;			//fifo write enable
+reg         fifo_wr_del;	//fifo write enable delayed
+wire        fifo_rd;			//fifo read enable
+wire        fifo_empty;		//fifo is empty
+wire        fifo_full;		//fifo is full
 wire [11:0] fifo_cnt;
 
 wire [15:0] dskbytr;			
@@ -159,13 +149,13 @@ wire [15:0] dskdatr;
 
 // JB:
 wire        fifo_reset;
-reg         dmaen;					//dsklen dma enable
+reg         dmaen;			//dsklen dma enable
 reg  [15:0] wr_fifo_status;
 
-reg   [3:0] disk_present;		//disk present status
+reg   [3:0] disk_present;	//disk present status
 reg   [3:0] disk_writable;	//disk write access status
 
-wire        _selx;					//active whenever any drive is selected
+wire        _selx;			//active whenever any drive is selected
 wire  [1:0] sel;				//selected drive number
 
 reg   [1:0] drives;			//number of currently connected floppy drives (1-4)
@@ -176,15 +166,11 @@ reg   [8:0] step_ena_cnt;
 wire        step_ena;
 
 // drive motor control
-reg  [3:0] _sel_del;     // deleyed drive select signals for edge detection
-reg  [3:0] motor_on;     // drive motor on
+reg  [3:0] _sel_del;       // deleyed drive select signals for edge detection
+reg  [3:0] motor_on;       // drive motor on
 
 //decoded commands
-reg        cmd_fdd;				//HPS accesses floppy drive buffer
-reg        cmd_hdd_rd;			//HPS reads task file registers		
-reg        cmd_hdd_wr;			//HPS writes task file registers
-reg        cmd_hdd_data_wr;	//HPS writes data to HDD buffer
-reg        cmd_hdd_data_rd;	//HPS reads data from HDD buffer
+reg        cmd_fdd;			//HPS accesses floppy drive buffer
 
 assign     trackdisp = track;
 assign     secdisp = dsklen[13:0];
@@ -193,24 +179,13 @@ assign     floppy_fwr = fifo_wr;
 assign     floppy_frd = fifo_rd;
 
 reg  [1:0] cmd_cnt;
-wire       body = &cmd_cnt;
 
-reg  [2:0] data_cnt; //trnsmitted words counter (0-7) used for transfer of IDE task file registers
-
-reg stb7, stb28;
+reg stb7;
 always @(posedge clk or negedge IO_ENA) begin
-	if(~IO_ENA) {IO_WAIT,stb7,stb28} <= 0;
+	if(~IO_ENA) {IO_WAIT,stb7} <= 0;
 	else begin
-		stb28 <= 0;
 		if(IO_STROBE) begin
-			if(body & (cmd_hdd_data_wr | cmd_hdd_data_rd)) begin
-				rx_data <=IO_DIN;
-				IO_DOUT <=tx_data;
-				stb28   <= 1;
-			end
-			else begin
-				IO_WAIT <= 1;
-			end
+			IO_WAIT <= 1;
 		end
 		if(clk7_en & IO_WAIT) begin
 			if(~stb7) begin
@@ -230,60 +205,33 @@ reg [15:0] rx_data;	//received data from HPS
 reg [15:0] tx_data;	//data to be send to HPS
 
 always @(posedge clk or negedge IO_ENA) begin
-	if (~IO_ENA) {cmd_cnt, data_cnt} <= 0;
-	else if (clk7_en & stb7) begin
-		if(!body) cmd_cnt <= cmd_cnt + 1'd1;
-		else data_cnt <= data_cnt + 1'd1;
-	end
+	if (~IO_ENA) cmd_cnt <= 0;
+	else if (clk7_en & stb7 & ~&cmd_cnt) cmd_cnt <= cmd_cnt + 1'd1;
 end
 
 //---------------------------------------------------------------------------------------------------------------------
 
-//HDD interface
-assign hdd_addr      = cmd_hdd_rd ? data_cnt : cmd_hdd_wr ? data_cnt : 3'd0;
-assign hdd_data_out  = rx_data;
-assign hdd_wr        = stb7 && body && cmd_hdd_wr;
-assign hdd_status_wr = stb7 && !cmd_cnt && rx_data[15:12]==4'b1111;
-assign hdd_data_wr   = stb28 && cmd_hdd_data_wr;
-assign hdd_data_rd   = stb28 && cmd_hdd_data_rd;
-assign hdd_led       = hdd_dat_req|hdd_cmd_req;
-
 always @(posedge clk) begin
 	if (clk7_en) begin
-		if (reset | ~IO_ENA) begin
-			cmd_fdd         <= 0;
-			cmd_hdd_rd      <= 0;
-			cmd_hdd_wr      <= 0;
-			cmd_hdd_data_wr <= 0;
-			cmd_hdd_data_rd <= 0;
-		end
-		else if (stb7 && !cmd_cnt) begin
-			cmd_fdd         <= (rx_data[15:13]==3'b000 );
-			cmd_hdd_rd      <= (rx_data[15:12]==4'b1000);
-			cmd_hdd_wr      <= (rx_data[15:12]==4'b1001);
-			cmd_hdd_data_wr <= (rx_data[15:12]==4'b1010);
-			cmd_hdd_data_rd <= (rx_data[15:12]==4'b1011);
-		end
+		if (reset | ~IO_ENA)       cmd_fdd <= 0;
+		else if (stb7 && !cmd_cnt) cmd_fdd <= (rx_data[15:13]==3'b000 );
 	end
 end
 
 
 //transmit data multiplexer
 always @(*) begin
-	casex ({cmd_cnt, cmd_fdd, trackrd, trackwr, cmd_hdd_rd | cmd_hdd_data_rd})
+	casex ({cmd_cnt, cmd_fdd, trackrd, trackwr})
 		
-		// hdd/fdd request status
-		'b00xxxx: tx_data = {sel[1:0],drives[1:0],hdd_dat_req,hdd_cmd_req,trackwr,trackrd&~fifo_cnt[10],track[7:0]};
+		// fdd request status
+		'b00xxx: tx_data = {sel[1:0],drives[1:0],2'b00,trackwr,trackrd&~fifo_cnt[10],track[7:0]};
 
 		// fdd data
-		'b01xxxx: tx_data = dsksync[15:0];
-		'b10x1xx: tx_data = {dmaen,dsklen[14:0]};
-		'b10x01x: tx_data = wr_fifo_status;
-		'b1111xx: tx_data = {dmaen,dsklen[14:0]};
-		'b11101x: tx_data = fifo_out;
-
-		// hdd data
-		'b110xx1: tx_data = hdd_data_in;
+		'b01xxx: tx_data = dsksync[15:0];
+		'b10x1x: tx_data = {dmaen,dsklen[14:0]};
+		'b10x01: tx_data = wr_fifo_status;
+		'b1111x: tx_data = {dmaen,dsklen[14:0]};
+		'b11101: tx_data = fifo_out;
 		
 		// no data
 		 default: tx_data = 0;
@@ -513,7 +461,7 @@ assign buswr = (reg_address_in[8:1]==DSKDAT[8:1]);
 assign fifo_in[15:0] = trackrd ? rx_data[15:0] : data_in[15:0];
 
 //data word transfer strobe
-wire stbdat = cmd_fdd && stb7 && body;
+wire stbdat = cmd_fdd && stb7 && &cmd_cnt;
 
 //fifo write control
 assign fifo_wr = (trackrdok & stbdat & ~lenzero) | (buswr & dmaon);

@@ -258,13 +258,12 @@ module minimig
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
 
-	// fifo / track display
-	output  [7:0] trackdisp,
-	output [13:0] secdisp,
-	output 	     floppy_fwr,
-	output 	     floppy_frd,
-	output 	     hd_fwr,
-	output 	     hd_frd
+	output  [5:0] ide_req,
+	input   [4:0] ide_address,
+	input         ide_write,
+	input  [15:0] ide_writedata,
+	input         ide_read,
+	output [15:0] ide_readdata
 );
 
 //--------------------------------------------------------------------------------------
@@ -300,6 +299,7 @@ wire        ram_rd;				//ram read enable
 wire        ram_hwr;				//ram high byte write enable 
 wire        ram_lwr;				//ram low byte write enable 
 wire        cpu_rd; 				//cpu read enable
+wire        rd_cyc;
 wire        cpu_hwr;				//cpu high byte write enable
 wire        cpu_lwr;				//cpu low byte write enable
 
@@ -396,16 +396,6 @@ wire        sel_ide;				//select IDE drive registers
 wire        sel_gayle;			//select GAYLE control registers
 wire        gayle_irq;			//interrupt request
 wire        gayle_nrdy;       // HDD fifo is not ready for reading
-//emulated hard disk drive signals
-wire        hdd_cmd_req;		//hard disk controller has written command register and requests processing
-wire        hdd_dat_req;		//hard disk controller requests data from emulated hard disk drive
-wire  [2:0] hdd_addr;			//emulated hard disk drive register address bus
-wire [15:0] hdd_data_out;		//data output port of emulated hard disk drive
-wire [15:0] hdd_data_in;		//data input port of emulated hard disk drive
-wire        hdd_wr;				//register write strobe
-wire        hdd_status_wr;		//status register write strobe
-wire        hdd_data_wr;		//data port write strobe
-wire        hdd_data_rd;		//data port read strobe
 
 wire	[7:0] bank;					//memory bank select
 
@@ -523,7 +513,6 @@ paula PAULA1
 	._wprot(_wprot),
 	.index(index),
 	.fdd_led(fdd_led),
-	.hdd_led(hdd_led),
 	.IO_ENA(IO_FPGA),
 	.IO_STROBE(IO_STROBE),
 	.IO_WAIT(IO_WAIT_PAULA),
@@ -534,22 +523,7 @@ paula PAULA1
 	.ldata_okk(ldata_okk),
 	.rdata_okk(rdata_okk),
 
-	.floppy_drives(floppy_config[3:2]),
-	//ide stuff
-	.hdd_cmd_req(hdd_cmd_req),	
-	.hdd_dat_req(hdd_dat_req),
-	.hdd_addr(hdd_addr),
-	.hdd_data_out(hdd_data_out),
-	.hdd_data_in(hdd_data_in),
-	.hdd_wr(hdd_wr),
-	.hdd_status_wr(hdd_status_wr),
-	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd),
-	// fifo / track display
-	.trackdisp(trackdisp),
-	.secdisp(secdisp),
-	.floppy_fwr (floppy_fwr),
-	.floppy_frd (floppy_frd)
+	.floppy_drives(floppy_config[3:2])
 );
 
 wire [2:0] cachecfg_pre;
@@ -717,7 +691,7 @@ minimig_m68k_bridge CPU1
 	.dbr(dbr),
 	.dbs(dbs),
 	.xbs(xbs),
-	.nrdy(gayle_nrdy),
+	.nrdy(gayle_nrdy & rd_cyc),
 	.bls(bls),
 	.memory_config(memory_config[3:0]),
 	._as(_cpu_as),
@@ -726,6 +700,7 @@ minimig_m68k_bridge CPU1
 	.r_w(cpu_r_w),
 	._dtack(_cpu_dtack),
 	.rd(cpu_rd),
+	.rd_cyc(rd_cyc),
 	.hwr(cpu_hwr),
 	.lwr(cpu_lwr),
 	.address(cpu_address),
@@ -874,19 +849,16 @@ gayle GAYLE1
 	.sel_gayle(sel_gayle),
 	.irq(gayle_irq),
 	.nrdy(gayle_nrdy),
-	.hdd_ena(ide_config[4:1]),
+	//.hdd_ena(ide_config[4:1]),
 
-	.hdd_cmd_req(hdd_cmd_req),
-	.hdd_dat_req(hdd_dat_req),
-	.hdd_data_in(hdd_data_in),
-	.hdd_addr(hdd_addr),
-	.hdd_data_out(hdd_data_out),
-	.hdd_wr(hdd_wr),
-	.hdd_status_wr(hdd_status_wr),
-	.hdd_data_wr(hdd_data_wr),
-	.hdd_data_rd(hdd_data_rd),
-	.hd_fwr(hd_fwr),
-	.hd_frd(hd_frd)
+	.ide_req(ide_req),
+	.ide_address(ide_address),
+	.ide_write(ide_write),
+	.ide_writedata(ide_writedata),
+	.ide_read(ide_read),
+	.ide_readdata(ide_readdata),
+
+	.led(hdd_led)
 );
 	
 

@@ -29,6 +29,13 @@ module hps_ext
 	output     [15:0] io_din,
 	input      [15:0] fpga_dout,
 
+	input      [15:0] ide_din,
+	output reg [15:0] ide_dout,
+	output reg  [4:0] ide_addr,
+	output reg        ide_rd,
+	output reg        ide_wr,
+	input       [5:0] ide_req,
+
 	output reg  [2:0] mouse_buttons,
 	output reg        kbd_mouse_level,
 	output reg  [1:0] kbd_mouse_type,
@@ -57,8 +64,10 @@ assign io_strobe = EXT_BUS[33];
 assign io_uio = EXT_BUS[34];
 assign io_fpga = EXT_BUS[35];
 
-localparam EXT_CMD_MIN = UIO_GET_VMODE;
-localparam EXT_CMD_MAX = UIO_SET_VPOS;
+localparam EXT_CMD_MIN  = UIO_GET_VMODE;
+localparam EXT_CMD_MAX  = UIO_SET_VPOS;
+localparam EXT_CMD_MIN2 = 'h61;
+localparam EXT_CMD_MAX2 = 'h63;
 
 localparam UIO_MOUSE     = 'h04;
 localparam UIO_KEYBOARD  = 'h05;
@@ -72,13 +81,18 @@ reg  [4:0] byte_cnt;
 
 always@(posedge clk_sys) begin
 	reg [15:0] cmd;
+	reg ide_cs = 0;
 
 	sset <= 0;
+
+	{ide_rd, ide_wr} <= 0;
+	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
 
 	if(~io_uio) begin
 		dout_en <= 0;
 		io_dout <= 0;
 		byte_cnt <= 0;
+		ide_cs <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -86,9 +100,16 @@ always@(posedge clk_sys) begin
 		io_dout <= 0;
 		if(~&byte_cnt) byte_cnt <= byte_cnt + 1'd1;
 
+		ide_dout <= io_din;
+		if(byte_cnt == 1) begin
+			ide_addr <= {io_din[8],io_din[3:0]};
+			ide_cs   <= (io_din[15:9] == 7'b1111000);
+		end
+
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
-			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX);
+			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
+			if(io_din == 'h63) io_dout <= {4'hE, 2'b00, 2'b00, 2'b00, ide_req};
 		end else begin
 			case(cmd)
 			
@@ -148,6 +169,15 @@ always@(posedge clk_sys) begin
 						3: svbl_t <= io_din[11:0];
 						4: svbl_b <= io_din[11:0];
 					endcase
+					
+				'h61: if(byte_cnt >= 3 && ide_cs) begin
+							ide_wr <= 1;
+						end
+
+				'h62: if(byte_cnt >= 3 && ide_cs) begin
+							io_dout <= ide_din;
+							ide_rd <= 1;
+						end
 			endcase
 		end
 	end

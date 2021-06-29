@@ -40,8 +40,9 @@ module emu
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
+	output        HDMI_FREEZE,
 
-`ifdef USE_FB
+`ifdef MISTER_FB
 	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
 	// FB_FORMAT:
 	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
@@ -59,6 +60,7 @@ module emu
 	input         FB_LL,
 	output        FB_FORCE_BLANK,
 
+`ifdef MISTER_FB_PALETTE
 	// Palette control for 8bit modes.
 	// Ignored for other video modes.
 	output        FB_PAL_CLK,
@@ -66,6 +68,7 @@ module emu
 	output [23:0] FB_PAL_DOUT,
 	input  [23:0] FB_PAL_DIN,
 	output        FB_PAL_WR,
+`endif
 `endif
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
@@ -97,7 +100,6 @@ module emu
 	output        SD_CS,
 	input         SD_CD,
 
-`ifdef USE_DDRAM
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
 	output        DDRAM_CLK,
@@ -110,9 +112,7 @@ module emu
 	output [63:0] DDRAM_DIN,
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
-`endif
 
-`ifdef USE_SDRAM
 	//SDRAM interface with lower latency
 	output        SDRAM_CLK,
 	output        SDRAM_CKE,
@@ -125,10 +125,10 @@ module emu
 	output        SDRAM_nCAS,
 	output        SDRAM_nRAS,
 	output        SDRAM_nWE,
-`endif
 
-`ifdef DUAL_SDRAM
+`ifdef MISTER_DUAL_SDRAM
 	//Secondary SDRAM
+	//Set all output SDRAM_* signals to Z ASAP if SDRAM2_EN is 0
 	input         SDRAM2_EN,
 	output        SDRAM2_CLK,
 	output [12:0] SDRAM2_A,
@@ -161,21 +161,28 @@ module emu
 assign ADC_BUS  = 'Z;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign BUTTONS = 0;
+assign HDMI_FREEZE = 0;
 
 `include "build_id.v" 
-localparam CONF_STR1 = {
+localparam CONF_STR = {
 	"Minimig;UART115200,MIDI;",
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"-;",
+	"- ;",
 	"I,",
-	"MT32-pi: "
-};
-
-localparam CONF_STR2 =
-{
-	";",
+	"MT32-pi: SoundFont #0,",
+	"MT32-pi: SoundFont #1,",
+	"MT32-pi: SoundFont #2,",
+	"MT32-pi: SoundFont #3,",
+	"MT32-pi: SoundFont #4,",
+	"MT32-pi: SoundFont #5,",
+	"MT32-pi: SoundFont #6,",
+	"MT32-pi: SoundFont #7,",
+	"MT32-pi: MT-32 v1,",
+	"MT32-pi: MT-32 v2,",
+	"MT32-pi: CM-32L,",
+	"MT32-pi: Unknown mode;",
 	"V,v",`BUILD_DATE
 };
 
@@ -205,16 +212,15 @@ wire [21:0] gamma_bus;
 
 wire  [7:0] uart_mode;
 
-hps_io #(.STRLEN(($size(CONF_STR1) + $size(mt32_curmode) + $size(CONF_STR2))>>3)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS({HPS_BUS[45:42],ce_pix,HPS_BUS[40:0]}),
 
-	.conf_str({CONF_STR1, mt32_curmode, CONF_STR2}),
 	.status(status),
 	.status_menumask({mt32_cfg,mt32_available}),
 	.info_req(mt32_info_req),
-	.info(1),
+	.info(mt32_info_disp),
 
 	.joystick_0(JOY0),
 	.joystick_1(JOY1),
@@ -233,6 +239,13 @@ hps_io #(.STRLEN(($size(CONF_STR1) + $size(mt32_curmode) + $size(CONF_STR2))>>3)
 
 	.EXT_BUS(EXT_BUS)
 );
+
+wire [15:0] ide_din;
+wire [15:0] ide_dout;
+wire  [4:0] ide_addr;
+wire        ide_rd;
+wire        ide_wr;
+wire  [5:0] ide_req;
 
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*);
@@ -612,7 +625,14 @@ minimig minimig
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config
 	.memcfg       (memcfg           ), // memory config
-	.bootrom      (bootrom          )  // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
+	.bootrom      (bootrom          ), // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
+
+	.ide_req      (ide_req          ),
+	.ide_address  (ide_addr         ),
+	.ide_write    (ide_wr           ),
+	.ide_writedata(ide_dout         ),
+	.ide_read     (ide_rd           ),
+	.ide_readdata (ide_din          )
 );
 
 // power led control
@@ -662,6 +682,7 @@ video_mixer #(.LINE_LENGTH(2000), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 	.*,
 	.hq2x(fx==1),
 	.ce_pix(ce_out),
+	.freeze_sync(),
 
 	.R(r),
 	.G(g),
@@ -909,21 +930,21 @@ mt32pi mt32pi
 	.midi_tx(midi_tx | mt32_mute)
 );
 
-wire [87:0] mt32_curmode = {(mt32_mode == 'hA2)                  ? {"SoundFont ", {5'b00110, mt32_sf[2:0]}} :
-                            (mt32_mode == 'hA1 && mt32_rom == 0) ?  "   MT-32 v1" :
-                            (mt32_mode == 'hA1 && mt32_rom == 1) ?  "   MT-32 v2" :
-                            (mt32_mode == 'hA1 && mt32_rom == 2) ?  "     CM-32L" :
-                                                                    "    Unknown" };
-
 wire  [4:0] mt32_cfg = (mt32_mode == 'hA2) ? {mt32_sf[2:0],  2'b10} :
                        (mt32_mode == 'hA1) ? {mt32_rom[1:0], 2'b01} : 5'd0;
 
 reg mt32_info_req;
+reg [3:0] mt32_info_disp;
 always @(posedge clk_sys) begin
 	reg old_mode;
 
 	old_mode <= mt32_newmode;
 	mt32_info_req <= (old_mode ^ mt32_newmode) && (mt32_info == 1);
+	
+	mt32_info_disp <= (mt32_mode == 'hA2) ? (4'd1 + mt32_sf[2:0]) :
+                     (mt32_mode == 'hA1 && mt32_rom == 0) ?  4'd9 :
+                     (mt32_mode == 'hA1 && mt32_rom == 1) ?  4'd10 :
+                     (mt32_mode == 'hA1 && mt32_rom == 2) ?  4'd11 : 4'd12;
 end
 
 reg mt32_lcd_on;
