@@ -2,7 +2,7 @@
 // FX68K
 //
 // M68000 cycle accurate, fully synchronous
-// Copyright (c) 2018 by Jorge Cwik
+// Copyright (c) 2018,2021 by Jorge Cwik
 // 
 // TODO:
 // - Everything except bus retry already implemented.
@@ -11,6 +11,13 @@
 // altera message_off 10230
 
 `timescale 1 ns / 1 ns
+
+//`define USE_E_CLKEN
+/*
+	Define USE_E_CLKEN will output two signals that generate a single cycle pulse just before the raising and falling edges of E.
+	Use this when you need to generate changes that must be simultaneous with these edges.
+	Most systems don't need this. Note that these signals are not registered. 
+ */
 
 // Define this to run a self contained compilation test build
 // `define FX68K_TEST
@@ -141,6 +148,12 @@ module fx68k(
 
 	output eRWn, output ASn, output LDSn, output UDSn,
 	output logic E, output VMAn,	
+	
+`ifdef USE_E_CLKEN
+	// Next cycle would be raising/falling edge of E output
+	output E_PosClkEn, E_NegClkEn,
+`endif	
+
 	output FC0, output FC1, output FC2,
 	output BGn,
 	output oRESETn, output oHALTEDn,
@@ -463,6 +476,11 @@ module fx68k(
 	
 	// Internal stop just one cycle before E falling edge
 	wire xVma = ~rVma & (eCntr == 8);
+	
+`ifdef USE_E_CLKEN
+	assign E_PosClkEn = (Clks.enPhi2 & (eCntr == 5));
+	assign E_NegClkEn = (Clks.enPhi2 & (eCntr == 9));
+`endif
 	
 	always_ff @( posedge Clks.clk) begin
 		if( Clks.pwrUp) begin
@@ -1780,9 +1798,11 @@ endmodule
 // Also checks for illegal opcode and priv violation
 
 // This is one of the slowest part of the processor.
-// But no need to optimize or pipeline because the result is not needed until at least 4 cycles.
+// But no need to optimize or pipeline because the result for a1-a3 is not needed until at least 4 cycles.
 // IR updated at the least one microinstruction earlier.
 // Just need to configure the timing analizer correctly.
+// isPriv, isIllegal might be needed as soon as two cycles later
+
 
 module uaddrDecode( 
 	input [15:0] opcode,

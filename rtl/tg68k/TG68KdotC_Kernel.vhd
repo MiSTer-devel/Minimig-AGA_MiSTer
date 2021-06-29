@@ -546,7 +546,7 @@ PROCESS (long_start, reg_QB, data_write_tmp, exec, data_read, data_write_mux, me
 			END IF;
 		END IF;
 		IF exec(mem_byte)='1' THEN	--movep
-			data_write(7 downto 0) <= data_write_tmp(15 downto 8);
+			data_write <= data_write_tmp(15 downto 8) & data_write_tmp(15 downto 8);
 		END IF;
 	END PROCESS;
 	
