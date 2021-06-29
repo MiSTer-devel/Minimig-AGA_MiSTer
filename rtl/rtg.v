@@ -60,14 +60,14 @@ wire enable = aen & (rd | wr);
 reg [23:0] rpal;
 
 // decoder
-wire r_ahi = enable && (rs[3:1]==3'h0) && (rs[10]==0);
-wire r_alo = enable && (rs[3:1]==3'h1) && (rs[10]==0);
-wire r_fmt = enable && (rs[3:1]==3'h2) && (rs[10]==0);
-wire r_ena = enable && (rs[3:1]==3'h3) && (rs[10]==0);
-wire r_hs  = enable && (rs[3:1]==3'h4) && (rs[10]==0);
-wire r_vs  = enable && (rs[3:1]==3'h5) && (rs[10]==0);
-wire r_str = enable && (rs[3:1]==3'h6) && (rs[10]==0);
-wire r_id  = enable && (rs[3:1]==3'h7) && (rs[10]==0);
+wire r_ahi = enable && (rs[3:1]==3'h0) && (rs[10:8]==1);
+wire r_alo = enable && (rs[3:1]==3'h1) && (rs[10:8]==1);
+wire r_fmt = enable && (rs[3:1]==3'h2) && (rs[10:8]==1);
+wire r_ena = enable && (rs[3:1]==3'h3) && (rs[10:8]==1);
+wire r_hs  = enable && (rs[3:1]==3'h4) && (rs[10:8]==1);
+wire r_vs  = enable && (rs[3:1]==3'h5) && (rs[10:8]==1);
+wire r_str = enable && (rs[3:1]==3'h6) && (rs[10:8]==1);
+wire r_id  = enable && (rs[3:1]==3'h7) && (rs[10:8]==1);
 
 wire r_pal = enable && (rs[10]==1);
    
@@ -92,7 +92,7 @@ always @(posedge clk)
     end
   end
 
-always @(*) begin
+always @(posedge clk) begin
    data_out<=16'b0;
    if (r_ahi) data_out<=rtg_base[31:16];
    if (r_alo) data_out<=rtg_base[15:0];
