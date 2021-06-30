@@ -20,7 +20,8 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 * kickstart : 1.2 - 3.1 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
 * floppy disks : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
-* hard disks : 1-2 hard disk images (supports whole disk images, partition images, using whole SD card and using SD card partition)
+* Up to 4 IDE devices
+* CDROM
 * video standard : PAL / NTSC
 * supports almost all OCS/ECS/AGA custom resolutions
 * RTG with up to 1920x1080 and 1600x1200 resolutions
@@ -69,6 +70,10 @@ New video modes will appear in ScreenMode preference. For more screen modes use 
 **Note: RTG outputs to HDMI primarily as it uses scaler.**
 If you want to see RTG video on VGA output, then set vga_scaler=1 in MiSTer.ini.
 RTG is available only for 68020 CPU.
+
+### IDE and CDROM
+By default up to 2 IDE devices are supported. For Secondary Master/Slave devices, you have to install either IDEFix97 (shareware, WB3.1/3.9) or AtapiMagic (freeware, WB 3.1.4/3.2).
+Removable/CD mode allows to hot swap CDs. Currently audio portion of CD isn't implemented (although playback commands should be accepted).
 
 ### MIDI
 Supported internal MiSTer emulation and external devices such as MT32-pi or generic MIDI though USER_IO.
