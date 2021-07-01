@@ -75,6 +75,18 @@ RTG is available only for 68020 CPU.
 By default up to 2 IDE devices are supported. For Secondary Master/Slave devices, you have to install either IDEFix97 (shareware, WB3.1/3.9) or AtapiMagic (freeware, WB 3.1.4/3.2).
 Removable/CD mode allows to hot swap CDs. Currently audio portion of CD isn't implemented (although playback commands should be accepted).
 
+### How to make a new HDF (HDD Image)
+1) Create an empty HDF file of required size on PC (ideally fill it by 0 if possible).
+2) Copy it to MiSTer
+3) Mount it as HDF on OSD, and also mount some adf with HDToolBox (for example install3.2.adf from OS3.2)
+4) Boot that ADF
+5) go to HDToolBox, then Change Drive Type -> Define New -> Read Cobfiguration. Then Ok, Ok. Then Save Changes to Drive.
+6) Press Partition Drive. Optionally delete MDH1 partition, expand MDH0 to full drive. Rename MDH0 to standard DH0 name, mark it as Bootable. Then OK, then Save Changes to Drive.
+7) Exit, reboot.
+8) After booting you will see DH0:Uninitialized. Format it from Workbench menu. You can use Quick format option.
+9) Install required OS.
+
+
 ### MIDI
 Supported internal MiSTer emulation and external devices such as MT32-pi or generic MIDI though USER_IO.
 For MIDI-IN support through USER_IO set UART mode to None in OSD settings.
