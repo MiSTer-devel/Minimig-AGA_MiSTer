@@ -306,11 +306,11 @@ amiga_clk amiga_clk
 reg cpu_ph1;
 reg cpu_ph2;
 reg ram_cs;
+reg cyc;
 
 always @(posedge clk_114) begin
 	reg [3:0] div;
 	reg       c1d;
-	reg       en;
 
 	div <= div + 1'd1;
 	 
@@ -318,12 +318,12 @@ always @(posedge clk_114) begin
 	if (~c1d & c1) div <= 3;
 	
 	if (~cpu_rst) begin
-		en <= 0;
+		cyc <= 0;
 		cpu_ph1 <= 0;
 		cpu_ph2 <= 0;
 	end
 	else begin
-		en <= !div[1:0];
+		cyc <= !div[1:0];
 		if (div[1] & ~div[0]) begin
 			cpu_ph1 <= 0;
 			cpu_ph2 <= 0;
@@ -334,7 +334,7 @@ always @(posedge clk_114) begin
 		end
 	end
 
-	ram_cs <= ~(ram_ready & en & cpucfg[1]) & ram_sel;
+	ram_cs <= ~(ram_ready & cyc & cpucfg[1]) & ram_sel;
 end
 
 
@@ -382,6 +382,14 @@ cpu_wrapper cpu_wrapper
 	.chip_rw      (chip_rw         ),
 	.chip_dtack   (chip_dtack      ),
 	.chip_ipl     (chip_ipl        ),
+
+	.fastchip_dout   (fastchip_dout   ),
+	.fastchip_sel    (fastchip_sel    ),
+	.fastchip_lds    (fastchip_lds    ),
+	.fastchip_uds    (fastchip_uds    ),
+	.fastchip_rnw    (fastchip_rnw    ),
+	.fastchip_selack (fastchip_selack ),
+	.fastchip_ready  (fastchip_ready  ),
 
 	.cpucfg       (cpucfg          ),
 	.cachecfg     (cachecfg        ),
@@ -478,6 +486,34 @@ ddram_ctrl ram2
 	.ramshared    (ramshared       ),
 	.ramready     (ram_ready2      )
 );
+
+wire [15:0] fastchip_dout;
+wire        fastchip_sel;
+wire        fastchip_lds;
+wire        fastchip_uds;
+wire        fastchip_rnw;
+wire        fastchip_selack;
+wire        fastchip_ready;
+
+fastchip fastchip
+(
+	.clk          (clk_114         ),
+	.cyc          (cyc             ),
+	.clk_sys      (clk_sys         ),
+
+	.reset        (~cpu_rst        ),
+	.sel          (fastchip_sel    ),
+	.sel_ack      (fastchip_selack ),
+	.ready        (fastchip_ready  ),
+
+	.addr         ({chip_addr,1'b0}),
+	.din          (chip_din        ),
+	.dout         (fastchip_dout   ),
+	.lds          (~fastchip_lds   ),
+	.uds          (~fastchip_uds   ),
+	.rnw          (fastchip_rnw    )
+);
+
 
 ////////////////////////////  UART  //////////////////////////////////// 
 

@@ -47,6 +47,14 @@ module cpu_wrapper
 	output reg        chip_rw,
 	input             chip_dtack,
 	input       [2:0] chip_ipl,
+	
+	input      [15:0] fastchip_dout,
+	output            fastchip_sel,
+	output            fastchip_lds,
+	output            fastchip_uds,
+	output            fastchip_rnw,
+	input             fastchip_selack,
+	input             fastchip_ready,
 
 	output            ramsel,
 	output     [28:1] ramaddr,
@@ -62,8 +70,8 @@ module cpu_wrapper
 	output reg [31:0] nmi_addr
 );
 
-assign ramsel = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
-assign ramshared = sel_dd;
+assign ramsel       = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
+assign ramshared    = sel_dd;
 
 // NMI
 always @(posedge clk) nmi_addr <= vbr + 32'h7c;
@@ -112,9 +120,14 @@ assign ramaddr[18]    =    sel_dd   | (sel_kicklower & bootrom) | cpu_addr[18];
 assign ramaddr[17:16] = {2{sel_dd}} | cpu_addr[17:16];
 assign ramaddr[15:1]  = cpu_addr[15:1];
 
+assign fastchip_sel = cpu_req & !cpu_addr[31:24];
+assign fastchip_lds = lds_in;
+assign fastchip_uds = uds_in;
+assign fastchip_rnw = wr;
+
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel ? ramdat : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire [15:0] cpu_din = ramsel ? ramdat : fastchip_selack ? fastchip_dout : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
 reg         wr;
 reg         uds_in;
 reg         lds_in;
@@ -150,7 +163,7 @@ always @* begin
 		uds_in    = uds_o;
 		lds_in    = lds_o;
 		reset_out = reset_out_o;
-		chip_as   = ramsel | as_o;
+		chip_as   = ramsel | fastchip_selack | as_o;
 		chip_rw   = wr_o;
 		chip_uds  = uds_o;
 		chip_lds  = lds_o;
@@ -183,7 +196,7 @@ cpu_inst_p
 (
   .clk(clk),
   .nreset(reset),
-  .clkena_in(~cpu_req | chipready | ramready),
+  .clkena_in(~cpu_req | chipready | ramready | fastchip_ready),
   .data_in(cpu_din),
   .ipl(cpu_ipl),
   .ipl_autovector(1),
@@ -225,7 +238,7 @@ fx68k cpu_inst_o
 	.ASn(as_o),
 	.LDSn(lds_o),
 	.UDSn(uds_o),
-	.DTACKn(ramsel ? ~ramready : chip_dtack),
+	.DTACKn(ramsel ? ~ramready : fastchip_selack ? ~fastchip_ready : chip_dtack),
 
 	.FC0(fc_o[0]),
 	.FC1(fc_o[1]),
@@ -353,7 +366,7 @@ end
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel;
+	chipreq <= cpu_req & ~ramsel & ~fastchip_selack;
 	cpu_ipl <= ipl_i;
 end
 
