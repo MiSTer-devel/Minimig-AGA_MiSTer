@@ -55,7 +55,7 @@ module userio
 	output reg  [2:0] scanline,
 	output reg  [1:0] ar,
 	output reg  [1:0] blver,
-	output reg  [4:0] ide_config,
+	output reg  [5:0] ide_config,
 	output reg  [1:0] cpu_config,
 	output reg  [2:0] cache_config,
 	output reg        bootrom =0, // do the A1000 bootrom magic in gary.v
@@ -329,13 +329,13 @@ assign _mthird = ~mouse_btn[2];
 assign host_bs = 2'b11;
 
 reg [7:0] t_memory_config = 8'b0_0_00_01_01;
-reg [4:0] t_ide_config = 0;
+reg [5:0] t_ide_config = 0;
 reg [4:0] t_cpu_config = 0;
 reg [4:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk) begin
-	reg [4:0] ide_cfg = 0;
+	reg [5:0] ide_cfg = 0;
 	reg [1:0] cpu_cfg = 0;
 
 	if (reset) begin
@@ -403,7 +403,7 @@ always @(posedge clk) begin
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
-				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[4:0];
+				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[5:0];
 				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
 				if (aud_sel)          aud_mix <= IO_DIN[1:0];
 			end

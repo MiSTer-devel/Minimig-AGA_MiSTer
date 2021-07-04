@@ -257,7 +257,10 @@ module minimig
 	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
+	output        ide_ena,
 
+	output        ide_fast,
+	input         ide_ext_irq,
 	output  [5:0] ide_req,
 	input   [4:0] ide_address,
 	input         ide_write,
@@ -323,7 +326,7 @@ wire        sel_reg;				//chip register select
 wire        sel_rtc;
 wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
-wire        sel_rtg;			//rtg select
+wire        sel_rtg;			   //rtg select
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
@@ -389,7 +392,7 @@ wire        hires;				//hires signal from Denise for interpolation filter enable
 wire  [7:0] memory_config;		//memory configuration
 wire  [3:0] floppy_config;		//floppy drives configuration (drive number and speed)
 wire  [4:0] chipset_config;	//chipset features selection
-wire  [4:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
+wire  [5:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
 wire        sel_ide;				//select IDE drive registers
@@ -426,6 +429,8 @@ assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
 
+assign ide_ena  = ide_config[0];
+assign ide_fast = ~ide_config[5] & cpucfg[1];
 
 //--------------------------------------------------------------------------------------
 
@@ -494,7 +499,7 @@ paula PAULA1
 	.sof(sof),
 	.strhor(strhor_paula),
 	.vblint(vbl_int),
-	.int2(int2|gayle_irq),
+	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)),
 	.int3(int3),
 	.int6(int6),
 	._ipl(_iplx),
@@ -809,7 +814,7 @@ gary GARY1
 	.dbs(dbs),
 	.xbs(xbs),
 	.memory_config(memory_config[3:0]),
-	.hdc_ena(ide_config[0]), // Gayle decoding enable	
+	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -837,19 +842,16 @@ gary GARY1
 gayle GAYLE1
 (
 	.clk(clk),
-	.clk7_en(clk7_en),
 	.reset(reset),
-	.address_in(cpu_address_out),
+	.addr(cpu_address_out),
 	.data_in(cpu_data_out),
 	.data_out(gayle_data_out),
 	.rd(cpu_rd),
-	.hwr(cpu_hwr),
-	.lwr(cpu_lwr),
+	.wr(cpu_hwr),
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.irq(gayle_irq),
 	.nrdy(gayle_nrdy),
-	//.hdd_ena(ide_config[4:1]),
 
 	.ide_req(ide_req),
 	.ide_address(ide_address),
@@ -860,7 +862,6 @@ gayle GAYLE1
 
 	.led(hdd_led)
 );
-	
 
 //instantiate system control
 minimig_syscontrol CONTROL1 

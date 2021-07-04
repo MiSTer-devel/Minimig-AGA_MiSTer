@@ -248,10 +248,10 @@ wire        ide_wr;
 wire  [5:0] ide_req;
 
 wire [35:0] EXT_BUS;
-hps_ext hps_ext(.*);
+hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
 
 assign LED_POWER[1] = 1;
-assign LED_DISK[1]  = 1;
+assign LED_DISK     = {1'b1, ide_fast ? ide_f_led : ide_c_led};
 
 assign VGA_SCALER   = FB_EN;
 
@@ -303,10 +303,11 @@ amiga_clk amiga_clk
 );
 
 
-reg cpu_ph1;
-reg cpu_ph2;
-reg ram_cs;
-reg cyc;
+wire cpu_type = cpucfg[1];
+reg  cpu_ph1;
+reg  cpu_ph2;
+reg  ram_cs;
+reg  cyc;
 
 always @(posedge clk_114) begin
 	reg [3:0] div;
@@ -334,7 +335,7 @@ always @(posedge clk_114) begin
 		end
 	end
 
-	ram_cs <= ~(ram_ready & cyc & cpucfg[1]) & ram_sel;
+	ram_cs <= ~(ram_ready & cyc & cpu_type) & ram_sel;
 end
 
 
@@ -390,6 +391,7 @@ cpu_wrapper cpu_wrapper
 	.fastchip_rnw    (fastchip_rnw    ),
 	.fastchip_selack (fastchip_selack ),
 	.fastchip_ready  (fastchip_ready  ),
+	.fastchip_lw     (fastchip_lw     ),
 
 	.cpucfg       (cpucfg          ),
 	.cachecfg     (cachecfg        ),
@@ -494,24 +496,44 @@ wire        fastchip_uds;
 wire        fastchip_rnw;
 wire        fastchip_selack;
 wire        fastchip_ready;
+wire        fastchip_lw;
+
+wire        ide_fast;
+wire        ide_f_led;
+wire        ide_f_irq;
+wire  [5:0] ide_f_req;
+wire [15:0] ide_f_readdata;
 
 fastchip fastchip
 (
-	.clk          (clk_114         ),
-	.cyc          (cyc             ),
-	.clk_sys      (clk_sys         ),
+	.clk          (clk_114           ),
+	.cyc          (cyc               ),
+	.clk_sys      (clk_sys           ),
 
-	.reset        (~cpu_rst        ),
-	.sel          (fastchip_sel    ),
-	.sel_ack      (fastchip_selack ),
-	.ready        (fastchip_ready  ),
+	.reset        (~cpu_rst | ~cpu_nrst_out ),
+	.sel          (fastchip_sel      ),
+	.sel_ack      (fastchip_selack   ),
+	.ready        (fastchip_ready    ),
 
-	.addr         ({chip_addr,1'b0}),
-	.din          (chip_din        ),
-	.dout         (fastchip_dout   ),
-	.lds          (~fastchip_lds   ),
-	.uds          (~fastchip_uds   ),
-	.rnw          (fastchip_rnw    )
+	.addr         ({chip_addr,1'b0}  ),
+	.din          (chip_din          ),
+	.dout         (fastchip_dout     ),
+	.lds          (~fastchip_lds     ),
+	.uds          (~fastchip_uds     ),
+	.rnw          (fastchip_rnw      ),
+	.longword     (fastchip_lw       ),
+
+	.ide_ena      (ide_ena & ide_fast),
+	.ide_irq      (ide_f_irq         ),
+
+	.ide_req      (ide_f_req         ),
+	.ide_address  (ide_addr          ),
+	.ide_write    (ide_wr            ),
+	.ide_writedata(ide_dout          ),
+	.ide_read     (ide_rd            ),
+	.ide_readdata (ide_f_readdata    ),
+
+	.ide_led      (ide_f_led         )
 );
 
 
@@ -551,6 +573,11 @@ wire [9:0]  rdata_okk;     // right DAC data (PWM vol version)
 wire        vs;
 wire        hs;
 wire  [1:0] ar;
+
+wire  [5:0] ide_c_req;
+wire [15:0] ide_c_readdata;
+wire        ide_c_led;
+wire        ide_ena;
 
 minimig minimig
 (
@@ -610,7 +637,7 @@ minimig minimig
 	.kms_level    (kbd_mouse_level  ),
 	.pwr_led      (pwr_led          ), // power led
 	.fdd_led      (LED_USER         ),
-	.hdd_led      (LED_DISK[0]      ),
+	.hdd_led      (ide_c_led        ),
 	.rtc          (RTC              ),
 
 	//host controller interface (SPI)
@@ -663,12 +690,15 @@ minimig minimig
 	.memcfg       (memcfg           ), // memory config
 	.bootrom      (bootrom          ), // bootrom mode. Needed here to tell tg68k to also mirror the 256k Kickstart 
 
-	.ide_req      (ide_req          ),
+	.ide_fast     (ide_fast         ),
+	.ide_ext_irq  (ide_f_irq        ),
+	.ide_ena      (ide_ena          ),
+	.ide_req      (ide_c_req        ),
 	.ide_address  (ide_addr         ),
 	.ide_write    (ide_wr           ),
 	.ide_writedata(ide_dout         ),
 	.ide_read     (ide_rd           ),
-	.ide_readdata (ide_din          )
+	.ide_readdata (ide_c_readdata   )
 );
 
 // power led control

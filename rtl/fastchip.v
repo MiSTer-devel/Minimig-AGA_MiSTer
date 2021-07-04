@@ -34,12 +34,24 @@ module fastchip
 	output [15:0] dout,
 	input         lds,
 	input         uds,
-	input         rnw
+	input         rnw,
+	input         longword,
+
+	input         ide_ena,
+	output        ide_irq,
+	output  [5:0] ide_req,
+	input   [4:0] ide_address,
+	input         ide_write,
+	input  [15:0] ide_writedata,
+	input         ide_read,
+	output [15:0] ide_readdata,
+
+	output        ide_led
 );
 
-assign sel_ack = sel_akiko;
-assign ready   = sel_akiko;
-assign dout    = akiko_dout;
+assign sel_ack = sel_akiko  | sel_ide | sel_gayle;
+assign ready   = sel_akiko  | ide_ready;
+assign dout    = akiko_dout | ide_dout;
 
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
@@ -53,6 +65,43 @@ akiko akiko
 	.addr(addr[5:1]),
 	.din(din),
 	.dout(akiko_dout)
+);
+
+wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	
+wire sel_gayle = ide_ena && sel && addr[23:12] == 12'b1101_1110_0001;  //GAYLE registers at $DE1000 - $DE1FFF
+
+reg ide_ack;
+always @(posedge clk_sys) ide_ack <= (sel_ide | sel_gayle);
+
+wire ide_ready = ide_ack & (sel_ide | sel_gayle) & ~(ide_nrdy & rnw);
+
+wire [15:0] ide_dout;
+wire        ide_nrdy;
+
+gayle gayle
+(
+	.clk(clk_sys),
+	.reset(reset),
+
+	.addr(addr[23:1]),
+	.data_in(din),
+	.data_out(ide_dout),
+	.rd(rnw & uds),
+	.wr(~rnw & uds),
+	.sel_ide(sel_ide),
+	.sel_gayle(sel_gayle),
+	.irq(ide_irq),
+	.nrdy(ide_nrdy),
+	.longword(longword),
+
+	.ide_req(ide_req),
+	.ide_address(ide_address),
+	.ide_write(ide_write),
+	.ide_writedata(ide_writedata),
+	.ide_read(ide_read),
+	.ide_readdata(ide_readdata),
+	
+	.led(ide_led)
 );
 
 endmodule
