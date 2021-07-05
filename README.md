@@ -81,7 +81,7 @@ Removable/CD mode allows to hot swap CDs. Currently audio portion of CD isn't im
 2) Copy it to MiSTer
 3) Mount it as HDF on OSD, and also mount some adf with HDToolBox (for example install3.2.adf from OS3.2)
 4) Boot that ADF
-5) go to HDToolBox, then Change Drive Type -> Define New -> Read Cobfiguration. Then Ok, Ok. Then Save Changes to Drive.
+5) go to HDToolBox, then Change Drive Type -> Define New -> Read Configuration. Then Ok, Ok. Then Save Changes to Drive.
 6) Press Partition Drive. Optionally delete MDH1 partition, expand MDH0 to full drive. Rename MDH0 to standard DH0 name, mark it as Bootable. Then OK, then Save Changes to Drive.
 7) Exit, reboot.
 8) After booting you will see DH0:Uninitialized. Format it from Workbench menu. You can use Quick format option.
