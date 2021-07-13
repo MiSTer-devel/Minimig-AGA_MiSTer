@@ -33,82 +33,84 @@
 module rtg
 (
 	input             clk,           // clock
-	input             clk7_en,
 	input             aen,           // adress enable
 	input             rd,            // read enable
 	input             wr,            // write enable
 	input             reset,         // reset
-	input      [11:0] rs,            // register select (address)
+	input      [11:1] rs,            // register select (address)
+	output            ready,
 
 	input      [15:0] data_in,       // bus data in
-	output reg [15:0] data_out,      // bus data out
+	output     [15:0] data_out,      // bus data out
 
-	output reg        rtg_ena,
-	output reg [11:0] rtg_hsize,
-	output reg [11:0] rtg_vsize,
-	output reg [4:0]  rtg_format,
-	output reg [31:0] rtg_base,
-	output reg [13:0] rtg_stride,
-	output            rtg_pal_clk,
-	output     [23:0] rtg_pal_dw,
-	input      [23:0] rtg_pal_dr,
-	output     [7:0]  rtg_pal_a,
-	output            rtg_pal_wr
+	output reg        ena,
+	output reg [11:0] hsize,
+	output reg [11:0] vsize,
+	output reg [4:0]  format,
+	output reg [31:0] base,
+	output reg [13:0] stride,
+	output            pal_clk,
+	output     [23:0] pal_dw,
+	input      [23:0] pal_dr,
+	output     [7:0]  pal_a,
+	output            pal_wr
 );
 
-wire enable = aen & (rd | wr);
 reg [23:0] rpal;
 
-// decoder
-wire r_ahi = enable && (rs[3:1]==3'h0) && (rs[10:8]==1);
-wire r_alo = enable && (rs[3:1]==3'h1) && (rs[10:8]==1);
-wire r_fmt = enable && (rs[3:1]==3'h2) && (rs[10:8]==1);
-wire r_ena = enable && (rs[3:1]==3'h3) && (rs[10:8]==1);
-wire r_hs  = enable && (rs[3:1]==3'h4) && (rs[10:8]==1);
-wire r_vs  = enable && (rs[3:1]==3'h5) && (rs[10:8]==1);
-wire r_str = enable && (rs[3:1]==3'h6) && (rs[10:8]==1);
-wire r_id  = enable && (rs[3:1]==3'h7) && (rs[10:8]==1);
+wire r_en  = aen && (rs[11:4]  == 'h10);
+wire r_pal = aen && (rs[11:10] == 1);
 
-wire r_pal = enable && (rs[10]==1);
-   
 // writing of output port
-always @(posedge clk)
-  if (clk7_en) begin
-    if (reset)
-      rtg_ena<=0;
-    else if (wr) begin
-       if (r_ahi) rtg_base[31:16]<=data_in;
-       if (r_alo) rtg_base[15:0] <=data_in;
-       if (r_fmt) rtg_format<=data_in[4:0];
-       if (r_ena) rtg_ena<=data_in[0];
-       if (r_hs ) rtg_hsize <=data_in[11:0];
-       if (r_vs ) rtg_vsize <=data_in[11:0];
-       if (r_str) rtg_stride<=data_in[13:0];
-
-       if (r_pal) begin
-          if (!rs[1] & wr) rpal[23:16]<=data_in[7:0];
-                       else rpal[15:0]<=data_in;
-       end
-    end
-  end
-
 always @(posedge clk) begin
-   data_out<=16'b0;
-   if (r_ahi) data_out<=rtg_base[31:16];
-   if (r_alo) data_out<=rtg_base[15:0];
-   if (r_fmt) data_out[4:0]<=rtg_format;
-   if (r_ena) data_out[0]<=rtg_ena;
-   if (r_hs)  data_out[11:0]<=rtg_hsize;
-   if (r_vs)  data_out[11:0]<=rtg_vsize;
-   if (r_str) data_out[13:0]<=rtg_stride;
-   if (r_id)  data_out<=16'h5001;
-   if (r_pal && !rs[1]) data_out<={8'b0,rtg_pal_dr[23:16]};
-   if (r_pal &&  rs[1]) data_out<=rtg_pal_dr[15:0];
+	if (reset) ena<=0;
+	else if(wr) begin
+		if(r_en) begin
+			case(rs[3:1])
+				0: base[31:16] <= data_in;
+				1: base[15:0]  <= data_in;
+				2: format      <= data_in[4:0];
+				3: ena         <= data_in[0];
+				4: hsize       <= data_in[11:0];
+				5: vsize       <= data_in[11:0];
+				6: stride      <= data_in[13:0];
+			endcase
+		end
+		else if(r_pal) begin
+			if (!rs[1]) rpal[23:16] <= data_in[7:0];
+			       else rpal[15:0]  <= data_in;
+		end
+	end
 end
 
-assign rtg_pal_a  = rs[9:2];
-assign rtg_pal_wr = wr & r_pal & clk7_en;
-assign rtg_pal_dw = (rs[1])?{rpal[23:16],data_in}:{data_in[7:0],rpal[15:0]};
-assign rtg_pal_clk= clk;
+reg [15:0] dout;
+always @(posedge clk) begin
+	dout <= 16'h0000;
+	if(r_en) begin
+		case(rs[3:1])
+			0: dout <= base[31:16];
+			1: dout <= base[15:0];
+			2: dout <= format;
+			3: dout <= ena;
+			4: dout <= hsize;
+			5: dout <= vsize;
+			6: dout <= stride;
+			7: dout <= 16'h5001;
+		endcase
+	end
+	if (r_pal) dout <= rs[1] ? pal_dr[15:0] : pal_dr[23:16];
+end
+
+reg [2:0] rd_r;
+always @(posedge clk) rd_r <= rd_ready ? 3'd0 : {rd_r[1:0],aen & rd};
+wire rd_ready = r_pal ? rd_r[2] : rd_r[0];
+
+assign pal_clk  = clk;
+assign pal_a    = rs[9:2];
+assign pal_wr   = wr & r_pal;
+assign pal_dw   = rs[1] ? {rpal[23:16],data_in} : {data_in[7:0],rpal[15:0]};
+
+assign data_out = aen ? dout : 16'h0000;
+assign ready    = aen & (wr | rd_ready);
 
 endmodule

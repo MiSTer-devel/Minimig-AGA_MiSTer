@@ -232,19 +232,6 @@ module minimig
 	output 	     ce_pix,
 	output  [1:0] res,
 
-	//RTG framebuffer control
-	output        rtg_ena,
-	output [11:0] rtg_hsize,
-	output [11:0] rtg_vsize,
-	output [4:0]  rtg_format,
-	output [31:0] rtg_base,
-	output [13:0] rtg_stride,
-	output        rtg_pal_clk,
-	output [23:0] rtg_pal_dw,
-	input  [23:0] rtg_pal_dr,
-	output [7:0]  rtg_pal_a,
-	output        rtg_pal_wr,
-
 	//audio
 	output [14:0] ldata,       // left DAC data
 	output [14:0] rdata,       // right DAC data
@@ -289,7 +276,6 @@ wire [15:0] user_data_out;	   //user IO data out
 wire [15:0] gary_data_out;	   //data out from memory bus multiplexer
 wire [15:0] gayle_data_out;	//Gayle data out
 wire [15:0] cia_data_out;	   //cia A+B data bus out
-wire [15:0] rtg_data_out;	   //rtg data bus out
 wire [15:0] ar3_data_out;	   //Action Replay data out
 
 //local signals for address bus
@@ -326,7 +312,6 @@ wire        sel_reg;				//chip register select
 wire        sel_rtc;
 wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
-wire        sel_rtg;			   //rtg select
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
@@ -657,31 +642,6 @@ ciab CIAB1
 	.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
 );
 
-//instantiate RTG registers adapter
-rtg rtg
-(
-	.clk(clk),
-	.clk7_en(clk7_en),
-	.aen(sel_rtg & cpucfg[1]), // enable only for 68020
-	.rd(cpu_rd),
-	.wr(cpu_hwr|cpu_lwr),
-	.reset(reset),
-	.rs({cpu_address_out[11:1],1'b0}),
-	.data_in(cpu_data_out),
-	.data_out(rtg_data_out),
-	.rtg_ena(rtg_ena),
-	.rtg_hsize(rtg_hsize),
-	.rtg_vsize(rtg_vsize),
-	.rtg_format(rtg_format),
-	.rtg_base(rtg_base),
-	.rtg_stride(rtg_stride),
-	.rtg_pal_clk(rtg_pal_clk),
-	.rtg_pal_dw(rtg_pal_dw),
-	.rtg_pal_dr(rtg_pal_dr),
-	.rtg_pal_a(rtg_pal_a),
-	.rtg_pal_wr(rtg_pal_wr)
-);
-
 //instantiate cpu bridge
 minimig_m68k_bridge CPU1 
 (
@@ -829,7 +789,6 @@ gary GARY1
 	.sel_reg(sel_reg),
 	.sel_cia_a(sel_cia_a),
 	.sel_cia_b(sel_cia_b),
-	.sel_rtg(sel_rtg),
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.sel_rtc(sel_rtc),
@@ -888,8 +847,7 @@ assign cpu_data_in[15:0]= gary_data_out[15:0]
 							 | cia_data_out[15:0]
 							 | gayle_data_out[15:0]
 							 | cart_data_out[15:0]
-							 | rtc_out
-							 | rtg_data_out;
+							 | rtc_out;
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]

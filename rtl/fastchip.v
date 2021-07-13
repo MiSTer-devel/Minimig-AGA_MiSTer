@@ -37,6 +37,19 @@ module fastchip
 	input         rnw,
 	input         longword,
 
+	//RTG framebuffer control
+	output        rtg_ena,
+	output [11:0] rtg_hsize,
+	output [11:0] rtg_vsize,
+	output [4:0]  rtg_format,
+	output [31:0] rtg_base,
+	output [13:0] rtg_stride,
+	output        rtg_pal_clk,
+	output [23:0] rtg_pal_dw,
+	input  [23:0] rtg_pal_dr,
+	output [7:0]  rtg_pal_a,
+	output        rtg_pal_wr,
+
 	input         ide_ena,
 	output        ide_irq,
 	output  [5:0] ide_req,
@@ -49,9 +62,9 @@ module fastchip
 	output        ide_led
 );
 
-assign sel_ack = sel_akiko  | sel_ide | sel_gayle;
-assign ready   = sel_akiko  | ide_ready;
-assign dout    = akiko_dout | ide_dout;
+assign sel_ack = sel_akiko  | sel_ide   | sel_rtg   | sel_gayle;
+assign ready   = sel_akiko  | ide_ready | rtg_ready;
+assign dout    = akiko_dout | ide_dout  | rtg_dout;
 
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
@@ -102,6 +115,35 @@ gayle gayle
 	.ide_readdata(ide_readdata),
 	
 	.led(ide_led)
+);
+
+wire        sel_rtg = sel && (addr[23:12] == 'hB80);
+wire [15:0] rtg_dout;
+wire        rtg_ready;
+
+rtg rtg
+(
+	.clk(clk_sys),
+	.reset(reset),
+
+	.aen(sel_rtg),
+	.ready(rtg_ready),
+	.rd(rnw),
+	.wr(~rnw & (lds|uds)),
+	.rs(addr[11:1]),
+	.data_in(din),
+	.data_out(rtg_dout),
+	.ena(rtg_ena),
+	.hsize(rtg_hsize),
+	.vsize(rtg_vsize),
+	.format(rtg_format),
+	.base(rtg_base),
+	.stride(rtg_stride),
+	.pal_clk(rtg_pal_clk),
+	.pal_dw(rtg_pal_dw),
+	.pal_dr(rtg_pal_dr),
+	.pal_a(rtg_pal_a),
+	.pal_wr(rtg_pal_wr)
 );
 
 endmodule

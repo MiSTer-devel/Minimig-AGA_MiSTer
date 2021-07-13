@@ -169,7 +169,7 @@ localparam CONF_STR = {
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
-	"- ;",
+	"-;",
 	"I,",
 	"MT32-pi: SoundFont #0,",
 	"MT32-pi: SoundFont #1,",
@@ -504,6 +504,8 @@ wire        ide_f_irq;
 wire  [5:0] ide_f_req;
 wire [15:0] ide_f_readdata;
 
+// fastchip is working on CPU clock.
+// Only high performance 68020 devices are inside
 fastchip fastchip
 (
 	.clk          (clk_114           ),
@@ -523,16 +525,27 @@ fastchip fastchip
 	.rnw          (fastchip_rnw      ),
 	.longword     (fastchip_lw       ),
 
+	//RTG framebuffer control
+	.rtg_ena      (FB_EN             ),
+	.rtg_hsize    (FB_WIDTH          ),
+	.rtg_vsize    (FB_HEIGHT         ),
+	.rtg_format   (FB_FORMAT         ),
+	.rtg_base     (FB_BASE           ),
+	.rtg_stride   (FB_STRIDE         ),
+	.rtg_pal_clk  (FB_PAL_CLK        ),
+	.rtg_pal_dw   (FB_PAL_DOUT       ),
+	.rtg_pal_dr   (FB_PAL_DIN        ),
+	.rtg_pal_a    (FB_PAL_ADDR       ),
+	.rtg_pal_wr   (FB_PAL_WR         ),
+
 	.ide_ena      (ide_ena & ide_fast),
 	.ide_irq      (ide_f_irq         ),
-
 	.ide_req      (ide_f_req         ),
 	.ide_address  (ide_addr          ),
 	.ide_write    (ide_wr            ),
 	.ide_writedata(ide_dout          ),
 	.ide_read     (ide_rd            ),
 	.ide_readdata (ide_f_readdata    ),
-
 	.ide_led      (ide_f_led         )
 );
 
@@ -660,21 +673,8 @@ minimig minimig
 	.vblank       (vbl              ),
 	.ar           (ar               ),
 	.scanline     (fx               ),
-	//.ce_pix       (ce_pix           ),
+	//.ce_pix     (ce_pix           ),
 	.res          (res              ),
-
-	//RTG framebuffer control
-	.rtg_ena      (FB_EN            ),
-	.rtg_hsize    (FB_WIDTH         ),
-	.rtg_vsize    (FB_HEIGHT        ),
-	.rtg_format   (FB_FORMAT        ),
-	.rtg_base     (FB_BASE          ),
-	.rtg_stride   (FB_STRIDE        ),
-	.rtg_pal_clk  (FB_PAL_CLK       ),
-	.rtg_pal_dw   (FB_PAL_DOUT      ),
-	.rtg_pal_dr   (FB_PAL_DIN       ),
-	.rtg_pal_a    (FB_PAL_ADDR      ),
-	.rtg_pal_wr   (FB_PAL_WR        ),
 
 	//audio
 	.ldata        (ldata            ), // left DAC data
