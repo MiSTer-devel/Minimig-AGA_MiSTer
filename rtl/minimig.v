@@ -688,7 +688,7 @@ minimig_m68k_bridge CPU1
 //instantiate RAM banks mapper
 minimig_bankmapper BMAP1
 (
-	.chip0((~ovr|~cpu_rd|dbr) & sel_chip[0]),
+	.chip0((~ovr|~cpu_rd|dbr|cpuhlt) & sel_chip[0]),
 	.chip1(sel_chip[1]),
 	.chip2(sel_chip[2]),
 	.chip3(sel_chip[3]),	

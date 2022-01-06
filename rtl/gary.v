@@ -146,7 +146,7 @@ begin
 	end
 	else
 	begin
-		sel_chip[0] = cpu_address_in[23:19]==5'b0000_0 && !ovl;
+		sel_chip[0] = cpu_address_in[23:19]==5'b0000_0 && (!ovl || cpu_hlt);
 		sel_chip[1] = cpu_address_in[23:19]==5'b0000_1;
 		sel_chip[2] = cpu_address_in[23:19]==5'b0001_0;
 		sel_chip[3] = cpu_address_in[23:19]==5'b0001_1;
