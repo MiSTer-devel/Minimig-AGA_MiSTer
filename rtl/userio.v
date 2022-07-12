@@ -34,12 +34,15 @@ module userio
 	input       [8:1] reg_address_in, // register adress inputs
 	input      [15:0] data_in,    // bus data in
 	output reg [15:0] data_out,   // bus data out
+	input             pot_cnt_en, // one count / scanline
 	output            _fire0,     // joystick 0 fire output (to CIA)
 	output            _fire1,     // joystick 1 fire output (to CIA)
 	input             _fire0_dat,
 	input             _fire1_dat,
 	input      [15:0] _joy1,      // joystick 1 in (default mouse port)
 	input      [15:0] _joy2,      // joystick 2 in (default joystick port)
+	input      [15:0] joy_ana1,
+	input      [15:0] joy_ana2,
 	input       [2:0] mouse_btn,
 	input             kms_level,
 	input       [1:0] kbd_mouse_type,
@@ -77,6 +80,8 @@ module userio
 parameter JOY0DAT     = 9'h00a;
 parameter JOY1DAT     = 9'h00c;
 parameter SCRDAT      = 9'h1f0;
+parameter POT0DAT     = 9'h012;
+parameter POT1DAT     = 9'h014;
 parameter POTINP      = 9'h016;
 parameter POTGO       = 9'h034;
 parameter JOYTEST     = 9'h036;
@@ -115,7 +120,55 @@ reg          joy_swap;
 // POTGO register
 always @ (posedge clk) begin
 	if (reset) potreg <= 0;
-	else if (reg_address_in[8:1]==POTGO[8:1]) potreg[15:0] <= data_in[15:0];
+	else if (clk7_en) begin
+		if (reg_address_in[8:1]==POTGO[8:1]) potreg[15:0] <= data_in[15:0];
+		else potreg[0] <= 0;
+	end
+end
+
+reg        joy_ana_en;
+reg [15:0] ajoy1,ajoy2;
+
+always @(posedge clk) begin
+	ajoy1 <= joy_swap ? joy_ana1 : joy_ana2;
+	ajoy2 <= joy_swap ? joy_ana2 : joy_ana1;
+end
+
+reg   [7:0] pot0x;
+reg   [7:0] pot0y;
+reg   [7:0] pot1x;
+reg   [7:0] pot1y;
+
+// POT[0/1]DAT registers
+reg [3:0] potcnt;
+
+// button on the pot pins
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (reset) begin
+      {pot0x, pot0y, pot1x, pot1y} <= 0;
+      potcnt <= 4'b0000;
+    end else if (potreg[0]) begin
+      {pot0x, pot0y, pot1x, pot1y} <= 0;
+      potcnt <= 4'b1111;
+    end
+    else if (pot_cnt_en) begin
+		if (joy_ana_en & joy1enable) begin
+        if (potcnt[0] && {~ajoy1[ 7],ajoy1[ 6:0]} != pot1y) pot0y <= pot0y + 1'd1; else potcnt[0] <= 0;
+        if (potcnt[1] && {~ajoy1[15],ajoy1[14:8]} != pot1x) pot0x <= pot0x + 1'd1; else potcnt[1] <= 0;
+      end else begin
+        if (!potcap[0]) pot0x <= pot0x + 1'd1;
+        if (!potcap[1]) pot0y <= pot0y + 1'd1;
+      end
+		if (joy_ana_en) begin
+        if (potcnt[2] && {~ajoy2[ 7],ajoy2[ 6:0]} != pot1y) pot1y <= pot1y + 1'd1; else potcnt[2] <= 0;
+        if (potcnt[3] && {~ajoy2[15],ajoy2[14:8]} != pot1x) pot1x <= pot1x + 1'd1; else potcnt[3] <= 0;
+      end else begin
+        if (!potcap[2]) pot1x <= pot1x + 1'd1;
+        if (!potcap[3]) pot1y <= pot1y + 1'd1;
+      end
+    end
+  end
 end
 
 wire joy2_pin5 = ~(potreg[13] & ~potreg[12]);
@@ -175,11 +228,14 @@ always @ (posedge clk) begin
 	else if (cd32pad2_reg_shift) cd32pad2_reg <= {cd32pad2_reg[6:0], 1'b0};
 end
 
+wire [15:0] joy1 = joy_ana_en ? {{12{1'b1}}, _joy1[6], 1'b1, _joy1[4], _joy1[5]} : _joy1;
+wire [15:0] joy2 = joy_ana_en ? {{12{1'b1}}, _joy2[6], 1'b1, _joy2[4], _joy2[5]} : _joy2;
+
 // input synchronization of external signals
 always @ (posedge clk) begin
-	_sjoy1 <= joy_swap ? _joy1 : _joy2;
+	_sjoy1 <= joy_swap ? joy1 : joy2;
 	_djoy1 <= _sjoy1;
-	_sjoy2 <= joy_swap ? _joy2 : _joy1;
+	_sjoy2 <= joy_swap ? joy2 : joy1;
 	_djoy2 <= _sjoy2;
 end
 
@@ -256,6 +312,10 @@ always @(*) begin
 		data_out[15:0] = {mouse0dat[15:8] + dmouse0dat[15:8],mouse0dat[7:0] + dmouse0dat[7:0]};
 	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
 		data_out[15:0] = dmouse1dat;
+	else if (reg_address_in[8:1]==POT0DAT[8:1])
+		data_out[15:0] = { pot0y, pot0x };
+	else if (reg_address_in[8:1]==POT1DAT[8:1])
+		data_out[15:0] = { pot1y, pot1x };
 	else if (reg_address_in[8:1]==POTINP[8:1])//read mouse and joysticks extra buttons
 		data_out[15:0] = {1'b0, potcap[3],
 								1'b0, potcap[2],
@@ -367,8 +427,7 @@ wire memory_cfg_sel   = (cmd[3:0] == 5); // XHFFSSCC || memory config   | H - HR
 wire video_cfg_sel    = (cmd[3:0] == 6); // DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
 wire floppy_cfg_sel   = (cmd[3:0] == 7); // XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
 wire harddisk_cfg_sel = (cmd[3:0] == 8); // XXXXXSMC || harddisk config | S - enable slave HDD, M - enable master HDD, C - enable HDD controler
-wire joystick_cfg_sel = (cmd[3:0] == 9); // XXXXXCAA || joystick config | C - CD32pad mode, AA - autofire rate
-
+wire joystick_cfg_sel = (cmd[3:0] == 9); // XXXXSMMX || joystick config | S - swap joysticks, MM - dig/analog/cd32
 always @(posedge clk) begin
 	reg       has_cmd;
 	reg       mrx;
@@ -404,7 +463,7 @@ always @(posedge clk) begin
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
 				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[5:0];
-				if (joystick_cfg_sel) {joy_swap, cd32pad} <= IO_DIN[3:2];
+				if (joystick_cfg_sel) {joy_swap, cd32pad, joy_ana_en} <= {IO_DIN[3], ~IO_DIN[1] & IO_DIN[2], IO_DIN[1]};
 				if (aud_sel)          aud_mix <= IO_DIN[1:0];
 			end
 			

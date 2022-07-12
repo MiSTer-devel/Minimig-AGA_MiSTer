@@ -199,6 +199,8 @@ module minimig
 	input  [15:0] _joy2,       // joystick 2 [fire2,fire,up,down,left,right] (default joystick port)
 	input  [15:0] _joy3,       // joystick 3 [fire2,fire,up,down,left,right]
 	input  [15:0] _joy4,       // joystick 4 [fire2,fire,up,down,left,right]
+	input  [15:0] joya1,
+	input  [15:0] joya2,
 	input   [2:0] mouse_btn,   // mouse buttons
 	input 	     kms_level,
 	input   [1:0] kbd_mouse_type,
@@ -526,12 +528,15 @@ userio USERIO1
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
 	.data_out(user_data_out),
+	.pot_cnt_en(sol & ~c1 & ~c3),
 	._fire0(_fire0),
 	._fire1(_fire1),
 	._fire0_dat(_fire0_dat),
 	._fire1_dat(_fire1_dat),
 	._joy1(_joy1),
 	._joy2(_joy2),
+	.joy_ana1(joya1),
+	.joy_ana2(joya2),
 	.mouse_btn(mouse_btn),
 	.kbd_mouse_type(kbd_mouse_type),
 	.kms_level(kms_level),
