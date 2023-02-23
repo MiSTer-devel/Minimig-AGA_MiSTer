@@ -208,7 +208,7 @@ module minimig
 	output 	     pwr_led,     // power led
 	output 	     fdd_led,     // disk activity LED, active when DMA is on
 	output 	     hdd_led,
-	input  [63:0] rtc,
+	input  [64:0] rtc,
 
 	//host controller interface (SPI)
 	input 	     IO_UIO,
@@ -845,7 +845,27 @@ end
 
 //-------------------------------------------------------------------------------------
 
-wire [15:0] rtc_out = (sel_rtc && cpu_rd) ? {12'h000, rtc[{cpu_address_out[5:2], 2'b00} +:4]} : 16'h0000;
+wire [15:0] rtc_out = (sel_rtc && cpu_rd) ? {12'h000, rtc_reg[{cpu_address_out[5:2], 2'b00} +:4]} : 16'h0000;
+
+reg [63:0] rtc_reg;
+always @(posedge clk) begin
+	reg old_flg;
+	reg [31:0] cnt;
+	
+	old_flg <= rtc[64];
+	if(old_flg ^ rtc[64]) begin
+		rtc_reg <= {rtc[63:8], 8'd0};
+		cnt <= 0;
+	end
+	else if(cnt < 28375159) cnt <= cnt + 1;
+	else begin
+		cnt <= 0;
+		if(rtc_reg[3:0] < 9) rtc_reg[3:0] <= rtc_reg[3:0] + 1'd1;
+		else if(rtc_reg[7:4] < 5) rtc_reg[7:0] <= {rtc_reg[7:4] + 1'd1, 4'b0000};
+	end
+end
+
+//-------------------------------------------------------------------------------------
 
 //data multiplexer
 assign cpu_data_in[15:0]= gary_data_out[15:0]
