@@ -254,7 +254,7 @@ wire        ide_wr;
 wire  [5:0] ide_req;
 
 wire [35:0] EXT_BUS;
-hps_ext hps_ext(.*, .cdda_ready(cdda_req), .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
+hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
 
 assign LED_POWER[1] = 1;
 assign LED_DISK     = {1'b0, ide_fast ? ide_f_led : ide_c_led};
@@ -343,39 +343,6 @@ always @(posedge clk_114) begin
 
 	ram_cs <= ~(ram_ready & cyc & cpu_type) & ram_sel;
 end
-
-
-reg          cen_44100;
-reg   [31:0] cen_44100_cnt;
-wire  [31:0] cen_44100_cnt_next = cen_44100_cnt + 16'd44100;
-
-always @(posedge clk_sys) begin
-  cen_44100 <= 0;
-  cen_44100_cnt <= cen_44100_cnt_next;
-  if (cen_44100_cnt_next >= (28375160)) begin
-    cen_44100 <= 1;
-    cen_44100_cnt <= cen_44100_cnt_next - (28375160);
-  end
-end
-
-reg   [15:0] cdda_l;
-reg   [15:0] cdda_r;
-reg   [15:0] cdda_dout;
-wire         cdda_req;
-wire         cdda_wr;
-
-cdda cdda (
-  .CLK(clk_sys),
-  .nRESET(~reset),
-  .READ(cen_44100),
-  .WRITE(cdda_wr),
-  .DIN(cdda_dout),
-  .AUDIO_L(cdda_l),
-  .AUDIO_R(cdda_r),
-  .WRITE_READY(cdda_req)
- );
-
-
 
 wire  [1:0] cpu_state;
 wire        cpu_nrst_out;
@@ -1148,6 +1115,23 @@ always @(posedge CLK_AUDIO) begin
 	old_r1 <= old_r0;
 	if(old_r0 == old_r1) aud_r <= old_r1;
 end
+
+wire  [15:0] cdda_l;
+wire  [15:0] cdda_r;
+wire  [15:0] cdda_dout;
+wire         cdda_req;
+wire         cdda_wr;
+
+cdda #(28375160) cdda
+(
+	.CLK(clk_sys),
+	.nRESET(~reset),
+	.WRITE_REQ(cdda_req),
+	.WRITE(cdda_wr),
+	.DIN(cdda_dout),
+	.AUDIO_L(cdda_l),
+	.AUDIO_R(cdda_r)
+);
 
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
