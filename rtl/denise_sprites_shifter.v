@@ -74,10 +74,10 @@ always @(posedge clk)
     load <= armed && (hpos[7:0] == hstart[7:0]) && (fmode[15] || (hpos[8] == hstart[8])) ? 1'b1 : 1'b0;
   end
 
-always @(posedge clk)
-  if (clk7_en) begin
-    load_del <= load;
-  end
+//always @(posedge clk)
+//  if (clk7_en) begin
+//    load_del <= load;  // AMR - delaying this screws up the scoreboard in hybris.
+//  end
 
 //--------------------------------------------------------------------------------------
 
@@ -119,7 +119,7 @@ end
 
 // sprite shift register
 always @(posedge clk)
-  if (clk7_en && load_del) // load new data into shift register
+  if (clk7_en && load) // AMR - load_del) // load new data into shift register
   begin
     shifta[63:0] <= datla[63:0];
     shiftb[63:0] <= datlb[63:0];
@@ -131,8 +131,13 @@ always @(posedge clk)
   end
 
 // assign serialized output data
-assign sprdata[1:0] = {shiftb[63],shifta[63]};
+// AMR - register the output data to delay it by one clk7, compensating for removing load_del
+// Fixed highres sprites by pipelining shifter output.
+reg [7:0] sprdata_r;
+always @(posedge clk)
+  sprdata_r <= {shiftb[63],shifta[63],sprdata_r[7:2]}; // Ugly - are we masking a copper timing problem here?
 
+assign sprdata[1:0] = sprdata_r[1:0]; // {shiftb[63],shifta[63]};
 //--------------------------------------------------------------------------------------
 
 endmodule
