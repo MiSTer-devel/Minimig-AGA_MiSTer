@@ -1,33 +1,32 @@
-
 # Minimig-AGA_MiSTer
 
 This is a port of the minimig core to the [MiSTer board](https://github.com/MiSTer-devel).
 
-[minimig](http://en.wikipedia.org/wiki/Minimig) (short for Mini Amiga) is an open source re-implementation of an Amiga using a field-programmable gate array (FPGA). Original minimig author is Dennis van Weeren.
+[Minimig](http://en.wikipedia.org/wiki/Minimig) (short for Mini Amiga) is an open source re-implementation of an Amiga using a field-programmable gate array (FPGA). Original Minimig author is Dennis van Weeren.
 
 [Amiga](http://en.wikipedia.org/wiki/Amiga_500) was - in my opinion - an amazing personal computer, announced around 1984, which - at the time - far surpassed any other personal computer on the market, with advanced graphic & sound capabilities, not to mention its great OS with preemptive multitasking capabilities.
 
-The minimig-MiSTer variant in this repository has been upgraded with [AGA chipset](http://en.wikipedia.org/wiki/Amiga_Advanced_Graphics_Architecture) capabilites, which allows it to emulate the latest Amiga models ([Amiga 1200](http://en.wikipedia.org/wiki/Amiga_1200)) and (partially) [Amiga CD32](http://en.wikipedia.org/wiki/Amiga_CD32)). Ofcourse it also supports previous OCS/ECS Amigas like [Amiga 500](http://en.wikipedia.org/wiki/Amiga_500), [Amiga 600](http://en.wikipedia.org/wiki/Amiga_600) etc.
+The Minimig-MiSTer variant in this repository has been upgraded with [AGA chipset](http://en.wikipedia.org/wiki/Amiga_Advanced_Graphics_Architecture) capabilites, which allows it to emulate the latest Amiga models ([Amiga 1200](http://en.wikipedia.org/wiki/Amiga_1200)) and (partially) [Amiga CD32](http://en.wikipedia.org/wiki/Amiga_CD32)). Of course it also supports previous OCS/ECS Amigas like [Amiga 500](http://en.wikipedia.org/wiki/Amiga_500), [Amiga 600](http://en.wikipedia.org/wiki/Amiga_600) etc.
 
 
 ## Core features supported
 
-* chipset variants : OCS, ECS, AGA
-* chipRAM : 0.5MB - 2.0MB
-* slowRAM : 0.0MB - 1.5MB
-* fastRAM : 0.0MB - 384MB
+* Chipset variants : OCS, ECS, AGA
+* ChipRAM : 0.5MB - 2.0MB
+* SlowRAM : 0.0MB - 1.5MB
+* FastRAM : 0.0MB - 384MB
 * CPU core : 68000, 68020
-* kickstart : 1.2 - 3.1 (256kB, 512kB & 1MB kickstart ROMs currently supported)
+* Kickstart : 1.2, 1.3, 2.0, 3.0, 3.1, 3.1.4, 3.2 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
-* floppy disks : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
+* Floppy drives : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
 * Up to 4 IDE devices
 * CDROM
-* video standard : PAL / NTSC
-* supports almost all OCS/ECS/AGA custom resolutions
+* Video standard : PAL / NTSC
+* Supports almost all OCS/ECS/AGA custom resolutions
 * RTG with up to 1920x1080 and 1600x1200 resolutions
-* peripherals : USB keyboards, USB mice, USB gamepads
-* serial connection to Linux with ability to connect to internet.
-* shared folder for rapid file exchange between Linux and Amiga.
+* Peripherals : USB keyboards, USB mice, USB gamepads
+* Serial connection to Linux with ability to connect to Internet.
+* Shared folder for rapid file exchange between Linux and Amiga.
 * MIDI: both MiSTer internal emulation and external through USER_IO port (MT32-pi and generic MIDI device)
 * Akiko chunk to planar implementation
 * Mouse with wheel.
@@ -35,7 +34,8 @@ The minimig-MiSTer variant in this repository has been upgraded with [AGA chipse
 ## Usage
 
 ### Screen adjustment
-Adjustment is initiated from OSD menu. Keyboard control:
+Adjustment is initiated from OSD menu. 
+Keyboard control:
 * Cursor keys - top/left corner.
 * ALT+Cursor keys - bottom/right corner.
 * Enter - finish and store position.
@@ -99,16 +99,16 @@ Chunk to planar engine of Akiko is supported. It requires SetAkiko util (from re
 To enable wheel support both WheelDriver and FreeWheel must be run from releases/WheelDriverAkiko.adf
 
 ### Software
-To use the core, you will need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM. Minimig also supports the [AROS](http://aros.sourceforge.net/) kickstart ROM replacement.
+To use the core, you will need a Kickstart ROM image file, which you can obtain by copying Kickstart ROM IC from your actual Amiga, or by buying an [Amiga Forever](http://www.amigaforever.com/) software pack. The Kickstart image should be placed on the root of the SD card with the name KICK.ROM. Minimig also supports the [AROS](http://aros.sourceforge.net/) Kickstart ROM replacement.
 
-The minimig can read any ADF floppy images you place on the SD card. I recommend at least Workbench 1.3 or 3.1 (AmigaOS), some of the Amigas great games (I recommend Ruff'n'Tumble) or some of the amazing demos from the vast Amiga demoscene (like State of the Art from Spaceballs).
+The Minimig can read any ADF floppy images you place on the SD card. I recommend at least Workbench 1.3 or 3.1 (AmigaOS), some of the Amigas great games (I recommend Ruff'n'Tumble) or some of the amazing demos from the vast Amiga demoscene (like State of the Art from Spaceballs).
 
-The minimig can also use HDF harddisk images, which can be created with [WinUAE](http://www.winuae.net/).
+The Minimig can also use HDF harddisk images, which can be created with [WinUAE](http://www.winuae.net/).
 
 ### Recommended minimig config
 
-* for ECS games / demos : CPU = 68000, Turbo=NONE, Chipset=ECS, chipRAM=0.5MB, slowRAM=0.5MB, Kickstart 1.3
-* for AGA games / demos : CPU = 68020, Turbo=NONE, Chipset=AGA, chipRAM=2MB, slowRAM=0MB, fastRAM=24MB, Kickstart 3.1
+* for ECS games / demos : CPU = 68000, Turbo=NONE, Chipset=ECS, ChipRAM=0.5MB, slowRAM=0.5MB, Kickstart 1.3
+* for AGA games / demos : CPU = 68020, Turbo=NONE, Chipset=AGA, ChipRAM=2MB, SlowRAM=0MB, FastRAM=384MB, Kickstart 3.1
 
 ### Controlling minimig
 
@@ -123,11 +123,11 @@ Keyboard special keys:
 
 This sourcecode is based on Rok Krajnc project ([minimig-de1](https://github.com/rkrajnc/minimig-de1)).
 
-Original minimig sources from Dennis van Weeren with updates by Jakub Bednarski are published on [Google Code](http://code.google.com/p/minimig/).
+Original Minimig sources from Dennis van Weeren with updates by Jakub Bednarski are published on [Google Code](http://code.google.com/p/minimig/).
 
-Some minimig updates are published on the [Minimig Discussion Forum](http://www.minimig.net/), done by Sascha Boing.
+Some Minimig updates are published on the [Minimig Discussion Forum](http://www.minimig.net/), done by Sascha Boing.
 
-ARM firmware updates and minimig-tc64 port changes by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
+ARM firmware updates and Minimig-tc64 port changes by Christian Vogelsang ([minimig_tc64](https://github.com/cnvogelg/minimig_tc64)) and A.M. Robinson ([minimig_tc64](https://github.com/robinsonb5/minimig_tc64)).
 
 MiSTer project by Sorgelig ([MiSTer](https://github.com/MiSTer-devel)).
 
@@ -138,7 +138,7 @@ TG68K.C core by Tobias Gubener.
 
 My page [somuch.guru](http://somuch.guru/).
 
-Further info about minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/).
+Further info about Minimig can be found on the [Minimig Discussion Forum](http://www.minimig.net/).
 
 MiSTer board support & other cores on the [MiSTer Project Page](https://github.com/MiSTer-devel).
 
