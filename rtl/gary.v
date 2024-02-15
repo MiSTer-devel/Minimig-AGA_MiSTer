@@ -76,6 +76,9 @@ module gary
 	input         ecs, // ECS chipset enable
 	input         hdc_ena, //enables hdd interface
 
+	input         toccata_ena,
+	input   [7:0] toccata_base,
+
 	output        ram_rd, //bus read
 	output        ram_hwr, //bus high write
 	output        ram_lwr, //bus low write
@@ -93,6 +96,7 @@ module gary
 	output       sel_rtc, //select $DCxxxx
 	output       sel_ide, //select $DAxxxx
 	output       sel_gayle, //select $DExxxx
+	output       sel_toccata, //select $E9xxxx (or whatever's specified by toccata_base)
 	output reg   rom_readonly = 0 //when zero allows to write to $fc-$ff, blocks effect of kick256kmirror.  
 );
 
@@ -172,6 +176,8 @@ assign sel_cia_a = sel_cia & ~cpu_address_in[12];
 assign sel_cia_b = sel_cia & ~cpu_address_in[13];
 assign sel_rtg   = cpu_address_in[23:16]==8'hB8; // $B8xxxxx
 assign sel_bank_1 = cpu_address_in[23:21]==3'b001;
+
+assign sel_toccata = toccata_ena && cpu_address_in[23:16]==toccata_base; // Nominally $e9xxxx
 
 //data bus slow down
 assign dbs = cpu_address_in[23:21]==3'b000 || cpu_address_in[23:20]==4'b1100 || cpu_address_in[23:19]==5'b1101_0 || cpu_address_in[23:16]==8'b1101_1111;

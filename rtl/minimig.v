@@ -241,6 +241,12 @@ module minimig
 	output [8:0]  rdata_okk,   // right DAC data (PWM volume)
 	output  [1:0] aud_mix,
 
+	// Toccata audio
+	input         toccata_ena,
+	input   [7:0] toccata_base,
+	output [15:0] toccata_aud_left,
+	output [15:0] toccata_aud_right,
+
 	//user i/o
 	output  [1:0] cpucfg,
 	output  [2:0] cachecfg,
@@ -314,9 +320,11 @@ wire        sel_reg;				//chip register select
 wire        sel_rtc;
 wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
+wire        sel_toccata;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
+wire        int6_toccata;
 wire        freeze;				//Action Replay freeze button
 wire        _fire0;				//joystick 1 fire signal to cia A
 wire        _fire1;				//joystick 2 fire signal to cia A
@@ -488,7 +496,7 @@ paula PAULA1
 	.vblint(vbl_int),
 	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)),
 	.int3(int3),
-	.int6(int6),
+	.int6(int6 | int6_toccata),
 	._ipl(_iplx),
 	.audio_dmal(audio_dmal),
 	.audio_dmas(audio_dmas),
@@ -780,6 +788,8 @@ gary GARY1
 	.xbs(xbs),
 	.memory_config(memory_config[3:0]),
 	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
+	.toccata_ena(toccata_ena),
+	.toccata_base(toccata_base),
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -797,6 +807,7 @@ gary GARY1
 	.sel_ide(sel_ide),
 	.sel_gayle(sel_gayle),
 	.sel_rtc(sel_rtc),
+	.sel_toccata(sel_toccata),
 	.reset(reset),
 	.clk(clk),
 	.rom_readonly(rom_readonly),
@@ -865,6 +876,27 @@ always @(posedge clk) begin
 	end
 end
 
+// Toccata soundcard
+
+wire [15:0] toccata_out;
+toccata #(
+  .CLK_FREQUENCY(28_359_380)
+) toccata_board (
+	.clk(clk),
+	.rst(reset),
+	.hsync(_hsync),
+	.data_in(cpu_data_out),
+	.data_out(toccata_out),
+	.addr(cpu_address_out[15:1]),
+	.rd(cpu_rd),
+	.hwr(cpu_hwr),
+	.lwr(cpu_lwr),
+	.sel(sel_toccata),
+	.toc_int(int6_toccata),
+	.out_left(toccata_aud_left),
+	.out_right(toccata_aud_right)
+);
+
 //-------------------------------------------------------------------------------------
 
 //data multiplexer
@@ -872,7 +904,8 @@ assign cpu_data_in[15:0]= gary_data_out[15:0]
 							 | cia_data_out[15:0]
 							 | gayle_data_out[15:0]
 							 | cart_data_out[15:0]
-							 | rtc_out;
+							 | rtc_out
+							 | toccata_out;
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]
