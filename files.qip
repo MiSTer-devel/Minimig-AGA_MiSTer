@@ -21,5 +21,10 @@ set_global_assignment -name VERILOG_FILE rtl/minimig.v
 set_global_assignment -name VERILOG_FILE rtl/cpu_wrapper.v
 set_global_assignment -name VERILOG_FILE hps_ext.v
 set_global_assignment -name VERILOG_FILE rtl/cdda.v
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fpga-toccata/toccata_capture.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fpga-toccata/toccata_playback.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fpga-toccata/toccata_volume.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fpga-toccata/toccata_fifo.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fpga-toccata/toccata.sv
 set_global_assignment -name SDC_FILE Minimig.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Minimig.sv

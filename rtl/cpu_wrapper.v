@@ -66,6 +66,9 @@ module cpu_wrapper
 	output            ramuds,
 	output            ramshared,
 
+	output reg        toccata_ena,
+	output reg  [7:0] toccata_base,
+
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
 	output reg [31:0] nmi_addr
@@ -284,12 +287,27 @@ always @(posedge clk) begin
 end
 
 wire cfg_z3 = fastramcfg[2] & cpucfg[1];
+reg       ac_toccata;
 
 reg [3:0] autocfg_data;
 always @(*) begin
 	autocfg_data = 4'b1111;
-  
-	if (autocfg_card) begin
+
+	if (~ac_toccata) begin
+		case (chip_addr[6:1])
+			6'h0: autocfg_data = 4'b1100; // Zorro-II card, no link, no ROM
+			6'h1: autocfg_data = 4'b0001; // Next board not related, size 'h64k
+			// Inverted from here on
+			6'h3: autocfg_data = 4'b0011; // Lower byte product number
+			6'h5: autocfg_data = 4'b1101;   // logical size 64k
+			6'h8: autocfg_data = 4'b1011; // Manufacturer ID: 0x4754
+			6'h9: autocfg_data = 4'b1000;
+			6'ha: autocfg_data = 4'b1010;
+			6'hb: autocfg_data = 4'b1011;
+			default: ;
+		endcase
+	end 
+	else if (autocfg_card) begin
 		if (~cfg_z3) begin
 			// Zorro II RAM (Up to 8 meg at 0x200000)
 			case (chip_addr[6:1])
@@ -327,7 +345,7 @@ always @(*) begin
 	end
 end
 
-wire sel_autoconfig = fastramcfg && chip_addr[23:19] == 5'b11101 && autocfg_card; //$E80000 - $EFFFFF
+wire sel_autoconfig = fastramcfg && chip_addr[23:16] == 8'b11101000 && autocfg_card; //$E80000 - $E8FFFF
 
 reg [1:0] autocfg_card;
 reg       z2ram_ena;
@@ -346,9 +364,18 @@ always @(posedge clk) begin
 		z3ram_ena1 <= 0;
 		z3ram_base0 <= 1;
 		z3ram_base1 <= 1;
+		ac_toccata<=1'b0;
+		toccata_ena<=1'b0;
 	end
 	else if (sel_autoconfig && ~chip_rw && ~chip_uds && old_uds) begin
-		if (~cfg_z3) begin
+		if (~ac_toccata) begin
+			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, Toccata card in ZII io space ($E90000)
+				toccata_ena <= 1;
+				toccata_base <= cpu_dout[7:0];
+				ac_toccata<=1'b1;
+			end		
+		end
+		else if (~cfg_z3) begin
 			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
 				z2ram_ena <= 1;
 				autocfg_card <= 0;

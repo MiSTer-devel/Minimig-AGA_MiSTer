@@ -370,6 +370,9 @@ wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
 wire        zram_sel  = |ram_addr[28:26];
 wire        ramshared;
 
+wire [7:0] toccata_base;
+wire toccata_ena;
+
 cpu_wrapper cpu_wrapper
 (
 	.reset        (cpu_rst         ),
@@ -403,6 +406,9 @@ cpu_wrapper cpu_wrapper
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
 
+	.toccata_ena  (toccata_ena     ),
+	.toccata_base (toccata_base    ),
+	
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
 	.ramlds       (ram_lds         ),
@@ -597,6 +603,9 @@ wire [15:0] ide_c_readdata;
 wire        ide_c_led;
 wire        ide_ena;
 
+wire [15:0] toccata_aud_left;
+wire [15:0] toccata_aud_right;
+
 minimig minimig
 (
 	//m68k pins
@@ -691,6 +700,12 @@ minimig minimig
 
 	.aud_mix      (AUDIO_MIX        ),
 
+	//toccata soundcard
+	.toccata_ena  (toccata_ena),
+	.toccata_base (toccata_base),
+	.toccata_aud_left (toccata_aud_left),
+	.toccata_aud_right(toccata_aud_right),
+	
 	//user i/o
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config
@@ -1137,8 +1152,8 @@ reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15],aud_l} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_l[15], cdda_l};
-	tmp_r <= {aud_r[15],aud_r} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_r[15], cdda_r};
+	tmp_l <= {aud_l[15],aud_l} + {toccata_aud_left[15],toccata_aud_left} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_l[15], cdda_l};
+	tmp_r <= {aud_r[15],aud_r} + {toccata_aud_right[15],toccata_aud_right} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_r[15], cdda_r};
 
 	// clamp the output
 	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
