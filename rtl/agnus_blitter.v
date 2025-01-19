@@ -408,7 +408,8 @@ always @(posedge clk)
   if (clk7_en) begin
   	if (line)
   		bltbhold[15:0] <= {16{shiftbout[0]}}; // in line mode only one selected bit of BLTBDAT register (LSB) is used for texturing
-  	else if (bltbdat_wrtn)
+  	// AMR - Contraz Domination uses clr.w bltcon1, which does a phantom read from a w/o register, momentarily enabling line mode and wiping out bltbhold
+  	else if(enable)	// if (bltbdat_wrtn)
   		bltbhold[15:0] <= shiftbout[15:0];
   end
 	

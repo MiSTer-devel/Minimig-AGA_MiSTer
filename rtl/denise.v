@@ -234,15 +234,23 @@ always @(posedge clk) begin
   end
 end
 
-// BPLCON4 values are supposedly delayed for 1 lores pixel TODO check this!
+// BPLCON4 values are delayed for 1 lores pixel - TODO double-check this!
+// AMR - bplxor is active from first write to BPL1DAT until DIWSTOP. (Fixes Andromeda: Nexus 7, shade cluster part)
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if(reset || hpos[8:0]==hdiwstop[8:0])
+      bplxor   <= 8'd0;
+	else if (display_ena)
+      bplxor   <= bplcon4[15:8];
+  end
+end
+// AMR - FIXME - should be the sprite colour offsets be treated as per bplxor? Probably not since sprites can appear in the border.
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (reset) begin
-      bplxor   <= 8'd0;
       esprm    <= 4'd1;
       osprm    <= 4'd1;
     end else begin
-      bplxor   <= bplcon4[15:8];
       esprm    <= bplcon4[7:4];
       osprm    <= bplcon4[3:0];
     end
