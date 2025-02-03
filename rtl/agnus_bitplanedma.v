@@ -374,13 +374,20 @@ always @ (posedge clk) begin
 end
 
 // softena : software display data fetch window
+
+// AMR - OCS and ECS/AGA behave differently when DDFSTRT == DDFSTOP.
+// On OCS the fetch runs until hard_stop. On ECS/AGA it stops after one complete fetch cycle.
+reg softena_off;
+
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (hpos[0])
+    if (hpos[0]) begin
       if (soft_start && (ecs || vdiwena && dmaena) && !ddfstrt_sel) // OCS: display can start only when vdiwena condition is true
         softena <= #1 1'b1;
-      else if (soft_stop || !ecs && hard_stop)
+      else if (softena_off || (soft_stop || !ecs && hard_stop))
         softena <= #1 1'b0;
+      softena_off<=soft_stop && soft_start && ecs;  // AMR - ECS / AGA: DDFSTRT==DDFSTOP, disable fetch after one fetch cycle.
+    end
   end
 end
 
