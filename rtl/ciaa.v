@@ -76,63 +76,105 @@
 //----------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------
 
-/*cia a*/
+// CIA A (Complex Interface Adapter A)
+// MOS 8520 CIA implementation for Amiga computers
+//
+// CIA A handles:
+// - Keyboard interface (serial port)
+// - Mouse/Joystick port control
+// - Disk drive control signals
+// - Parallel port (Centronics printer interface)
+// - Two 16-bit timers with various modes
+// - Time-of-day clock with alarm
+// - Interrupt generation and control
+//
+// Memory mapped at $BFE001-$BFEF01 (odd addresses only)
+
 module ciaa
 (
-	input        clk,           // clock
-	input        clk7_en,
-	input        clk7n_en,
-	input        aen,           // adress enable
-	input        rd,            // read enable
-	input        wr,            // write enable
-	input        reset,         // reset
-	input  [3:0] rs,            // register select (address)
-	input  [7:0] data_in,       // bus data in
-	output [7:0] data_out,      // bus data out
-	input        tick,          // tick (counter input for TOD timer)
-	input        eclk,          // eclk (counter input for timer A/B)
-	output       irq,           // interrupt request out
-	input  [7:2] porta_in,      // porta in
-	output [3:0] porta_out,     // porta out
-	input  [7:0] portb_in,      // portb in
+	input        clk,           // System clock
+	input        clk7_en,       // 7MHz clock enable (positive edge)
+	input        clk7n_en,      // 7MHz clock enable (negative edge)
+	input        aen,           // Address enable (chip select)
+	input        rd,            // Read enable
+	input        wr,            // Write enable
+	input        reset,         // System reset
+	input  [3:0] rs,            // Register select (address bits)
+	input  [7:0] data_in,       // CPU data bus input
+	output [7:0] data_out,      // CPU data bus output
+	input        tick,          // TOD tick input (50/60 Hz)
+	input        eclk,          // E clock (system clock / 10)
+	output       irq,           // Interrupt request to CPU
 
-	input        kms_level,
-	input  [1:0] kbd_mouse_type,
-	input  [7:0] kbd_mouse_data,
-	output       freeze,        // Action Replay freeze key
-	input        hrtmon_en
+	// Port A connections (disk and game port control)
+	input  [7:2] porta_in,      // Port A inputs
+	output [3:0] porta_out,     // Port A outputs
+	// Bit 0: /OVL - Overlay ROM control (output)
+	// Bit 1: /LED - Power LED control (output)
+	// Bit 2: /CHNG - Disk change signal (input)
+	// Bit 3: /WPRO - Disk write protect (input)
+	// Bit 4: /TK0 - Track 0 signal (input)
+	// Bit 5: /RDY - Disk ready (input)
+	// Bit 6: /FIR0 - Joystick/Mouse button (input)
+	// Bit 7: /FIR1 - Joystick/Mouse button (input)
+
+	// Port B - Parallel port data (Centronics printer interface)
+	input  [7:0] portb_in,      // Port B inputs (not used in Amiga)
+
+	// Keyboard interface signals
+	input        kms_level,     // Keyboard/mouse serial data level
+	input  [1:0] kbd_mouse_type, // 2 = keyboard data
+	input  [7:0] kbd_mouse_data, // Keyboard scan code
+	output       freeze,        // Action Replay freeze button
+	input        hrtmon_en      // HRTMon debugger enable
 );
 
-// local signals
-wire [7:0] icr_out;
-wire [7:0] tmra_out;
-wire [7:0] tmrb_out;
-wire [7:0] tmrd_out;
-wire [7:0] sdr_out;
-reg  [7:0] pa_out;
-reg  [7:0] pb_out;
-wire [7:0] portb_out;
-wire       alrm;        // TOD interrupt
-wire       ta;          // TIMER A interrupt
-wire       tb;          // TIMER B interrupt
-wire       tmra_ovf;      // TIMER A underflow (for Timer B)
+// Internal signal declarations
+wire [7:0] icr_out;         // Interrupt control register output
+wire [7:0] tmra_out;        // Timer A data output
+wire [7:0] tmrb_out;        // Timer B data output
+wire [7:0] tmrd_out;        // Timer D (TOD) data output
+wire [7:0] sdr_out;         // Serial data register output
+reg  [7:0] pa_out;          // Port A data output
+reg  [7:0] pb_out;          // Port B data output
+wire [7:0] portb_out;       // Port B output (unused)
+wire       alrm;            // TOD alarm interrupt
+wire       ta;              // Timer A interrupt
+wire       tb;              // Timer B interrupt
+wire       tmra_ovf;        // Timer A underflow signal
 
-wire       spmode;        // TIMER A Serial Port Mode (0-input, 1-output)
-wire       ser_tx_irq;      // serial port transmit interrupt request
-reg  [3:0] ser_tx_cnt;   // serial port transmit bit counter
-reg        ser_tx_run;      // serial port is transmitting
+wire       spmode;          // Serial port mode (0=input, 1=output)
+wire       ser_tx_irq;      // Serial transmit complete interrupt
+reg  [3:0] ser_tx_cnt;      // Serial transmit bit counter
+reg        ser_tx_run;      // Serial transmission in progress
 
-reg        tick_del;      // required for edge detection
+reg        tick_del;        // Delayed tick for edge detection
 
 //----------------------------------------------------------------------------------
-// address decoder
+// Address decoder for CIA registers
 //----------------------------------------------------------------------------------
 wire  pra,prb,ddra,ddrb,cra,talo,tahi,crb,tblo,tbhi,tdlo,tdme,tdhi,icrs,sdr;
 wire  enable;
 
 assign enable = aen & (rd | wr);
 
-// decoder
+// CIA A Register Map:
+// $BFE001 - PRA   - Port A data
+// $BFE101 - PRB   - Port B data (parallel port)
+// $BFE201 - DDRA  - Port A direction (0=input, 1=output)
+// $BFE301 - DDRB  - Port B direction
+// $BFE401 - TALO  - Timer A low byte
+// $BFE501 - TAHI  - Timer A high byte
+// $BFE601 - TBLO  - Timer B low byte
+// $BFE701 - TBHI  - Timer B high byte
+// $BFE801 - TDLO  - TOD low byte (1/10 seconds)
+// $BFE901 - TDME  - TOD middle byte (seconds)
+// $BFEA01 - TDHI  - TOD high byte (minutes)
+// $BFEC01 - SDR   - Serial data register (keyboard)
+// $BFED01 - ICR   - Interrupt control register
+// $BFEE01 - CRA   - Control register A
+// $BFEF01 - CRB   - Control register B
+
 assign  pra  = enable && rs==4'h0;
 assign  prb  = enable && rs==4'h1;
 assign  ddra = enable && rs==4'h2;
@@ -149,22 +191,20 @@ assign  icrs = enable && rs==4'hD;
 assign  cra  = enable && rs==4'hE;
 assign  crb  = enable && rs==4'hF;
 
-//----------------------------------------------------------------------------------
-// data_out multiplexer
-//----------------------------------------------------------------------------------
+// Data output multiplexer - OR together all module outputs
 assign data_out = icr_out | tmra_out | tmrb_out | tmrd_out | sdr_out | pb_out | pa_out;
 
 //----------------------------------------------------------------------------------
-// instantiate keyboard module
+// Keyboard Interface
 //----------------------------------------------------------------------------------
-reg        keystrobe;
-wire [7:0] keydat;
-reg  [7:0] sdr_latch;
+reg        keystrobe;       // Keyboard data strobe
+wire [7:0] keydat;         // Keyboard data (unused)
+reg  [7:0] sdr_latch;      // Serial data register latch
 
-reg    freeze_reg=0;
+reg    freeze_reg=0;       // Action Replay freeze signal
 assign freeze = freeze_reg;
 
-// generate a keystrobe which is valid exactly one clk cycle
+// Generate single-cycle keyboard strobe on data change
 always @(posedge clk) begin
 	reg kms_levelD;
 	if (clk7n_en) begin
@@ -173,9 +213,9 @@ always @(posedge clk) begin
 	end
 end
 
-
-// sdr register
-// !!! Amiga receives keycode ONE STEP ROTATED TO THE RIGHT AND INVERTED !!!
+// Serial Data Register (SDR)
+// Keyboard sends data serially, one bit at a time
+// Data arrives ROTATED RIGHT by one bit and INVERTED
 always @(posedge clk) begin
 	if (reset) begin
 		sdr_latch[7:0] <= 0;
@@ -183,53 +223,58 @@ always @(posedge clk) begin
 	end
 	else if (clk7_en) begin
 		if (keystrobe) begin
+			// Rotate and invert incoming keyboard data
 			sdr_latch[7:0] <= ~{kbd_mouse_data[6:0],kbd_mouse_data[7]};
+			// Check for freeze key (Help key, scan code $5F)
 			if (hrtmon_en && (kbd_mouse_data == 8'h5f)) freeze_reg <= 1;
 			else freeze_reg <= 0;
 		end
-		else if (wr & sdr) sdr_latch[7:0] <= data_in[7:0];
+		else if (wr & sdr) 
+			sdr_latch[7:0] <= data_in[7:0];  // CPU write to SDR
 	end
 end
 
-// sdr register read
+// SDR read
 assign sdr_out = (!wr && sdr) ? sdr_latch[7:0] : 8'h00;
 
-// serial port transmision in progress
+// Serial port transmission control (output mode)
+// Used for keyboard handshake and other serial communication
 always @(posedge clk)
   if (clk7_en) begin
-    if (reset || !spmode) // reset or not in output mode
+    if (reset || !spmode)     // Reset or input mode
       ser_tx_run <= 0;
-    else if (sdr && wr) // write to serial port data register when serial port is in output mode
+    else if (sdr && wr)       // Start transmission on SDR write
       ser_tx_run <= 1;
-    else if (ser_tx_irq) // last bit has been transmitted
+    else if (ser_tx_irq)      // Stop after last bit sent
       ser_tx_run <= 0;
   end
 
-// serial port transmitted bits counter
+// Count transmitted bits using Timer A underflows as baud clock
 always @(posedge clk)
   if (clk7_en) begin
     if (!ser_tx_run)
       ser_tx_cnt <= 4'd0;
-    else if (tmra_ovf) // bits are transmitted when tmra overflows
+    else if (tmra_ovf)        // Count on Timer A underflow
       ser_tx_cnt <= ser_tx_cnt + 4'd1;
   end
 
-assign ser_tx_irq = &ser_tx_cnt & tmra_ovf; // signal irq when ser_tx_cnt overflows
+// Generate interrupt after 8 bits transmitted
+assign ser_tx_irq = &ser_tx_cnt & tmra_ovf;
 
 //----------------------------------------------------------------------------------
-// porta
+// Port A - Game port and disk control
 //----------------------------------------------------------------------------------
-reg [7:2] porta_in2;
-reg [3:0] regporta;
-reg [7:0] ddrporta;
+reg [7:2] porta_in2;        // Synchronized input data
+reg [3:0] regporta;         // Port A output register
+reg [7:0] ddrporta;         // Port A direction register
 
-// synchronizing of input data
+// Synchronize external inputs
 always @(posedge clk)
   if (clk7_en) begin
     porta_in2[7:2] <= porta_in[7:2];
   end
 
-// writing of output port
+// Port A output register (only bits 7,6,1,0 are outputs)
 always @(posedge clk)
   if (clk7_en) begin
     if (reset)
@@ -238,47 +283,36 @@ always @(posedge clk)
       regporta[3:0] <= {data_in[7:6], data_in[1:0]};
   end
 
-// writing of ddr register
+// Port A direction register
 always @(posedge clk)
   if (clk7_en) begin
     if (reset)
-      ddrporta[7:0] <= 8'd0;
+      ddrporta[7:0] <= 8'd0;  // All inputs by default
     else if (wr && ddra)
        ddrporta[7:0] <= data_in[7:0];
   end
 
-// reading of port/ddr register
+// Port A read multiplexer
 always @(*)
 begin
   if (!wr && pra)
-    pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]};
+    pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]};  // Mix inputs and outputs
   else if (!wr && ddra)
-    pa_out[7:0] = ddrporta[7:0];
+    pa_out[7:0] = ddrporta[7:0];                    // Read direction register
   else
     pa_out[7:0] = 8'h00;
 end
 
-// assignment of output port while keeping in mind that the original 8520 uses pull-ups
+// Port A outputs with pull-up simulation
+// Original 8520 has internal pull-ups, so undriven pins read as 1
 assign porta_out[3:0] = {(~ddrporta[7:6] | regporta[3:2]), (~ddrporta[1:0] | regporta[1:0])};
 
 //----------------------------------------------------------------------------------
-// portb
+// Port B - Parallel port (simplified, mostly unused in Amiga)
 //----------------------------------------------------------------------------------
-//reg [7:0] regportb;
-reg [7:0] ddrportb;
+reg [7:0] ddrportb;         // Port B direction register
 
-/*
-// writing of output port
-always @(posedge clk)
-  if (clk7_en) begin
-    if (reset)
-      regportb[7:0] <= 8'd0;
-    else if (wr && prb)
-      regportb[7:0] <= (data_in[7:0]);
-  end
-*/
-
-// writing of ddr register
+// Port B direction register
 always @(posedge clk)
   if (clk7_en) begin
     if (reset)
@@ -287,27 +321,28 @@ always @(posedge clk)
       ddrportb[7:0] <= (data_in[7:0]);
   end
 
-// reading of port/ddr register
+// Port B read multiplexer
 always @(*)
 begin
   if (!wr && prb)
-    pb_out[7:0] = portb_in[7:0];
+    pb_out[7:0] = portb_in[7:0];    // Read port pins
   else if (!wr && ddrb)
-    pb_out[7:0] = (ddrportb[7:0]);
+    pb_out[7:0] = (ddrportb[7:0]);  // Read direction register
   else
     pb_out[7:0] = 8'h00;
 end
 
-
-// delayed tick signal for edge detection
+// Delayed tick for edge detection
 always @(posedge clk)
   if (clk7_en) begin
     tick_del <= tick;
   end
 
 //----------------------------------------------------------------------------------
-// instantiate cia interrupt controller
+// Instantiate sub-modules
 //----------------------------------------------------------------------------------
+
+// Interrupt controller
 cia_int cnt
 (
   .clk(clk),
@@ -318,16 +353,14 @@ cia_int cnt
   .ta(ta),
   .tb(tb),
   .alrm(alrm),
-  .flag(1'b0),
-  .ser(keystrobe | ser_tx_irq),
+  .flag(1'b0),                      // FLAG pin not used on CIA A
+  .ser(keystrobe | ser_tx_irq),    // Keyboard or serial transmit interrupt
   .data_in(data_in),
   .data_out(icr_out),
   .irq(irq)
 );
 
-//----------------------------------------------------------------------------------
-// instantiate timer A
-//----------------------------------------------------------------------------------
+// Timer A - General purpose timer, serial port baud rate
 cia_timera tmra
 (
   .clk(clk),
@@ -345,9 +378,7 @@ cia_timera tmra
   .irq(ta)
 );
 
-//----------------------------------------------------------------------------------
-// instantiate timer B
-//----------------------------------------------------------------------------------
+// Timer B - General purpose timer, can cascade with Timer A
 cia_timerb tmrb
 (
   .clk(clk),
@@ -364,9 +395,7 @@ cia_timerb tmrb
   .irq(tb)
 );
 
-//----------------------------------------------------------------------------------
-// instantiate timer D
-//----------------------------------------------------------------------------------
+// Timer D - Time of Day clock with alarm
 cia_timerd tmrd
 (
   .clk(clk),
@@ -379,10 +408,9 @@ cia_timerd tmrd
   .tcr(crb),
   .data_in(data_in),
   .data_out(tmrd_out),
-  .count(tick & ~tick_del),
+  .count(tick & ~tick_del),  // Count on rising edge of tick
   .irq(alrm)
 );
 
 
 endmodule
-
