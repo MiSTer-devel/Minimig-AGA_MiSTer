@@ -29,6 +29,7 @@ module cia_timerd
   reg    [23:0] alarm;    // 24-bit alarm register (BCD format)
   reg    [23:0] tod_latch; // Latched TOD value for stable reading
   reg    count_del;       // Delayed count signal for edge detection
+  reg    count_del2;      // delayed count signal for interrupt requesting
 
 // TOD Counter Format (BCD - Binary Coded Decimal):
 // Bits 23:16 - Minutes (00-59 BCD)
@@ -100,6 +101,8 @@ always @(posedge clk)
 // TOD Counter
 // Note: Simplified implementation - counts binary, not true BCD
 // Real hardware would implement proper BCD counting with digit carries
+// AMR - emulate buggy TOD behaviour in Mid counter.Add commentMore actions
+reg todcarry;
 always @(posedge clk)
   if (clk7_en) begin
     if (reset)
@@ -115,8 +118,13 @@ always @(posedge clk)
       if (thi)
         tod[23:16] <= data_in[7:0];  // Set minutes
     end
-    else if (count_ena && count)
-      tod[23:0] <= tod[23:0] + 24'd1; // Increment counter
+    else if (count_ena && count) begin
+		todcarry <= &tod[11:0];
+      tod[11:0] <= tod[11:0] + 12'd1;
+    end
+	 else if (count_ena && count_del)
+	   tod[23:12] <= tod[23:12] + todcarry;
+
   end
 
 // ALARM Register Write
@@ -156,12 +164,13 @@ always @(posedge clk)
 always @(posedge clk)
   if (clk7_en) begin
     count_del <= count & count_ena;
+    count_del2 <= count_del & count_ena;
   end
 
 // Alarm interrupt generation
 // Triggers when TOD exactly matches ALARM value
 // count_del ensures single interrupt pulse
-assign irq = (tod[23:0]==alarm[23:0] && count_del) ? 1'b1 : 1'b0;
+assign irq = (tod[23:0]==alarm[23:0] && (count_del || count_del2)) ? 1'b1 : 1'b0;
 
 
 endmodule
