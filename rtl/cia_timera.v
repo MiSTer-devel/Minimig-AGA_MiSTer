@@ -94,10 +94,17 @@ always @(posedge clk)
       tmlh[7:0] <= data_in[7:0];
   end
 
+reg thi_load_latched;
+wire thi_load_eclk= thi_load_latched & eclk;
+
 // Detect write to timer high byte
 // In stopped state or one-shot mode, this triggers timer reload
 always @(posedge clk)
   if (clk7_en) begin
+  	if(eclk)
+		  thi_load_latched<=1'b0;
+	  if (thi & wr & (~start | oneshot))
+		  thi_load_latched <= 1'b1;
     thi_load <= thi & wr & (~start | oneshot);
   end
 
@@ -105,7 +112,7 @@ always @(posedge clk)
 // 1. Force load strobe (bit 4 of control register)
 // 2. Write to high byte when stopped or in one-shot mode
 // 3. Timer underflow (automatic reload)
-assign reload = thi_load | forceload | underflow;
+assign reload = thi_load_eclk | forceload | underflow;
 
 // 16-bit down counter
 always @(posedge clk)

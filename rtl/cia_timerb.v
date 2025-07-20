@@ -96,14 +96,21 @@ always @(posedge clk)
       tmlh[7:0] <= data_in[7:0];
   end
 
+reg thi_load_latched;
+wire thi_load_eclk= thi_load_latched & eclk;
+
 // Detect write to timer high byte
 always @(posedge clk)
   if (clk7_en) begin
+  	if(eclk)
+		  thi_load_latched<=1'b0;
+	  if (thi & wr & (~start | oneshot))
+		  thi_load_latched <= 1'b1;
     thi_load <= thi & wr & (~start | oneshot);
   end
 
 // Timer reload conditions (same as Timer A)
-assign reload = thi_load | forceload | underflow;
+assign reload = thi_load_eclk | forceload | underflow;
 
 // 16-bit down counter
 always @(posedge clk)
