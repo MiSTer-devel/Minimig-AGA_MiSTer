@@ -377,10 +377,11 @@ denise_sprites sprm0
 );
 
 // instantiate video priority logic module
+wire [2:1] nplayfield_masked = nplayfield & {window_ena,window_ena};
 denise_spritepriority spm0
 (
   .bplcon2(bplcon2[5:0]),
-  .nplayfield(nplayfield),
+  .nplayfield(nplayfield_masked),
   .nsprite(nsprite),
   .sprsel(sprsel)
 );
