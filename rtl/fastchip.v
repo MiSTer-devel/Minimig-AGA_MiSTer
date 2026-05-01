@@ -68,7 +68,14 @@ module fastchip
 	output [23:0] akiko_dma_baddr,
 	output  [7:0] akiko_dma_wbyte,
 	input   [7:0] akiko_dma_rbyte,
-	input         akiko_dma_ack
+	input         akiko_dma_ack,
+
+	input         akiko_uio_cs,
+	input         akiko_uio_wr,
+	input         akiko_uio_rd,
+	input  [15:0] akiko_uio_din,
+	output [15:0] akiko_uio_dout,
+	output        akiko_uio_req
 );
 
 localparam NATIVE_CD32 = 0;
@@ -79,6 +86,17 @@ assign dout    = akiko_dout | ide_dout  | rtg_dout;
 
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
+
+wire        akiko_hps_cmd_pending;
+wire  [7:0] akiko_hps_cmd_byte;
+wire        akiko_hps_cmd_pop;
+wire        akiko_hps_cmd_done;
+wire        akiko_hps_result_push;
+wire  [7:0] akiko_hps_result_byte;
+wire        akiko_hps_result_done;
+wire  [7:0] akiko_uio_dout_byte;
+
+assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
 
 akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 (
@@ -98,7 +116,33 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.dma_baddr(akiko_dma_baddr),
 	.dma_wbyte(akiko_dma_wbyte),
 	.dma_rbyte(akiko_dma_rbyte),
-	.dma_ack(akiko_dma_ack)
+	.dma_ack(akiko_dma_ack),
+	.hps_cmd_pending(akiko_hps_cmd_pending),
+	.hps_cmd_byte(akiko_hps_cmd_byte),
+	.hps_cmd_pop(akiko_hps_cmd_pop),
+	.hps_cmd_done(akiko_hps_cmd_done),
+	.hps_result_push(akiko_hps_result_push),
+	.hps_result_byte(akiko_hps_result_byte),
+	.hps_result_done(akiko_hps_result_done)
+);
+
+akiko_hps_bridge akiko_hps_bridge
+(
+	.clk(clk_sys),
+	.reset(reset),
+	.uio_cs(akiko_uio_cs),
+	.uio_wr(akiko_uio_wr),
+	.uio_rd(akiko_uio_rd),
+	.uio_din(akiko_uio_din[7:0]),
+	.uio_dout(akiko_uio_dout_byte),
+	.cmd_pending(akiko_hps_cmd_pending),
+	.cmd_byte(akiko_hps_cmd_byte),
+	.cmd_pop(akiko_hps_cmd_pop),
+	.cmd_done(akiko_hps_cmd_done),
+	.result_push(akiko_hps_result_push),
+	.result_byte(akiko_hps_result_byte),
+	.result_done(akiko_hps_result_done),
+	.req(akiko_uio_req)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	

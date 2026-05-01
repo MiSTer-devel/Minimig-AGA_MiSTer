@@ -44,7 +44,15 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	output     [23:0] dma_baddr,
 	output      [7:0] dma_wbyte,
 	input       [7:0] dma_rbyte,
-	input             dma_ack
+	input             dma_ack,
+
+	output            hps_cmd_pending,
+	output      [7:0] hps_cmd_byte,
+	input             hps_cmd_pop,
+	input             hps_cmd_done,
+	input             hps_result_push,
+	input       [7:0] hps_result_byte,
+	input             hps_result_done
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -98,6 +106,8 @@ wire        cd_dma_req;
 wire        cd_dma_we;
 wire [23:0] cd_dma_baddr;
 wire  [7:0] cd_dma_wbyte;
+wire        cd_hps_cmd_pending;
+wire  [7:0] cd_hps_cmd_byte;
 
 generate
 if (NATIVE_CD32) begin : g_cd
@@ -127,6 +137,33 @@ if (NATIVE_CD32) begin : g_cd
 	reg        tx_busy;
 	reg        rx_busy;
 
+	reg  [5:0] hps_cmd_rd_ptr;
+	reg  [5:0] hps_result_wr_ptr;
+
+	function [5:0] expected_total_len;
+		input [3:0] op;
+		case (op)
+			4'h0: expected_total_len = 6'd2;
+			4'h1: expected_total_len = 6'd3;
+			4'h2: expected_total_len = 6'd2;
+			4'h3: expected_total_len = 6'd2;
+			4'h4: expected_total_len = 6'd13;
+			4'h5: expected_total_len = 6'd3;
+			4'h6: expected_total_len = 6'd2;
+			4'h7: expected_total_len = 6'd2;
+			4'h8: expected_total_len = 6'd5;
+			4'h9: expected_total_len = 6'd2;
+			4'ha: expected_total_len = 6'd3;
+			default: expected_total_len = 6'd32;
+		endcase
+	endfunction
+
+	wire [3:0] cmd_op       = cdrom_command_buffer[0][3:0];
+	wire [5:0] cmd_total    = expected_total_len(cmd_op);
+	wire       cmd_pending  = (cdrom_command_length != 6'd0)
+	                       && ((cdrom_command_length >= cmd_total)
+	                          || (cdrom_command_length == 6'd32));
+
 	wire [23:0] cdrx_address = cdrom_addressmisc[23:0];
 	wire [23:0] cdtx_address = cdrom_addressmisc[23:0] | 24'h000200;
 
@@ -135,7 +172,8 @@ if (NATIVE_CD32) begin : g_cd
 	                  && (cdcomtxinx != cdcomtxcmp)
 	                  && (tx_dma_delay == 2'd0)
 	                  && (cdrom_receive_length == 6'd0)
-	                  && (cdrom_command_length != 6'd32);
+	                  && (cdrom_command_length != 6'd32)
+	                  && !cmd_pending;
 
 	wire rx_can_start =  cdrom_flags[CDFLAG_RXD_BIT]
 	                  && (cdrom_receive_length != 6'd0)
@@ -167,6 +205,8 @@ if (NATIVE_CD32) begin : g_cd
 			rx_dma_delay         <= 2'h0;
 			tx_busy              <= 1'b0;
 			rx_busy              <= 1'b0;
+			hps_cmd_rd_ptr       <= 6'h0;
+			hps_result_wr_ptr    <= 6'h0;
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
@@ -308,6 +348,22 @@ if (NATIVE_CD32) begin : g_cd
 			end else if (rx_can_start) begin
 				rx_busy <= 1'b1;
 			end
+
+			if (hps_cmd_pop && (hps_cmd_rd_ptr != 6'd32))
+				hps_cmd_rd_ptr <= hps_cmd_rd_ptr + 6'd1;
+			if (hps_cmd_done) begin
+				cdrom_command_length <= 6'd0;
+				hps_cmd_rd_ptr       <= 6'd0;
+			end
+
+			if (hps_result_push && (hps_result_wr_ptr != 6'd32)) begin
+				cdrom_result_buffer[hps_result_wr_ptr[4:0]] <= hps_result_byte;
+				hps_result_wr_ptr <= hps_result_wr_ptr + 6'd1;
+			end
+			if (hps_result_done && (cdrom_receive_length == 6'd0)) begin
+				cdrom_receive_length <= hps_result_wr_ptr;
+				hps_result_wr_ptr    <= 6'd0;
+			end
 		end
 	end
 
@@ -344,13 +400,18 @@ if (NATIVE_CD32) begin : g_cd
 	                              : (cdtx_address + {16'h0, cdcomtxinx});
 	assign cd_dma_wbyte = cdrom_result_buffer[cdrom_receive_offset];
 
+	assign cd_hps_cmd_pending = cmd_pending;
+	assign cd_hps_cmd_byte    = cdrom_command_buffer[hps_cmd_rd_ptr[4:0]];
+
 end else begin : g_stub
-	assign cd_dout      = 16'h0;
-	assign cd_irq       = 1'b0;
-	assign cd_dma_req   = 1'b0;
-	assign cd_dma_we    = 1'b0;
-	assign cd_dma_baddr = 24'h0;
-	assign cd_dma_wbyte = 8'h0;
+	assign cd_dout            = 16'h0;
+	assign cd_irq             = 1'b0;
+	assign cd_dma_req         = 1'b0;
+	assign cd_dma_we          = 1'b0;
+	assign cd_dma_baddr       = 24'h0;
+	assign cd_dma_wbyte       = 8'h0;
+	assign cd_hps_cmd_pending = 1'b0;
+	assign cd_hps_cmd_byte    = 8'h0;
 end
 endgenerate
 
@@ -370,5 +431,8 @@ assign dma_req   = cd_dma_req;
 assign dma_we    = cd_dma_we;
 assign dma_baddr = cd_dma_baddr;
 assign dma_wbyte = cd_dma_wbyte;
+
+assign hps_cmd_pending = cd_hps_cmd_pending;
+assign hps_cmd_byte    = cd_hps_cmd_byte;
 
 endmodule

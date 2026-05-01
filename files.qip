@@ -10,6 +10,7 @@ set_global_assignment -name QIP_FILE rtl/fpga-toccata/toccata.qip
 set_global_assignment -name VERILOG_FILE rtl/gary.v
 set_global_assignment -name VERILOG_FILE rtl/rtg.v
 set_global_assignment -name VERILOG_FILE rtl/akiko.v
+set_global_assignment -name VERILOG_FILE rtl/akiko_hps_bridge.v
 set_global_assignment -name VERILOG_FILE rtl/fastchip.v
 set_global_assignment -name VERILOG_FILE rtl/userio.v
 set_global_assignment -name VERILOG_FILE rtl/cart.v
