@@ -37,7 +37,14 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input       [5:1] addr,
 	input      [15:0] din,
 	output reg [15:0] dout,
-	output            akiko_irq
+	output            akiko_irq,
+
+	output            dma_req,
+	output            dma_we,
+	output     [23:0] dma_baddr,
+	output      [7:0] dma_wbyte,
+	input       [7:0] dma_rbyte,
+	input             dma_ack
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -53,6 +60,8 @@ localparam [31:0] CDINT_TXDMADONE = 32'h08000000;
 localparam [31:0] CDINT_PBX       = 32'h04000000;
 localparam [31:0] CDINT_OVERFLOW  = 32'h02000000;
 
+localparam        CDFLAG_TXD_BIT    = 30;
+localparam        CDFLAG_RXD_BIT    = 29;
 localparam        CDFLAG_PBX_BIT    = 27;
 localparam        CDFLAG_ENABLE_BIT = 26;
 
@@ -85,6 +94,10 @@ end
 
 wire [15:0] cd_dout;
 wire        cd_irq;
+wire        cd_dma_req;
+wire        cd_dma_we;
+wire [23:0] cd_dma_baddr;
+wire  [7:0] cd_dma_wbyte;
 
 generate
 if (NATIVE_CD32) begin : g_cd
@@ -104,6 +117,31 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [7:0] nvram_io;
 	reg  [7:0] nvram_dir;
 
+	reg  [7:0] cdrom_command_buffer [32];
+	reg  [5:0] cdrom_command_length;
+	reg  [7:0] cdrom_result_buffer  [32];
+	reg  [5:0] cdrom_receive_length;
+	reg  [5:0] cdrom_receive_offset;
+	reg  [1:0] tx_dma_delay;
+	reg  [1:0] rx_dma_delay;
+	reg        tx_busy;
+	reg        rx_busy;
+
+	wire [23:0] cdrx_address = cdrom_addressmisc[23:0];
+	wire [23:0] cdtx_address = cdrom_addressmisc[23:0] | 24'h000200;
+
+	wire tx_can_start =  cdrom_flags[CDFLAG_TXD_BIT]
+	                  && !cdrom_flags[CDFLAG_ENABLE_BIT]
+	                  && (cdcomtxinx != cdcomtxcmp)
+	                  && (tx_dma_delay == 2'd0)
+	                  && (cdrom_receive_length == 6'd0)
+	                  && (cdrom_command_length != 6'd32);
+
+	wire rx_can_start =  cdrom_flags[CDFLAG_RXD_BIT]
+	                  && (cdrom_receive_length != 6'd0)
+	                  && (cdcomrxinx != cdcomrxcmp)
+	                  && (rx_dma_delay == 2'd0);
+
 	wire write = wr & cs;
 
 	always @(posedge clk) begin
@@ -122,7 +160,18 @@ if (NATIVE_CD32) begin : g_cd
 			pio_byte            <= 8'h0;
 			nvram_io            <= 8'h0;
 			nvram_dir           <= 8'h0;
-		end else if (write) begin
+			cdrom_command_length <= 6'h0;
+			cdrom_receive_length <= 6'h0;
+			cdrom_receive_offset <= 6'h0;
+			tx_dma_delay         <= 2'h0;
+			rx_dma_delay         <= 2'h0;
+			tx_busy              <= 1'b0;
+			rx_busy              <= 1'b0;
+		end else begin
+			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
+			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+
+			if (write) begin
 			case (addr)
 				5'b00100: begin : intena_hi
 					reg [31:0] tmp;
@@ -173,12 +222,14 @@ if (NATIVE_CD32) begin : g_cd
 					if (lds) begin
 						cdcomtxcmp   <= din[7:0];
 						cdrom_intreq <= cdrom_intreq & ~CDINT_TXDMADONE;
+						tx_dma_delay <= 2'd3;
 					end
 				end
 				5'b01111: begin
 					if (lds) begin
 						cdcomrxcmp   <= din[7:0];
 						cdrom_intreq <= cdrom_intreq & ~CDINT_RXDMADONE;
+						rx_dma_delay <= 2'd3;
 					end
 				end
 				5'b10000: begin : pbx_w
@@ -224,6 +275,39 @@ if (NATIVE_CD32) begin : g_cd
 				end
 				default: ;
 			endcase
+			end
+
+			if (tx_busy) begin
+				if (dma_ack && !rx_busy) begin
+					if (cdrom_command_length != 6'd32)
+						cdrom_command_buffer[cdrom_command_length] <= dma_rbyte;
+					cdrom_command_length <= cdrom_command_length + 6'd1;
+					cdcomtxinx           <= cdcomtxinx + 8'd1;
+					if ((cdcomtxinx + 8'd1) == cdcomtxcmp)
+						cdrom_intreq <= cdrom_intreq | CDINT_TXDMADONE;
+					tx_busy <= 1'b0;
+				end
+			end else if (!rx_busy && tx_can_start) begin
+				tx_busy <= 1'b1;
+			end
+
+			if (rx_busy) begin
+				if (dma_ack) begin
+					cdcomrxinx           <= cdcomrxinx + 8'd1;
+					cdrom_receive_offset <= cdrom_receive_offset + 6'd1;
+					if ((cdrom_receive_offset + 6'd1) == cdrom_receive_length) begin
+						cdrom_receive_length <= 6'd0;
+						cdrom_receive_offset <= 6'd0;
+						cdrom_intreq <= ((cdrom_intreq & ~CDINT_DRIVERECV) | CDINT_DRIVEXMIT)
+						              | (((cdcomrxinx + 8'd1) == cdcomrxcmp) ? CDINT_RXDMADONE : 32'h0);
+					end else if ((cdcomrxinx + 8'd1) == cdcomrxcmp) begin
+						cdrom_intreq <= cdrom_intreq | CDINT_RXDMADONE;
+					end
+					rx_busy <= 1'b0;
+				end
+			end else if (rx_can_start) begin
+				rx_busy <= 1'b1;
+			end
 		end
 	end
 
@@ -254,9 +338,19 @@ if (NATIVE_CD32) begin : g_cd
 	assign cd_dout = cs ? cd_dout_r : 16'h0;
 	assign cd_irq  = |(cdrom_intreq[31:25] & cdrom_intena[31:25]);
 
+	assign cd_dma_req   = tx_busy | rx_busy;
+	assign cd_dma_we    = rx_busy;
+	assign cd_dma_baddr = rx_busy ? (cdrx_address + {16'h0, cdcomrxinx})
+	                              : (cdtx_address + {16'h0, cdcomtxinx});
+	assign cd_dma_wbyte = cdrom_result_buffer[cdrom_receive_offset];
+
 end else begin : g_stub
-	assign cd_dout = 16'h0;
-	assign cd_irq  = 1'b0;
+	assign cd_dout      = 16'h0;
+	assign cd_irq       = 1'b0;
+	assign cd_dma_req   = 1'b0;
+	assign cd_dma_we    = 1'b0;
+	assign cd_dma_baddr = 24'h0;
+	assign cd_dma_wbyte = 8'h0;
 end
 endgenerate
 
@@ -271,5 +365,10 @@ always @(*) begin
 end
 
 assign akiko_irq = cd_irq;
+
+assign dma_req   = cd_dma_req;
+assign dma_we    = cd_dma_we;
+assign dma_baddr = cd_dma_baddr;
+assign dma_wbyte = cd_dma_wbyte;
 
 endmodule

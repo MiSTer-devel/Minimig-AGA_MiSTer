@@ -61,7 +61,14 @@ module fastchip
 
 	output        ide_led,
 
-	output        akiko_irq
+	output        akiko_irq,
+
+	output        akiko_dma_req,
+	output        akiko_dma_we,
+	output [23:0] akiko_dma_baddr,
+	output  [7:0] akiko_dma_wbyte,
+	input   [7:0] akiko_dma_rbyte,
+	input         akiko_dma_ack
 );
 
 localparam NATIVE_CD32 = 0;
@@ -85,7 +92,13 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.addr(addr[5:1]),
 	.din(din),
 	.dout(akiko_dout),
-	.akiko_irq(akiko_irq)
+	.akiko_irq(akiko_irq),
+	.dma_req(akiko_dma_req),
+	.dma_we(akiko_dma_we),
+	.dma_baddr(akiko_dma_baddr),
+	.dma_wbyte(akiko_dma_wbyte),
+	.dma_rbyte(akiko_dma_rbyte),
+	.dma_ack(akiko_dma_ack)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	

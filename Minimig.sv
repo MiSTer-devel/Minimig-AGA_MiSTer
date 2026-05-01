@@ -623,7 +623,14 @@ fastchip fastchip
 	.ide_readdata (ide_f_readdata    ),
 	.ide_led      (ide_f_led         ),
 
-	.akiko_irq    (akiko_f_irq       )
+	.akiko_irq    (akiko_f_irq       ),
+
+	.akiko_dma_req   (                  ),
+	.akiko_dma_we    (                  ),
+	.akiko_dma_baddr (                  ),
+	.akiko_dma_wbyte (                  ),
+	.akiko_dma_rbyte (8'h00             ),
+	.akiko_dma_ack   (1'b0              )
 );
 
 
