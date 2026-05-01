@@ -18,6 +18,7 @@ module akiko_hps_bridge
 	input             reset,
 
 	input             uio_cs,
+	input             uio_cs_sec,
 	input             uio_wr,
 	input             uio_rd,
 	input       [7:0] uio_din,
@@ -31,20 +32,30 @@ module akiko_hps_bridge
 	output      [7:0] result_byte,
 	output            result_done,
 
-	output            req
+	input             sec_req,
+	input       [7:0] sec_status,
+	output            sec_push,
+	output      [7:0] sec_byte,
+	output            sec_done,
+
+	output            req,
+	output            sec_req_out
 );
 
 reg cs_d;
+reg cs_sec_d;
 reg saw_read;
 reg saw_write;
 
 always @(posedge clk) begin
 	if (reset) begin
 		cs_d      <= 1'b0;
+		cs_sec_d  <= 1'b0;
 		saw_read  <= 1'b0;
 		saw_write <= 1'b0;
 	end else begin
-		cs_d <= uio_cs;
+		cs_d     <= uio_cs;
+		cs_sec_d <= uio_cs_sec;
 		if (!uio_cs) begin
 			saw_read  <= 1'b0;
 			saw_write <= 1'b0;
@@ -57,12 +68,20 @@ end
 
 wire xfer_end = cs_d & ~uio_cs;
 
-assign cmd_pop     = uio_rd;
-assign result_push = uio_wr;
+assign cmd_pop     = uio_rd & uio_cs & ~uio_cs_sec;
+assign result_push = uio_wr & uio_cs & ~uio_cs_sec;
 assign result_byte = uio_din;
-assign uio_dout    = cmd_byte;
-assign cmd_done    = xfer_end & saw_read;
-assign result_done = xfer_end & saw_write;
+
+assign sec_push    = uio_wr & uio_cs &  uio_cs_sec;
+assign sec_byte    = uio_din;
+
+assign uio_dout    = uio_cs_sec ? sec_status : cmd_byte;
+
+assign cmd_done    = xfer_end & saw_read  & ~cs_sec_d;
+assign result_done = xfer_end & saw_write & ~cs_sec_d;
+assign sec_done    = xfer_end &              cs_sec_d;
+
 assign req         = cmd_pending;
+assign sec_req_out = sec_req;
 
 endmodule

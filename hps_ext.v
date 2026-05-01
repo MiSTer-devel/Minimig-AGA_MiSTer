@@ -65,7 +65,9 @@ module hps_ext
 	output reg        akiko_wr,
 	output reg        akiko_rd,
 	output reg        akiko_cs,
-	input             akiko_req
+	output reg        akiko_cs_sec,
+	input             akiko_req,
+	input             akiko_sec_req
 );
 
 assign EXT_BUS[15:0] = io_fpga ? fpga_dout : io_dout;
@@ -109,6 +111,7 @@ always@(posedge clk_sys) begin
 		ide_cs <= 0;
 		cdda_cs <= 0;
 		akiko_cs <= 0;
+		akiko_cs_sec <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -120,17 +123,18 @@ always@(posedge clk_sys) begin
 		cdda_dout <= io_din;
 		akiko_dout <= io_din;
 		if(byte_cnt == 1) begin
-			ide_addr <= {io_din[8],io_din[3:0]};
-			ide_cs   <= (io_din[15:9] == 7'b1111000);
-			cdda_cs  <= (io_din[15:9] == 7'b1111001);
-			akiko_cs <= (io_din[15:9] == 7'b1111010);
+			ide_addr     <= {io_din[8],io_din[3:0]};
+			ide_cs       <= (io_din[15:9] == 7'b1111000);
+			cdda_cs      <= (io_din[15:9] == 7'b1111001);
+			akiko_cs     <= (io_din[15:9] == 7'b1111010);
+			akiko_cs_sec <= (io_din[15:9] == 7'b1111010) && io_din[8];
 		end
 
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
 			if(io_din == 'h63) begin
-				io_dout <= {4'hE, akiko_req, 2'b00, cdda_req, 2'b00, ide_req};
+				io_dout <= {4'hE, akiko_req, akiko_sec_req, 1'b0, cdda_req, 2'b00, ide_req};
 			end
 		end else begin
 			case(cmd)

@@ -71,11 +71,13 @@ module fastchip
 	input         akiko_dma_ack,
 
 	input         akiko_uio_cs,
+	input         akiko_uio_cs_sec,
 	input         akiko_uio_wr,
 	input         akiko_uio_rd,
 	input  [15:0] akiko_uio_din,
 	output [15:0] akiko_uio_dout,
-	output        akiko_uio_req
+	output        akiko_uio_req,
+	output        akiko_uio_sec_req
 );
 
 localparam NATIVE_CD32 = 0;
@@ -94,6 +96,11 @@ wire        akiko_hps_cmd_done;
 wire        akiko_hps_result_push;
 wire  [7:0] akiko_hps_result_byte;
 wire        akiko_hps_result_done;
+wire        akiko_hps_sec_req;
+wire  [7:0] akiko_hps_sec_status;
+wire        akiko_hps_sec_push;
+wire  [7:0] akiko_hps_sec_byte;
+wire        akiko_hps_sec_done;
 wire  [7:0] akiko_uio_dout_byte;
 
 assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
@@ -123,7 +130,12 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_cmd_done(akiko_hps_cmd_done),
 	.hps_result_push(akiko_hps_result_push),
 	.hps_result_byte(akiko_hps_result_byte),
-	.hps_result_done(akiko_hps_result_done)
+	.hps_result_done(akiko_hps_result_done),
+	.hps_sec_req(akiko_hps_sec_req),
+	.hps_sec_status(akiko_hps_sec_status),
+	.hps_sec_push(akiko_hps_sec_push),
+	.hps_sec_byte(akiko_hps_sec_byte),
+	.hps_sec_done(akiko_hps_sec_done)
 );
 
 akiko_hps_bridge akiko_hps_bridge
@@ -131,6 +143,7 @@ akiko_hps_bridge akiko_hps_bridge
 	.clk(clk_sys),
 	.reset(reset),
 	.uio_cs(akiko_uio_cs),
+	.uio_cs_sec(akiko_uio_cs_sec),
 	.uio_wr(akiko_uio_wr),
 	.uio_rd(akiko_uio_rd),
 	.uio_din(akiko_uio_din[7:0]),
@@ -142,7 +155,13 @@ akiko_hps_bridge akiko_hps_bridge
 	.result_push(akiko_hps_result_push),
 	.result_byte(akiko_hps_result_byte),
 	.result_done(akiko_hps_result_done),
-	.req(akiko_uio_req)
+	.sec_req(akiko_hps_sec_req),
+	.sec_status(akiko_hps_sec_status),
+	.sec_push(akiko_hps_sec_push),
+	.sec_byte(akiko_hps_sec_byte),
+	.sec_done(akiko_hps_sec_done),
+	.req(akiko_uio_req),
+	.sec_req_out(akiko_uio_sec_req)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	
