@@ -47,7 +47,16 @@ try {
         Write-Host "tb_akiko_hps_bridge FAILED (vsim exit $rc3)" -ForegroundColor Red
     }
 
-    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0) { exit 1 }
+    # M4 bench
+    & $vsim -c -do "do run_pbx.do"
+    $rc4 = $LASTEXITCODE
+    if ($rc4 -eq 0) {
+        Write-Host "tb_akiko_pbx_dma PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_pbx_dma FAILED (vsim exit $rc4)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0) { exit 1 }
     exit 0
 } finally {
     Pop-Location

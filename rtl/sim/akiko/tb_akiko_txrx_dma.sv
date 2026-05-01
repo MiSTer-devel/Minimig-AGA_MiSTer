@@ -37,7 +37,12 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.akiko_irq(irq),
 	.dma_req(dma_req), .dma_we(dma_we),
 	.dma_baddr(dma_baddr), .dma_wbyte(dma_wbyte),
-	.dma_rbyte(dma_rbyte), .dma_ack(dma_ack)
+	.dma_rbyte(dma_rbyte), .dma_ack(dma_ack),
+	.hps_cmd_pending(), .hps_cmd_byte(),
+	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
+	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
+	.hps_sec_req(), .hps_sec_status(),
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
 );
 
 localparam [31:0] CDINT_DRIVEXMIT = 32'h40000000;

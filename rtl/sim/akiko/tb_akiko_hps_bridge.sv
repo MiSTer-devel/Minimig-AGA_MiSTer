@@ -59,18 +59,23 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_cmd_done(hps_cmd_done),
 	.hps_result_push(hps_result_push),
 	.hps_result_byte(hps_result_byte),
-	.hps_result_done(hps_result_done)
+	.hps_result_done(hps_result_done),
+	.hps_sec_req(), .hps_sec_status(),
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
 );
 
 akiko_hps_bridge u_bridge (
 	.clk(clk), .reset(reset),
-	.uio_cs(uio_cs), .uio_wr(uio_wr), .uio_rd(uio_rd),
+	.uio_cs(uio_cs), .uio_cs_sec(1'b0),
+	.uio_wr(uio_wr), .uio_rd(uio_rd),
 	.uio_din(uio_din), .uio_dout(uio_dout),
 	.cmd_pending(hps_cmd_pending), .cmd_byte(hps_cmd_byte),
 	.cmd_pop(hps_cmd_pop), .cmd_done(hps_cmd_done),
 	.result_push(hps_result_push), .result_byte(hps_result_byte),
 	.result_done(hps_result_done),
-	.req(uio_req)
+	.sec_req(1'b0), .sec_status(8'h00),
+	.sec_push(), .sec_byte(), .sec_done(),
+	.req(uio_req), .sec_req_out()
 );
 
 localparam [31:0] CDINT_DRIVEXMIT = 32'h40000000;

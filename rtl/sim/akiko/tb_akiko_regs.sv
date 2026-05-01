@@ -38,7 +38,12 @@ akiko #(.NATIVE_CD32(0)) u_dut0 (
 	.addr(addr), .din(din), .dout(dout_dut0),
 	.akiko_irq(),
 	.dma_req(), .dma_we(), .dma_baddr(), .dma_wbyte(),
-	.dma_rbyte(8'h00), .dma_ack(1'b0)
+	.dma_rbyte(8'h00), .dma_ack(1'b0),
+	.hps_cmd_pending(), .hps_cmd_byte(),
+	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
+	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
+	.hps_sec_req(), .hps_sec_status(),
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
 );
 
 akiko #(.NATIVE_CD32(1)) u_dut1 (
@@ -48,7 +53,12 @@ akiko #(.NATIVE_CD32(1)) u_dut1 (
 	.addr(addr), .din(din), .dout(dout_dut1),
 	.akiko_irq(irq_dut1),
 	.dma_req(), .dma_we(), .dma_baddr(), .dma_wbyte(),
-	.dma_rbyte(8'h00), .dma_ack(1'b0)
+	.dma_rbyte(8'h00), .dma_ack(1'b0),
+	.hps_cmd_pending(), .hps_cmd_byte(),
+	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
+	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
+	.hps_sec_req(), .hps_sec_status(),
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
 );
 
 localparam [31:0] CDINT_SUBCODE   = 32'h80000000;
