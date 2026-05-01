@@ -59,8 +59,12 @@ module fastchip
 	input         ide_read,
 	output [15:0] ide_readdata,
 
-	output        ide_led
+	output        ide_led,
+
+	output        akiko_irq
 );
+
+localparam NATIVE_CD32 = 0;
 
 assign sel_ack = sel_akiko  | sel_ide   | sel_rtg   | sel_gayle;
 assign ready   = sel_akiko  | ide_ready | rtg_ready;
@@ -69,15 +73,19 @@ assign dout    = akiko_dout | ide_dout  | rtg_dout;
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
 
-akiko akiko
+akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 (
 	.clk(clk_sys),
+	.reset(reset),
 	.cs(sel_akiko && !addr[7:6]),
 	.rd(rnw),
 	.wr(~rnw & (lds|uds)),
+	.lds(lds),
+	.uds(uds),
 	.addr(addr[5:1]),
 	.din(din),
-	.dout(akiko_dout)
+	.dout(akiko_dout),
+	.akiko_irq(akiko_irq)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	

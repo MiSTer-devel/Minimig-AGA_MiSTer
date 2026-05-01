@@ -257,6 +257,7 @@ module minimig
 
 	output        ide_fast,
 	input         ide_ext_irq,
+	input         akiko_irq,
 	output  [5:0] ide_req,
 	input   [4:0] ide_address,
 	input         ide_write,
@@ -488,7 +489,7 @@ paula PAULA1
 	.sof(sof),
 	.strhor(strhor_paula),
 	.vblint(vbl_int),
-	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)),
+	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|akiko_irq),
 	.int3(int3),
 	.int6(int6 | int6_toccata),
 	._ipl(_iplx),

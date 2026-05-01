@@ -575,6 +575,7 @@ wire        fastchip_lw;
 wire        ide_fast;
 wire        ide_f_led;
 wire        ide_f_irq;
+wire        akiko_f_irq;
 wire  [5:0] ide_f_req;
 wire [15:0] ide_f_readdata;
 
@@ -620,7 +621,9 @@ fastchip fastchip
 	.ide_writedata(ide_dout          ),
 	.ide_read     (ide_rd            ),
 	.ide_readdata (ide_f_readdata    ),
-	.ide_led      (ide_f_led         )
+	.ide_led      (ide_f_led         ),
+
+	.akiko_irq    (akiko_f_irq       )
 );
 
 
@@ -779,6 +782,7 @@ minimig minimig
 
 	.ide_fast     (ide_fast         ),
 	.ide_ext_irq  (ide_f_irq        ),
+	.akiko_irq    (akiko_f_irq      ),
 	.ide_ena      (ide_ena          ),
 	.ide_req      (ide_c_req        ),
 	.ide_address  (ide_addr         ),
