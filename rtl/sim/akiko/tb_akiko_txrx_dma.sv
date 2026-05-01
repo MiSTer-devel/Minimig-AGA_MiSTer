@@ -193,7 +193,7 @@ initial begin
 
 	$display("--- Test A: 4-byte TX ---");
 	set_misc_base(24'h010000);
-	mem[16'h0200] = 8'hA1;
+	mem[16'h0200] = 8'hAB;
 	mem[16'h0201] = 8'hB2;
 	mem[16'h0202] = 8'hC3;
 	mem[16'h0203] = 8'hD4;
@@ -202,7 +202,7 @@ initial begin
 	set_config(CFG_TXD);
 	write_txcmp(8'd4);
 	wait_tx_done(200, cyc);
-	check8 ("A.cmd[0]",  8'hA1, u_dut.g_cd.cdrom_command_buffer[0]);
+	check8 ("A.cmd[0]",  8'hAB, u_dut.g_cd.cdrom_command_buffer[0]);
 	check8 ("A.cmd[1]",  8'hB2, u_dut.g_cd.cdrom_command_buffer[1]);
 	check8 ("A.cmd[2]",  8'hC3, u_dut.g_cd.cdrom_command_buffer[2]);
 	check8 ("A.cmd[3]",  8'hD4, u_dut.g_cd.cdrom_command_buffer[3]);
@@ -328,7 +328,7 @@ initial begin
 	do_reset();
 	bus_write_long(5'b00100, 32'hFF000000);
 	set_misc_base(24'h070000);
-	mem[16'h0200 + 16'h00FE] = 8'h01;
+	mem[16'h0200 + 16'h00FE] = 8'h0B;
 	mem[16'h0200 + 16'h00FF] = 8'h02;
 	mem[16'h0200 + 16'h0000] = 8'h03;
 	mem[16'h0200 + 16'h0001] = 8'h04;
@@ -337,7 +337,7 @@ initial begin
 	set_config(CFG_TXD);
 	write_txcmp(8'h02);
 	wait_tx_done(400, cyc);
-	check8 ("G.cmd[0]", 8'h01, u_dut.g_cd.cdrom_command_buffer[0]);
+	check8 ("G.cmd[0]", 8'h0B, u_dut.g_cd.cdrom_command_buffer[0]);
 	check8 ("G.cmd[1]", 8'h02, u_dut.g_cd.cdrom_command_buffer[1]);
 	check8 ("G.cmd[2]", 8'h03, u_dut.g_cd.cdrom_command_buffer[2]);
 	check8 ("G.cmd[3]", 8'h04, u_dut.g_cd.cdrom_command_buffer[3]);

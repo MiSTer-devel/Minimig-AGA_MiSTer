@@ -38,7 +38,16 @@ try {
         Write-Host "tb_akiko_txrx_dma FAILED (vsim exit $rc2)" -ForegroundColor Red
     }
 
-    if ($rc1 -ne 0 -or $rc2 -ne 0) { exit 1 }
+    # M3 bench
+    & $vsim -c -do "do run_bridge.do"
+    $rc3 = $LASTEXITCODE
+    if ($rc3 -eq 0) {
+        Write-Host "tb_akiko_hps_bridge PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_hps_bridge FAILED (vsim exit $rc3)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0) { exit 1 }
     exit 0
 } finally {
     Pop-Location
