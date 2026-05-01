@@ -36,7 +36,9 @@ akiko #(.NATIVE_CD32(0)) u_dut0 (
 	.cs(cs), .rd(rd), .wr(wr),
 	.lds(lds), .uds(uds),
 	.addr(addr), .din(din), .dout(dout_dut0),
-	.akiko_irq()
+	.akiko_irq(),
+	.dma_req(), .dma_we(), .dma_baddr(), .dma_wbyte(),
+	.dma_rbyte(8'h00), .dma_ack(1'b0)
 );
 
 akiko #(.NATIVE_CD32(1)) u_dut1 (
@@ -44,7 +46,9 @@ akiko #(.NATIVE_CD32(1)) u_dut1 (
 	.cs(cs), .rd(rd), .wr(wr),
 	.lds(lds), .uds(uds),
 	.addr(addr), .din(din), .dout(dout_dut1),
-	.akiko_irq(irq_dut1)
+	.akiko_irq(irq_dut1),
+	.dma_req(), .dma_we(), .dma_baddr(), .dma_wbyte(),
+	.dma_rbyte(8'h00), .dma_ack(1'b0)
 );
 
 localparam [31:0] CDINT_SUBCODE   = 32'h80000000;

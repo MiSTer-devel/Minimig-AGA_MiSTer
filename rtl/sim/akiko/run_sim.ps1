@@ -20,14 +20,26 @@ Write-Host "Using vsim: $vsim" -ForegroundColor Cyan
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $here
 try {
+    # M1 regression
     & $vsim -c -do "do run.do"
-    $rc = $LASTEXITCODE
-    if ($rc -eq 0) {
+    $rc1 = $LASTEXITCODE
+    if ($rc1 -eq 0) {
         Write-Host "tb_akiko_regs PASSED" -ForegroundColor Green
     } else {
-        Write-Host "tb_akiko_regs FAILED (vsim exit $rc)" -ForegroundColor Red
+        Write-Host "tb_akiko_regs FAILED (vsim exit $rc1)" -ForegroundColor Red
     }
-    exit $rc
+
+    # M2 bench
+    & $vsim -c -do "do run_txrx.do"
+    $rc2 = $LASTEXITCODE
+    if ($rc2 -eq 0) {
+        Write-Host "tb_akiko_txrx_dma PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_txrx_dma FAILED (vsim exit $rc2)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0) { exit 1 }
+    exit 0
 } finally {
     Pop-Location
 }

@@ -1,6 +1,7 @@
-# tb_akiko_regs Questa runner.
+# tb_akiko_regs Questa runner (M1 regression).
 # Run with: vsim -c -do run.do
 # Sets exit code 0 on PASS, 1 on FAIL (read from bench `errs` variable).
+# (M2 bench tb_akiko_txrx_dma has its own run script: run_txrx.do.)
 
 if {[file exists work]} { vdel -lib work -all }
 vlib work
