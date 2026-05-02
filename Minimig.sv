@@ -266,6 +266,10 @@ wire        akiko_cs_sec;
 wire        akiko_req;
 wire        akiko_sec_req;
 
+wire        akiko_cs_trace;
+wire        akiko_trace_rd;
+wire  [7:0] akiko_trace_din;
+
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
 
@@ -648,7 +652,11 @@ fastchip fastchip
 	.akiko_uio_din     (akiko_dout     ),
 	.akiko_uio_dout    (akiko_din      ),
 	.akiko_uio_req     (akiko_req      ),
-	.akiko_uio_sec_req (akiko_sec_req  )
+	.akiko_uio_sec_req (akiko_sec_req  ),
+
+	.akiko_uio_cs_trace   (akiko_cs_trace  ),
+	.akiko_uio_trace_rd   (akiko_trace_rd  ),
+	.akiko_uio_trace_dout (akiko_trace_din )
 );
 
 

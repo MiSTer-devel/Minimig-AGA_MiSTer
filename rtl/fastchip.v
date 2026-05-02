@@ -77,7 +77,11 @@ module fastchip
 	input  [15:0] akiko_uio_din,
 	output [15:0] akiko_uio_dout,
 	output        akiko_uio_req,
-	output        akiko_uio_sec_req
+	output        akiko_uio_sec_req,
+
+	input         akiko_uio_cs_trace,
+	input         akiko_uio_trace_rd,
+	output  [7:0] akiko_uio_trace_dout
 );
 
 localparam NATIVE_CD32 = 0;
@@ -136,6 +140,21 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_push(akiko_hps_sec_push),
 	.hps_sec_byte(akiko_hps_sec_byte),
 	.hps_sec_done(akiko_hps_sec_done)
+);
+
+akiko_bus_trace akiko_bus_trace
+(
+	.clk          (clk_sys              ),
+	.reset        (reset                ),
+	.sel          (sel_akiko            ),
+	.rd           (rnw                  ),
+	.wr           (~rnw & (lds|uds)     ),
+	.addr         (addr[7:1]            ),
+	.din          (din                  ),
+	.dout         (akiko_dout           ),
+	.uio_cs_trace (akiko_uio_cs_trace   ),
+	.uio_rd       (akiko_uio_trace_rd   ),
+	.uio_dout     (akiko_uio_trace_dout )
 );
 
 akiko_hps_bridge akiko_hps_bridge

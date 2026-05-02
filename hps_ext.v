@@ -67,7 +67,11 @@ module hps_ext
 	output reg        akiko_cs,
 	output reg        akiko_cs_sec,
 	input             akiko_req,
-	input             akiko_sec_req
+	input             akiko_sec_req,
+
+	input       [7:0] akiko_trace_din,
+	output reg        akiko_trace_rd,
+	output reg        akiko_cs_trace
 );
 
 assign EXT_BUS[15:0] = io_fpga ? fpga_dout : io_dout;
@@ -102,6 +106,7 @@ always@(posedge clk_sys) begin
 	{ide_rd, ide_wr} <= 0;
 	cdda_wr <= 0;
 	{akiko_rd, akiko_wr} <= 0;
+	akiko_trace_rd <= 0;
 	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
 
 	if(~io_uio) begin
@@ -112,6 +117,7 @@ always@(posedge clk_sys) begin
 		cdda_cs <= 0;
 		akiko_cs <= 0;
 		akiko_cs_sec <= 0;
+		akiko_cs_trace <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -126,8 +132,9 @@ always@(posedge clk_sys) begin
 			ide_addr     <= {io_din[8],io_din[3:0]};
 			ide_cs       <= (io_din[15:9] == 7'b1111000);
 			cdda_cs      <= (io_din[15:9] == 7'b1111001);
-			akiko_cs     <= (io_din[15:9] == 7'b1111010);
-			akiko_cs_sec <= (io_din[15:9] == 7'b1111010) && io_din[8];
+			akiko_cs       <= (io_din[15:9] == 7'b1111010) && !io_din[7];
+			akiko_cs_sec   <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[8];
+			akiko_cs_trace <= (io_din[15:9] == 7'b1111010) &&  io_din[7];
 		end
 
 		if(byte_cnt == 0) begin
@@ -212,6 +219,10 @@ always@(posedge clk_sys) begin
 					if(byte_cnt >= 3 && akiko_cs) begin
 						io_dout  <= akiko_din;
 						akiko_rd <= 1;
+					end
+					if(byte_cnt >= 3 && akiko_cs_trace) begin
+						io_dout        <= {8'h00, akiko_trace_din};
+						akiko_trace_rd <= 1;
 					end
 				end
 			endcase
