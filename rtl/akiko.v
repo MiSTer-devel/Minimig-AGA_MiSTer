@@ -234,7 +234,7 @@ if (NATIVE_CD32) begin : g_cd
 
 	always @(posedge clk) begin
 		if (reset) begin
-			cdrom_intreq        <= 32'h0;
+			cdrom_intreq        <= CDINT_SUBCODE;
 			cdrom_intena        <= 32'h0;
 			cdrom_addressdata   <= 32'h0;
 			cdrom_addressmisc   <= 32'h0;
@@ -481,7 +481,7 @@ if (NATIVE_CD32) begin : g_cd
 			if (hps_result_done && (cdrom_receive_length == 6'd0)) begin
 				cdrom_receive_length <= hps_result_wr_ptr;
 				hps_result_wr_ptr    <= 6'd0;
-				cdrom_intreq         <= cdrom_intreq | CDINT_SUBCODE | CDINT_DRIVERECV;
+				cdrom_intreq         <= cdrom_intreq | CDINT_DRIVERECV;
 			end
 		end
 	end
