@@ -16,9 +16,9 @@ module akiko_bus_trace
 	output reg  [7:0] uio_dout
 );
 
-reg [31:0] ring [0:31];
-reg  [4:0] wr_ptr;
-reg  [4:0] rd_ptr;
+reg [31:0] ring [0:127];
+reg  [6:0] wr_ptr;
+reg  [6:0] rd_ptr;
 wire       empty = (wr_ptr == rd_ptr);
 
 reg sel_d, rd_d, wr_d;
@@ -33,9 +33,9 @@ always @(posedge clk) begin
 	din_d  <= din;
 	if (sel) dout_d <= dout;
 
-	if (sel_d && (rd_d || wr_d)) begin
-		ring[wr_ptr] <= {8'hFF, wr_d ? din_d : dout_d, wr_d ? 1'b1 : 1'b0, addr_d};
-		wr_ptr <= wr_ptr + 1'b1;
+	if (sel_d && wr_d) begin
+		ring[wr_ptr] <= {8'hFF, din_d, 1'b1, addr_d};
+		wr_ptr       <= wr_ptr + 1'b1;
 	end
 
 	if (reset) begin
