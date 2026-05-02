@@ -31,7 +31,7 @@ always @(posedge clk) begin
 	wr_d   <= wr;
 	addr_d <= addr;
 	din_d  <= din;
-	dout_d <= dout;
+	if (sel) dout_d <= dout;
 
 	if (sel_d && (rd_d || wr_d)) begin
 		ring[wr_ptr] <= {8'hFF, wr_d ? din_d : dout_d, wr_d ? 1'b1 : 1'b0, addr_d};
