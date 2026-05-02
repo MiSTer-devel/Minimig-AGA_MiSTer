@@ -4,6 +4,7 @@ module chipdma_arb
 (
 	input             clk,
 	input             reset,
+	input             c_7m,
 
 	input      [24:1] chip_in_addr,
 	input             chip_in_l,
@@ -28,14 +29,89 @@ module chipdma_arb
 	input      [15:0] chip_in_rd
 );
 
-assign chip_out_addr = chip_in_addr;
-assign chip_out_l    = chip_in_l;
-assign chip_out_u    = chip_in_u;
-assign chip_out_rw   = chip_in_rw;
-assign chip_out_dma  = chip_in_dma;
-assign chip_out_wr   = chip_in_wr;
+reg c_7m_d;
+always @(posedge clk) c_7m_d <= c_7m;
+wire c_7m_rise = c_7m & ~c_7m_d;
 
-assign akiko_dma_rbyte = 8'h00;
-assign akiko_dma_ack   = 1'b0;
+reg [4:0] slot_cnt;
+
+reg [24:1] ak_addr;
+reg        ak_l;
+reg        ak_u;
+reg        ak_rw;
+reg [15:0] ak_wr_data;
+reg        ak_we;
+reg        ak_baddr0;
+
+localparam [1:0]
+	S_IDLE     = 2'd0,
+	S_DRIVE    = 2'd1,
+	S_ACK      = 2'd2,
+	S_COOLDOWN = 2'd3;
+
+reg [1:0] state;
+
+reg [7:0] ak_rbyte_r;
+reg       ak_ack_r;
+
+assign akiko_dma_rbyte = ak_rbyte_r;
+assign akiko_dma_ack   = ak_ack_r;
+
+wire arb_drive = (state == S_DRIVE);
+assign chip_out_addr = arb_drive ? ak_addr    : chip_in_addr;
+assign chip_out_l    = arb_drive ? ak_l       : chip_in_l;
+assign chip_out_u    = arb_drive ? ak_u       : chip_in_u;
+assign chip_out_rw   = arb_drive ? ak_rw      : chip_in_rw;
+assign chip_out_dma  = arb_drive ? 1'b0       : chip_in_dma;
+assign chip_out_wr   = arb_drive ? ak_wr_data : chip_in_wr;
+
+wire minimig_idle = chip_in_dma & chip_in_rw;
+
+always @(posedge clk) begin
+	if (reset) begin
+		state      <= S_IDLE;
+		slot_cnt   <= 5'd0;
+		ak_ack_r   <= 1'b0;
+		ak_rbyte_r <= 8'h00;
+	end else begin
+		ak_ack_r <= 1'b0;
+
+		case (state)
+		S_IDLE: begin
+			if (akiko_dma_req && c_7m_rise && minimig_idle) begin
+				ak_addr    <= {1'b0, akiko_dma_baddr[23:1]};
+				ak_u       <= akiko_dma_baddr[0];
+				ak_l       <= ~akiko_dma_baddr[0];
+				ak_rw      <= ~akiko_dma_we;
+				ak_wr_data <= {akiko_dma_wbyte, akiko_dma_wbyte};
+				ak_we      <= akiko_dma_we;
+				ak_baddr0  <= akiko_dma_baddr[0];
+				slot_cnt   <= 5'd0;
+				state      <= S_DRIVE;
+			end
+		end
+
+		S_DRIVE: begin
+			slot_cnt <= slot_cnt + 5'd1;
+			if (slot_cnt == 5'd14) begin
+				if (!ak_we) begin
+					ak_rbyte_r <= ak_baddr0 ? chip_in_rd[7:0]
+					                        : chip_in_rd[15:8];
+				end
+				state <= S_ACK;
+			end
+		end
+
+		S_ACK: begin
+			ak_ack_r <= 1'b1;
+			state    <= S_COOLDOWN;
+		end
+
+		S_COOLDOWN: begin
+			state <= S_IDLE;
+		end
+		endcase
+	end
+end
 
 endmodule

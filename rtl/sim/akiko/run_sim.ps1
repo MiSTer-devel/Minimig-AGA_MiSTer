@@ -56,7 +56,16 @@ try {
         Write-Host "tb_akiko_pbx_dma FAILED (vsim exit $rc4)" -ForegroundColor Red
     }
 
-    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0) { exit 1 }
+    # M5 bench (chip-RAM master arbiter)
+    & $vsim -c -do "do run_chipram.do"
+    $rc5 = $LASTEXITCODE
+    if ($rc5 -eq 0) {
+        Write-Host "tb_akiko_chipram_master PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_chipram_master FAILED (vsim exit $rc5)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0 -or $rc5 -ne 0) { exit 1 }
     exit 0
 } finally {
     Pop-Location
