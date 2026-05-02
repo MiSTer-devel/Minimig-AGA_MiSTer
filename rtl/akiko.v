@@ -402,9 +402,7 @@ if (NATIVE_CD32) begin : g_cd
 						cdrom_intreq <= ((cdrom_intreq & ~CDINT_DRIVERECV) | CDINT_DRIVEXMIT)
 						              | (((cdcomrxinx + 8'd1) == cdcomrxcmp) ? CDINT_RXDMADONE : 32'h0);
 					end else if ((cdcomrxinx + 8'd1) == cdcomrxcmp) begin
-						cdrom_intreq <= cdrom_intreq | CDINT_RXDMADONE;
-						cdrom_receive_length <= 6'd0;
-						cdrom_receive_offset <= 6'd0;
+						//
 					end
 					rx_busy     <= 1'b0;
 					rx_inflight <= 1'b0;
