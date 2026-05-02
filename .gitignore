@@ -37,3 +37,7 @@ c5_pin_model_dump.txt
 *.xml
 *_netlist
 *.cdf
+
+# CD32 native-Akiko fork: local build artifacts
+quartus_fit_log.txt
+rbf_archive/
