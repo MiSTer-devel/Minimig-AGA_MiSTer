@@ -306,3 +306,4 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SDIO_DAT[*]
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_SPI*
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to USER_IO[*]
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
+set_global_assignment -name VERILOG_FILE rtl/chipdma_arb.v

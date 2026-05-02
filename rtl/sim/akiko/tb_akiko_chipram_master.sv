@@ -96,6 +96,10 @@ end
 wire [15:0] hi_idx = {chip_out_addr[15:1], 1'b0};
 wire [15:0] lo_idx = {chip_out_addr[15:1], 1'b1};
 
+logic c_7m_d_stub;
+always @(posedge clk) c_7m_d_stub <= c_7m;
+wire c_7m_rise_stub = c_7m & ~c_7m_d_stub;
+
 always @(posedge clk) begin
 	rd_pipe[2]       <= rd_pipe[1];
 	rd_pipe[1]       <= rd_pipe[0];
@@ -104,7 +108,7 @@ always @(posedge clk) begin
 	rd_pipe[0]       <= 16'h0000;
 	rd_valid_pipe[0] <= 1'b0;
 
-	if (~chip_out_dma | ~chip_out_rw) begin
+	if (c_7m_rise_stub & (~chip_out_dma | ~chip_out_rw)) begin
 		if (chip_out_rw) begin
 			rd_pipe[0][15:8] <= chip_out_u ? 8'hxx : mem[hi_idx];
 			rd_pipe[0][7:0]  <= chip_out_l ? 8'hxx : mem[lo_idx];
@@ -359,6 +363,48 @@ initial begin
 			automatic int t8_timeout = 400;
 			while (!akiko_dma_ack && t8_timeout > 0) begin
 				@(posedge clk); t8_timeout--;
+			end
+		end
+		akiko_dma_req <= 1'b0;
+	end
+
+	preload(16'h0800, 8'hBE);
+	begin : t9
+		automatic int rises_seen = 0;
+		automatic int rises_with_drive_low = 0;
+		automatic logic c_7m_prev = c_7m;
+		automatic int t9_timeout = 80;
+		chip_in_dma <= 1'b1;
+		chip_in_rw  <= 1'b1;
+		akiko_dma_req   <= 1'b1;
+		akiko_dma_we    <= 1'b0;
+		akiko_dma_baddr <= 24'h000800;
+		while (rises_seen == 0 && t9_timeout > 0) begin
+			@(posedge clk);
+			if (c_7m & ~c_7m_prev) begin
+				rises_seen++;
+				if (chip_out_dma === 1'b0) rises_with_drive_low++;
+			end
+			c_7m_prev = c_7m;
+			t9_timeout--;
+		end
+		checks++;
+		if (rises_with_drive_low == 0) begin
+			$display("FAIL test9: chip_out_dma was HIGH at first idle c_7m_rise -- sdram_ctrl would miss slot (v8 hardware bug)");
+			errs++;
+		end else begin
+			$display("PASS test9: chip_out_dma LOW at c_7m_rise edge (slot would be claimed)");
+		end
+		begin
+			automatic int t9_drain = 200;
+			while (!akiko_dma_ack && t9_drain > 0) begin
+				@(posedge clk); t9_drain--;
+			end
+			if (t9_drain == 0) begin
+				$display("FAIL test9: ack timeout");
+				errs++;
+			end else begin
+				check8("test9: byte value", 8'hBE, akiko_dma_rbyte);
 			end
 		end
 		akiko_dma_req <= 1'b0;

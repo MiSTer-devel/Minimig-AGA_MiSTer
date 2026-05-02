@@ -57,20 +57,32 @@ reg       ak_ack_r;
 assign akiko_dma_rbyte = ak_rbyte_r;
 assign akiko_dma_ack   = ak_ack_r;
 
-wire arb_drive = (state == S_DRIVE);
-assign chip_out_addr = arb_drive ? ak_addr    : chip_in_addr;
-assign chip_out_l    = arb_drive ? ak_l       : chip_in_l;
-assign chip_out_u    = arb_drive ? ak_u       : chip_in_u;
-assign chip_out_rw   = arb_drive ? ak_rw      : chip_in_rw;
-assign chip_out_dma  = arb_drive ? 1'b0       : chip_in_dma;
-assign chip_out_wr   = arb_drive ? ak_wr_data : chip_in_wr;
-
 wire minimig_idle = chip_in_dma & chip_in_rw;
+wire minimig_busy = ~minimig_idle;
+
+wire arm_now = (state == S_IDLE) & c_7m_rise & minimig_idle & akiko_dma_req;
+
+wire arb_request = arm_now | (state == S_DRIVE);
+
+wire arb_drive = arb_request & minimig_idle;
+
+wire [24:1] ak_addr_w    = arm_now ? {1'b0, akiko_dma_baddr[23:1]}      : ak_addr;
+wire        ak_l_w       = arm_now ? ~akiko_dma_baddr[0]                 : ak_l;
+wire        ak_u_w       = arm_now ?  akiko_dma_baddr[0]                 : ak_u;
+wire        ak_rw_w      = arm_now ? ~akiko_dma_we                       : ak_rw;
+wire [15:0] ak_wr_data_w = arm_now ? {akiko_dma_wbyte, akiko_dma_wbyte}  : ak_wr_data;
+
+assign chip_out_addr = arb_drive ? ak_addr_w    : chip_in_addr;
+assign chip_out_l    = arb_drive ? ak_l_w       : chip_in_l;
+assign chip_out_u    = arb_drive ? ak_u_w       : chip_in_u;
+assign chip_out_rw   = arb_drive ? ak_rw_w      : chip_in_rw;
+assign chip_out_dma  = arb_drive ? 1'b0         : chip_in_dma;
+assign chip_out_wr   = arb_drive ? ak_wr_data_w : chip_in_wr;
 
 always @(posedge clk) begin
 	if (reset) begin
 		state      <= S_IDLE;
-		slot_cnt   <= 5'd0;
+		slot_cnt   <= 3'd0;
 		ak_ack_r   <= 1'b0;
 		ak_rbyte_r <= 8'h00;
 	end else begin
@@ -78,7 +90,7 @@ always @(posedge clk) begin
 
 		case (state)
 		S_IDLE: begin
-			if (akiko_dma_req && c_7m_rise && minimig_idle) begin
+			if (arm_now) begin
 				ak_addr    <= {1'b0, akiko_dma_baddr[23:1]};
 				ak_u       <= akiko_dma_baddr[0];
 				ak_l       <= ~akiko_dma_baddr[0];
