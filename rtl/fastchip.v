@@ -84,7 +84,7 @@ module fastchip
 	output  [7:0] akiko_uio_trace_dout
 );
 
-localparam NATIVE_CD32 = 0;
+localparam NATIVE_CD32 = 1;
 
 assign sel_ack = sel_akiko  | sel_ide   | sel_rtg   | sel_gayle;
 assign ready   = sel_akiko  | ide_ready | rtg_ready;

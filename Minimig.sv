@@ -270,6 +270,10 @@ wire        akiko_cs_trace;
 wire        akiko_trace_rd;
 wire  [7:0] akiko_trace_din;
 
+wire        akiko_dma_req_w;
+reg         akiko_dma_ack_r;
+always @(posedge clk_sys) akiko_dma_ack_r <= akiko_dma_req_w;
+
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
 
@@ -638,12 +642,12 @@ fastchip fastchip
 
 	.akiko_irq    (akiko_f_irq       ),
 
-	.akiko_dma_req   (                  ),
+	.akiko_dma_req   (akiko_dma_req_w   ),
 	.akiko_dma_we    (                  ),
 	.akiko_dma_baddr (                  ),
 	.akiko_dma_wbyte (                  ),
 	.akiko_dma_rbyte (8'h00             ),
-	.akiko_dma_ack   (1'b0              ),
+	.akiko_dma_ack   (akiko_dma_ack_r   ),
 
 	.akiko_uio_cs      (akiko_cs       ),
 	.akiko_uio_cs_sec  (akiko_cs_sec   ),
