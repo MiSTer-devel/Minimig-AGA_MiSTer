@@ -33,7 +33,7 @@ reg c_7m_d;
 always @(posedge clk) c_7m_d <= c_7m;
 wire c_7m_rise = c_7m & ~c_7m_d;
 
-reg [4:0] slot_cnt;
+reg [2:0] slot_cnt;
 
 reg [24:1] ak_addr;
 reg        ak_l;
@@ -86,14 +86,14 @@ always @(posedge clk) begin
 				ak_wr_data <= {akiko_dma_wbyte, akiko_dma_wbyte};
 				ak_we      <= akiko_dma_we;
 				ak_baddr0  <= akiko_dma_baddr[0];
-				slot_cnt   <= 5'd0;
+				slot_cnt   <= 3'd0;
 				state      <= S_DRIVE;
 			end
 		end
 
 		S_DRIVE: begin
-			slot_cnt <= slot_cnt + 5'd1;
-			if (slot_cnt == 5'd14) begin
+			slot_cnt <= slot_cnt + 3'd1;
+			if (slot_cnt == 3'd3) begin
 				if (!ak_we) begin
 					ak_rbyte_r <= ak_baddr0 ? chip_in_rd[7:0]
 					                        : chip_in_rd[15:8];

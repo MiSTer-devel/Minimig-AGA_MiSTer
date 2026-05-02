@@ -12,12 +12,12 @@ logic clk = 0;
 initial forever #5 clk = ~clk;
 
 logic c_7m = 0;
-logic [3:0] c_7m_div = 0;
+logic [1:0] c_7m_div = 0;
 always @(posedge clk) begin
-	c_7m_div <= c_7m_div + 4'd1;
-	if (c_7m_div == 4'd7) begin
+	c_7m_div <= c_7m_div + 2'd1;
+	if (c_7m_div == 2'd1) begin
 		c_7m <= ~c_7m;
-		c_7m_div <= 4'd0;
+		c_7m_div <= 2'd0;
 	end
 end
 
@@ -73,12 +73,12 @@ chipdma_arb u_dut (
 	.chip_in_rd      (chip_in_rd      )
 );
 
-localparam int LATENCY = 9;
+localparam int LATENCY = 1;
 
 logic [7:0] mem [65536];
 
-logic [15:0] rd_pipe [10];
-logic        rd_valid_pipe [10];
+logic [15:0] rd_pipe [3];
+logic        rd_valid_pipe [3];
 logic [15:0] chipRD_r;
 
 assign chip_in_rd = chipRD_r;
@@ -86,7 +86,7 @@ assign chip_in_rd = chipRD_r;
 initial begin
 	int ii;
 	for (ii = 0; ii < 65536; ii++) mem[ii] = 8'h00;
-	for (ii = 0; ii < 10; ii++) begin
+	for (ii = 0; ii < 3; ii++) begin
 		rd_pipe[ii] = 16'h0000;
 		rd_valid_pipe[ii] = 1'b0;
 	end
@@ -97,22 +97,8 @@ wire [15:0] hi_idx = {chip_out_addr[15:1], 1'b0};
 wire [15:0] lo_idx = {chip_out_addr[15:1], 1'b1};
 
 always @(posedge clk) begin
-	rd_pipe[9]       <= rd_pipe[8];
-	rd_pipe[8]       <= rd_pipe[7];
-	rd_pipe[7]       <= rd_pipe[6];
-	rd_pipe[6]       <= rd_pipe[5];
-	rd_pipe[5]       <= rd_pipe[4];
-	rd_pipe[4]       <= rd_pipe[3];
-	rd_pipe[3]       <= rd_pipe[2];
 	rd_pipe[2]       <= rd_pipe[1];
 	rd_pipe[1]       <= rd_pipe[0];
-	rd_valid_pipe[9] <= rd_valid_pipe[8];
-	rd_valid_pipe[8] <= rd_valid_pipe[7];
-	rd_valid_pipe[7] <= rd_valid_pipe[6];
-	rd_valid_pipe[6] <= rd_valid_pipe[5];
-	rd_valid_pipe[5] <= rd_valid_pipe[4];
-	rd_valid_pipe[4] <= rd_valid_pipe[3];
-	rd_valid_pipe[3] <= rd_valid_pipe[2];
 	rd_valid_pipe[2] <= rd_valid_pipe[1];
 	rd_valid_pipe[1] <= rd_valid_pipe[0];
 	rd_pipe[0]       <= 16'h0000;
