@@ -403,6 +403,8 @@ if (NATIVE_CD32) begin : g_cd
 						              | (((cdcomrxinx + 8'd1) == cdcomrxcmp) ? CDINT_RXDMADONE : 32'h0);
 					end else if ((cdcomrxinx + 8'd1) == cdcomrxcmp) begin
 						cdrom_intreq <= cdrom_intreq | CDINT_RXDMADONE;
+						cdrom_receive_length <= 6'd0;
+						cdrom_receive_offset <= 6'd0;
 					end
 					rx_busy     <= 1'b0;
 					rx_inflight <= 1'b0;
@@ -479,6 +481,7 @@ if (NATIVE_CD32) begin : g_cd
 			if (hps_result_done && (cdrom_receive_length == 6'd0)) begin
 				cdrom_receive_length <= hps_result_wr_ptr;
 				hps_result_wr_ptr    <= 6'd0;
+				cdrom_intreq         <= cdrom_intreq | CDINT_SUBCODE | CDINT_DRIVERECV;
 			end
 		end
 	end
@@ -501,7 +504,7 @@ if (NATIVE_CD32) begin : g_cd
 			5'b10010: cd_dout_r = cdrom_flags[31:16];
 			5'b10011: cd_dout_r = cdrom_flags[15:0];
 			5'b10100: cd_dout_r = {pio_byte, 8'h0};
-			5'b11000: cd_dout_r = {nvram_io,  8'h0};
+			5'b11000: cd_dout_r = {8'hFF, 8'h0};
 			5'b11001: cd_dout_r = {nvram_dir, 8'h0};
 			default:  cd_dout_r = 16'h0;
 		endcase
