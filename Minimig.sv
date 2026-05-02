@@ -271,8 +271,18 @@ wire        akiko_trace_rd;
 wire  [7:0] akiko_trace_din;
 
 wire        akiko_dma_req_w;
-reg         akiko_dma_ack_r;
-always @(posedge clk_sys) akiko_dma_ack_r <= akiko_dma_req_w;
+wire        akiko_dma_we_w;
+wire [23:0] akiko_dma_baddr_w;
+wire  [7:0] akiko_dma_wbyte_w;
+wire  [7:0] akiko_dma_rbyte_w;
+wire        akiko_dma_ack_w;
+
+wire [24:1] arb_chip_addr;
+wire        arb_chip_l;
+wire        arb_chip_u;
+wire        arb_chip_rw;
+wire        arb_chip_dma;
+wire [15:0] arb_chip_wr;
 
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
@@ -536,14 +546,43 @@ sdram_ctrl ram1
 	.cpuRD        (ram_dout1       ),
 	.ramready     (ram_ready1      ),
 
-	.chipWR       (ram_data        ),
-	.chipAddr     (ram_address     ),
-	.chipU        (_ram_bhe        ),
-	.chipL        (_ram_ble        ),
-	.chipRW       (_ram_we         ),
-	.chipDMA      (_ram_oe         ),
+	.chipWR       (arb_chip_wr     ),
+	.chipAddr     (arb_chip_addr   ),
+	.chipU        (arb_chip_u      ),
+	.chipL        (arb_chip_l      ),
+	.chipRW       (arb_chip_rw     ),
+	.chipDMA      (arb_chip_dma    ),
 	.chipRD       (ramdata_in      ),
 	.chip48       (chip48          )
+);
+
+chipdma_arb chipdma_arb
+(
+	.clk             (clk_sys              ),
+	.reset           (reset_d              ),
+	.c_7m            (c1                   ),
+
+	.chip_in_addr    ({1'b0, ram_address}  ),
+	.chip_in_l       (_ram_ble             ),
+	.chip_in_u       (_ram_bhe             ),
+	.chip_in_rw      (_ram_we              ),
+	.chip_in_dma     (_ram_oe              ),
+	.chip_in_wr      (ram_data             ),
+
+	.akiko_dma_req   (akiko_dma_req_w      ),
+	.akiko_dma_we    (akiko_dma_we_w       ),
+	.akiko_dma_baddr (akiko_dma_baddr_w    ),
+	.akiko_dma_wbyte (akiko_dma_wbyte_w    ),
+	.akiko_dma_rbyte (akiko_dma_rbyte_w    ),
+	.akiko_dma_ack   (akiko_dma_ack_w      ),
+
+	.chip_out_addr   (arb_chip_addr        ),
+	.chip_out_l      (arb_chip_l           ),
+	.chip_out_u      (arb_chip_u           ),
+	.chip_out_rw     (arb_chip_rw          ),
+	.chip_out_dma    (arb_chip_dma         ),
+	.chip_out_wr     (arb_chip_wr          ),
+	.chip_in_rd      (ramdata_in           )
 );
 
 wire [15:0] ram_dout2;
@@ -643,11 +682,11 @@ fastchip fastchip
 	.akiko_irq    (akiko_f_irq       ),
 
 	.akiko_dma_req   (akiko_dma_req_w   ),
-	.akiko_dma_we    (                  ),
-	.akiko_dma_baddr (                  ),
-	.akiko_dma_wbyte (                  ),
-	.akiko_dma_rbyte (8'h00             ),
-	.akiko_dma_ack   (akiko_dma_ack_r   ),
+	.akiko_dma_we    (akiko_dma_we_w    ),
+	.akiko_dma_baddr (akiko_dma_baddr_w ),
+	.akiko_dma_wbyte (akiko_dma_wbyte_w ),
+	.akiko_dma_rbyte (akiko_dma_rbyte_w ),
+	.akiko_dma_ack   (akiko_dma_ack_w   ),
 
 	.akiko_uio_cs      (akiko_cs       ),
 	.akiko_uio_cs_sec  (akiko_cs_sec   ),
