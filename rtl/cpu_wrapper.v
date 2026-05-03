@@ -88,7 +88,7 @@ wire sel_dd     = (cpu_addr[31:16] == 16'h00DD) && (cpu_addr[15:13] == 'b010);
 wire sel_rtg    = (cpu_addr[31:24] == 8'h02);
 
 // don't sel_kickram when writing
-wire sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (cpu_addr[23:19] == 5'b11100)) && ckick && wr;	// $f8xxxx, e0xxxx
+wire sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (cpu_addr[23:19] == 5'b11100) || (cpu_addr[23:19] == 5'b10101) || (cpu_addr[23:19] == 5'b10110)) && ckick && wr;
 wire sel_kicklower = !cpu_addr[31:24] && (cpu_addr[23:18] == 6'b111110);
 wire sel_chipram   = !cpu_addr[31:21] && cchip; 		             //$000000 - $1FFFFF
 
