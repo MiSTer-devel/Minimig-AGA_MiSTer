@@ -65,7 +65,16 @@ try {
         Write-Host "tb_akiko_chipram_master FAILED (vsim exit $rc5)" -ForegroundColor Red
     }
 
-    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0 -or $rc5 -ne 0) { exit 1 }
+    # Phase 13 bench (NVRAM I2C slave EEPROM)
+    & $vsim -c -do "do run_nvram.do"
+    $rc6 = $LASTEXITCODE
+    if ($rc6 -eq 0) {
+        Write-Host "tb_akiko_nvram PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_nvram FAILED (vsim exit $rc6)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0 -or $rc5 -ne 0 -or $rc6 -ne 0) { exit 1 }
     exit 0
 } finally {
     Pop-Location

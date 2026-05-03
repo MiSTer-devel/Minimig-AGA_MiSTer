@@ -68,6 +68,7 @@ module hps_ext
 	output reg        akiko_cs_sec,
 	input             akiko_req,
 	input             akiko_sec_req,
+	input             akiko_rx_busy,
 
 	input       [7:0] akiko_trace_din,
 	output reg        akiko_trace_rd,
@@ -141,7 +142,7 @@ always@(posedge clk_sys) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
 			if(io_din == 'h63) begin
-				io_dout <= {4'hE, akiko_req, akiko_sec_req, 1'b0, cdda_req, 2'b00, ide_req};
+				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, 2'b00, ide_req};
 			end
 		end else begin
 			case(cmd)

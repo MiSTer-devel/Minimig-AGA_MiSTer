@@ -43,7 +43,8 @@ akiko #(.NATIVE_CD32(0)) u_dut0 (
 	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
 	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
 	.hps_sec_req(), .hps_sec_status(),
-	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0),
+	.hps_rx_busy()
 );
 
 akiko #(.NATIVE_CD32(1)) u_dut1 (
@@ -58,7 +59,8 @@ akiko #(.NATIVE_CD32(1)) u_dut1 (
 	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
 	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
 	.hps_sec_req(), .hps_sec_status(),
-	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0),
+	.hps_rx_busy()
 );
 
 localparam [31:0] CDINT_SUBCODE   = 32'h80000000;
@@ -304,9 +306,15 @@ initial begin
 	read_dut1(5'b10100, v1);
 	check16("PIO read-back upper byte", 16'hA500, v1);
 
+	byte_write(6'h32, 8'h00);
 	byte_write(6'h30, 8'h5A);
 	read_dut1(5'b11000, v1);
-	check16("NVRAM I/O read-back", 16'h5A00, v1);
+	check16("NVRAM I/O released bus high", 16'hC000, v1);
+
+	byte_write(6'h32, 8'hC0);
+	byte_write(6'h30, 8'h40);
+	read_dut1(5'b11000, v1);
+	check16("NVRAM I/O master-driven SCL=0 SDA=1", 16'h4000, v1);
 
 	byte_write(6'h32, 8'h3C);
 	read_dut1(5'b11001, v1);

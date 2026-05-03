@@ -11,6 +11,7 @@ vmap work work
 # sizing (`reg [..] x[N]`) and unnamed blocks with decls. Quartus tolerates
 # this in plain Verilog mode but ModelSim ASE 10.5b requires -sv.
 vlog -sv -quiet akiko_legacy_ref.v
+vlog -sv -quiet ../../akiko_nvram.v
 vlog -sv -quiet ../../akiko.v
 vlog -sv -quiet tb_akiko_regs.sv
 

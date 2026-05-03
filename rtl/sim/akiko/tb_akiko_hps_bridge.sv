@@ -61,7 +61,8 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_result_byte(hps_result_byte),
 	.hps_result_done(hps_result_done),
 	.hps_sec_req(), .hps_sec_status(),
-	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0),
+	.hps_rx_busy()
 );
 
 akiko_hps_bridge u_bridge (
@@ -75,7 +76,8 @@ akiko_hps_bridge u_bridge (
 	.result_done(hps_result_done),
 	.sec_req(1'b0), .sec_status(8'h00),
 	.sec_push(), .sec_byte(), .sec_done(),
-	.req(uio_req), .sec_req_out()
+	.rx_busy(1'b0),
+	.req(uio_req), .sec_req_out(), .rx_busy_out()
 );
 
 localparam [31:0] CDINT_DRIVEXMIT = 32'h40000000;

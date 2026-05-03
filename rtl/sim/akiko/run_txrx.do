@@ -6,6 +6,7 @@ if {[file exists work]} { vdel -lib work -all }
 vlib work
 vmap work work
 
+vlog -sv -quiet ../../akiko_nvram.v
 vlog -sv -quiet ../../akiko.v
 vlog -sv -quiet tb_akiko_txrx_dma.sv
 

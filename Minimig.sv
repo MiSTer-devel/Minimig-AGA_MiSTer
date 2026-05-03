@@ -265,6 +265,7 @@ wire        akiko_cs;
 wire        akiko_cs_sec;
 wire        akiko_req;
 wire        akiko_sec_req;
+wire        akiko_rx_busy;
 
 wire        akiko_cs_trace;
 wire        akiko_trace_rd;
@@ -696,6 +697,7 @@ fastchip fastchip
 	.akiko_uio_dout    (akiko_din      ),
 	.akiko_uio_req     (akiko_req      ),
 	.akiko_uio_sec_req (akiko_sec_req  ),
+	.akiko_uio_rx_busy (akiko_rx_busy  ),
 
 	.akiko_uio_cs_trace   (akiko_cs_trace  ),
 	.akiko_uio_trace_rd   (akiko_trace_rd  ),

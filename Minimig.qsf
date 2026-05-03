@@ -227,6 +227,7 @@ set_global_assignment -name VERILOG_FILE rtl/rtg.v
 set_global_assignment -name VERILOG_FILE rtl/akiko.v
 set_global_assignment -name VERILOG_FILE rtl/akiko_hps_bridge.v
 set_global_assignment -name VERILOG_FILE rtl/akiko_bus_trace.v
+set_global_assignment -name VERILOG_FILE rtl/akiko_nvram.v
 set_global_assignment -name VERILOG_FILE rtl/fastchip.v
 set_global_assignment -name VERILOG_FILE rtl/userio.v
 set_global_assignment -name VERILOG_FILE rtl/cart.v

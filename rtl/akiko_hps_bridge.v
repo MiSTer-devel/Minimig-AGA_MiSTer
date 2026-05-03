@@ -38,8 +38,11 @@ module akiko_hps_bridge
 	output      [7:0] sec_byte,
 	output            sec_done,
 
+	input             rx_busy,
+
 	output            req,
-	output            sec_req_out
+	output            sec_req_out,
+	output            rx_busy_out
 );
 
 reg cs_d;
@@ -83,5 +86,6 @@ assign sec_done    = xfer_end &              cs_sec_d;
 
 assign req         = cmd_pending;
 assign sec_req_out = sec_req;
+assign rx_busy_out = rx_busy;
 
 endmodule

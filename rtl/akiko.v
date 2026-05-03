@@ -58,7 +58,9 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	output      [7:0] hps_sec_status,
 	input             hps_sec_push,
 	input       [7:0] hps_sec_byte,
-	input             hps_sec_done
+	input             hps_sec_done,
+
+	output            hps_rx_busy
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -116,6 +118,7 @@ wire        cd_hps_cmd_pending;
 wire  [7:0] cd_hps_cmd_byte;
 wire        cd_hps_sec_req;
 wire  [7:0] cd_hps_sec_status;
+wire        cd_hps_rx_busy;
 
 generate
 if (NATIVE_CD32) begin : g_cd
@@ -134,6 +137,13 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [7:0] pio_byte;
 	reg  [7:0] nvram_io;
 	reg  [7:0] nvram_dir;
+
+	wire       nvram_scl_master_drive = nvram_dir[7];
+	wire       nvram_sda_master_drive = nvram_dir[6];
+	wire       nvram_scl_bus = nvram_scl_master_drive ? nvram_io[7] : 1'b1;
+	wire       nvram_sda_master_value = nvram_sda_master_drive ? nvram_io[6] : 1'b1;
+	wire       nvram_slave_sda_drive;
+	wire       nvram_sda_bus = nvram_sda_master_value & ~nvram_slave_sda_drive;
 
 	reg  [7:0] cdrom_command_buffer [32];
 	reg  [5:0] cdrom_command_length;
@@ -403,6 +413,7 @@ if (NATIVE_CD32) begin : g_cd
 						              | (((cdcomrxinx + 8'd1) == cdcomrxcmp) ? CDINT_RXDMADONE : 32'h0);
 					end else if ((cdcomrxinx + 8'd1) == cdcomrxcmp) begin
 						//
+						cdrom_intreq <= cdrom_intreq | CDINT_RXDMADONE;
 					end
 					rx_busy     <= 1'b0;
 					rx_inflight <= 1'b0;
@@ -502,7 +513,7 @@ if (NATIVE_CD32) begin : g_cd
 			5'b10010: cd_dout_r = cdrom_flags[31:16];
 			5'b10011: cd_dout_r = cdrom_flags[15:0];
 			5'b10100: cd_dout_r = {pio_byte, 8'h0};
-			5'b11000: cd_dout_r = {8'hFF, 8'h0};
+			5'b11000: cd_dout_r = {nvram_scl_bus, nvram_sda_bus, 6'h0, 8'h0};
 			5'b11001: cd_dout_r = {nvram_dir, 8'h0};
 			default:  cd_dout_r = 16'h0;
 		endcase
@@ -525,6 +536,16 @@ if (NATIVE_CD32) begin : g_cd
 	assign cd_hps_sec_req     = sec_req_w;
 	assign cd_hps_sec_status  = cdrom_sector_counter;
 
+	assign cd_hps_rx_busy     = (cdrom_receive_length != 6'd0);
+
+	akiko_nvram nvram_inst (
+		.clk       (clk),
+		.reset     (reset),
+		.scl_in    (nvram_scl_bus),
+		.sda_in    (nvram_sda_bus),
+		.sda_drive (nvram_slave_sda_drive)
+	);
+
 end else begin : g_stub
 	assign cd_dout            = 16'h0;
 	assign cd_irq             = 1'b0;
@@ -536,6 +557,7 @@ end else begin : g_stub
 	assign cd_hps_cmd_byte    = 8'h0;
 	assign cd_hps_sec_req     = 1'b0;
 	assign cd_hps_sec_status  = 8'h0;
+	assign cd_hps_rx_busy     = 1'b0;
 end
 endgenerate
 
@@ -561,5 +583,7 @@ assign hps_cmd_byte    = cd_hps_cmd_byte;
 
 assign hps_sec_req     = cd_hps_sec_req;
 assign hps_sec_status  = cd_hps_sec_status;
+
+assign hps_rx_busy     = cd_hps_rx_busy;
 
 endmodule

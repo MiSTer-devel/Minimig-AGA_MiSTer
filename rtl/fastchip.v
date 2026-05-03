@@ -78,6 +78,7 @@ module fastchip
 	output [15:0] akiko_uio_dout,
 	output        akiko_uio_req,
 	output        akiko_uio_sec_req,
+	output        akiko_uio_rx_busy,
 
 	input         akiko_uio_cs_trace,
 	input         akiko_uio_trace_rd,
@@ -105,6 +106,7 @@ wire  [7:0] akiko_hps_sec_status;
 wire        akiko_hps_sec_push;
 wire  [7:0] akiko_hps_sec_byte;
 wire        akiko_hps_sec_done;
+wire        akiko_hps_rx_busy;
 wire  [7:0] akiko_uio_dout_byte;
 
 assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
@@ -139,7 +141,8 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_status(akiko_hps_sec_status),
 	.hps_sec_push(akiko_hps_sec_push),
 	.hps_sec_byte(akiko_hps_sec_byte),
-	.hps_sec_done(akiko_hps_sec_done)
+	.hps_sec_done(akiko_hps_sec_done),
+	.hps_rx_busy(akiko_hps_rx_busy)
 );
 
 akiko_bus_trace akiko_bus_trace
@@ -179,8 +182,10 @@ akiko_hps_bridge akiko_hps_bridge
 	.sec_push(akiko_hps_sec_push),
 	.sec_byte(akiko_hps_sec_byte),
 	.sec_done(akiko_hps_sec_done),
+	.rx_busy(akiko_hps_rx_busy),
 	.req(akiko_uio_req),
-	.sec_req_out(akiko_uio_sec_req)
+	.sec_req_out(akiko_uio_sec_req),
+	.rx_busy_out(akiko_uio_rx_busy)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	

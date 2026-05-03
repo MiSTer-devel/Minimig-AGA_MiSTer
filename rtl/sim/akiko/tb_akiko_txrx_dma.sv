@@ -42,7 +42,8 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
 	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
 	.hps_sec_req(), .hps_sec_status(),
-	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0)
+	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0),
+	.hps_rx_busy()
 );
 
 localparam [31:0] CDINT_DRIVEXMIT = 32'h40000000;

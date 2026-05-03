@@ -1,5 +1,5 @@
-# tb_akiko_pbx_dma Questa runner (M4 — PBX sector DMA).
-# Run with: vsim -c -do run_pbx.do
+# tb_akiko_nvram Questa runner (Phase 13 -- I2C slave EEPROM).
+# Run with: vsim -c -do run_nvram.do
 # Sets exit code 0 on PASS, 1 on FAIL.
 
 if {[file exists work]} { vdel -lib work -all }
@@ -7,13 +7,12 @@ vlib work
 vmap work work
 
 vlog -sv -quiet ../../akiko_nvram.v
-vlog -sv -quiet ../../akiko.v
-vlog -sv -quiet tb_akiko_pbx_dma.sv
+vlog -sv -quiet tb_akiko_nvram.sv
 
-vsim -c -voptargs=+acc work.tb_akiko_pbx_dma
+vsim -c -voptargs=+acc work.tb_akiko_nvram
 run -all
 
-set num_errs [examine -value /tb_akiko_pbx_dma/errs]
+set num_errs [examine -value /tb_akiko_nvram/errs]
 if {$num_errs != 0} {
     puts "RUN: FAIL ($num_errs errors)"
     quit -code 1
