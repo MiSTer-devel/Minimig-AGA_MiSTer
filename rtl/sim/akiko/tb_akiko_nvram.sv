@@ -23,12 +23,25 @@ wire  sda_drive;
 wire  bus_scl = scl_master;
 wire  bus_sda = sda_master & ~sda_drive;
 
+logic [9:0] host_addr        = 10'd0;
+logic [7:0] host_din         = 8'h00;
+logic       host_we          = 1'b0;
+logic       host_clear_dirty = 1'b0;
+wire  [7:0] host_dout;
+wire        nvram_dirty;
+
 akiko_nvram #(.INIT_FILE("../../init/nvram_init.hex")) dut (
-	.clk       (clk),
-	.reset     (reset),
-	.scl_in    (bus_scl),
-	.sda_in    (bus_sda),
-	.sda_drive (sda_drive)
+	.clk              (clk),
+	.reset            (reset),
+	.scl_in           (bus_scl),
+	.sda_in           (bus_sda),
+	.sda_drive        (sda_drive),
+	.host_addr        (host_addr),
+	.host_din         (host_din),
+	.host_we          (host_we),
+	.host_dout        (host_dout),
+	.host_clear_dirty (host_clear_dirty),
+	.nvram_dirty      (nvram_dirty)
 );
 
 int errs = 0;
@@ -219,6 +232,103 @@ initial begin
 			i2c_read(data, i < 15 ? 1 : 0);
 			check($sformatf("init[%0d]", i), data, expected[i]);
 		end
+		i2c_stop();
+	end
+
+	repeat (8) @(posedge clk);
+
+	begin
+		bit [7:0] hd;
+		$display("=== Test 6: HPS host port + dirty flag ===");
+
+		check_bit("dirty_set_after_i2c", nvram_dirty, 1);
+
+		host_clear_dirty = 1'b1;
+		@(posedge clk);
+		host_clear_dirty = 1'b0;
+		@(posedge clk);
+		check_bit("dirty_cleared", nvram_dirty, 0);
+
+		host_addr = 10'h042; @(posedge clk); @(posedge clk);
+		check("host_rd_0x042 (Test 1)", host_dout, 8'hAB);
+
+		host_addr = 10'h100; @(posedge clk); @(posedge clk);
+		check("host_rd_0x100 (Test 2)", host_dout, 8'h11);
+		host_addr = 10'h101; @(posedge clk); @(posedge clk);
+		check("host_rd_0x101 (Test 2)", host_dout, 8'h22);
+		host_addr = 10'h102; @(posedge clk); @(posedge clk);
+		check("host_rd_0x102 (Test 2)", host_dout, 8'h33);
+		host_addr = 10'h103; @(posedge clk); @(posedge clk);
+		check("host_rd_0x103 (Test 2)", host_dout, 8'h44);
+
+		host_addr = 10'h300; @(posedge clk); @(posedge clk);
+		check("host_rd_0x300 (Test 4)", host_dout, 8'h5A);
+
+		host_addr = 10'h000; @(posedge clk); @(posedge clk);
+		check("host_rd_0x000 (init)",   host_dout, 8'h00);
+		host_addr = 10'h001; @(posedge clk); @(posedge clk);
+		check("host_rd_0x001 (init)",   host_dout, 8'h56);
+
+		i2c_start();
+		i2c_write(8'hA0, ack);
+		i2c_write(8'h10, ack);
+		i2c_write(8'hCD, ack);
+		i2c_stop();
+		repeat (4) @(posedge clk);
+		check_bit("dirty_relatched", nvram_dirty, 1);
+
+		host_addr = 10'h010; @(posedge clk); @(posedge clk);
+		check("host_rd_0x010 (relatch)", host_dout, 8'hCD);
+	end
+
+	repeat (8) @(posedge clk);
+
+	begin
+		bit [7:0] hd;
+		$display("=== Test 7: Phase 32.5 host write port (load-back) ===");
+
+		host_clear_dirty = 1'b1; @(posedge clk);
+		host_clear_dirty = 1'b0; @(posedge clk);
+		check_bit("dirty_clean_pre_load", nvram_dirty, 0);
+
+		host_addr = 10'h200; host_din = 8'hDE; host_we = 1'b1; @(posedge clk);
+		host_addr = 10'h201; host_din = 8'hAD;                 @(posedge clk);
+		host_addr = 10'h202; host_din = 8'hBE;                 @(posedge clk);
+		host_addr = 10'h203; host_din = 8'hEF;                 @(posedge clk);
+		host_we = 1'b0; @(posedge clk);
+
+		host_addr = 10'h200; @(posedge clk); @(posedge clk);
+		check("load_rd_0x200", host_dout, 8'hDE);
+		host_addr = 10'h201; @(posedge clk); @(posedge clk);
+		check("load_rd_0x201", host_dout, 8'hAD);
+		host_addr = 10'h202; @(posedge clk); @(posedge clk);
+		check("load_rd_0x202", host_dout, 8'hBE);
+		host_addr = 10'h203; @(posedge clk); @(posedge clk);
+		check("load_rd_0x203", host_dout, 8'hEF);
+
+		check_bit("dirty_unset_after_load", nvram_dirty, 0);
+
+		i2c_start();
+		i2c_write(8'hA0, ack);
+		i2c_write(8'h50, ack);
+		i2c_write(8'h99, ack);
+		i2c_stop();
+		repeat (4) @(posedge clk);
+		check_bit("dirty_set_after_i2c_post_load", nvram_dirty, 1);
+
+		i2c_start();
+		i2c_write(8'hA0, ack);
+		i2c_write(8'h00, ack);
+		i2c_stop();
+		i2c_start();
+		i2c_write(8'hA4, ack);
+		i2c_write(8'h00, ack);
+		i2c_start();
+		i2c_write(8'hA5, ack);
+		i2c_read(hd, 1); check("i2c_rd_0x200", hd, 8'hDE);
+		i2c_read(hd, 1); check("i2c_rd_0x201", hd, 8'hAD);
+		i2c_read(hd, 1); check("i2c_rd_0x202", hd, 8'hBE);
+		i2c_read(hd, 0); check("i2c_rd_0x203", hd, 8'hEF);
 		i2c_stop();
 	end
 

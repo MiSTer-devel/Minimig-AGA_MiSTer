@@ -52,7 +52,9 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_sec_push(hps_sec_push),
 	.hps_sec_byte(hps_sec_byte),
 	.hps_sec_done(hps_sec_done),
-	.hps_rx_busy()
+	.hps_rx_busy(),
+	.hps_nvr_addr(10'd0), .hps_nvr_din(8'h00), .hps_nvr_we(1'b0),
+	.hps_nvr_dout(), .hps_nvr_clear_dirty(1'b0), .hps_nvr_dirty()
 );
 
 localparam [31:0] CDINT_PBX       = 32'h04000000;

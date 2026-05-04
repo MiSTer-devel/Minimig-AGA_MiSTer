@@ -263,9 +263,11 @@ wire        akiko_wr;
 wire        akiko_rd;
 wire        akiko_cs;
 wire        akiko_cs_sec;
+wire        akiko_cs_nvr;
 wire        akiko_req;
 wire        akiko_sec_req;
 wire        akiko_rx_busy;
+wire        akiko_nvr_dirty;
 
 wire        akiko_cs_trace;
 wire        akiko_trace_rd;
@@ -689,15 +691,17 @@ fastchip fastchip
 	.akiko_dma_rbyte (akiko_dma_rbyte_w ),
 	.akiko_dma_ack   (akiko_dma_ack_w   ),
 
-	.akiko_uio_cs      (akiko_cs       ),
-	.akiko_uio_cs_sec  (akiko_cs_sec   ),
-	.akiko_uio_wr      (akiko_wr       ),
-	.akiko_uio_rd      (akiko_rd       ),
-	.akiko_uio_din     (akiko_dout     ),
-	.akiko_uio_dout    (akiko_din      ),
-	.akiko_uio_req     (akiko_req      ),
-	.akiko_uio_sec_req (akiko_sec_req  ),
-	.akiko_uio_rx_busy (akiko_rx_busy  ),
+	.akiko_uio_cs        (akiko_cs        ),
+	.akiko_uio_cs_sec    (akiko_cs_sec    ),
+	.akiko_uio_cs_nvr    (akiko_cs_nvr    ),
+	.akiko_uio_wr        (akiko_wr        ),
+	.akiko_uio_rd        (akiko_rd        ),
+	.akiko_uio_din       (akiko_dout      ),
+	.akiko_uio_dout      (akiko_din       ),
+	.akiko_uio_req       (akiko_req       ),
+	.akiko_uio_sec_req   (akiko_sec_req   ),
+	.akiko_uio_rx_busy   (akiko_rx_busy   ),
+	.akiko_uio_nvr_dirty (akiko_nvr_dirty ),
 
 	.akiko_uio_cs_trace   (akiko_cs_trace  ),
 	.akiko_uio_trace_rd   (akiko_trace_rd  ),

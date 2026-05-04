@@ -66,9 +66,11 @@ module hps_ext
 	output reg        akiko_rd,
 	output reg        akiko_cs,
 	output reg        akiko_cs_sec,
+	output reg        akiko_cs_nvr,
 	input             akiko_req,
 	input             akiko_sec_req,
 	input             akiko_rx_busy,
+	input             akiko_nvr_dirty,
 
 	input       [7:0] akiko_trace_din,
 	output reg        akiko_trace_rd,
@@ -118,6 +120,7 @@ always@(posedge clk_sys) begin
 		cdda_cs <= 0;
 		akiko_cs <= 0;
 		akiko_cs_sec <= 0;
+		akiko_cs_nvr <= 0;
 		akiko_cs_trace <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
@@ -135,6 +138,7 @@ always@(posedge clk_sys) begin
 			cdda_cs      <= (io_din[15:9] == 7'b1111001);
 			akiko_cs       <= (io_din[15:9] == 7'b1111010) && !io_din[7];
 			akiko_cs_sec   <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[8];
+			akiko_cs_nvr   <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[6];
 			akiko_cs_trace <= (io_din[15:9] == 7'b1111010) &&  io_din[7];
 		end
 
@@ -142,7 +146,7 @@ always@(posedge clk_sys) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
 			if(io_din == 'h63) begin
-				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, 2'b00, ide_req};
+				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, 1'b0, ide_req};
 			end
 		end else begin
 			case(cmd)

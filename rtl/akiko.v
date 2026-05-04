@@ -60,7 +60,14 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input       [7:0] hps_sec_byte,
 	input             hps_sec_done,
 
-	output            hps_rx_busy
+	output            hps_rx_busy,
+
+	input       [9:0] hps_nvr_addr,
+	input       [7:0] hps_nvr_din,
+	input             hps_nvr_we,
+	output      [7:0] hps_nvr_dout,
+	input             hps_nvr_clear_dirty,
+	output            hps_nvr_dirty
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -119,6 +126,8 @@ wire  [7:0] cd_hps_cmd_byte;
 wire        cd_hps_sec_req;
 wire  [7:0] cd_hps_sec_status;
 wire        cd_hps_rx_busy;
+wire  [7:0] cd_hps_nvr_dout;
+wire        cd_hps_nvr_dirty;
 
 generate
 if (NATIVE_CD32) begin : g_cd
@@ -215,10 +224,15 @@ if (NATIVE_CD32) begin : g_cd
 	                  && (rx_dma_delay == 2'd0);
 
 	wire [23:0] pbx_slot_base = cdrom_addressdata[23:0] + {8'h0, pbx_seccnt, 12'h0};
-	wire [23:0] pbx_addr      = pbx_slot_base
+	wire [23:0] pbx_addr_c    = pbx_slot_base
 	                          + ((pbx_state == PBX_DATA)
 	                              ? {12'h0, pbx_byte_idx}
 	                              : (24'h000c00 + {12'h0, pbx_byte_idx}));
+	reg  [23:0] pbx_addr;
+	always @(posedge clk) begin
+		if (reset) pbx_addr <= 24'h0;
+		else       pbx_addr <= pbx_addr_c;
+	end
 	wire [7:0]  sector_byte_at_idx = (pbx_byte_idx <  12'd3   ) ? 8'h00 :
 	                                 (pbx_byte_idx == 12'd3   ) ? (cdrom_sector_counter & 8'h1f) :
 	                                 (pbx_byte_idx <  12'd2352) ? sector_buffer[pbx_byte_idx] :
@@ -539,11 +553,18 @@ if (NATIVE_CD32) begin : g_cd
 	assign cd_hps_rx_busy     = (cdrom_receive_length != 6'd0);
 
 	akiko_nvram nvram_inst (
-		.clk       (clk),
-		.reset     (reset),
-		.scl_in    (nvram_scl_bus),
-		.sda_in    (nvram_sda_bus),
-		.sda_drive (nvram_slave_sda_drive)
+		.clk              (clk),
+		.reset            (reset),
+		.scl_in           (nvram_scl_bus),
+		.sda_in           (nvram_sda_bus),
+		.sda_drive        (nvram_slave_sda_drive),
+
+		.host_addr        (hps_nvr_addr),
+		.host_din         (hps_nvr_din),
+		.host_we          (hps_nvr_we),
+		.host_dout        (cd_hps_nvr_dout),
+		.host_clear_dirty (hps_nvr_clear_dirty),
+		.nvram_dirty      (cd_hps_nvr_dirty)
 	);
 
 end else begin : g_stub
@@ -558,6 +579,8 @@ end else begin : g_stub
 	assign cd_hps_sec_req     = 1'b0;
 	assign cd_hps_sec_status  = 8'h0;
 	assign cd_hps_rx_busy     = 1'b0;
+	assign cd_hps_nvr_dout    = 8'h0;
+	assign cd_hps_nvr_dirty   = 1'b0;
 end
 endgenerate
 
@@ -585,5 +608,8 @@ assign hps_sec_req     = cd_hps_sec_req;
 assign hps_sec_status  = cd_hps_sec_status;
 
 assign hps_rx_busy     = cd_hps_rx_busy;
+
+assign hps_nvr_dout    = cd_hps_nvr_dout;
+assign hps_nvr_dirty   = cd_hps_nvr_dirty;
 
 endmodule

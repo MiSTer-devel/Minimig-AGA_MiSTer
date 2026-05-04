@@ -33,6 +33,12 @@ reg c_7m_d;
 always @(posedge clk) c_7m_d <= c_7m;
 wire c_7m_rise = c_7m & ~c_7m_d;
 
+reg akiko_dma_req_q;
+always @(posedge clk) begin
+	if (reset) akiko_dma_req_q <= 1'b0;
+	else       akiko_dma_req_q <= akiko_dma_req;
+end
+
 reg [2:0] slot_cnt;
 
 reg [24:1] ak_addr;
@@ -60,7 +66,7 @@ assign akiko_dma_ack   = ak_ack_r;
 wire minimig_idle = chip_in_dma & chip_in_rw;
 wire minimig_busy = ~minimig_idle;
 
-wire arm_now = (state == S_IDLE) & c_7m_rise & minimig_idle & akiko_dma_req;
+wire arm_now = (state == S_IDLE) & c_7m_rise & minimig_idle & akiko_dma_req_q;
 
 wire arb_request = arm_now | (state == S_DRIVE);
 

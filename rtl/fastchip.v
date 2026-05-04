@@ -72,6 +72,7 @@ module fastchip
 
 	input         akiko_uio_cs,
 	input         akiko_uio_cs_sec,
+	input         akiko_uio_cs_nvr,
 	input         akiko_uio_wr,
 	input         akiko_uio_rd,
 	input  [15:0] akiko_uio_din,
@@ -79,6 +80,7 @@ module fastchip
 	output        akiko_uio_req,
 	output        akiko_uio_sec_req,
 	output        akiko_uio_rx_busy,
+	output        akiko_uio_nvr_dirty,
 
 	input         akiko_uio_cs_trace,
 	input         akiko_uio_trace_rd,
@@ -108,6 +110,14 @@ wire  [7:0] akiko_hps_sec_byte;
 wire        akiko_hps_sec_done;
 wire        akiko_hps_rx_busy;
 wire  [7:0] akiko_uio_dout_byte;
+
+wire  [9:0] akiko_hps_nvr_addr;
+wire  [7:0] akiko_hps_nvr_din;
+wire        akiko_hps_nvr_we;
+wire  [7:0] akiko_hps_nvr_dout;
+wire        akiko_hps_nvr_clear_dirty;
+wire        akiko_hps_nvr_dirty;
+wire        akiko_hps_nvr_done;
 
 assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
 
@@ -142,7 +152,13 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_push(akiko_hps_sec_push),
 	.hps_sec_byte(akiko_hps_sec_byte),
 	.hps_sec_done(akiko_hps_sec_done),
-	.hps_rx_busy(akiko_hps_rx_busy)
+	.hps_rx_busy(akiko_hps_rx_busy),
+	.hps_nvr_addr(akiko_hps_nvr_addr),
+	.hps_nvr_din(akiko_hps_nvr_din),
+	.hps_nvr_we(akiko_hps_nvr_we),
+	.hps_nvr_dout(akiko_hps_nvr_dout),
+	.hps_nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
+	.hps_nvr_dirty(akiko_hps_nvr_dirty)
 );
 
 akiko_bus_trace akiko_bus_trace
@@ -166,6 +182,7 @@ akiko_hps_bridge akiko_hps_bridge
 	.reset(reset),
 	.uio_cs(akiko_uio_cs),
 	.uio_cs_sec(akiko_uio_cs_sec),
+	.uio_cs_nvr(akiko_uio_cs_nvr),
 	.uio_wr(akiko_uio_wr),
 	.uio_rd(akiko_uio_rd),
 	.uio_din(akiko_uio_din[7:0]),
@@ -182,10 +199,18 @@ akiko_hps_bridge akiko_hps_bridge
 	.sec_push(akiko_hps_sec_push),
 	.sec_byte(akiko_hps_sec_byte),
 	.sec_done(akiko_hps_sec_done),
+	.nvr_addr(akiko_hps_nvr_addr),
+	.nvr_dout(akiko_hps_nvr_dout),
+	.nvr_din(akiko_hps_nvr_din),
+	.nvr_we(akiko_hps_nvr_we),
+	.nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
+	.nvr_done(akiko_hps_nvr_done),
+	.nvr_dirty(akiko_hps_nvr_dirty),
 	.rx_busy(akiko_hps_rx_busy),
 	.req(akiko_uio_req),
 	.sec_req_out(akiko_uio_sec_req),
-	.rx_busy_out(akiko_uio_rx_busy)
+	.rx_busy_out(akiko_uio_rx_busy),
+	.nvr_dirty_out(akiko_uio_nvr_dirty)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	

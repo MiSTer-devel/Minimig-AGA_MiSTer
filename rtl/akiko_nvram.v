@@ -10,16 +10,25 @@ module akiko_nvram
 	input  wire        scl_in,
 	input  wire        sda_in,
 
-	output wire        sda_drive
+	output wire        sda_drive,
+
+	input  wire [9:0]  host_addr,
+	input  wire [7:0]  host_din,
+	input  wire        host_we,
+	output reg  [7:0]  host_dout,
+	input  wire        host_clear_dirty,
+	output reg         nvram_dirty
 );
 
 localparam ADDR_W = 10;
-(* ramstyle = "M10K" *) reg [7:0] memory [0:1023];
+(* ramstyle = "M10K, no_rw_check" *) reg [7:0] memory_a [0:1023];
+(* ramstyle = "M10K, no_rw_check" *) reg [7:0] memory_b [0:1023];
 reg [7:0]        mem_dout;
 reg              mem_we;
 reg [ADDR_W-1:0] mem_waddr;
 
-initial $readmemh(INIT_FILE, memory);
+initial $readmemh(INIT_FILE, memory_a);
+initial $readmemh(INIT_FILE, memory_b);
 
 localparam ST_IDLE    = 3'd0;
 localparam ST_RX_DATA = 3'd1;
@@ -49,9 +58,23 @@ wire sda_fall =  prev_sda & ~sda_in;
 wire start_cond = scl_in & sda_fall;
 wire stop_cond  = scl_in & sda_rise;
 
+wire [ADDR_W-1:0] mem_waddr_mux = host_we ? host_addr : mem_waddr;
+wire        [7:0] mem_din_mux   = host_we ? host_din  : shift_reg;
+wire              mem_we_mux    = host_we | mem_we;
+
 always @(posedge clk) begin
-	if (mem_we) memory[mem_waddr] <= shift_reg;
-	mem_dout <= memory[eeprom_addr];
+	if (mem_we_mux) begin
+		memory_a[mem_waddr_mux] <= mem_din_mux;
+		memory_b[mem_waddr_mux] <= mem_din_mux;
+	end
+	mem_dout  <= memory_a[eeprom_addr];
+	host_dout <= memory_b[host_addr];
+end
+
+always @(posedge clk) begin
+	if (reset)                  nvram_dirty <= 1'b0;
+	else if (mem_we)            nvram_dirty <= 1'b1;
+	else if (host_clear_dirty)  nvram_dirty <= 1'b0;
 end
 
 always @(posedge clk) begin
