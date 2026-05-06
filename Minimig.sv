@@ -273,6 +273,10 @@ wire        akiko_cs_trace;
 wire        akiko_trace_rd;
 wire  [7:0] akiko_trace_din;
 
+wire [9:0]  nvr_load_addr = 10'd0;
+wire [7:0]  nvr_load_din  =  8'h00;
+wire        nvr_load_we   =  1'b0;
+
 wire        akiko_dma_req_w;
 wire        akiko_dma_we_w;
 wire [23:0] akiko_dma_baddr_w;
@@ -702,6 +706,10 @@ fastchip fastchip
 	.akiko_uio_sec_req   (akiko_sec_req   ),
 	.akiko_uio_rx_busy   (akiko_rx_busy   ),
 	.akiko_uio_nvr_dirty (akiko_nvr_dirty ),
+
+	.nvr_load_addr (nvr_load_addr),
+	.nvr_load_din  (nvr_load_din ),
+	.nvr_load_we   (nvr_load_we  ),
 
 	.akiko_uio_cs_trace   (akiko_cs_trace  ),
 	.akiko_uio_trace_rd   (akiko_trace_rd  ),

@@ -1,7 +1,7 @@
 
 module akiko_nvram
 #(
-	parameter INIT_FILE = "rtl/init/nvram_init.hex"
+	parameter INIT_FILE = "rtl/init/nvram_init.mif"
 )
 (
 	input  wire        clk,
@@ -13,22 +13,20 @@ module akiko_nvram
 	output wire        sda_drive,
 
 	input  wire [9:0]  host_addr,
-	input  wire [7:0]  host_din,
-	input  wire        host_we,
-	output reg  [7:0]  host_dout,
+	output wire [7:0]  host_dout,
 	input  wire        host_clear_dirty,
-	output reg         nvram_dirty
+	output reg         nvram_dirty = 1'b0,
+
+	input  wire [9:0]  load_addr,
+	input  wire [7:0]  load_din,
+	input  wire        load_we
 );
 
 localparam ADDR_W = 10;
-(* ramstyle = "M10K, no_rw_check" *) reg [7:0] memory_a [0:1023];
-(* ramstyle = "M10K, no_rw_check" *) reg [7:0] memory_b [0:1023];
-reg [7:0]        mem_dout;
-reg              mem_we;
-reg [ADDR_W-1:0] mem_waddr;
 
-initial $readmemh(INIT_FILE, memory_a);
-initial $readmemh(INIT_FILE, memory_b);
+wire [7:0]        mem_dout;
+reg               mem_we    = 1'b0;
+reg  [ADDR_W-1:0] mem_waddr = {ADDR_W{1'b0}};
 
 localparam ST_IDLE    = 3'd0;
 localparam ST_RX_DATA = 3'd1;
@@ -40,16 +38,16 @@ localparam BYTE_DEVADDR  = 2'd0;
 localparam BYTE_WORDADDR = 2'd1;
 localparam BYTE_DATA     = 2'd2;
 
-reg [2:0] state;
-reg [1:0] byte_phase;
-reg [3:0] bit_count;
-reg [7:0] shift_reg;
-reg [ADDR_W-1:0] eeprom_addr;
-reg       is_read;
-reg       dev_match;
-reg       sda_oe;
+reg [2:0] state                   = ST_IDLE;
+reg [1:0] byte_phase              = BYTE_DEVADDR;
+reg [3:0] bit_count               = 4'd0;
+reg [7:0] shift_reg               = 8'h00;
+reg [ADDR_W-1:0] eeprom_addr      = {ADDR_W{1'b0}};
+reg       is_read                 = 1'b0;
+reg       dev_match                = 1'b0;
+reg       sda_oe                  = 1'b0;
 
-reg prev_scl, prev_sda;
+reg prev_scl = 1'b1, prev_sda = 1'b1;
 wire scl_rise = ~prev_scl &  scl_in;
 wire scl_fall =  prev_scl & ~scl_in;
 wire sda_rise = ~prev_sda &  sda_in;
@@ -58,22 +56,108 @@ wire sda_fall =  prev_sda & ~sda_in;
 wire start_cond = scl_in & sda_fall;
 wire stop_cond  = scl_in & sda_rise;
 
-wire [ADDR_W-1:0] mem_waddr_mux = host_we ? host_addr : mem_waddr;
-wire        [7:0] mem_din_mux   = host_we ? host_din  : shift_reg;
-wire              mem_we_mux    = host_we | mem_we;
+wire [ADDR_W-1:0] mem_waddr_mux = load_we ? load_addr : mem_waddr;
+wire        [7:0] mem_din_mux   = load_we ? load_din  : shift_reg;
+wire              mem_we_mux    = load_we | mem_we;
+
+altsyncram memory_a_inst (
+	.address_a (mem_waddr_mux),
+	.clock0    (clk),
+	.data_a    (mem_din_mux),
+	.wren_a    (mem_we_mux),
+	.address_b (eeprom_addr),
+	.q_b       (mem_dout),
+	.aclr0     (1'b0),
+	.aclr1     (1'b0),
+	.addressstall_a (1'b0),
+	.addressstall_b (1'b0),
+	.byteena_a (1'b1),
+	.byteena_b (1'b1),
+	.clock1    (1'b1),
+	.clocken0  (1'b1),
+	.clocken1  (1'b1),
+	.clocken2  (1'b1),
+	.clocken3  (1'b1),
+	.data_b    (8'h00),
+	.eccstatus (),
+	.q_a       (),
+	.rden_a    (1'b1),
+	.rden_b    (1'b1),
+	.wren_b    (1'b0)
+);
+defparam
+	memory_a_inst.address_aclr_b = "NONE",
+	memory_a_inst.address_reg_b = "CLOCK0",
+	memory_a_inst.clock_enable_input_a = "BYPASS",
+	memory_a_inst.clock_enable_input_b = "BYPASS",
+	memory_a_inst.clock_enable_output_b = "BYPASS",
+	memory_a_inst.init_file = INIT_FILE,
+	memory_a_inst.intended_device_family = "Cyclone V",
+	memory_a_inst.lpm_type = "altsyncram",
+	memory_a_inst.numwords_a = 1024,
+	memory_a_inst.numwords_b = 1024,
+	memory_a_inst.operation_mode = "DUAL_PORT",
+	memory_a_inst.outdata_aclr_b = "NONE",
+	memory_a_inst.outdata_reg_b = "UNREGISTERED",
+	memory_a_inst.power_up_uninitialized = "FALSE",
+	memory_a_inst.ram_block_type = "M10K",
+	memory_a_inst.read_during_write_mode_mixed_ports = "OLD_DATA",
+	memory_a_inst.widthad_a = 10,
+	memory_a_inst.widthad_b = 10,
+	memory_a_inst.width_a = 8,
+	memory_a_inst.width_b = 8,
+	memory_a_inst.width_byteena_a = 1;
+
+altsyncram memory_b_inst (
+	.address_a (mem_waddr_mux),
+	.clock0    (clk),
+	.data_a    (mem_din_mux),
+	.wren_a    (mem_we_mux),
+	.address_b (host_addr),
+	.q_b       (host_dout),
+	.aclr0     (1'b0),
+	.aclr1     (1'b0),
+	.addressstall_a (1'b0),
+	.addressstall_b (1'b0),
+	.byteena_a (1'b1),
+	.byteena_b (1'b1),
+	.clock1    (1'b1),
+	.clocken0  (1'b1),
+	.clocken1  (1'b1),
+	.clocken2  (1'b1),
+	.clocken3  (1'b1),
+	.data_b    (8'h00),
+	.eccstatus (),
+	.q_a       (),
+	.rden_a    (1'b1),
+	.rden_b    (1'b1),
+	.wren_b    (1'b0)
+);
+defparam
+	memory_b_inst.address_aclr_b = "NONE",
+	memory_b_inst.address_reg_b = "CLOCK0",
+	memory_b_inst.clock_enable_input_a = "BYPASS",
+	memory_b_inst.clock_enable_input_b = "BYPASS",
+	memory_b_inst.clock_enable_output_b = "BYPASS",
+	memory_b_inst.init_file = INIT_FILE,
+	memory_b_inst.intended_device_family = "Cyclone V",
+	memory_b_inst.lpm_type = "altsyncram",
+	memory_b_inst.numwords_a = 1024,
+	memory_b_inst.numwords_b = 1024,
+	memory_b_inst.operation_mode = "DUAL_PORT",
+	memory_b_inst.outdata_aclr_b = "NONE",
+	memory_b_inst.outdata_reg_b = "UNREGISTERED",
+	memory_b_inst.power_up_uninitialized = "FALSE",
+	memory_b_inst.ram_block_type = "M10K",
+	memory_b_inst.read_during_write_mode_mixed_ports = "OLD_DATA",
+	memory_b_inst.widthad_a = 10,
+	memory_b_inst.widthad_b = 10,
+	memory_b_inst.width_a = 8,
+	memory_b_inst.width_b = 8,
+	memory_b_inst.width_byteena_a = 1;
 
 always @(posedge clk) begin
-	if (mem_we_mux) begin
-		memory_a[mem_waddr_mux] <= mem_din_mux;
-		memory_b[mem_waddr_mux] <= mem_din_mux;
-	end
-	mem_dout  <= memory_a[eeprom_addr];
-	host_dout <= memory_b[host_addr];
-end
-
-always @(posedge clk) begin
-	if (reset)                  nvram_dirty <= 1'b0;
-	else if (mem_we)            nvram_dirty <= 1'b1;
+	if (mem_we)                 nvram_dirty <= 1'b1;
 	else if (host_clear_dirty)  nvram_dirty <= 1'b0;
 end
 
@@ -82,17 +166,7 @@ always @(posedge clk) begin
 	prev_sda <= sda_in;
 	mem_we   <= 1'b0;
 
-	if (reset) begin
-		state       <= ST_IDLE;
-		byte_phase  <= BYTE_DEVADDR;
-		bit_count   <= 4'd0;
-		shift_reg   <= 8'h0;
-		eeprom_addr <= {ADDR_W{1'b0}};
-		is_read     <= 1'b0;
-		dev_match   <= 1'b0;
-		sda_oe      <= 1'b0;
-	end
-	else if (stop_cond) begin
+	if (stop_cond) begin
 		state      <= ST_IDLE;
 		byte_phase <= BYTE_DEVADDR;
 		bit_count  <= 4'd0;

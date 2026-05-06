@@ -63,11 +63,13 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	output            hps_rx_busy,
 
 	input       [9:0] hps_nvr_addr,
-	input       [7:0] hps_nvr_din,
-	input             hps_nvr_we,
 	output      [7:0] hps_nvr_dout,
 	input             hps_nvr_clear_dirty,
-	output            hps_nvr_dirty
+	output            hps_nvr_dirty,
+
+	input       [9:0] nvr_load_addr,
+	input       [7:0] nvr_load_din,
+	input             nvr_load_we
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -147,10 +149,12 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [7:0] nvram_io;
 	reg  [7:0] nvram_dir;
 
+	//
 	wire       nvram_scl_master_drive = nvram_dir[7];
 	wire       nvram_sda_master_drive = nvram_dir[6];
 	wire       nvram_scl_bus = nvram_scl_master_drive ? nvram_io[7] : 1'b1;
-	wire       nvram_sda_master_value = nvram_sda_master_drive ? nvram_io[6] : 1'b1;
+	wire       nvram_sda_master_value =
+	               nvram_sda_master_drive ? nvram_io[6] : 1'b1;
 	wire       nvram_slave_sda_drive;
 	wire       nvram_sda_bus = nvram_sda_master_value & ~nvram_slave_sda_drive;
 
@@ -554,17 +558,19 @@ if (NATIVE_CD32) begin : g_cd
 
 	akiko_nvram nvram_inst (
 		.clk              (clk),
-		.reset            (reset),
+		.reset            (1'b0),
 		.scl_in           (nvram_scl_bus),
 		.sda_in           (nvram_sda_bus),
 		.sda_drive        (nvram_slave_sda_drive),
 
 		.host_addr        (hps_nvr_addr),
-		.host_din         (hps_nvr_din),
-		.host_we          (hps_nvr_we),
 		.host_dout        (cd_hps_nvr_dout),
 		.host_clear_dirty (hps_nvr_clear_dirty),
-		.nvram_dirty      (cd_hps_nvr_dirty)
+		.nvram_dirty      (cd_hps_nvr_dirty),
+
+		.load_addr        (nvr_load_addr),
+		.load_din         (nvr_load_din),
+		.load_we          (nvr_load_we)
 	);
 
 end else begin : g_stub

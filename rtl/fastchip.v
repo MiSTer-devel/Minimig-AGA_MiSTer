@@ -82,6 +82,10 @@ module fastchip
 	output        akiko_uio_rx_busy,
 	output        akiko_uio_nvr_dirty,
 
+	input   [9:0] nvr_load_addr,
+	input   [7:0] nvr_load_din,
+	input         nvr_load_we,
+
 	input         akiko_uio_cs_trace,
 	input         akiko_uio_trace_rd,
 	output  [7:0] akiko_uio_trace_dout
@@ -112,8 +116,6 @@ wire        akiko_hps_rx_busy;
 wire  [7:0] akiko_uio_dout_byte;
 
 wire  [9:0] akiko_hps_nvr_addr;
-wire  [7:0] akiko_hps_nvr_din;
-wire        akiko_hps_nvr_we;
 wire  [7:0] akiko_hps_nvr_dout;
 wire        akiko_hps_nvr_clear_dirty;
 wire        akiko_hps_nvr_dirty;
@@ -154,11 +156,12 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_done(akiko_hps_sec_done),
 	.hps_rx_busy(akiko_hps_rx_busy),
 	.hps_nvr_addr(akiko_hps_nvr_addr),
-	.hps_nvr_din(akiko_hps_nvr_din),
-	.hps_nvr_we(akiko_hps_nvr_we),
 	.hps_nvr_dout(akiko_hps_nvr_dout),
 	.hps_nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
-	.hps_nvr_dirty(akiko_hps_nvr_dirty)
+	.hps_nvr_dirty(akiko_hps_nvr_dirty),
+	.nvr_load_addr(nvr_load_addr),
+	.nvr_load_din(nvr_load_din),
+	.nvr_load_we(nvr_load_we)
 );
 
 akiko_bus_trace akiko_bus_trace
@@ -201,8 +204,6 @@ akiko_hps_bridge akiko_hps_bridge
 	.sec_done(akiko_hps_sec_done),
 	.nvr_addr(akiko_hps_nvr_addr),
 	.nvr_dout(akiko_hps_nvr_dout),
-	.nvr_din(akiko_hps_nvr_din),
-	.nvr_we(akiko_hps_nvr_we),
 	.nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
 	.nvr_done(akiko_hps_nvr_done),
 	.nvr_dirty(akiko_hps_nvr_dirty),

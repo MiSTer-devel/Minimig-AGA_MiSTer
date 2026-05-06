@@ -41,8 +41,6 @@ module akiko_hps_bridge
 
 	output      [9:0] nvr_addr,
 	input       [7:0] nvr_dout,
-	output      [7:0] nvr_din,
-	output            nvr_we,
 	output            nvr_clear_dirty,
 	output            nvr_done,
 	input             nvr_dirty,
@@ -74,9 +72,9 @@ always @(posedge clk) begin
 		saw_write    <= 1'b0;
 		nvr_addr_cnt <= 10'd0;
 	end else begin
-		cs_d     <= uio_cs;
-		cs_sec_d <= uio_cs_sec;
-		cs_nvr_d <= uio_cs_nvr;
+		cs_d         <= uio_cs;
+		cs_sec_d     <= uio_cs_sec;
+		cs_nvr_d     <= uio_cs_nvr;
 		if (!uio_cs) begin
 			saw_read  <= 1'b0;
 			saw_write <= 1'b0;
@@ -86,7 +84,7 @@ always @(posedge clk) begin
 		end
 		if (uio_cs_nvr & ~cs_nvr_d) begin
 			nvr_addr_cnt <= 10'd0;
-		end else if ((uio_rd | uio_wr) & uio_cs_nvr) begin
+		end else if (uio_rd & uio_cs_nvr) begin
 			nvr_addr_cnt <= nvr_addr_cnt + 10'd1;
 		end
 	end
@@ -102,8 +100,6 @@ assign sec_push        = uio_wr & uio_cs &  uio_cs_sec;
 assign sec_byte        = uio_din;
 
 assign nvr_addr        = nvr_addr_cnt;
-assign nvr_din         = uio_din;
-assign nvr_we          = uio_wr & uio_cs &  uio_cs_nvr;
 assign nvr_clear_dirty = xfer_end & saw_read & cs_nvr_d;
 
 assign uio_dout        = uio_cs_nvr ? nvr_dout    :
