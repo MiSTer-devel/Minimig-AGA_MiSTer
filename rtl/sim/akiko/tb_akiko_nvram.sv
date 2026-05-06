@@ -337,6 +337,44 @@ initial begin
 
 	repeat (8) @(posedge clk);
 
+	begin
+		bit [7:0] hd;
+		$display("=== Test 8: load while reset asserted (domain-decoupling) ===");
+
+		reset = 1'b1;
+		@(posedge clk);
+		load_addr = 10'h280; load_din = 8'hCA; load_we = 1'b1; @(posedge clk);
+		load_addr = 10'h281; load_din = 8'hFE;                 @(posedge clk);
+		load_addr = 10'h282; load_din = 8'hBA;                 @(posedge clk);
+		load_addr = 10'h283; load_din = 8'hBE;                 @(posedge clk);
+		load_we = 1'b0; @(posedge clk);
+
+		reset = 1'b0;
+		repeat (8) @(posedge clk);
+
+		host_addr = 10'h280; @(posedge clk); @(posedge clk);
+		check("rst_load_rd_0x280", host_dout, 8'hCA);
+		host_addr = 10'h281; @(posedge clk); @(posedge clk);
+		check("rst_load_rd_0x281", host_dout, 8'hFE);
+		host_addr = 10'h282; @(posedge clk); @(posedge clk);
+		check("rst_load_rd_0x282", host_dout, 8'hBA);
+		host_addr = 10'h283; @(posedge clk); @(posedge clk);
+		check("rst_load_rd_0x283", host_dout, 8'hBE);
+
+		i2c_start();
+		i2c_write(8'hA4, ack);
+		i2c_write(8'h80, ack);
+		i2c_start();
+		i2c_write(8'hA5, ack);
+		i2c_read(hd, 1); check("rst_i2c_rd_0x280", hd, 8'hCA);
+		i2c_read(hd, 1); check("rst_i2c_rd_0x281", hd, 8'hFE);
+		i2c_read(hd, 1); check("rst_i2c_rd_0x282", hd, 8'hBA);
+		i2c_read(hd, 0); check("rst_i2c_rd_0x283", hd, 8'hBE);
+		i2c_stop();
+	end
+
+	repeat (8) @(posedge clk);
+
 	$display("=================================================");
 	$display("tb_akiko_nvram: %0d tests, %0d errors", tests, errs);
 	$display("=================================================");

@@ -238,6 +238,11 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0)) hps_io
 	.joystick_l_analog_1(JOYA1),
 	
 	.ioctl_wait(io_wait),
+	.ioctl_download(ioctl_download),
+	.ioctl_index(ioctl_index),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
 
 	.buttons(buttons),
 	.forced_scandoubler(forced_scandoubler),
@@ -273,9 +278,20 @@ wire        akiko_cs_trace;
 wire        akiko_trace_rd;
 wire  [7:0] akiko_trace_din;
 
-wire [9:0]  nvr_load_addr = 10'd0;
-wire [7:0]  nvr_load_din  =  8'h00;
-wire        nvr_load_we   =  1'b0;
+localparam [7:0] NVR_LOAD_INDEX = 8'd1;
+
+wire        ioctl_download;
+wire [15:0] ioctl_index;
+wire        ioctl_wr;
+wire [26:0] ioctl_addr;
+wire  [7:0] ioctl_dout;
+
+wire        nvr_load_match = ioctl_download &&
+                             (ioctl_index[7:0] == NVR_LOAD_INDEX) &&
+                             (ioctl_addr      <  27'd1024);
+wire [9:0]  nvr_load_addr  = ioctl_addr[9:0];
+wire [7:0]  nvr_load_din   = ioctl_dout;
+wire        nvr_load_we    = nvr_load_match && ioctl_wr;
 
 wire        akiko_dma_req_w;
 wire        akiko_dma_we_w;
