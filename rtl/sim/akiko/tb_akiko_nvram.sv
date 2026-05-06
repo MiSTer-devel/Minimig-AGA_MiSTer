@@ -375,6 +375,43 @@ initial begin
 
 	repeat (8) @(posedge clk);
 
+	begin
+		bit [7:0] hd;
+		bit [7:0] expected;
+		int    miscount = 0;
+		$display("=== Test 9: 1024-byte sequential load burst ===");
+
+		for (int i = 0; i < 1024; i++) begin
+			load_addr = i[9:0];
+			load_din  = 8'(i ^ (i >> 3));
+			load_we   = 1'b1;
+			@(posedge clk);
+		end
+		load_we = 1'b0;
+		@(posedge clk); @(posedge clk);
+
+		for (int i = 0; i < 1024; i++) begin
+			host_addr = i[9:0];
+			@(posedge clk); @(posedge clk);
+			expected = 8'(i ^ (i >> 3));
+			if (host_dout !== expected) begin
+				if (miscount < 8)
+					$display("FAIL [burst @0x%03x]: got 0x%02h, want 0x%02h",
+					         i, host_dout, expected);
+				miscount++;
+			end
+		end
+		tests++;
+		if (miscount) begin
+			$display("FAIL [burst_1024]: %0d/1024 mismatched", miscount);
+			errs++;
+		end else begin
+			$display("PASS [burst_1024]: 1024 bytes round-trip");
+		end
+	end
+
+	repeat (8) @(posedge clk);
+
 	$display("=================================================");
 	$display("tb_akiko_nvram: %0d tests, %0d errors", tests, errs);
 	$display("=================================================");
