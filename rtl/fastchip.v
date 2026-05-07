@@ -86,6 +86,11 @@ module fastchip
 	input   [7:0] nvr_load_din,
 	input         nvr_load_we,
 
+	input         hps_sec_dma_active,
+	input   [7:0] hps_sec_dma_byte,
+	input  [13:0] hps_sec_dma_addr,
+	input         hps_sec_dma_we,
+
 	input         akiko_uio_cs_trace,
 	input         akiko_uio_trace_rd,
 	output  [7:0] akiko_uio_trace_dout
@@ -161,7 +166,11 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_nvr_dirty(akiko_hps_nvr_dirty),
 	.nvr_load_addr(nvr_load_addr),
 	.nvr_load_din(nvr_load_din),
-	.nvr_load_we(nvr_load_we)
+	.nvr_load_we(nvr_load_we),
+	.hps_sec_dma_active(hps_sec_dma_active),
+	.hps_sec_dma_byte(hps_sec_dma_byte),
+	.hps_sec_dma_addr(hps_sec_dma_addr),
+	.hps_sec_dma_we(hps_sec_dma_we)
 );
 
 akiko_bus_trace akiko_bus_trace

@@ -220,7 +220,7 @@ wire [21:0] gamma_bus;
 
 wire  [7:0] uart_mode;
 
-hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0), .VDNUM(1), .BLKSZ(3)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0), .VDNUM(2), .BLKSZ(3)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS({HPS_BUS[48:42],ce_pix,HPS_BUS[40:0]}),
@@ -243,14 +243,14 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0), .VDNUM(1), .BLKSZ(3)) hps_io
 	.img_readonly(img_readonly),
 	.img_size(img_size),
 
-	.sd_lba(sd_lba_nvr),
-	.sd_blk_cnt(sd_blk_cnt_nvr),
-	.sd_rd(sd_rd_nvr),
-	.sd_wr(sd_wr_nvr),
+	.sd_lba(sd_lba),
+	.sd_blk_cnt(sd_blk_cnt),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din(sd_buff_din_nvr),
+	.sd_buff_din(sd_buff_din),
 	.sd_buff_wr(sd_buff_wr),
 
 	.buttons(buttons),
@@ -291,28 +291,33 @@ wire  [7:0] akiko_trace_din;
 wire        img_mounted;
 wire        img_readonly;
 wire [63:0] img_size;
-wire [31:0] sd_lba_nvr   [0:0];
-wire  [5:0] sd_blk_cnt_nvr[0:0];
-wire        sd_ack;
+wire [31:0] sd_lba   [1:0];
+wire  [5:0] sd_blk_cnt[1:0];
+wire  [1:0] sd_ack;
 wire [13:0] sd_buff_addr;
 wire  [7:0] sd_buff_dout;
-wire  [7:0] sd_buff_din_nvr[0:0];
+wire  [7:0] sd_buff_din[1:0];
 wire        sd_buff_wr;
 
 reg         sd_rd_nvr;
 reg         sd_wr_nvr;
 reg         img_mounted_d;
 
-assign sd_lba_nvr[0]      = 32'd0;
-assign sd_blk_cnt_nvr[0]  = 6'd0;
-assign sd_buff_din_nvr[0] = 8'h00;
+wire  [1:0] sd_rd = {1'b0, sd_rd_nvr};
+wire  [1:0] sd_wr = {1'b0, sd_wr_nvr};
+assign sd_lba[0]      = 32'd0;
+assign sd_lba[1]      = 32'd0;
+assign sd_blk_cnt[0]  = 6'd0;
+assign sd_blk_cnt[1]  = 6'd0;
+assign sd_buff_din[0] = 8'h00;
+assign sd_buff_din[1] = 8'h00;
 
 always @(posedge clk_sys) begin
 	img_mounted_d <= img_mounted;
 	if (img_mounted && !img_mounted_d &&
 	    (img_size == 64'd1024) && !img_readonly) begin
 		sd_rd_nvr <= 1'b1;
-	end else if (sd_ack) begin
+	end else if (sd_ack[0]) begin
 		sd_rd_nvr <= 1'b0;
 	end
 	sd_wr_nvr <= 1'b0;
@@ -320,7 +325,12 @@ end
 
 wire [9:0]  nvr_load_addr  = sd_buff_addr[9:0];
 wire [7:0]  nvr_load_din   = sd_buff_dout;
-wire        nvr_load_we    = sd_buff_wr & sd_ack;
+wire        nvr_load_we    = sd_buff_wr & sd_ack[0];
+
+wire        akiko_sec_dma_active = sd_ack[1];
+wire  [7:0] akiko_sec_dma_byte   = sd_buff_dout;
+wire [13:0] akiko_sec_dma_addr   = sd_buff_addr;
+wire        akiko_sec_dma_we     = sd_buff_wr;
 
 wire        akiko_dma_req_w;
 wire        akiko_dma_we_w;
@@ -755,6 +765,11 @@ fastchip fastchip
 	.nvr_load_addr (nvr_load_addr),
 	.nvr_load_din  (nvr_load_din ),
 	.nvr_load_we   (nvr_load_we  ),
+
+	.hps_sec_dma_active (akiko_sec_dma_active),
+	.hps_sec_dma_byte   (akiko_sec_dma_byte  ),
+	.hps_sec_dma_addr   (akiko_sec_dma_addr  ),
+	.hps_sec_dma_we     (akiko_sec_dma_we    ),
 
 	.akiko_uio_cs_trace   (akiko_cs_trace  ),
 	.akiko_uio_trace_rd   (akiko_trace_rd  ),

@@ -69,7 +69,12 @@ module akiko #(parameter NATIVE_CD32 = 0)
 
 	input       [9:0] nvr_load_addr,
 	input       [7:0] nvr_load_din,
-	input             nvr_load_we
+	input             nvr_load_we,
+
+	input             hps_sec_dma_active,
+	input       [7:0] hps_sec_dma_byte,
+	input      [13:0] hps_sec_dma_addr,
+	input             hps_sec_dma_we
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -492,6 +497,12 @@ if (NATIVE_CD32) begin : g_cd
 			if (hps_sec_done) begin
 				if (sec_wr_ptr == 12'd2352) sector_ready <= 1'b1;
 				sec_wr_ptr <= 12'h0;
+			end
+
+			if (hps_sec_dma_active && hps_sec_dma_we && !sector_ready
+			    && hps_sec_dma_addr < 14'd2352) begin
+				sector_buffer[hps_sec_dma_addr[11:0]] <= hps_sec_dma_byte;
+				if (hps_sec_dma_addr == 14'd2351) sector_ready <= 1'b1;
 			end
 
 			if (hps_cmd_pop && (hps_cmd_rd_ptr != 6'd32))
