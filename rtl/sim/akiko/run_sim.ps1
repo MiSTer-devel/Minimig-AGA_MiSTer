@@ -74,7 +74,16 @@ try {
         Write-Host "tb_akiko_nvram FAILED (vsim exit $rc6)" -ForegroundColor Red
     }
 
-    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0 -or $rc5 -ne 0 -or $rc6 -ne 0) { exit 1 }
+    # M6.2 bench (CDDA FIFO + 44.1 kHz pump)
+    & $vsim -c -do "do run_cdda.do"
+    $rc7 = $LASTEXITCODE
+    if ($rc7 -eq 0) {
+        Write-Host "tb_akiko_cdda PASSED" -ForegroundColor Green
+    } else {
+        Write-Host "tb_akiko_cdda FAILED (vsim exit $rc7)" -ForegroundColor Red
+    }
+
+    if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0 -or $rc5 -ne 0 -or $rc6 -ne 0 -or $rc7 -ne 0) { exit 1 }
     exit 0
 } finally {
     Pop-Location

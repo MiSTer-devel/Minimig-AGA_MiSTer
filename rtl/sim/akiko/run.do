@@ -10,6 +10,11 @@ vmap work work
 # -sv on all files: legacy akiko.v and the new file both use SV-style array
 # sizing (`reg [..] x[N]`) and unnamed blocks with decls. Quartus tolerates
 # this in plain Verilog mode but ModelSim ASE 10.5b requires -sv.
+# altera_mf.v needed because akiko_nvram.v instantiates altsyncram.
+# NOTE 2026-05-07: tb_akiko_regs.sv references obsolete `hps_nvr_din`/
+# `hps_nvr_we` ports that were renamed during Phase 32/33 NVRAM rework.
+# Bench needs to be updated to current akiko.v port list before this passes.
+vlog -quiet C:/intelFPGA_lite/17.0/quartus/eda/sim_lib/altera_mf.v
 vlog -sv -quiet akiko_legacy_ref.v
 vlog -sv -quiet ../../akiko_nvram.v
 vlog -sv -quiet ../../akiko.v

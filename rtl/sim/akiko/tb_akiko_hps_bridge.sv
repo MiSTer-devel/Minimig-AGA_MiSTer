@@ -79,7 +79,7 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_sec_req(), .hps_sec_status(),
 	.hps_sec_push(1'b0), .hps_sec_byte(8'h00), .hps_sec_done(1'b0),
 	.hps_rx_busy(),
-	.hps_nvr_addr(10'd0), .hps_nvr_din(8'h00), .hps_nvr_we(),
+	.hps_nvr_addr(10'd0),
 	.hps_nvr_dout(), .hps_nvr_clear_dirty(1'b0), .hps_nvr_dirty()
 );
 
@@ -95,7 +95,6 @@ akiko_hps_bridge u_bridge (
 	.sec_req(1'b0), .sec_status(8'h00),
 	.sec_push(), .sec_byte(), .sec_done(),
 	.nvr_addr(nvr_addr_w), .nvr_dout(nvr_dout_drv),
-	.nvr_din(nvr_din_w),   .nvr_we(nvr_we_w),
 	.nvr_clear_dirty(nvr_clear_dirty_w), .nvr_done(nvr_done_w),
 	.nvr_dirty(nvr_dirty_drv), .nvr_dirty_out(),
 	.rx_busy(1'b0),
