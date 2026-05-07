@@ -182,6 +182,14 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [7:0] sector_buffer [2352];
 	reg [11:0] sec_wr_ptr;
 	reg        sector_ready;
+
+	wire        sec_w_we   = hps_sec_dma_active
+	                          ? (hps_sec_dma_we && hps_sec_dma_addr < 14'd2352)
+	                          : (hps_sec_push  && sec_wr_ptr != 12'd2352);
+	wire [11:0] sec_w_addr = hps_sec_dma_active
+	                          ? hps_sec_dma_addr[11:0] : sec_wr_ptr;
+	wire  [7:0] sec_w_din  = hps_sec_dma_active
+	                          ? hps_sec_dma_byte : hps_sec_byte;
 	reg  [7:0] cdrom_sector_counter;
 	reg        pbx_busy;
 	reg  [1:0] pbx_state;
@@ -490,19 +498,20 @@ if (NATIVE_CD32) begin : g_cd
 				end
 			endcase
 
-			if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352) begin
-				sector_buffer[sec_wr_ptr] <= hps_sec_byte;
-				sec_wr_ptr <= sec_wr_ptr + 12'd1;
+			if (sec_w_we && !sector_ready) begin
+				sector_buffer[sec_w_addr] <= sec_w_din;
 			end
-			if (hps_sec_done) begin
-				if (sec_wr_ptr == 12'd2352) sector_ready <= 1'b1;
-				sec_wr_ptr <= 12'h0;
-			end
-
-			if (hps_sec_dma_active && hps_sec_dma_we && !sector_ready
-			    && hps_sec_dma_addr < 14'd2352) begin
-				sector_buffer[hps_sec_dma_addr[11:0]] <= hps_sec_dma_byte;
-				if (hps_sec_dma_addr == 14'd2351) sector_ready <= 1'b1;
+			if (hps_sec_dma_active) begin
+				if (hps_sec_dma_we && hps_sec_dma_addr == 14'd2351
+				    && !sector_ready) sector_ready <= 1'b1;
+			end else begin
+				if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352) begin
+					sec_wr_ptr <= sec_wr_ptr + 12'd1;
+				end
+				if (hps_sec_done) begin
+					if (sec_wr_ptr == 12'd2352) sector_ready <= 1'b1;
+					sec_wr_ptr <= 12'h0;
+				end
 			end
 
 			if (hps_cmd_pop && (hps_cmd_rd_ptr != 6'd32))
