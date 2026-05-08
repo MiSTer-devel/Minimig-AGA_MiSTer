@@ -105,6 +105,7 @@ assign dout    = akiko_dout | ide_dout  | rtg_dout;
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
 
+wire        akiko_trace_arm;
 wire        akiko_hps_cmd_pending;
 wire  [7:0] akiko_hps_cmd_byte;
 wire        akiko_hps_cmd_pop;
@@ -170,7 +171,8 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_dma_active(hps_sec_dma_active),
 	.hps_sec_dma_byte(hps_sec_dma_byte),
 	.hps_sec_dma_addr(hps_sec_dma_addr),
-	.hps_sec_dma_we(hps_sec_dma_we)
+	.hps_sec_dma_we(hps_sec_dma_we),
+	.trace_arm(akiko_trace_arm)
 );
 
 akiko_bus_trace akiko_bus_trace
@@ -183,6 +185,8 @@ akiko_bus_trace akiko_bus_trace
 	.addr         (addr[7:1]            ),
 	.din          (din                  ),
 	.dout         (akiko_dout           ),
+	.rd_filter_en (1'b1                 ),
+	.rd_arm       (akiko_trace_arm      ),
 	.uio_cs_trace (akiko_uio_cs_trace   ),
 	.uio_rd       (akiko_uio_trace_rd   ),
 	.uio_dout     (akiko_uio_trace_dout )
