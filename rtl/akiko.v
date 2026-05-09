@@ -74,9 +74,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input             hps_sec_dma_active,
 	input       [7:0] hps_sec_dma_byte,
 	input      [13:0] hps_sec_dma_addr,
-	input             hps_sec_dma_we,
-
-	output            trace_arm
+	input             hps_sec_dma_we
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -137,7 +135,6 @@ wire  [7:0] cd_hps_sec_status;
 wire        cd_hps_rx_busy;
 wire  [7:0] cd_hps_nvr_dout;
 wire        cd_hps_nvr_dirty;
-wire        cd_trace_arm;
 
 generate
 if (NATIVE_CD32) begin : g_cd
@@ -275,16 +272,6 @@ if (NATIVE_CD32) begin : g_cd
 	               && !sector_ready;
 
 	wire write = wr & cs;
-
-	reg [19:0] trace_arm_ctr;
-	always @(posedge clk) begin
-		if (reset) trace_arm_ctr <= 20'h0;
-		else if (write && addr == 5'b01110 && lds)
-			trace_arm_ctr <= 20'hFFFFF;
-		else if (trace_arm_ctr != 20'h0)
-			trace_arm_ctr <= trace_arm_ctr - 20'h1;
-	end
-	assign cd_trace_arm = (trace_arm_ctr != 20'h0);
 
 	always @(posedge clk) begin
 		if (reset) begin
@@ -620,7 +607,6 @@ end else begin : g_stub
 	assign cd_hps_rx_busy     = 1'b0;
 	assign cd_hps_nvr_dout    = 8'h0;
 	assign cd_hps_nvr_dirty   = 1'b0;
-	assign cd_trace_arm       = 1'b0;
 end
 endgenerate
 
@@ -651,7 +637,5 @@ assign hps_rx_busy     = cd_hps_rx_busy;
 
 assign hps_nvr_dout    = cd_hps_nvr_dout;
 assign hps_nvr_dirty   = cd_hps_nvr_dirty;
-
-assign trace_arm       = cd_trace_arm;
 
 endmodule
