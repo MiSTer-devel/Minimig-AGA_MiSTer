@@ -418,7 +418,10 @@ wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscon
 assign pwr_led = ~_led;
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
-assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};
+wire force_turbo = ~ovl & ~cachecfg_pre[3];
+assign cachecfg = {cachecfg_pre[2],
+                   force_turbo | (cachecfg_pre[3] & cachecfg_pre[1]),
+                   force_turbo | (cachecfg_pre[3] & cachecfg_pre[0])};
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
@@ -528,7 +531,7 @@ paula PAULA1
 	.floppy_drives(floppy_config[3:2])
 );
 
-wire [2:0] cachecfg_pre;
+wire [3:0] cachecfg_pre;
 //instantiate user IO
 userio USERIO1 
 (	
