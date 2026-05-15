@@ -287,6 +287,10 @@ wire        akiko_cs_trace;
 wire        akiko_trace_rd;
 wire  [7:0] akiko_trace_din;
 
+wire        chipset_cs_trace;
+wire        chipset_trace_rd;
+wire  [7:0] chipset_trace_din;
+
 //
 wire        img_mounted;
 wire        img_readonly;
@@ -939,7 +943,11 @@ minimig minimig
 	.ide_write    (ide_wr           ),
 	.ide_writedata(ide_dout         ),
 	.ide_read     (ide_rd           ),
-	.ide_readdata (ide_c_readdata   )
+	.ide_readdata (ide_c_readdata   ),
+
+	.chipset_trace_uio_cs   (chipset_cs_trace ),
+	.chipset_trace_uio_rd   (chipset_trace_rd ),
+	.chipset_trace_uio_dout (chipset_trace_din)
 );
 
 // power led control
