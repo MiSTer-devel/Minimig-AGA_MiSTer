@@ -79,6 +79,8 @@ module gary
 	input         toccata_ena,
 	input   [7:0] toccata_base,
 
+	input         cdtv_mode,
+
 	output        ram_rd, //bus read
 	output        ram_hwr, //bus high write
 	output        ram_lwr, //bus low write
@@ -97,7 +99,11 @@ module gary
 	output       sel_ide, //select $DAxxxx
 	output       sel_gayle, //select $DExxxx
 	output       sel_toccata, //select $E9xxxx (or whatever's specified by toccata_base)
-	output reg   rom_readonly = 0 //when zero allows to write to $fc-$ff, blocks effect of kick256kmirror.  
+
+	output       sel_cdtv,
+	output       sel_cdtv_nvram,
+
+	output reg   rom_readonly = 0 //when zero allows to write to $fc-$ff, blocks effect of kick256kmirror.
 );
 
 wire	[2:0] t_sel_slow;
@@ -123,8 +129,10 @@ assign ram_lwr = dbr ?  dbwe : cpu_lwr;
 // output full address to make mapping easier.
 wire kick_mirror_a8 = cpu_address_in[23:19] == 5'b1010_1;
 wire kick_mirror_b0 = cpu_address_in[23:19] == 5'b1011_0;
+wire kick_mirror_f0 = cdtv_mode && cpu_address_in[23:19] == 5'b1111_0;
 wire [4:0] cpu_addr_hi_remap = kick_mirror_a8 ? 5'b1111_1 :
                                kick_mirror_b0 ? 5'b1110_0 :
+                               kick_mirror_f0 ? 5'b1110_0 :
                                cpu_address_in[23:19];
 assign ram_address_out  = dbr ? {3'b000, dma_address_in[20:1]} : {cpu_addr_hi_remap, cpu_address_in[18:1]};
    
@@ -163,7 +171,7 @@ begin
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
 		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt || (!rom_readonly && cpu_address_in[18])))  || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) || (cpu_rd && kick_mirror_a8);
-		sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) || (cpu_rd && kick_mirror_b0);
+		sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) || (cpu_rd && kick_mirror_b0) || (cpu_rd && kick_mirror_f0);
 		sel_kick256kmirror = cpu_address_in[23:19]==5'b1111_1 &&  cpu_rd && rom_readonly && !cpu_hlt && bootrom;
 	end
 end
@@ -183,6 +191,9 @@ assign sel_rtg   = cpu_address_in[23:16]==8'hB8; // $B8xxxxx
 assign sel_bank_1 = cpu_address_in[23:21]==3'b001;
 
 assign sel_toccata = toccata_ena && cpu_address_in[23:16]==toccata_base; // Nominally $e9xxxx
+
+assign sel_cdtv       = cdtv_mode && cpu_address_in[23:16]==8'hE9;
+assign sel_cdtv_nvram = cdtv_mode && cpu_address_in[23:15]==9'b1101_1100_1;
 
 //data bus slow down
 assign dbs = cpu_address_in[23:21]==3'b000 || cpu_address_in[23:20]==4'b1100 || cpu_address_in[23:19]==5'b1101_0 || cpu_address_in[23:16]==8'b1101_1111;

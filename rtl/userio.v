@@ -53,7 +53,7 @@ module userio
 	output reg        IO_WAIT,
 	input      [15:0] IO_DIN,
 	output reg  [7:0] memory_config,
-	output reg  [4:0] chipset_config,
+	output reg  [5:0] chipset_config,
 	output reg  [3:0] floppy_config,
 	output reg  [2:0] scanline,
 	output reg  [1:0] ar,
@@ -391,7 +391,7 @@ assign host_bs = 2'b11;
 reg [7:0] t_memory_config = 8'b0_0_00_01_01;
 reg [5:0] t_ide_config = 0;
 reg [5:0] t_cpu_config = 0;
-reg [4:0] t_chipset_config = 0;
+reg [5:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk) begin
@@ -457,7 +457,7 @@ always @(posedge clk) begin
 
 			if(!bcnt) begin
 				if (reset_ctrl_sel)   {cpuhlt, cpurst, usrrst} <= IO_DIN[2:0];
-				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[4:0];
+				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[5:0];
 				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[5:0];
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};

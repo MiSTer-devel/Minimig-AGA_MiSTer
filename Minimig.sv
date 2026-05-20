@@ -528,6 +528,19 @@ wire        ramshared;
 
 wire [7:0] toccata_base;
 wire toccata_ena;
+wire cdtv_mode;
+
+wire [15:0] cdtv_din_w;
+wire        cdtv_selack_w;
+wire  [5:0] cdtv_ac_rom_addr_w;
+wire  [7:0] cdtv_ac_rom_byte_w;
+
+wire        cdtv_cmd_in_pending_w;
+wire  [7:0] cdtv_cmd_in_byte_w;
+wire  [9:0] cdtv_cdda_volume_w;
+wire        cdtv_nvr_dirty_w;
+wire  [7:0] cdtv_nvr_save_dout_w;
+wire  [7:0] cdtv_trace_uio_dout_w;
 
 cpu_wrapper cpu_wrapper
 (
@@ -564,7 +577,13 @@ cpu_wrapper cpu_wrapper
 
 	.toccata_ena  (toccata_ena     ),
 	.toccata_base (toccata_base    ),
-	
+	.cdtv_mode    (cdtv_mode       ),
+
+	.cdtv_din           (cdtv_din_w           ),
+	.cdtv_selack        (cdtv_selack_w        ),
+	.cdtv_ac_rom_addr   (cdtv_ac_rom_addr_w   ),
+	.cdtv_ac_rom_byte   (cdtv_ac_rom_byte_w   ),
+
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
 	.ramlds       (ram_lds         ),
@@ -799,7 +818,7 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 
 //// minimig top ////
 wire  [1:0] cpucfg;
-wire  [2:0] cachecfg;
+wire  [3:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   
 wire [15:0] ram_data;      // sram data bus
@@ -927,7 +946,42 @@ minimig minimig
 	.toccata_base (toccata_base),
 	.toccata_aud_left (toccata_aud_left),
 	.toccata_aud_right(toccata_aud_right),
-	
+
+	.cdtv_mode    (cdtv_mode        ),
+
+	.cdtv_din            (cdtv_din_w           ),
+	.cdtv_selack         (cdtv_selack_w        ),
+	.cdtv_ac_rom_addr    (cdtv_ac_rom_addr_w   ),
+	.cdtv_ac_rom_byte    (cdtv_ac_rom_byte_w   ),
+
+	.cdtv_cmd_in_pop     (1'b0                 ),
+	.cdtv_cmd_in_pending (cdtv_cmd_in_pending_w),
+	.cdtv_cmd_in_byte    (cdtv_cmd_in_byte_w   ),
+	.cdtv_cmd_out_push   (1'b0                 ),
+	.cdtv_cmd_out_data   (8'h00                ),
+	.cdtv_sec_byte_push  (1'b0                 ),
+	.cdtv_sec_byte_data  (8'h00                ),
+	.cdtv_subq_push      (1'b0                 ),
+	.cdtv_subq_byte      (8'h00                ),
+	.cdtv_stch_pulse     (1'b0                 ),
+	.cdtv_sten_pulse     (1'b0                 ),
+	.cdtv_scor_pulse     (1'b0                 ),
+	.cdtv_sbcp_pulse     (1'b0                 ),
+
+	.cdtv_nvr_load_addr  (14'h0                ),
+	.cdtv_nvr_load_din   (8'h0                 ),
+	.cdtv_nvr_load_we    (1'b0                 ),
+	.cdtv_nvr_save_addr  (14'h0                ),
+	.cdtv_nvr_save_dout  (cdtv_nvr_save_dout_w ),
+	.cdtv_nvr_dirty      (cdtv_nvr_dirty_w     ),
+	.cdtv_nvr_clear_dirty(1'b0                 ),
+
+	.cdtv_trace_uio_cs   (1'b0                 ),
+	.cdtv_trace_uio_rd   (1'b0                 ),
+	.cdtv_trace_uio_dout (cdtv_trace_uio_dout_w),
+
+	.cdtv_cdda_volume    (cdtv_cdda_volume_w   ),
+
 	//user i/o
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config

@@ -248,9 +248,44 @@ module minimig
 	output [15:0] toccata_aud_left,
 	output [15:0] toccata_aud_right,
 
+	output        cdtv_mode,
+
+	output [15:0] cdtv_din,
+	output        cdtv_selack,
+	output  [5:0] cdtv_ac_rom_addr,
+	input   [7:0] cdtv_ac_rom_byte,
+
+	input         cdtv_cmd_in_pop,
+	output        cdtv_cmd_in_pending,
+	output  [7:0] cdtv_cmd_in_byte,
+	input         cdtv_cmd_out_push,
+	input   [7:0] cdtv_cmd_out_data,
+	input         cdtv_sec_byte_push,
+	input   [7:0] cdtv_sec_byte_data,
+	input         cdtv_subq_push,
+	input   [7:0] cdtv_subq_byte,
+	input         cdtv_stch_pulse,
+	input         cdtv_sten_pulse,
+	input         cdtv_scor_pulse,
+	input         cdtv_sbcp_pulse,
+
+	input  [13:0] cdtv_nvr_load_addr,
+	input   [7:0] cdtv_nvr_load_din,
+	input         cdtv_nvr_load_we,
+	input  [13:0] cdtv_nvr_save_addr,
+	output  [7:0] cdtv_nvr_save_dout,
+	output        cdtv_nvr_dirty,
+	input         cdtv_nvr_clear_dirty,
+
+	input         cdtv_trace_uio_cs,
+	input         cdtv_trace_uio_rd,
+	output  [7:0] cdtv_trace_uio_dout,
+
+	output  [9:0] cdtv_cdda_volume,
+
 	//user i/o
 	output  [1:0] cpucfg,
-	output  [2:0] cachecfg,
+	output  [3:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
 	output        ide_ena,
@@ -322,6 +357,12 @@ wire        sel_rtc;
 wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
 wire        sel_toccata;
+wire        sel_cdtv;
+wire        sel_cdtv_nvram;
+wire [15:0] cdtv_bridge_dout;
+wire        cdtv_bridge_selack;
+wire [15:0] cdtv_nvr_dout;
+wire        cdtv_irq_w;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
@@ -387,7 +428,8 @@ wire        usrrst;				//user reset from osd interface
 wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
 wire  [7:0] memory_config;		//memory configuration
 wire  [3:0] floppy_config;		//floppy drives configuration (drive number and speed)
-wire  [4:0] chipset_config;	//chipset features selection
+wire  [5:0] chipset_config;
+assign cdtv_mode = chipset_config[5];
 wire  [5:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
@@ -418,10 +460,10 @@ wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscon
 assign pwr_led = ~_led;
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
-wire force_turbo  = ~ovl & ~cachecfg_pre[3];
-wire fast_present = memory_config[7] | memory_config[5] | memory_config[4];
-assign cachecfg = {cachecfg_pre[2],
-                   force_turbo | (cachecfg_pre[3] & fast_present),
+wire force_turbo  = ~ovl;
+assign cachecfg = {cachecfg_pre[3],
+                   cachecfg_pre[2],
+                   force_turbo,
                    force_turbo};
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
@@ -500,7 +542,7 @@ paula PAULA1
 	.sof(sof),
 	.strhor(strhor_paula),
 	.vblint(vbl_int),
-	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|akiko_irq),
+	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|akiko_irq|cdtv_irq_w),
 	.int3(int3),
 	.int6(int6 | int6_toccata),
 	._ipl(_iplx),
@@ -796,6 +838,7 @@ gary GARY1
 	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
 	.toccata_ena(toccata_ena),
 	.toccata_base(toccata_base),
+	.cdtv_mode(chipset_config[5]),
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -814,6 +857,8 @@ gary GARY1
 	.sel_gayle(sel_gayle),
 	.sel_rtc(sel_rtc),
 	.sel_toccata(sel_toccata),
+	.sel_cdtv(sel_cdtv),
+	.sel_cdtv_nvram(sel_cdtv_nvram),
 	.reset(reset),
 	.clk(clk),
 	.rom_readonly(rom_readonly),
@@ -902,6 +947,94 @@ toccata #(
 	.out_left(toccata_aud_left),
 	.out_right(toccata_aud_right)
 );
+
+//-------------------------------------------------------------------------------------
+//
+//-------------------------------------------------------------------------------------
+
+wire        cdtv_trace_we;
+wire [63:0] cdtv_trace_data;
+
+cdtv_bridge cdtv_bridge_inst
+(
+	.clk             (clk                  ),
+	.reset           (reset                ),
+
+	.sel             (sel_cdtv             ),
+	.selack          (cdtv_bridge_selack   ),
+	.addr            (cpu_address_out      ),
+	.din             (cpu_data_out         ),
+	.dout            (cdtv_bridge_dout     ),
+	.rd              (cpu_rd               ),
+	.hwr             (cpu_hwr              ),
+	.lwr             (cpu_lwr              ),
+
+	.ac_rom_byte     (cdtv_ac_rom_byte     ),
+	.ac_rom_addr     (cdtv_ac_rom_addr     ),
+
+	.cdtv_irq        (cdtv_irq_w           ),
+	.cdda_volume     (cdtv_cdda_volume     ),
+
+	.cmd_in_pending  (cdtv_cmd_in_pending  ),
+	.cmd_in_byte     (cdtv_cmd_in_byte     ),
+	.cmd_in_pop      (cdtv_cmd_in_pop      ),
+	.cmd_out_push    (cdtv_cmd_out_push    ),
+	.cmd_out_data    (cdtv_cmd_out_data    ),
+
+	.sec_byte_push   (cdtv_sec_byte_push   ),
+	.sec_byte_data   (cdtv_sec_byte_data   ),
+
+	.subq_push       (cdtv_subq_push       ),
+	.subq_byte       (cdtv_subq_byte       ),
+
+	.stch_pulse      (cdtv_stch_pulse      ),
+	.sten_pulse_ext  (cdtv_sten_pulse      ),
+	.scor_pulse      (cdtv_scor_pulse      ),
+	.sbcp_pulse      (cdtv_sbcp_pulse      ),
+
+	.trace_we        (cdtv_trace_we        ),
+	.trace_data      (cdtv_trace_data      )
+);
+
+cdtv_nvram cdtv_nvram_inst
+(
+	.clk             (clk                  ),
+	.reset           (reset                ),
+
+	.sel             (sel_cdtv_nvram       ),
+	.addr            (cpu_address_out      ),
+	.din             (cpu_data_out         ),
+	.dout            (cdtv_nvr_dout        ),
+	.rd              (cpu_rd               ),
+	.hwr             (cpu_hwr              ),
+	.lwr             (cpu_lwr              ),
+
+	.hps_load_addr   (cdtv_nvr_load_addr   ),
+	.hps_load_din    (cdtv_nvr_load_din    ),
+	.hps_load_we     (cdtv_nvr_load_we     ),
+
+	.hps_save_addr   (cdtv_nvr_save_addr   ),
+	.hps_save_dout   (cdtv_nvr_save_dout   ),
+
+	.dirty           (cdtv_nvr_dirty       ),
+	.clear_dirty     (cdtv_nvr_clear_dirty )
+);
+
+cdtv_trace cdtv_trace_inst
+(
+	.clk             (clk                  ),
+	.reset           (reset                ),
+
+	.trace_we        (cdtv_trace_we        ),
+	.trace_data      (cdtv_trace_data      ),
+
+	.uio_cs          (cdtv_trace_uio_cs    ),
+	.uio_rd          (cdtv_trace_uio_rd    ),
+	.uio_dout        (cdtv_trace_uio_dout  )
+);
+
+assign cdtv_din    = sel_cdtv_nvram ? cdtv_nvr_dout : cdtv_bridge_dout;
+assign cdtv_selack = cdtv_bridge_selack | sel_cdtv_nvram;
 
 //-------------------------------------------------------------------------------------
 

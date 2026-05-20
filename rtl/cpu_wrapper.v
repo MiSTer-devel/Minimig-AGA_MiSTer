@@ -35,7 +35,7 @@ module cpu_wrapper
 
 	input       [1:0] cpucfg,
 	input       [2:0] fastramcfg,
-	input       [2:0] cachecfg,
+	input       [3:0] cachecfg,
 	input             bootrom,
 
 	output reg [23:1] chip_addr,
@@ -68,6 +68,14 @@ module cpu_wrapper
 
 	output            toccata_ena,
 	output reg  [7:0] toccata_base,
+
+	input             cdtv_mode,
+
+	input      [15:0] cdtv_din,
+	input             cdtv_selack,
+
+	input       [5:0] cdtv_ac_rom_addr,
+	output      [7:0] cdtv_ac_rom_byte,
 
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
@@ -130,7 +138,10 @@ assign fastchip_rnw = wr;
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel ? ramdat : fastchip_selack ? fastchip_dout : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire [15:0] cpu_din = ramsel ? ramdat :
+                      fastchip_selack ? fastchip_dout :
+                      cdtv_selack ? cdtv_din :
+                      {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
 reg         wr;
 reg         uds_in;
 reg         lds_in;
@@ -204,7 +215,7 @@ cpu_inst_p
 (
   .clk(clk),
   .nreset(reset),
-  .clkena_in(~cpu_req | chipready | ramready | fastchip_ready),
+  .clkena_in(clkena_p_throttled),
   .data_in(cpu_din),
   .ipl(cpu_ipl),
   .ipl_autovector(1),
@@ -286,10 +297,21 @@ always @(posedge clk) begin
 	end
 end
 
+wire stock_speed   = cachecfg[3];
+wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready | cdtv_selack;
+
+reg [3:0] cooldown;
+always @(posedge clk) begin
+	if (~reset)                                cooldown <= 4'd0;
+	else if (cooldown != 4'd0)                 cooldown <= cooldown - 4'd1;
+	else if (stock_speed & clkena_p_base)      cooldown <= 4'd9;
+end
+wire clkena_p_throttled = clkena_p_base & (cooldown == 4'd0);
+
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel & ~fastchip_selack;
+	chipreq <= cpu_req & ~ramsel & ~fastchip_selack & ~cdtv_selack;
 	cpu_ipl <= ipl_i;
 end
 
@@ -355,14 +377,27 @@ end
 ///////////////////// AUTOCONFIG ////////////////////////////
 
 reg       ac_toccata;
+reg       ac_cdtv;
 reg [2:0] ac_memcard;
 reg [3:0] autocfg_data;
+reg [7:0] cdtv_base;
 
 always @(*) begin
 	autocfg_data = 4'b1111;
 
+	if (ac_cdtv) begin
+		case (chip_addr[6:1])
+			6'h00: autocfg_data = 4'b1100;
+			6'h01: autocfg_data = 4'b0001;
+			6'h03: autocfg_data = 4'b1100;
+			6'h04: autocfg_data = 4'b1011;
+			6'h09: autocfg_data = 4'b1101;
+			6'h0B: autocfg_data = 4'b1101;
+			default: autocfg_data = 4'b1111;
+		endcase
+	end
 	// Zorro II RAM (Up to 8 meg at 0x200000). It has a fixed base, so it must be first in the chain.
-	if (~ac_memcard[2] && ac_memcard[1:0]) begin
+	else if (~ac_memcard[2] && ac_memcard[1:0]) begin
 		case (chip_addr[6:1])
 			6'b000000: autocfg_data = 4'b1110;	// Zorro-II card, add mem, no ROM
 			6'b000001:
@@ -393,7 +428,7 @@ always @(*) begin
 			6'hb: autocfg_data = 4'b1011;
 			default: ;
 		endcase
-	end 
+	end
 	// Zorro III RAM 128MB/256MB/384MB
 	else if(ac_memcard[2]) begin
 		case (chip_addr[6:1])
@@ -412,7 +447,34 @@ always @(*) begin
 	end
 end
 
-wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata); //$E80000 - $E8FFFF
+wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_cdtv); //$E80000 - $E8FFFF
+
+reg [7:0] cdtv_ac_rom_byte_r;
+always @* begin
+	cdtv_ac_rom_byte_r = 8'hFF;
+	case (cdtv_ac_rom_addr)
+		6'h00: cdtv_ac_rom_byte_r = 8'hC0;
+		6'h01: cdtv_ac_rom_byte_r = 8'h10;
+		6'h02: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h03: cdtv_ac_rom_byte_r = 8'hC0;
+		6'h04: cdtv_ac_rom_byte_r = 8'hB0;
+		6'h05: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h08: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h09: cdtv_ac_rom_byte_r = 8'hD0;
+		6'h0A: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h0B: cdtv_ac_rom_byte_r = 8'hD0;
+		6'h0C: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h0D: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h0E: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h0F: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h10: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h11: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h12: cdtv_ac_rom_byte_r = 8'hF0;
+		6'h13: cdtv_ac_rom_byte_r = 8'hF0;
+		default: cdtv_ac_rom_byte_r = 8'hFF;
+	endcase
+end
+assign cdtv_ac_rom_byte = cdtv_ac_rom_byte_r;
 
 reg       z2ram_ena;
 reg [4:0] z3ram_base0;
@@ -425,7 +487,9 @@ always @(posedge clk) begin
 
 	if (~reset | ~reset_out) begin
 		ac_memcard  <= cpucfg[1] ? fastramcfg : fastramcfg[2] ? 3'd3 : {1'b0, fastramcfg[1:0]};
-		ac_toccata  <= 1;
+		ac_toccata  <= cdtv_mode ? 1'b0 : 1'b1;
+		ac_cdtv     <= 1'b0;
+		cdtv_base   <= 8'hE9;
 		z2ram_ena   <= 0;
 		z3ram_ena0  <= 0;
 		z3ram_ena1  <= 0;
@@ -433,7 +497,16 @@ always @(posedge clk) begin
 		z3ram_base1 <= 1;
 	end
 	else if (sel_autoconfig && ~chip_rw && ~chip_uds && old_uds) begin
-		if(~ac_memcard[2] && ac_memcard[1:0]) begin
+		if(ac_cdtv) begin
+			if (chip_addr[6:1] == 6'b100100) begin
+				cdtv_base <= cpu_dout[15:8];
+				ac_cdtv   <= 0;
+			end
+			else if (chip_addr[6:1] == 6'b100110) begin
+				ac_cdtv   <= 0;
+			end
+		end
+		else if(~ac_memcard[2] && ac_memcard[1:0]) begin
 			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
 				z2ram_ena <= 1;
 				ac_memcard <= 0;
@@ -443,7 +516,7 @@ always @(posedge clk) begin
 			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, Toccata card in ZII io space ($E90000)
 				toccata_base <= cpu_dout[7:0];
 				ac_toccata<=0;
-			end		
+			end
 		end
 		else if(ac_memcard[2]) begin
 			if(chip_addr[6:1] == 6'b100010) begin // Register 0x44, assign base address to ZIII RAM.
@@ -462,6 +535,6 @@ always @(posedge clk) begin
 	end
 end
 
-assign toccata_ena = ~ac_toccata;
+assign toccata_ena = ~ac_toccata & ~cdtv_mode;
 
 endmodule
