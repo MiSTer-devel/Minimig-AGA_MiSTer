@@ -279,7 +279,7 @@ always @* begin
 			if (tp_cr[0])
 				tpi_rd = {tp_ilatch[7:5], ~(tp_ilatch[4:0] | tp_ilatch2[4:0])};
 			else
-				tpi_rd = tp_ilatch;
+				tpi_rd = {3'h0, cmd_out_empty, cmd_out_empty, 1'b1, 1'b1, ~sbcp_state};
 		end
 		3'd3: tpi_rd = tp_ad;
 		3'd4: tpi_rd = tp_bd;
