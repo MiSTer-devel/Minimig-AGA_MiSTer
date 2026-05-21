@@ -488,7 +488,7 @@ always @(posedge clk) begin
 	if (~reset | ~reset_out) begin
 		ac_memcard  <= cpucfg[1] ? fastramcfg : fastramcfg[2] ? 3'd3 : {1'b0, fastramcfg[1:0]};
 		ac_toccata  <= cdtv_mode ? 1'b0 : 1'b1;
-		ac_cdtv     <= 1'b0;
+		ac_cdtv     <= cdtv_mode;
 		cdtv_base   <= 8'hE9;
 		z2ram_ena   <= 0;
 		z3ram_ena0  <= 0;

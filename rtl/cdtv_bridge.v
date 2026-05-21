@@ -148,6 +148,7 @@ wire sel_xt_a5_ob   = sel && (byte_off == 16'h00A4);
 wire sel_xt_a7_ob   = sel && (byte_off == 16'h00A6);
 wire in_tpi_range   = sel && (byte_off >= 16'h00B0) && (byte_off <= 16'h00BE);
 wire  [2:0] tpi_reg = byte_off[3:1];
+wire [7:0] tpi_data = hwr ? din[15:8] : din[7:0];
 wire sel_dma_start  = sel && (byte_off == 16'h00E0);
 wire sel_dma_stop   = sel && (byte_off == 16'h00E2);
 wire sel_istr_clr   = sel && (byte_off == 16'h00E4);
@@ -319,30 +320,30 @@ always @(posedge clk) begin
 			sbcp_state <= 1'b0;
 		end
 
-		if (in_tpi_range && hwr) begin
+		if (in_tpi_range && (hwr || lwr)) begin
 			case (tpi_reg)
-				3'd0: tp_a <= din[15:8];
+				3'd0: tp_a <= tpi_data;
 				3'd1: begin
-					tp_b <= din[15:8];
-					if (din[14] && !tp_b_prev_6)
-						dac_shift <= {din[13], dac_shift[11:1]};
-					if (din[15] && !tp_b_prev_7)
+					tp_b <= tpi_data;
+					if (tpi_data[6] && !tp_b_prev_6)
+						dac_shift <= {tpi_data[5], dac_shift[11:1]};
+					if (tpi_data[7] && !tp_b_prev_7)
 						cd_volume <= dac_shift[9:0];
-					tp_b_prev_6 <= din[14];
-					tp_b_prev_7 <= din[15];
+					tp_b_prev_6 <= tpi_data[6];
+					tp_b_prev_7 <= tpi_data[7];
 				end
 				3'd2: begin
 					if (tp_cr[0])
-						tp_ilatch[4:0] <= tp_ilatch[4:0] & din[12:8];
+						tp_ilatch[4:0] <= tp_ilatch[4:0] & tpi_data[4:0];
 				end
-				3'd3: tp_ad <= din[15:8];
-				3'd4: tp_bd <= din[15:8];
+				3'd3: tp_ad <= tpi_data;
+				3'd4: tp_bd <= tpi_data;
 				3'd5: begin
-					if (tp_cr[0]) tp_imask <= din[12:8];
-					else          tp_cd    <= din[15:8];
+					if (tp_cr[0]) tp_imask <= tpi_data[4:0];
+					else          tp_cd    <= tpi_data;
 				end
-				3'd6: tp_cr  <= din[15:8];
-				3'd7: tp_air <= din[15:8];
+				3'd6: tp_cr  <= tpi_data;
+				3'd7: tp_air <= tpi_data;
 			endcase
 		end
 
@@ -456,6 +457,7 @@ always @* begin
 	else if (sel_xtfloor)  rd_byte_ob = 8'hFF;
 	else if (sel_cmda_ob)  rd_byte_ob = cmd_out_empty ? last_out
 	                                                  : cmd_out_fifo[cmd_out_rd_p];
+	else if (in_tpi_range) rd_byte_ob = tpi_rd;
 end
 
 always @* begin
