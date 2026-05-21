@@ -170,7 +170,7 @@ assign istr_any_set = |istr[7:1];
 assign istr_rd      = istr | (istr_any_set ? (8'h01 << ISTR_INT_P_BIT) : 8'h00);
 
 assign sten_any  = sten_pulse_ext | sten_pulse_int;
-assign tpi_edges = {sten_any, sten_any, stch_pulse, scor_pulse, sbcp_pulse};
+assign tpi_edges = {sten_any, sten_any, stch_pulse | prst_pulse, scor_pulse, sbcp_pulse};
 assign masked_active = tp_ilatch[4:0] & tp_imask[4:0];
 
 assign cmd_in_empty  = (cmd_in_wr_p  == cmd_in_rd_p);
