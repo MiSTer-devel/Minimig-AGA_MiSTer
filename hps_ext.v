@@ -79,7 +79,19 @@ module hps_ext
 
 	input       [7:0] chipset_trace_din,
 	output reg        chipset_trace_rd,
-	output reg        chipset_cs_trace
+	output reg        chipset_cs_trace,
+
+	input      [15:0] cdtv_din,
+	output reg [15:0] cdtv_dout,
+	output reg        cdtv_wr,
+	output reg        cdtv_rd,
+	output reg        cdtv_cs,
+	output reg        cdtv_cs_sec,
+	output reg        cdtv_cs_stch,
+	output reg        cdtv_cs_trace,
+	input       [7:0] cdtv_trace_din,
+	output reg        cdtv_trace_rd,
+	input             cdtv_req
 );
 
 localparam UIO_MOUSE     = 'h04;
@@ -116,6 +128,8 @@ always@(posedge clk_sys) begin : main_proc
 	{akiko_rd, akiko_wr} <= 0;
 	akiko_trace_rd <= 0;
 	chipset_trace_rd <= 0;
+	{cdtv_rd, cdtv_wr} <= 0;
+	cdtv_trace_rd <= 0;
 	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
 
 	if(~io_uio) begin
@@ -129,6 +143,10 @@ always@(posedge clk_sys) begin : main_proc
 		akiko_cs_nvr <= 0;
 		akiko_cs_trace <= 0;
 		chipset_cs_trace <= 0;
+		cdtv_cs <= 0;
+		cdtv_cs_sec <= 0;
+		cdtv_cs_stch <= 0;
+		cdtv_cs_trace <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -139,6 +157,7 @@ always@(posedge clk_sys) begin : main_proc
 		ide_dout <= io_din;
 		cdda_dout <= io_din;
 		akiko_dout <= io_din;
+		cdtv_dout <= io_din;
 		if(byte_cnt == 1) begin
 			ide_addr     <= {io_din[8],io_din[3:0]};
 			ide_cs       <= (io_din[15:9] == 7'b1111000);
@@ -148,13 +167,17 @@ always@(posedge clk_sys) begin : main_proc
 			akiko_cs_nvr    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[6];
 			akiko_cs_trace  <= (io_din[15:9] == 7'b1111010) &&  io_din[7];
 			chipset_cs_trace <= (io_din[15:9] == 7'b1111011);
+			cdtv_cs          <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] && !io_din[5];
+			cdtv_cs_sec      <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] &&  io_din[5];
+			cdtv_cs_stch     <= (io_din[15:9] == 7'b1111100) && !io_din[7] &&  io_din[6];
+			cdtv_cs_trace    <= (io_din[15:9] == 7'b1111100) &&  io_din[7];
 		end
 
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
 			if(io_din == 'h63) begin
-				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, 1'b0, ide_req};
+				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
 			end
 		end else begin
 			case(cmd)
@@ -221,6 +244,7 @@ always@(posedge clk_sys) begin : main_proc
 						cdda_wr  <= cdda_cs;
 						ide_wr   <= ide_cs;
 						akiko_wr <= akiko_cs;
+						cdtv_wr  <= cdtv_cs | cdtv_cs_stch | cdtv_cs_sec;
 					end
 				end
 
@@ -240,6 +264,14 @@ always@(posedge clk_sys) begin : main_proc
 					if(byte_cnt >= 3 && chipset_cs_trace) begin
 						io_dout          <= {8'h00, chipset_trace_din};
 						chipset_trace_rd <= 1;
+					end
+					if(byte_cnt >= 3 && cdtv_cs) begin
+						io_dout <= cdtv_din;
+						cdtv_rd <= 1;
+					end
+					if(byte_cnt >= 3 && cdtv_cs_trace) begin
+						io_dout       <= {8'h00, cdtv_trace_din};
+						cdtv_trace_rd <= 1;
 					end
 				end
 			endcase
