@@ -64,13 +64,34 @@ chipdma_arb u_dut (
 	.akiko_dma_rbyte (akiko_dma_rbyte ),
 	.akiko_dma_ack   (akiko_dma_ack   ),
 
+	.cdtv_dma_req    (1'b0            ),
+	.cdtv_dma_we     (1'b0            ),
+	.cdtv_dma_baddr  (24'h000000      ),
+	.cdtv_dma_wbyte  (8'h00           ),
+	.cdtv_dma_rbyte  (                ),
+	.cdtv_dma_ack    (                ),
+
 	.chip_out_addr   (chip_out_addr   ),
 	.chip_out_l      (chip_out_l      ),
 	.chip_out_u      (chip_out_u      ),
 	.chip_out_rw     (chip_out_rw     ),
 	.chip_out_dma    (chip_out_dma    ),
 	.chip_out_wr     (chip_out_wr     ),
-	.chip_in_rd      (chip_in_rd      )
+	.chip_in_rd      (chip_in_rd      ),
+
+	.z2ram_ena       (1'b0            ),
+	.z3ram_base0     (5'h00           ),
+	.z3ram_ena0      (1'b0            ),
+	.z3ram_base1     (4'h0            ),
+	.z3ram_ena1      (1'b0            ),
+
+	.ddr_out_addr    (                ),
+	.ddr_out_l       (                ),
+	.ddr_out_u       (                ),
+	.ddr_out_we      (                ),
+	.ddr_out_cs      (                ),
+	.ddr_out_wr      (                ),
+	.ddr_in_ack      (1'b0            )
 );
 
 localparam int LATENCY = 1;

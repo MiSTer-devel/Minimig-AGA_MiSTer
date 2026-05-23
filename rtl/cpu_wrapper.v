@@ -79,8 +79,20 @@ module cpu_wrapper
 
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
-	output reg [31:0] nmi_addr
+	output reg [31:0] nmi_addr,
+
+	output            z2ram_ena_out,
+	output      [4:0] z3ram_base0_out,
+	output            z3ram_ena0_out,
+	output      [3:0] z3ram_base1_out,
+	output            z3ram_ena1_out
 );
+
+assign z2ram_ena_out   = z2ram_ena;
+assign z3ram_base0_out = z3ram_base0;
+assign z3ram_ena0_out  = z3ram_ena0;
+assign z3ram_base1_out = z3ram_base1;
+assign z3ram_ena1_out  = z3ram_ena1;
 
 assign ramsel       = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
 assign ramshared    = sel_dd;

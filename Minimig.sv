@@ -641,8 +641,28 @@ cpu_wrapper cpu_wrapper
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
 	.cacr         (cpu_cacr        ),
-	.nmi_addr     (cpu_nmi_addr    )
+	.nmi_addr     (cpu_nmi_addr    ),
+
+	.z2ram_ena_out   (z2ram_ena_w     ),
+	.z3ram_base0_out (z3ram_base0_w   ),
+	.z3ram_ena0_out  (z3ram_ena0_w    ),
+	.z3ram_base1_out (z3ram_base1_w   ),
+	.z3ram_ena1_out  (z3ram_ena1_w    )
 );
+
+wire       z2ram_ena_w;
+wire [4:0] z3ram_base0_w;
+wire       z3ram_ena0_w;
+wire [3:0] z3ram_base1_w;
+wire       z3ram_ena1_w;
+
+wire [28:1] dma_ddr_addr_w;
+wire        dma_ddr_l_w;
+wire        dma_ddr_u_w;
+wire        dma_ddr_we_w;
+wire        dma_ddr_cs_w;
+wire [15:0] dma_ddr_wr_w;
+wire        dma_ddr_ack_w;
 
 wire [15:0] ram_dout1;
 wire        ram_ready1;
@@ -719,7 +739,21 @@ chipdma_arb chipdma_arb
 	.chip_out_rw     (arb_chip_rw          ),
 	.chip_out_dma    (arb_chip_dma         ),
 	.chip_out_wr     (arb_chip_wr          ),
-	.chip_in_rd      (ramdata_in           )
+	.chip_in_rd      (ramdata_in           ),
+
+	.z2ram_ena       (z2ram_ena_w          ),
+	.z3ram_base0     (z3ram_base0_w        ),
+	.z3ram_ena0      (z3ram_ena0_w         ),
+	.z3ram_base1     (z3ram_base1_w        ),
+	.z3ram_ena1      (z3ram_ena1_w         ),
+
+	.ddr_out_addr    (dma_ddr_addr_w       ),
+	.ddr_out_l       (dma_ddr_l_w          ),
+	.ddr_out_u       (dma_ddr_u_w          ),
+	.ddr_out_we      (dma_ddr_we_w         ),
+	.ddr_out_cs      (dma_ddr_cs_w         ),
+	.ddr_out_wr      (dma_ddr_wr_w         ),
+	.ddr_in_ack      (dma_ddr_ack_w        )
 );
 
 wire [15:0] ram_dout2;
@@ -753,7 +787,15 @@ ddram_ctrl ram2
 	.cpuCS        (zram_sel&ram_cs ),
 	.cpuRD        (ram_dout2       ),
 	.ramshared    (ramshared       ),
-	.ramready     (ram_ready2      )
+	.ramready     (ram_ready2      ),
+
+	.dmaAddr      (dma_ddr_addr_w  ),
+	.dmaCS        (dma_ddr_cs_w    ),
+	.dmaWE        (dma_ddr_we_w    ),
+	.dmaL         (dma_ddr_l_w     ),
+	.dmaU         (dma_ddr_u_w     ),
+	.dmaWR        (dma_ddr_wr_w    ),
+	.dmaACK       (dma_ddr_ack_w   )
 );
 
 wire [15:0] fastchip_dout;
