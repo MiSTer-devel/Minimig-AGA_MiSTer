@@ -20,6 +20,35 @@ set_multicycle_path -from {emu|fastchip|akiko|*} -to {emu|ram1|*} -hold 1
 set_multicycle_path -from {emu|chipdma_arb|*}    -to {emu|ram1|*} -setup 2
 set_multicycle_path -from {emu|chipdma_arb|*}    -to {emu|ram1|*} -hold 1
 
+# Phase B v2: bridge DMA write port on ram2 (DDR3) is now a proper CDC
+# handshake. chipdma_arb (clk_sys) registers dma_ddr_cs_r + the entire DDR
+# bus (addr / wr / l / u) on arm_now and holds them stable until S_ACK.
+# ddram_ctrl (clk_114) synchronizes dmaCS through a 2-FF chain, edge-detects
+# the rise, and latches data on that edge — by which point the data has
+# been valid in chipdma_arb for many clk_114 cycles. dmaACK comes back as a
+# level signal, synchronized by a 2-FF chain inside chipdma_arb.
+#
+# Net effect: dmaCS is the ONLY cross-domain bit that needs proper timing
+# (sync chain handles metastability). The data lines are stable-by-handshake,
+# so set_false_path is correct.
+#
+# The previous v1 multicycle hacks were the wrong shape for this CDC — slow→
+# fast multicycle 4 still left -8 ns slack on these paths, and at -2.1 ns
+# post-fit worst, the bridge UIO init never completed on hardware (akiko log
+# stayed at 0 bytes). v2 RTL removes the violation by construction.
+set_false_path -from {*chipdma_arb*dma_ddr_addr_r*} -to {*ddram_ctrl*}
+set_false_path -from {*chipdma_arb*dma_ddr_wr_r*}   -to {*ddram_ctrl*}
+set_false_path -from {*chipdma_arb*dma_ddr_l_r*}    -to {*ddram_ctrl*}
+set_false_path -from {*chipdma_arb*dma_ddr_u_r*}    -to {*ddram_ctrl*}
+# Phase B v2.1: also false_path the two CDC sync first-stages. dma_ddr_cs_r
+# → dmaCS_sync1 is the slow→fast (clk_sys → clk_114) handshake; dmaACK_r
+# → ddr_in_ack_sync1 is the reverse. Both are absorbed by 2-FF synchronizer
+# chains in their target domains — metastable-tolerant by construction.
+# Without this, Quartus tries to time them at single cycle and reports
+# −3.7 ns slack. (Functionally fine, but report should be clean.)
+set_false_path -from {*chipdma_arb*dma_ddr_cs_r*}   -to {*ddram_ctrl*dmaCS_sync*}
+set_false_path -from {*ddram_ctrl*dmaACK_r*}        -to {*chipdma_arb*ddr_in_ack_sync*}
+
 set_false_path -from {emu|cpu_wrapper|z3ram_*}
 set_false_path -from {emu|cpu_wrapper|z2ram_*}
 

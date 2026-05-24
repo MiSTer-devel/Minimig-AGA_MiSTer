@@ -142,6 +142,22 @@ end
 
 assign ramready = cache_hit || write_ena;
 
+reg dmaCS_sync1;
+reg dmaCS_sync2;
+reg dmaCS_sync3;
+always @ (posedge sysclk) begin
+	if (~reset_n) begin
+		dmaCS_sync1 <= 0;
+		dmaCS_sync2 <= 0;
+		dmaCS_sync3 <= 0;
+	end else begin
+		dmaCS_sync1 <= dmaCS;
+		dmaCS_sync2 <= dmaCS_sync1;
+		dmaCS_sync3 <= dmaCS_sync2;
+	end
+end
+wire dmaCS_rise = dmaCS_sync2 & ~dmaCS_sync3;
+
 reg        dma_write_req;
 reg        dma_write_ack;
 reg [28:1] dmaWriteAddr;
@@ -158,7 +174,7 @@ always @ (posedge sysclk) begin
 		dma_write_req <= 0;
 		dmaACK_r      <= 0;
 	end else begin
-		if (dmaCS & dmaWE & ~dma_write_req & ~dmaACK_r) begin
+		if (dmaCS_rise & dmaWE & ~dma_write_req & ~dmaACK_r) begin
 			dmaWriteAddr  <= dmaAddr;
 			dmaWriteDat   <= dmaWR;
 			dmaWriteBE    <= ~{dmaU, dmaL};
@@ -174,7 +190,7 @@ always @ (posedge sysclk) begin
 			dmaACK_r      <= 1'b1;
 		end
 
-		if (~dmaCS) dmaACK_r <= 1'b0;
+		if (~dmaCS_sync2) dmaACK_r <= 1'b0;
 	end
 end
 

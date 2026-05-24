@@ -79,6 +79,25 @@ reg        ak_baddr0;
 reg        ak_is_ddr;
 reg [28:1] ak_ddr_addr;
 
+reg        dma_ddr_cs_r;
+reg [28:1] dma_ddr_addr_r;
+reg        dma_ddr_l_r;
+reg        dma_ddr_u_r;
+reg [15:0] dma_ddr_wr_r;
+
+reg ddr_in_ack_sync1;
+reg ddr_in_ack_sync2;
+always @(posedge clk) begin
+    if (reset) begin
+        ddr_in_ack_sync1 <= 1'b0;
+        ddr_in_ack_sync2 <= 1'b0;
+    end else begin
+        ddr_in_ack_sync1 <= ddr_in_ack;
+        ddr_in_ack_sync2 <= ddr_in_ack_sync1;
+    end
+end
+wire ddr_ack_safe = ddr_in_ack_sync2;
+
 localparam [1:0]
 	S_IDLE     = 2'd0,
 	S_DRIVE    = 2'd1,
@@ -149,10 +168,8 @@ memory_router u_router
 );
 
 wire        is_ddr_now   = arm_now ? router_zram_sel : ak_is_ddr;
-wire [28:1] ddr_addr_w   = arm_now ? router_ramaddr  : ak_ddr_addr;
 
 wire arb_drive_chip = arb_drive & ~is_ddr_now;
-wire arb_drive_ddr  = arb_drive &  is_ddr_now;
 
 assign chip_out_addr = arb_drive_chip ? ak_addr_w    : chip_in_addr;
 assign chip_out_l    = arb_drive_chip ? ak_l_w       : chip_in_l;
@@ -161,12 +178,12 @@ assign chip_out_rw   = arb_drive_chip ? ak_rw_w      : chip_in_rw;
 assign chip_out_dma  = arb_drive_chip ? 1'b0         : chip_in_dma;
 assign chip_out_wr   = arb_drive_chip ? ak_wr_data_w : chip_in_wr;
 
-assign ddr_out_cs   = arb_drive_ddr;
-assign ddr_out_addr = ddr_addr_w;
-assign ddr_out_l    = ak_l_w;
-assign ddr_out_u    = ak_u_w;
+assign ddr_out_cs   = dma_ddr_cs_r;
+assign ddr_out_addr = dma_ddr_addr_r;
+assign ddr_out_l    = dma_ddr_l_r;
+assign ddr_out_u    = dma_ddr_u_r;
 assign ddr_out_we   = 1'b1;
-assign ddr_out_wr   = ak_wr_data_w;
+assign ddr_out_wr   = dma_ddr_wr_r;
 
 always @(posedge clk) begin
 	if (reset) begin
@@ -177,6 +194,7 @@ always @(posedge clk) begin
 		ak_rbyte_r     <= 8'h00;
 		active_is_cdtv <= 1'b0;
 		ak_is_ddr      <= 1'b0;
+		dma_ddr_cs_r   <= 1'b0;
 	end else begin
 		ak_ack_r   <= 1'b0;
 		cdtv_ack_r <= 1'b0;
@@ -195,13 +213,20 @@ always @(posedge clk) begin
 				ak_ddr_addr    <= router_ramaddr;
 				slot_cnt       <= 3'd0;
 				active_is_cdtv <= arming_is_cdtv;
+				if (router_zram_sel) begin
+					dma_ddr_cs_r   <= 1'b1;
+					dma_ddr_addr_r <= router_ramaddr;
+					dma_ddr_l_r    <= ~live_baddr[0];
+					dma_ddr_u_r    <=  live_baddr[0];
+					dma_ddr_wr_r   <= {live_wbyte, live_wbyte};
+				end
 				state          <= S_DRIVE;
 			end
 		end
 
 		S_DRIVE: begin
 			if (ak_is_ddr) begin
-				if (ddr_in_ack) state <= S_ACK;
+				if (ddr_ack_safe) state <= S_ACK;
 			end else begin
 				slot_cnt <= slot_cnt + 3'd1;
 				if (slot_cnt == 3'd3) begin
@@ -217,6 +242,7 @@ always @(posedge clk) begin
 		S_ACK: begin
 			if (active_is_cdtv) cdtv_ack_r <= 1'b1;
 			else                ak_ack_r   <= 1'b1;
+			dma_ddr_cs_r <= 1'b0;
 			state <= S_COOLDOWN;
 		end
 
