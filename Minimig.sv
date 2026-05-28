@@ -647,7 +647,37 @@ cpu_wrapper cpu_wrapper
 	.z3ram_base0_out (z3ram_base0_w   ),
 	.z3ram_ena0_out  (z3ram_ena0_w    ),
 	.z3ram_base1_out (z3ram_base1_w   ),
-	.z3ram_ena1_out  (z3ram_ena1_w    )
+	.z3ram_ena1_out  (z3ram_ena1_w    ),
+	.dcache_sw_en    (dcache_sw_en_w  ),
+
+	.z2_trace_cs     (z2_cs_trace     ),
+	.z2_trace_rd     (z2_trace_rd     ),
+	.z2_trace_dout   (z2_trace_din    )
+);
+
+wire dcache_sw_en_w;
+
+wire       z2_cs_trace;
+wire       z2_trace_rd;
+wire [7:0] z2_trace_din;
+
+wire       akiko_cs_peek;
+wire       akiko_peek_rd;
+wire [7:0] akiko_peek_din;
+
+akiko_ddr_peek akiko_ddr_peek_inst
+(
+	.clk         (clk_sys        ),
+	.reset       (reset_d        ),
+	.dma_cs      (dma_ddr_cs_w   ),
+	.dma_we      (dma_ddr_we_w   ),
+	.dma_addr    (dma_ddr_addr_w ),
+	.dma_l       (dma_ddr_l_w    ),
+	.dma_u       (dma_ddr_u_w    ),
+	.dma_wr      (dma_ddr_wr_w   ),
+	.uio_cs_peek (akiko_cs_peek  ),
+	.uio_rd      (akiko_peek_rd  ),
+	.uio_dout    (akiko_peek_din )
 );
 
 wire       z2ram_ena_w;
@@ -663,6 +693,7 @@ wire        dma_ddr_we_w;
 wire        dma_ddr_cs_w;
 wire [15:0] dma_ddr_wr_w;
 wire        dma_ddr_ack_w;
+wire [15:0] dma_ddr_rd_w;
 
 wire [15:0] ram_dout1;
 wire        ram_ready1;
@@ -675,6 +706,7 @@ sdram_ctrl ram1
 
 	.cache_rst    (cpu_rst         ),
 	.cpu_cache_ctrl(cpu_cacr       ),
+	.dcache_sw_en (dcache_sw_en_w  ),
 
 	.sd_data      (SDRAM_DQ        ),
 	.sd_addr      (SDRAM_A         ),
@@ -753,7 +785,8 @@ chipdma_arb chipdma_arb
 	.ddr_out_we      (dma_ddr_we_w         ),
 	.ddr_out_cs      (dma_ddr_cs_w         ),
 	.ddr_out_wr      (dma_ddr_wr_w         ),
-	.ddr_in_ack      (dma_ddr_ack_w        )
+	.ddr_in_ack      (dma_ddr_ack_w        ),
+	.ddr_in_rd       (dma_ddr_rd_w         )
 );
 
 wire [15:0] ram_dout2;
@@ -767,6 +800,7 @@ ddram_ctrl ram2
 
 	.cache_rst    (cpu_rst         ),
 	.cpu_cache_ctrl(cpu_cacr       ),
+	.dcache_sw_en (dcache_sw_en_w  ),
 
 	.DDRAM_CLK    (DDRAM_CLK       ),
 	.DDRAM_BUSY   (DDRAM_BUSY      ),
@@ -795,6 +829,7 @@ ddram_ctrl ram2
 	.dmaL         (dma_ddr_l_w     ),
 	.dmaU         (dma_ddr_u_w     ),
 	.dmaWR        (dma_ddr_wr_w    ),
+	.dmaRD        (dma_ddr_rd_w    ),
 	.dmaACK       (dma_ddr_ack_w   )
 );
 

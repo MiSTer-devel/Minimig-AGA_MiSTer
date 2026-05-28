@@ -47,7 +47,8 @@ module chipdma_arb
 	output            ddr_out_we,
 	output            ddr_out_cs,
 	output     [15:0] ddr_out_wr,
-	input             ddr_in_ack
+	input             ddr_in_ack,
+	input      [15:0] ddr_in_rd
 );
 
 reg c_7m_d;
@@ -84,6 +85,7 @@ reg [28:1] dma_ddr_addr_r;
 reg        dma_ddr_l_r;
 reg        dma_ddr_u_r;
 reg [15:0] dma_ddr_wr_r;
+reg        dma_ddr_we_r;
 
 reg ddr_in_ack_sync1;
 reg ddr_in_ack_sync2;
@@ -182,7 +184,7 @@ assign ddr_out_cs   = dma_ddr_cs_r;
 assign ddr_out_addr = dma_ddr_addr_r;
 assign ddr_out_l    = dma_ddr_l_r;
 assign ddr_out_u    = dma_ddr_u_r;
-assign ddr_out_we   = 1'b1;
+assign ddr_out_we   = dma_ddr_we_r;
 assign ddr_out_wr   = dma_ddr_wr_r;
 
 always @(posedge clk) begin
@@ -195,6 +197,7 @@ always @(posedge clk) begin
 		active_is_cdtv <= 1'b0;
 		ak_is_ddr      <= 1'b0;
 		dma_ddr_cs_r   <= 1'b0;
+		dma_ddr_we_r   <= 1'b1;
 	end else begin
 		ak_ack_r   <= 1'b0;
 		cdtv_ack_r <= 1'b0;
@@ -219,6 +222,7 @@ always @(posedge clk) begin
 					dma_ddr_l_r    <= ~live_baddr[0];
 					dma_ddr_u_r    <=  live_baddr[0];
 					dma_ddr_wr_r   <= {live_wbyte, live_wbyte};
+					dma_ddr_we_r   <= live_we;
 				end
 				state          <= S_DRIVE;
 			end
@@ -226,7 +230,13 @@ always @(posedge clk) begin
 
 		S_DRIVE: begin
 			if (ak_is_ddr) begin
-				if (ddr_ack_safe) state <= S_ACK;
+				if (ddr_ack_safe) begin
+					if (!ak_we) begin
+						ak_rbyte_r <= ak_baddr0 ? ddr_in_rd[7:0]
+						                        : ddr_in_rd[15:8];
+					end
+					state <= S_ACK;
+				end
 			end else begin
 				slot_cnt <= slot_cnt + 3'd1;
 				if (slot_cnt == 3'd3) begin
@@ -247,6 +257,7 @@ always @(posedge clk) begin
 		end
 
 		S_COOLDOWN: begin
+			if (~ak_is_ddr | ~ddr_ack_safe)
 			state <= S_IDLE;
 		end
 		endcase

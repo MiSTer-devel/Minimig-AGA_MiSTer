@@ -77,9 +77,17 @@ module hps_ext
 	output reg        akiko_trace_rd,
 	output reg        akiko_cs_trace,
 
+	input       [7:0] akiko_peek_din,
+	output reg        akiko_peek_rd,
+	output reg        akiko_cs_peek,
+
 	input       [7:0] chipset_trace_din,
 	output reg        chipset_trace_rd,
 	output reg        chipset_cs_trace,
+
+	input       [7:0] z2_trace_din,
+	output reg        z2_trace_rd,
+	output reg        z2_cs_trace,
 
 	input      [15:0] cdtv_din,
 	output reg [15:0] cdtv_dout,
@@ -127,7 +135,9 @@ always@(posedge clk_sys) begin : main_proc
 	cdda_wr <= 0;
 	{akiko_rd, akiko_wr} <= 0;
 	akiko_trace_rd <= 0;
+	akiko_peek_rd <= 0;
 	chipset_trace_rd <= 0;
+	z2_trace_rd <= 0;
 	{cdtv_rd, cdtv_wr} <= 0;
 	cdtv_trace_rd <= 0;
 	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
@@ -142,7 +152,9 @@ always@(posedge clk_sys) begin : main_proc
 		akiko_cs_sec <= 0;
 		akiko_cs_nvr <= 0;
 		akiko_cs_trace <= 0;
+		akiko_cs_peek <= 0;
 		chipset_cs_trace <= 0;
+		z2_cs_trace <= 0;
 		cdtv_cs <= 0;
 		cdtv_cs_sec <= 0;
 		cdtv_cs_stch <= 0;
@@ -162,11 +174,13 @@ always@(posedge clk_sys) begin : main_proc
 			ide_addr     <= {io_din[8],io_din[3:0]};
 			ide_cs       <= (io_din[15:9] == 7'b1111000);
 			cdda_cs      <= (io_din[15:9] == 7'b1111001);
-			akiko_cs        <= (io_din[15:9] == 7'b1111010) && !io_din[7];
-			akiko_cs_sec    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[8];
-			akiko_cs_nvr    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[6];
+			akiko_cs        <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5];
+			akiko_cs_sec    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[8];
+			akiko_cs_nvr    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[6];
 			akiko_cs_trace  <= (io_din[15:9] == 7'b1111010) &&  io_din[7];
+			akiko_cs_peek   <= (io_din[15:9] == 7'b1111010) && !io_din[7] && io_din[5];
 			chipset_cs_trace <= (io_din[15:9] == 7'b1111011);
+			z2_cs_trace      <= (io_din[15:9] == 7'b1111101);
 			cdtv_cs          <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] && !io_din[5];
 			cdtv_cs_sec      <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] &&  io_din[5];
 			cdtv_cs_stch     <= (io_din[15:9] == 7'b1111100) && !io_din[7] &&  io_din[6];
@@ -261,9 +275,17 @@ always@(posedge clk_sys) begin : main_proc
 						io_dout        <= {8'h00, akiko_trace_din};
 						akiko_trace_rd <= 1;
 					end
+					if(byte_cnt >= 3 && akiko_cs_peek) begin
+						io_dout        <= {8'h00, akiko_peek_din};
+						akiko_peek_rd  <= 1;
+					end
 					if(byte_cnt >= 3 && chipset_cs_trace) begin
 						io_dout          <= {8'h00, chipset_trace_din};
 						chipset_trace_rd <= 1;
+					end
+					if(byte_cnt >= 3 && z2_cs_trace) begin
+						io_dout      <= {8'h00, z2_trace_din};
+						z2_trace_rd  <= 1;
 					end
 					if(byte_cnt >= 3 && cdtv_cs) begin
 						io_dout <= cdtv_din;

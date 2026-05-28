@@ -29,6 +29,7 @@ module ddram_ctrl
 	input             cache_rst,
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
+	input             dcache_sw_en,
 
 	// DDR3    
 	output            DDRAM_CLK,
@@ -59,6 +60,7 @@ module ddram_ctrl
 	input             dmaL,
 	input             dmaU,
 	input      [15:0] dmaWR,
+	output reg [15:0] dmaRD,
 	output            dmaACK
 );
 
@@ -79,6 +81,7 @@ cpu_cache_new cpu_cache
 	.clk              (sysclk),                 // clock
 	.rst              (~reset_n | ~cache_rst),  // cache reset
 	.cpu_cache_ctrl   (cpu_cache_ctrl),         // CPU cache control
+	.dcache_sw_en     (dcache_sw_en),
 	.cache_inhibit    (cache_inhibit | ramshared), // cache inhibit
 	.cpu_cs           (ramsel),                 // cpu activity
 	.cpu_adr          (cpuAddr),                // cpu address
@@ -165,6 +168,12 @@ reg [15:0] dmaWriteDat;
 reg  [1:0] dmaWriteBE;
 reg        dmaACK_r;
 
+reg        dma_read_req;
+reg        dma_read_ack;
+reg [28:1] dmaReadAddr;
+reg  [1:0] dmaReadBA;
+reg        dma_read_in_flight;
+
 assign dmaACK = dmaACK_r;
 
 always @ (posedge sysclk) begin
@@ -172,9 +181,11 @@ always @ (posedge sysclk) begin
 
 	if (~reset_n) begin
 		dma_write_req <= 0;
+		dma_read_req  <= 0;
 		dmaACK_r      <= 0;
 	end else begin
-		if (dmaCS_rise & dmaWE & ~dma_write_req & ~dmaACK_r) begin
+		if (dmaCS_rise & ~dma_write_req & ~dma_read_req & ~dmaACK_r) begin
+			if (dmaWE) begin
 			dmaWriteAddr  <= dmaAddr;
 			dmaWriteDat   <= dmaWR;
 			dmaWriteBE    <= ~{dmaU, dmaL};
@@ -183,11 +194,20 @@ always @ (posedge sysclk) begin
 			dma_snoop_adr <= dmaAddr;
 			dma_snoop_dat <= dmaWR;
 			dma_snoop_bs  <= ~{dmaU, dmaL};
+			end else begin
+				dmaReadAddr  <= dmaAddr;
+				dma_read_req <= 1'b1;
+			end
 		end
 
 		if (dma_write_ack) begin
 			dma_write_req <= 1'b0;
 			dmaACK_r      <= 1'b1;
+		end
+
+		if (dma_read_ack) begin
+			dma_read_req <= 1'b0;
+			dmaACK_r     <= 1'b1;
 		end
 
 		if (~dmaCS_sync2) dmaACK_r <= 1'b0;
@@ -217,6 +237,8 @@ always @ (posedge sysclk) begin
 		state         <= 0;
 		write_ack     <= 0;
 		dma_write_ack <= 0;
+		dma_read_ack       <= 0;
+		dma_read_in_flight <= 0;
 	end
 	else begin
 		case(state)
@@ -227,6 +249,14 @@ always @ (posedge sysclk) begin
 						DDRAM_DIN     <= {dmaWriteDat,dmaWriteDat,dmaWriteDat,dmaWriteDat};
 						DDRAM_WE      <= 1;
 						dma_write_ack <= 1;
+					end
+					else if(~dma_read_ack & dma_read_req & ~dma_read_in_flight) begin
+						DDRAM_ADDR         <= {3'b001, dmaReadAddr[28:3]};
+						DDRAM_BE           <= 8'hFF;
+						DDRAM_RD           <= 1;
+						dmaReadBA          <= dmaReadAddr[2:1];
+						dma_read_in_flight <= 1;
+						state              <= 1;
 					end
 					else if(~write_ack & write_req) begin
 						DDRAM_ADDR <= {3'b001, writeAddr[28:3]};
@@ -245,11 +275,18 @@ always @ (posedge sysclk) begin
 					end
 				end
 			1: if(~DDRAM_BUSY & DDRAM_DOUT_READY) begin
+					if (dma_read_in_flight) begin
+						dmaRD              <= DDRAM_DOUT[{dmaReadBA, 4'b0000} +:16];
+						dma_read_ack       <= 1;
+						dma_read_in_flight <= 0;
+						state              <= 0;
+					end else begin
 					ddr_data      <= DDRAM_DOUT[{ba, 4'b0000} +:16];
 					dout          <= DDRAM_DOUT;
 					cache_fill    <= 1;
 					ba            <= ba + 1'd1;
 					state         <= state + 1'd1;
+				end
 				end
 			2,3: begin
 					cache_fill    <= 1;
@@ -264,6 +301,7 @@ always @ (posedge sysclk) begin
 
 		if(~write_req) write_ack <= 0;
 		if(~dma_write_req) dma_write_ack <= 0;
+		if(~dma_read_req)  dma_read_ack  <= 0;
 	end
 end
 

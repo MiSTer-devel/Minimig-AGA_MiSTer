@@ -85,8 +85,17 @@ module cpu_wrapper
 	output      [4:0] z3ram_base0_out,
 	output            z3ram_ena0_out,
 	output      [3:0] z3ram_base1_out,
-	output            z3ram_ena1_out
+	output            z3ram_ena1_out,
+
+	output            dcache_sw_en,
+
+	input             z2_trace_cs,
+	input             z2_trace_rd,
+	output      [7:0] z2_trace_dout
 );
+
+wire dcache_sw_en_p;
+assign dcache_sw_en = cpucfg[1] ? dcache_sw_en_p : 1'b1;
 
 assign z2ram_ena_out   = z2ram_ena;
 assign z3ram_base0_out = z3ram_base0;
@@ -133,6 +142,35 @@ memory_router u_memory_router
 	.sel_rtg       (sel_rtg       ),
 	.ramaddr       (ramaddr       ),
 	.zram_sel      (              )
+);
+
+z2_trace u_z2_trace
+(
+	.clk           (clk           ),
+	.reset         (~reset        ),
+	.ramsel        (ramsel        ),
+	.ramready      (ramready      ),
+	.cpu_addr      (cpu_addr      ),
+	.ramaddr       (ramaddr       ),
+	.ramdat        (ramdat        ),
+	.wr            (wr            ),
+	.uds_in        (uds_in        ),
+	.lds_in        (lds_in        ),
+	.cpustate      (cpustate      ),
+	.cchip         (cchip         ),
+	.ckick         (ckick         ),
+	.sel_z2ram     (sel_z2ram     ),
+	.sel_z3ram0    (sel_z3ram0    ),
+	.sel_z3ram1    (sel_z3ram1    ),
+	.sel_kickram   (sel_kickram   ),
+	.sel_kicklower (sel_kicklower ),
+	.sel_chipram   (sel_chipram   ),
+	.sel_dd        (sel_dd        ),
+	.sel_rtg       (sel_rtg       ),
+	.z2ram_ena     (z2ram_ena     ),
+	.uio_cs_trace  (z2_trace_cs   ),
+	.uio_rd        (z2_trace_rd   ),
+	.uio_dout      (z2_trace_dout )
 );
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
@@ -245,6 +283,7 @@ cpu_inst_p
   .cpu(cpucfg),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
+  .d_cache_out(dcache_sw_en_p),
   .vbr_out(vbr_p)
 );
 
@@ -413,18 +452,20 @@ always @(*) begin
 	// Zorro II RAM (Up to 8 meg at 0x200000). It has a fixed base, so it must be first in the chain.
 	else if (~ac_memcard[2] && ac_memcard[1:0]) begin
 		case (chip_addr[6:1])
-			6'b000000: autocfg_data = 4'b1110;	// Zorro-II card, add mem, no ROM
+			6'b000000: autocfg_data = 4'b1110;
 			6'b000001:
 				case (ac_memcard[1:0])
 							1: autocfg_data = 4'b0110; // 2MB
 							2: autocfg_data = 4'b0111; // 4MB
 					default: autocfg_data = 4'b0000; // 8MB
 				endcase
-			6'b001000: autocfg_data = 4'b1110;	// Manufacturer ID: 0x139c
-			6'b001001: autocfg_data = 4'b1100;
-			6'b001010: autocfg_data = 4'b0110;
-			6'b001011: autocfg_data = 4'b0011;
-			6'b010011: autocfg_data = 4'b1110; //serial=1
+			6'b000010: autocfg_data = 4'b1010;
+			6'b000011: autocfg_data = 4'b1110;
+			6'b001000: autocfg_data = 4'b1111;
+			6'b001001: autocfg_data = 4'b1000;
+			6'b001010: autocfg_data = 4'b0010;
+			6'b001011: autocfg_data = 4'b0100;
+			6'b010011: autocfg_data = 4'b1110;
 			  default:;
 		endcase
 	end

@@ -53,8 +53,8 @@ assign sel_chipram   = !cpu_addr[31:21] && cchip;
 //
 // This is the mapping to the sram
 
-assign ramaddr[28]    = sel_zram & ~sel_z3ram0;
-assign ramaddr[27]    = sel_zram & (~sel_z3ram1 | cpu_addr[27]);
+assign ramaddr[28]    = sel_z2ram | sel_z3ram1;
+assign ramaddr[27]    = sel_z3ram0 | (sel_z3ram1 & cpu_addr[27]);
 assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpu_addr[26:23] : (sel_rtg ? 4'b1110 : {4{sel_dd}});
 assign ramaddr[22:19] = {4{sel_dd}} | cpu_addr[22:19];
 assign ramaddr[18]    =    sel_dd   | (sel_kicklower & bootrom) | cpu_addr[18];

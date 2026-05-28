@@ -260,7 +260,7 @@ gayle gayle
 	.led(ide_led)
 );
 
-wire        sel_rtg = sel && (addr[23:12] == 'hB80);
+wire        sel_rtg = sel && !sel_akiko && (addr[23:12] == 'hB80);
 wire [15:0] rtg_dout;
 wire        rtg_ready;
 
