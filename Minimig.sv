@@ -665,8 +665,8 @@ wire       akiko_cs_peek;
 wire       akiko_peek_rd;
 wire [7:0] akiko_peek_din;
 
-akiko_ddr_peek akiko_ddr_peek_inst
-(
+`ifdef Z2_TRACE_BUILD
+akiko_ddr_peek #(.CAPTURE_ENABLE(1)) akiko_ddr_peek_inst(
 	.clk         (clk_sys        ),
 	.reset       (reset_d        ),
 	.dma_cs      (dma_ddr_cs_w   ),
@@ -679,6 +679,9 @@ akiko_ddr_peek akiko_ddr_peek_inst
 	.uio_rd      (akiko_peek_rd  ),
 	.uio_dout    (akiko_peek_din )
 );
+`else
+assign akiko_peek_din = 8'h00;
+`endif
 
 wire       z2ram_ena_w;
 wire [4:0] z3ram_base0_w;

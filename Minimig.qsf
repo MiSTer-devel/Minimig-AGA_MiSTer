@@ -312,3 +312,7 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_SPI*
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to USER_IO[*]
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
 set_global_assignment -name VERILOG_FILE rtl/chipdma_arb.v
+set_global_assignment -name VERILOG_FILE rtl/akiko_ddr_peek.v
+set_global_assignment -name VERILOG_FILE rtl/cdtv_hps_bridge.v
+set_global_assignment -name VERILOG_FILE rtl/memory_router.v
+set_global_assignment -name VERILOG_FILE rtl/z2_trace.v

@@ -144,8 +144,8 @@ memory_router u_memory_router
 	.zram_sel      (              )
 );
 
-z2_trace u_z2_trace
-(
+`ifdef Z2_TRACE_BUILD
+z2_trace #(.CAPTURE_ENABLE(1)) u_z2_trace(
 	.clk           (clk           ),
 	.reset         (~reset        ),
 	.ramsel        (ramsel        ),
@@ -172,6 +172,9 @@ z2_trace u_z2_trace
 	.uio_rd        (z2_trace_rd   ),
 	.uio_dout      (z2_trace_dout )
 );
+`else
+assign z2_trace_dout = 8'h00;
+`endif
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
 // decide what to do, would not be good style to replicate that here).

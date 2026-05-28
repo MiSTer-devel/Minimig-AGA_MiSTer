@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-module z2_trace
-(
+module z2_trace #(parameter CAPTURE_ENABLE = 1)(
 	input             clk,
 	input             reset,
 
@@ -67,7 +66,7 @@ wire fast_hit = ramsel_rise &
 wire cap_ev_access   = fast_hit;
 wire cap_ev_acdone   = z2ena_rise;
 wire cap_ev_stall    = stall_hit & ~stall_fired;
-wire cap_en          = cap_ev_access | cap_ev_acdone | cap_ev_stall;
+wire cap_en          = CAPTURE_ENABLE & (cap_ev_access | cap_ev_acdone | cap_ev_stall);
 
 wire [1:0] ev_type =
 	cap_ev_acdone ? 2'b01 :
