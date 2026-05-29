@@ -20,6 +20,21 @@ set_multicycle_path -from {emu|fastchip|akiko|*} -to {emu|ram1|*} -hold 1
 set_multicycle_path -from {emu|chipdma_arb|*}    -to {emu|ram1|*} -setup 2
 set_multicycle_path -from {emu|chipdma_arb|*}    -to {emu|ram1|*} -hold 1
 
+# 2026-05-29: amiga_clk c1/c3 are the 7 MHz-rate phase regs in the 28 MHz
+# (clk_28) domain (c1 <= ~c3). The chip-arming address path launches from c1,
+# passes through chipdma_arb combinational logic, and lands on sdram_ctrl.sd_addr
+# captured by the 113 MHz SDRAM clock. -from matches the LAUNCH register (c1),
+# not the chipdma_arb pass-through nodes, so the existing chipdma_arb|* and cck*
+# relaxations did NOT cover it -> sd_addr violated -0.49 ns. clk_114:clk_28 is 4:1;
+# sdram_ctrl edge-detects ~old_7m&c_7m (sdram_ctrl.v:237-243) so a c1 launch at fast
+# edge N is detected at N+1 and the state-0 RAS capture (sdram_ctrl.v:301-318) is at
+# N+2 -> exactly 2 clk_114 cycles, never the adjacent edge. setup-2 matches (Codex-verified
+# SAFE 2026-05-29); setup>=3 would NOT be safe. Mirrors the cck*/chipdma_arb relaxations.
+set_multicycle_path -from {emu|amiga_clk|c1*} -to {emu|ram1|*} -setup 2
+set_multicycle_path -from {emu|amiga_clk|c1*} -to {emu|ram1|*} -hold 1
+set_multicycle_path -from {emu|amiga_clk|c3*} -to {emu|ram1|*} -setup 2
+set_multicycle_path -from {emu|amiga_clk|c3*} -to {emu|ram1|*} -hold 1
+
 # Phase B v2: bridge DMA write port on ram2 (DDR3) is now a proper CDC
 # handshake. chipdma_arb (clk_sys) registers dma_ddr_cs_r + the entire DDR
 # bus (addr / wr / l / u) on arm_now and holds them stable until S_ACK.

@@ -334,7 +334,7 @@ fx68k cpu_inst_o
 
 wire cpu_req = (cpustate != 1);
 
-wire cchip = turbochip_d & (!cpustate | dcache_d);
+wire cchip = turbochip_d & (!cpustate | (dcache_d & (cpustate != 2'd3)));
 wire ckick = turbokick_d & (!cpustate | dcache_d);
 
 reg turbochip_d;
