@@ -151,6 +151,10 @@ reg        write_ack;
 reg  [1:0] write_dqm;
 reg [24:1] writeAddr;
 reg [15:0] writeDat;
+reg        fwd_en = 1'b0;
+reg  [1:0] fwd_pos;
+reg [15:0] fwd_dat;
+reg  [1:0] fwd_dqm;
 
 always @ (posedge sysclk) begin
 	reg  [1:0] write_state;
@@ -194,14 +198,20 @@ reg [15:0] chip48_1, chip48_2, chip48_3;
 
 always @ (posedge sysclk) begin
 	reg [15:0] sdata_chip;
+	reg [15:0] m;
 
 	sdata_chip <= sdata_reg;
+	m = sdata_chip;
+	if(fwd_en) begin
+		if(!fwd_dqm[1]) m[15:8] = fwd_dat[15:8];
+		if(!fwd_dqm[0]) m[7:0]  = fwd_dat[7:0];
+	end
 	if(slot_type == CHIP) begin
 		case(sdram_state)
-			 9: chipRD   <= sdata_chip;
-			11: chip48_1 <= sdata_chip;
-			13: chip48_2 <= sdata_chip;
-			15: chip48_3 <= sdata_chip;
+			 9: chipRD   <= (fwd_en && fwd_pos==2'd0) ? m : sdata_chip;
+			11: chip48_1 <= (fwd_en && fwd_pos==2'd1) ? m : sdata_chip;
+			13: chip48_2 <= (fwd_en && fwd_pos==2'd2) ? m : sdata_chip;
+			15: chip48_3 <= (fwd_en && fwd_pos==2'd3) ? m : sdata_chip;
 		endcase
 	end
 end
@@ -305,6 +315,7 @@ always @ (posedge sysclk) begin
 				cas_dqm         <= 0;
 				sd_dqm          <= 3;
 				slot_type       <= IDLE;
+				fwd_en          <= 0;
 
 				if(~&rcnt) rcnt <= rcnt + 1'd1;
 
@@ -319,6 +330,12 @@ always @ (posedge sysclk) begin
 					cas_sd_we    <= chipRW;
 					datawr       <= chipWR;
 					chipWE       <= !chipRW;
+					if(chipRW & write_req & (writeAddr[24:3] == chipAddr[24:3])) begin
+						fwd_en  <= 1'b1;
+						fwd_pos <= writeAddr[2:1] - chipAddr[2:1];
+						fwd_dat <= writeDat;
+						fwd_dqm <= write_dqm;
+					end
 				end
 				else if(write_req) begin
 					slot_type    <= CPU_WRITECACHE;
