@@ -74,7 +74,11 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input             hps_sec_dma_active,
 	input       [7:0] hps_sec_dma_byte,
 	input      [13:0] hps_sec_dma_addr,
-	input             hps_sec_dma_we
+	input             hps_sec_dma_we,
+
+	input             hps_subcode_push,
+	input       [7:0] hps_subcode_byte,
+	input             hps_subcode_done
 );
 
 localparam [31:0] INTENA_MASK     = 32'hff000000;
@@ -200,6 +204,19 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [3:0] pbx_seccnt;
 	reg [11:0] pbx_byte_idx;
 
+	reg  [7:0] subbuf [96];
+	reg  [6:0] sub_wr_ptr;
+	reg        subcode_ready;
+	reg        subcode_busy;
+	reg        subcode_irq;
+	reg  [1:0] subcode_state;
+	localparam SUB_IDLE = 2'd0;
+	localparam SUB_DATA = 2'd1;
+	localparam SUB_FIN  = 2'd2;
+	localparam CDFLAG_SUBCODE_BIT = 31;
+	reg  [7:0] subcode_off;
+	reg  [7:0] sub_idx;
+
 	function [5:0] expected_total_len;
 		input [3:0] op;
 		case (op)
@@ -226,6 +243,11 @@ if (NATIVE_CD32) begin : g_cd
 
 	wire [23:0] cdrx_address = cdrom_addressmisc[23:0];
 	wire [23:0] cdtx_address = cdrom_addressmisc[23:0] | 24'h000200;
+	wire [23:0] subcode_address = cdrom_addressmisc[23:0] | 24'h000100;
+	wire [23:0] subcode_dma_addr = subcode_address
+	                             + {16'h0, subcode_off} + {16'h0, sub_idx};
+	wire  [7:0] subcode_dma_byte = (sub_idx < 8'd96) ? subbuf[sub_idx[6:0]] :
+	                              (sub_idx < 8'd98) ? 8'hff : 8'h00;
 
 	wire tx_can_start =  cdrom_flags[CDFLAG_TXD_BIT]
 	                  && !cdrom_flags[CDFLAG_ENABLE_BIT]
@@ -239,6 +261,14 @@ if (NATIVE_CD32) begin : g_cd
 	                  && (cdrom_receive_length != 6'd0)
 	                  && (cdcomrxinx != cdcomrxcmp)
 	                  && (rx_dma_delay == 2'd0);
+
+	wire pbx_can_start =  (pbx_state == PBX_IDLE)
+	                   && cdrom_flags[CDFLAG_ENABLE_BIT]
+	                   && cdrom_flags[CDFLAG_PBX_BIT]
+	                   && (cdrom_pbx != 16'h0)
+	                   && sector_ready;
+	wire others_busy     = rx_busy | pbx_busy | tx_busy;
+	wire others_starting = rx_can_start | tx_can_start | pbx_can_start;
 
 	wire [23:0] pbx_slot_base = cdrom_addressdata[23:0] + {8'h0, pbx_seccnt, 12'h0};
 	wire [23:0] pbx_addr_c    = pbx_slot_base
@@ -301,6 +331,13 @@ if (NATIVE_CD32) begin : g_cd
 			hps_result_wr_ptr    <= 6'h0;
 			sec_wr_ptr           <= 12'h0;
 			sector_ready         <= 1'b0;
+			sub_wr_ptr           <= 7'h0;
+			subcode_ready        <= 1'b0;
+			subcode_busy         <= 1'b0;
+			subcode_irq          <= 1'b0;
+			subcode_state        <= SUB_IDLE;
+			subcode_off          <= 8'h0;
+			sub_idx              <= 8'h0;
 			cdrom_sector_counter <= 8'h0;
 			pbx_busy             <= 1'b0;
 			pbx_state            <= PBX_IDLE;
@@ -355,7 +392,10 @@ if (NATIVE_CD32) begin : g_cd
 					cdrom_addressmisc <= tmp & ADDRMISC_MASK;
 				end
 				5'b01100: begin
-					if (uds) cdrom_intreq <= cdrom_intreq & ~CDINT_SUBCODE;
+					if (uds) begin
+						cdrom_intreq <= cdrom_intreq & ~CDINT_SUBCODE;
+						subcode_irq  <= 1'b0;
+					end
 				end
 				5'b01110: begin
 					if (lds) begin
@@ -428,7 +468,7 @@ if (NATIVE_CD32) begin : g_cd
 						cdrom_intreq <= cdrom_intreq | CDINT_TXDMADONE;
 					tx_busy <= 1'b0;
 				end
-			end else if (!rx_busy && !pbx_busy && tx_can_start) begin
+			end else if (!rx_busy && !pbx_busy && tx_can_start && !subcode_busy) begin
 				tx_busy <= 1'b1;
 			end
 
@@ -451,7 +491,7 @@ if (NATIVE_CD32) begin : g_cd
 				end else if (!rx_inflight && !dma_ack) begin
 					rx_inflight <= 1'b1;
 				end
-			end else if (rx_can_start) begin
+			end else if (rx_can_start && !subcode_busy) begin
 				rx_busy     <= 1'b1;
 				rx_inflight <= 1'b0;
 			end
@@ -461,7 +501,7 @@ if (NATIVE_CD32) begin : g_cd
 					if (cdrom_flags[CDFLAG_ENABLE_BIT]
 					    && cdrom_flags[CDFLAG_PBX_BIT]
 					    && (cdrom_pbx != 16'h0)
-					    && sector_ready) begin
+					    && sector_ready && !subcode_busy) begin
 						pbx_seccnt   <= highest_bit(cdrom_pbx);
 						pbx_byte_idx <= 12'h0;
 						pbx_busy     <= 1'b1;
@@ -514,6 +554,44 @@ if (NATIVE_CD32) begin : g_cd
 				end
 			end
 
+			if (hps_subcode_push && !subcode_ready && !subcode_busy
+			    && sub_wr_ptr != 7'd96) begin
+				subbuf[sub_wr_ptr[6:0]] <= hps_subcode_byte;
+				sub_wr_ptr <= sub_wr_ptr + 7'd1;
+			end
+			if (hps_subcode_done) begin
+				if (sub_wr_ptr == 7'd96 && !subcode_busy) subcode_ready <= 1'b1;
+				sub_wr_ptr <= 7'h0;
+			end
+
+			case (subcode_state)
+				SUB_IDLE: begin
+					if (subcode_ready) begin
+						if (!cdrom_flags[CDFLAG_SUBCODE_BIT]) begin
+							subcode_ready <= 1'b0;
+						end else if (!others_busy && !others_starting) begin
+							subcode_off   <= (cdrom_subcodeoffset >= 8'd128) ? 8'd0 : 8'd128;
+							sub_idx       <= 8'h0;
+							subcode_busy  <= 1'b1;
+							subcode_state <= SUB_DATA;
+						end
+					end
+				end
+				SUB_DATA: begin
+					if (dma_ack && subcode_grant) begin
+						if (sub_idx == 8'd99) subcode_state <= SUB_FIN;
+						else                  sub_idx <= sub_idx + 8'd1;
+					end
+				end
+				SUB_FIN: begin
+					cdrom_subcodeoffset <= subcode_off + 8'd100;
+					subcode_irq         <= 1'b1;
+					subcode_ready       <= 1'b0;
+					subcode_busy        <= 1'b0;
+					subcode_state       <= SUB_IDLE;
+				end
+			endcase
+
 			if (hps_cmd_pop && (hps_cmd_rd_ptr != 6'd32))
 				hps_cmd_rd_ptr <= hps_cmd_rd_ptr + 6'd1;
 			if (hps_cmd_done) begin
@@ -533,12 +611,14 @@ if (NATIVE_CD32) begin : g_cd
 		end
 	end
 
+	wire [31:0] cdrom_intreq_eff = cdrom_intreq | (subcode_irq ? CDINT_SUBCODE : 32'h0);
+
 	reg [15:0] cd_dout_r;
 	always @(*) begin
 		cd_dout_r = 16'h0;
 		case (addr)
-			5'b00010: cd_dout_r = cdrom_intreq[31:16];
-			5'b00011: cd_dout_r = cdrom_intreq[15:0];
+			5'b00010: cd_dout_r = cdrom_intreq_eff[31:16];
+			5'b00011: cd_dout_r = cdrom_intreq_eff[15:0];
 			5'b00100: cd_dout_r = cdrom_intena[31:16];
 			5'b00101: cd_dout_r = cdrom_intena[15:0];
 			5'b00110: cd_dout_r = cdrom_intena[31:16];
@@ -558,15 +638,18 @@ if (NATIVE_CD32) begin : g_cd
 	end
 
 	assign cd_dout = cs ? cd_dout_r : 16'h0;
-	assign cd_irq  = |(cdrom_intreq[31:25] & cdrom_intena[31:25]);
+	assign cd_irq  = |(cdrom_intreq_eff[31:25] & cdrom_intena[31:25]);
 
-	assign cd_dma_req   = tx_busy | rx_busy | pbx_busy;
-	assign cd_dma_we    = rx_busy | pbx_busy;
+	wire subcode_grant  = subcode_busy & ~rx_busy & ~pbx_busy & ~tx_busy;
+	assign cd_dma_req   = tx_busy | rx_busy | pbx_busy | subcode_busy;
+	assign cd_dma_we    = rx_busy | pbx_busy | subcode_grant;
 	assign cd_dma_baddr = rx_busy  ? (cdrx_address + {16'h0, cdcomrxinx}) :
 	                      pbx_busy ? pbx_addr :
-	                                 (cdtx_address + {16'h0, cdcomtxinx});
-	assign cd_dma_wbyte = rx_busy  ? cdrom_result_buffer[cdrom_receive_offset]
-	                               : pbx_wbyte;
+	                      tx_busy  ? (cdtx_address + {16'h0, cdcomtxinx}) :
+	                                 subcode_dma_addr;
+	assign cd_dma_wbyte = rx_busy  ? cdrom_result_buffer[cdrom_receive_offset] :
+	                      pbx_busy ? pbx_wbyte :
+	                                 subcode_dma_byte;
 
 	assign cd_hps_cmd_pending = cmd_pending;
 	assign cd_hps_cmd_byte    = cdrom_command_buffer[hps_cmd_rd_ptr[4:0]];

@@ -278,6 +278,7 @@ wire        akiko_rd;
 wire        akiko_cs;
 wire        akiko_cs_sec;
 wire        akiko_cs_nvr;
+wire        akiko_cs_subcode;
 wire        akiko_req;
 wire        akiko_sec_req;
 wire        akiko_rx_busy;
@@ -908,6 +909,7 @@ fastchip fastchip
 	.akiko_uio_cs        (akiko_cs        ),
 	.akiko_uio_cs_sec    (akiko_cs_sec    ),
 	.akiko_uio_cs_nvr    (akiko_cs_nvr    ),
+	.akiko_uio_cs_subcode(akiko_cs_subcode),
 	.akiko_uio_wr        (akiko_wr        ),
 	.akiko_uio_rd        (akiko_rd        ),
 	.akiko_uio_din       (akiko_dout      ),

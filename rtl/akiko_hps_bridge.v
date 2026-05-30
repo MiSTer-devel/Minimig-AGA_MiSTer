@@ -20,6 +20,7 @@ module akiko_hps_bridge
 	input             uio_cs,
 	input             uio_cs_sec,
 	input             uio_cs_nvr,
+	input             uio_cs_subcode,
 	input             uio_wr,
 	input             uio_rd,
 	input       [7:0] uio_din,
@@ -39,6 +40,10 @@ module akiko_hps_bridge
 	output      [7:0] sec_byte,
 	output            sec_done,
 
+	output            subcode_push,
+	output      [7:0] subcode_byte,
+	output            subcode_done,
+
 	output      [9:0] nvr_addr,
 	input       [7:0] nvr_dout,
 	output            nvr_clear_dirty,
@@ -56,18 +61,20 @@ module akiko_hps_bridge
 reg cs_d;
 reg cs_sec_d;
 reg cs_nvr_d;
+reg cs_subcode_d;
 reg saw_read;
 reg saw_write;
 
 reg [9:0] nvr_addr_cnt;
 
-wire cs_cmd = uio_cs & ~uio_cs_sec & ~uio_cs_nvr;
+wire cs_cmd = uio_cs & ~uio_cs_sec & ~uio_cs_nvr & ~uio_cs_subcode;
 
 always @(posedge clk) begin
 	if (reset) begin
 		cs_d         <= 1'b0;
 		cs_sec_d     <= 1'b0;
 		cs_nvr_d     <= 1'b0;
+		cs_subcode_d <= 1'b0;
 		saw_read     <= 1'b0;
 		saw_write    <= 1'b0;
 		nvr_addr_cnt <= 10'd0;
@@ -75,6 +82,7 @@ always @(posedge clk) begin
 		cs_d         <= uio_cs;
 		cs_sec_d     <= uio_cs_sec;
 		cs_nvr_d     <= uio_cs_nvr;
+		cs_subcode_d <= uio_cs_subcode;
 		if (!uio_cs) begin
 			saw_read  <= 1'b0;
 			saw_write <= 1'b0;
@@ -99,6 +107,10 @@ assign result_byte     = uio_din;
 assign sec_push        = uio_wr & uio_cs &  uio_cs_sec;
 assign sec_byte        = uio_din;
 
+assign subcode_push    = uio_wr & uio_cs &  uio_cs_subcode;
+assign subcode_byte    = uio_din;
+assign subcode_done    = xfer_end &              cs_subcode_d;
+
 assign nvr_addr        = nvr_addr_cnt;
 assign nvr_clear_dirty = xfer_end & saw_read & cs_nvr_d;
 
@@ -106,8 +118,8 @@ assign uio_dout        = uio_cs_nvr ? nvr_dout    :
                          uio_cs_sec ? sec_status  :
                                       cmd_byte;
 
-assign cmd_done        = xfer_end & saw_read  & ~cs_sec_d & ~cs_nvr_d;
-assign result_done     = xfer_end & saw_write & ~cs_sec_d & ~cs_nvr_d;
+assign cmd_done        = xfer_end & saw_read  & ~cs_sec_d & ~cs_nvr_d & ~cs_subcode_d;
+assign result_done     = xfer_end & saw_write & ~cs_sec_d & ~cs_nvr_d & ~cs_subcode_d;
 assign sec_done        = xfer_end &              cs_sec_d;
 assign nvr_done        = xfer_end &              cs_nvr_d;
 
