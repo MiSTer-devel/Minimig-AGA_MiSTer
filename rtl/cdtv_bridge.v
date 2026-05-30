@@ -501,7 +501,7 @@ always @(posedge clk) begin
 			endcase
 		end
 
-		if (air_rd_falling) begin
+		if (air_rd_falling && tp_ilatch[5]) begin
 			tp_ilatch[5] <= 1'b0;
 			tp_ilatch2   <= 8'h00;
 			tp_air       <= 8'h00;
