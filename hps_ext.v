@@ -41,6 +41,12 @@ module hps_ext
 	output reg  [1:0] kbd_mouse_type,
 	output reg  [7:0] kbd_mouse_data,
 
+	// second mouse (port 2) - dual-mouse support
+	output reg  [2:0] mouse2_buttons,
+	output reg        kbd_mouse2_level,
+	output reg  [1:0] kbd_mouse2_type,
+	output reg  [7:0] kbd_mouse2_data,
+
 	input      [11:0] scr_hbl_l,
 	input      [11:0] scr_hbl_r,
 	input      [11:0] scr_hsize,
@@ -74,6 +80,7 @@ localparam EXT_CMD_MIN2 = 'h61;
 localparam EXT_CMD_MAX2 = 'h63;
 
 localparam UIO_MOUSE     = 'h04;
+localparam UIO_MOUSE2    = 'h07;
 localparam UIO_KEYBOARD  = 'h05;
 localparam UIO_KBD_OSD   = 'h06;
 localparam UIO_GET_VMODE = 'h2C;
@@ -145,6 +152,30 @@ always@(posedge clk_sys) begin
 								// wheel
 								kbd_mouse_data <= io_din[7:0];
 								kbd_mouse_level <= ~kbd_mouse_level; 
+							end
+					endcase
+
+				UIO_MOUSE2:
+					case(byte_cnt)
+						1: begin
+								kbd_mouse2_data <= io_din[7:0];
+								kbd_mouse2_type <= 0;
+								kbd_mouse2_level <= ~kbd_mouse2_level;
+							end
+						2: begin
+								// second byte contains movement data
+								kbd_mouse2_data <= io_din[7:0];
+								kbd_mouse2_type <= 1;
+								kbd_mouse2_level <= ~kbd_mouse2_level; 
+							end
+						3: begin
+								// third byte contains the buttons
+								mouse2_buttons <= io_din[2:0];
+							end
+						4: begin
+								// wheel
+								kbd_mouse2_data <= io_din[7:0];
+								kbd_mouse2_level <= ~kbd_mouse2_level; 
 							end
 					endcase
 

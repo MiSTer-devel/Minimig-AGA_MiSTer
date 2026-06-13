@@ -205,6 +205,10 @@ module minimig
 	input 	     kms_level,
 	input   [1:0] kbd_mouse_type,
 	input   [7:0] kbd_mouse_data,
+	input   [2:0] mouse2_btn,  // port 2 mouse buttons (dual-mouse)
+	input 	     kms2_level,
+	input   [1:0] kbd_mouse2_type,
+	input   [7:0] kbd_mouse2_data,
 	output 	     pwr_led,     // power led
 	output 	     fdd_led,     // disk activity LED, active when DMA is on
 	output 	     hdd_led,
@@ -542,7 +546,11 @@ userio USERIO1
 	.mouse_btn(mouse_btn),
 	.kbd_mouse_type(kbd_mouse_type),
 	.kms_level(kms_level),
-	.kbd_mouse_data(kbd_mouse_data), 
+	.kbd_mouse_data(kbd_mouse_data),
+	.mouse2_btn(mouse2_btn),
+	.kbd_mouse2_type(kbd_mouse2_type),
+	.kms2_level(kms2_level),
+	.kbd_mouse2_data(kbd_mouse2_data),
 	.aud_mix(aud_mix),
 	.IO_ENA(IO_UIO),
 	.IO_STROBE(IO_STROBE),

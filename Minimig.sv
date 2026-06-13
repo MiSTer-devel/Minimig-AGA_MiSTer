@@ -50,6 +50,11 @@ wire  [7:0] kbd_mouse_data;
 wire        kbd_mouse_level;
 wire  [1:0] kbd_mouse_type;
 wire  [2:0] mouse_buttons;
+// second mouse (port 2) - dual-mouse support (auto-bound to hps_ext via .*)
+wire  [7:0] kbd_mouse2_data;
+wire        kbd_mouse2_level;
+wire  [1:0] kbd_mouse2_type;
+wire  [2:0] mouse2_buttons;
 wire [64:0] RTC;
 
 wire        ce_pix;
@@ -576,6 +581,10 @@ minimig minimig
 	.kbd_mouse_data (kbd_mouse_data ), // mouse direction data, keycodes
 	.kbd_mouse_type (kbd_mouse_type ), // type of data
 	.kms_level    (kbd_mouse_level  ),
+	.mouse2_btn   (mouse2_buttons   ), // port 2 mouse buttons (dual-mouse)
+	.kbd_mouse2_data (kbd_mouse2_data), // port 2 mouse direction data
+	.kbd_mouse2_type (kbd_mouse2_type), // port 2 type of data
+	.kms2_level   (kbd_mouse2_level ),
 	.pwr_led      (pwr_led          ), // power led
 	.fdd_led      (LED_USER         ),
 	.hdd_led      (ide_c_led        ),

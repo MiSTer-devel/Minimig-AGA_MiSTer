@@ -47,6 +47,10 @@ module userio
 	input             kms_level,
 	input       [1:0] kbd_mouse_type,
 	input       [7:0] kbd_mouse_data,
+	input       [2:0] mouse2_btn,        // port 2 mouse buttons (dual-mouse)
+	input             kms2_level,
+	input       [1:0] kbd_mouse2_type,
+	input       [7:0] kbd_mouse2_data,
 	output reg  [1:0] aud_mix,
 	input             IO_ENA,
 	input             IO_STROBE,
@@ -103,11 +107,15 @@ reg   [15:0] _sjoy2;        // synchronized joystick 2 signals
 reg   [15:0] _djoy2;        // synchronized joystick 2 signals
 reg   [15:0] potreg;        // POTGO write
 wire  [15:0] mouse0dat;     // mouse counters
+wire  [15:0] mouse1dat;     // port 2 real mouse counters (dual-mouse)
 reg   [15:0] dmouse0dat;    // docking mouse counters
 reg   [15:0] dmouse1dat;    // docking mouse counters
 wire         _mleft;        // left mouse button
 wire         _mthird;       // middle mouse button
 wire         _mright;       // right mouse buttons
+wire         _mleft2;       // port 2 left mouse button (dual-mouse)
+wire         _mthird2;      // port 2 middle mouse button
+wire         _mright2;      // port 2 right mouse button
 reg           joy1enable;   // joystick 1 enable (mouse/joy switch)
 wire         test_load;     // load test value to mouse counter
 wire  [15:0] test_data;     // mouse counter test value
@@ -183,9 +191,9 @@ always @ (posedge clk) begin
 		if (cd32pad & ~joy2_pin5) begin
 			potcap[3] <= cd32pad2_reg[7];
 		end else begin
-			potcap[3] <= _djoy2[5] & ~(potreg[15] & ~potreg[14]);
+			potcap[3] <= _mright2 & _djoy2[5] & ~(potreg[15] & ~potreg[14]);
 		end
-		potcap[2] <= joy2_pin5;
+		potcap[2] <= _mthird2 & joy2_pin5;
 
 		if(joy1enable & cd32pad & ~joy1_pin5) begin
 			potcap[1] <= cd32pad1_reg[7];
@@ -310,8 +318,8 @@ always @(*) begin
 		data_out[15:0] = {mouse0dat[15:10] + dmouse0dat[15:10],dmouse0dat[9:8],mouse0dat[7:2] + dmouse0dat[7:2],dmouse0dat[1:0]};
 	else if (reg_address_in[8:1]==JOY0DAT[8:1])//read port 1 mouse
 		data_out[15:0] = {mouse0dat[15:8] + dmouse0dat[15:8],mouse0dat[7:0] + dmouse0dat[7:0]};
-	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick
-		data_out[15:0] = dmouse1dat;
+	else if (reg_address_in[8:1]==JOY1DAT[8:1])//read port 2 joystick + real mouse (dual-mouse)
+		data_out[15:0] = {mouse1dat[15:8] + dmouse1dat[15:8], mouse1dat[7:0] + dmouse1dat[7:0]};
 	else if (reg_address_in[8:1]==POT0DAT[8:1])
 		data_out[15:0] = { pot0y, pot0x };
 	else if (reg_address_in[8:1]==POT1DAT[8:1])
@@ -330,7 +338,7 @@ end
 
 // assign fire outputs to cia A
 assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft;
-assign _fire1 = cd32pad && !cd32pad2_reg_load ? fire2_d : _sjoy2[4];
+assign _fire1 = cd32pad && !cd32pad2_reg_load ? fire2_d : _sjoy2[4] & _mleft2;
 
 //JB: some trainers writes to JOYTEST register to reset current mouse counter
 assign test_load = reg_address_in[8:1]==JOYTEST[8:1] ? 1'b1 : 1'b0;
@@ -381,6 +389,45 @@ assign mouse0dat = {ycount, xcount};
 assign _mleft  = ~mouse_btn[0];
 assign _mright = ~mouse_btn[1];
 assign _mthird = ~mouse_btn[2];
+
+
+//// port 2 mouse (dual-mouse support) ////
+reg  [ 7:0] xcount1;
+reg  [ 7:0] ycount1;
+reg  [ 7:0] mouse1scr;
+
+// port 2 mouse counters (mirror of port 1; note: no JOYTEST reset for port 2)
+always @(posedge clk) begin
+	reg old_level;
+	reg wheel;
+
+	old_level <= kms2_level;
+
+	if(reset) begin
+		xcount1 <= 0;
+		ycount1 <= 0;
+		mouse1scr <= 0;
+		wheel <= 0;
+	end else if (old_level ^ kms2_level) begin
+		if(kbd_mouse2_type == 0) begin
+			wheel <= 0;
+			xcount1[7:0] <= xcount1[7:0] + kbd_mouse2_data;
+		end
+		if(kbd_mouse2_type == 1) begin
+			wheel <= 1;
+			if(wheel) mouse1scr <= mouse1scr + kbd_mouse2_data;
+			else ycount1[7:0] <= ycount1[7:0] + kbd_mouse2_data;
+		end
+	end
+end
+
+// output
+assign mouse1dat = {ycount1, xcount1};
+
+// port 2 mouse buttons
+assign _mleft2  = ~mouse2_btn[0];
+assign _mright2 = ~mouse2_btn[1];
+assign _mthird2 = ~mouse2_btn[2];
 
 
 //--------------------------------------------------------------------------------------
