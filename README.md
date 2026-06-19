@@ -77,6 +77,8 @@ By default up to 2 IDE devices are supported. For Secondary Master/Slave devices
 Removable/CD mode allows to hot swap CDs. Currently audio portion of CD isn't implemented (although playback commands should be accepted).
 
 ### How to make a new HDF (HDD Image)
+Only plain/raw HDF images are supported. WinUAE Dynamic HDF and Sparse File HDF formats are not supported.
+
 1) Create an empty HDF file of required size on PC (ideally fill it by 0 if possible).
 2) Copy it to MiSTer
 3) Mount it as HDF on OSD, and also mount some adf with HDToolBox (for example install3.2.adf from OS3.2)
