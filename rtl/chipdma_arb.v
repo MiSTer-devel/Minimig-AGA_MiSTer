@@ -19,6 +19,7 @@ module chipdma_arb
 	input       [7:0] akiko_dma_wbyte,
 	output      [7:0] akiko_dma_rbyte,
 	output            akiko_dma_ack,
+	output            akiko_arm,
 
 	input             cdtv_dma_req,
 	input             cdtv_dma_we,
@@ -132,6 +133,8 @@ wire  [7:0] live_wbyte  = arming_is_cdtv ? cdtv_dma_wbyte : akiko_dma_wbyte;
 wire arm_now = (state == S_IDLE) & c_7m_rise & minimig_idle & any_req;
 
 wire arb_request = arm_now | (state == S_DRIVE);
+
+assign akiko_arm = arm_now & ~arming_is_cdtv;
 
 wire arb_drive = arb_request & minimig_idle;
 

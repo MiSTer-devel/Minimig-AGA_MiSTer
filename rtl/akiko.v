@@ -45,6 +45,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	output      [7:0] dma_wbyte,
 	input       [7:0] dma_rbyte,
 	input             dma_ack,
+	input             dma_arm,
 
 	output            hps_cmd_pending,
 	output      [7:0] hps_cmd_byte,
@@ -178,6 +179,14 @@ if (NATIVE_CD32) begin : g_cd
 	reg        rx_busy;
 	reg        rx_inflight;
 
+	localparam [1:0] OWN_RX = 2'd0, OWN_PBX = 2'd1, OWN_TX = 2'd2, OWN_SUB = 2'd3;
+	reg        dma_owned;
+	reg  [1:0] dma_owner;
+	wire       own_rx  = dma_owned & (dma_owner == OWN_RX);
+	wire       own_pbx = dma_owned & (dma_owner == OWN_PBX);
+	wire       own_tx  = dma_owned & (dma_owner == OWN_TX);
+	wire       own_sub = dma_owned & (dma_owner == OWN_SUB);
+
 	reg  [5:0] hps_cmd_rd_ptr;
 	reg  [5:0] hps_result_wr_ptr;
 
@@ -203,6 +212,8 @@ if (NATIVE_CD32) begin : g_cd
 	localparam PBX_FIN  = 2'd3;
 	reg  [3:0] pbx_seccnt;
 	reg [11:0] pbx_byte_idx;
+
+	reg        pbx_ship_invalid;
 
 	reg  [7:0] subbuf [96];
 	reg  [6:0] sub_wr_ptr;
@@ -280,9 +291,11 @@ if (NATIVE_CD32) begin : g_cd
 		if (reset) pbx_addr <= 24'h0;
 		else       pbx_addr <= pbx_addr_c;
 	end
+	reg  [7:0] sector_rd_q;
+	always @(posedge clk) sector_rd_q <= sector_buffer[pbx_byte_idx];
 	wire [7:0]  sector_byte_at_idx = (pbx_byte_idx <  12'd3   ) ? 8'h00 :
 	                                 (pbx_byte_idx == 12'd3   ) ? (cdrom_sector_counter & 8'h1f) :
-	                                 (pbx_byte_idx <  12'd2352) ? sector_buffer[pbx_byte_idx] :
+	                                 (pbx_byte_idx <  12'd2352) ? sector_rd_q :
 	                                                              8'h00;
 	wire [7:0]  pbx_wbyte = (pbx_state == PBX_DATA) ? sector_byte_at_idx : 8'h00;
 
@@ -296,12 +309,23 @@ if (NATIVE_CD32) begin : g_cd
 		end
 	endfunction
 
+	//
 	wire sec_req_w =  cdrom_flags[CDFLAG_ENABLE_BIT]
 	               && cdrom_flags[CDFLAG_PBX_BIT]
 	               && (cdrom_pbx != 16'h0)
-	               && !sector_ready;
+	               && !sector_ready
+	               && !pbx_busy;
 
 	wire write = wr & cs;
+
+	wire enable_rising = write && (addr == 5'b10010) && uds && din[10]
+	                  && !cdrom_flags[CDFLAG_ENABLE_BIT];
+
+	wire pbx_starting = (pbx_state == PBX_IDLE)
+	                 && cdrom_flags[CDFLAG_ENABLE_BIT]
+	                 && cdrom_flags[CDFLAG_PBX_BIT]
+	                 && (cdrom_pbx != 16'h0)
+	                 && sector_ready && !subcode_busy;
 
 	always @(posedge clk) begin
 		if (reset) begin
@@ -327,6 +351,8 @@ if (NATIVE_CD32) begin : g_cd
 			tx_busy              <= 1'b0;
 			rx_busy              <= 1'b0;
 			rx_inflight          <= 1'b0;
+			dma_owned            <= 1'b0;
+			dma_owner            <= OWN_RX;
 			hps_cmd_rd_ptr       <= 6'h0;
 			hps_result_wr_ptr    <= 6'h0;
 			sec_wr_ptr           <= 12'h0;
@@ -343,9 +369,19 @@ if (NATIVE_CD32) begin : g_cd
 			pbx_state            <= PBX_IDLE;
 			pbx_seccnt           <= 4'h0;
 			pbx_byte_idx         <= 12'h0;
+			pbx_ship_invalid     <= 1'b0;
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+
+			if (dma_arm) begin
+				dma_owned <= rx_busy | pbx_busy | tx_busy | subcode_busy;
+				dma_owner <= rx_busy  ? OWN_RX  :
+				             pbx_busy ? OWN_PBX :
+				             tx_busy  ? OWN_TX  : OWN_SUB;
+			end else if (dma_ack) begin
+				dma_owned <= 1'b0;
+			end
 
 			if (write) begin
 			case (addr)
@@ -427,9 +463,12 @@ if (NATIVE_CD32) begin : g_cd
 					if (lds) new_flags[23:16] = din[7:0];
 					new_flags = new_flags & CONFIG_MASK;
 					cdrom_flags <= new_flags;
+					//
 					if (new_flags[CDFLAG_ENABLE_BIT] && !cdrom_flags[CDFLAG_ENABLE_BIT]) begin
 						cdrom_intreq         <= cdrom_intreq & ~CDINT_OVERFLOW;
 						cdrom_sector_counter <= 8'h0;
+						sector_ready         <= 1'b0;
+						sec_wr_ptr           <= 12'h0;
 					end
 					if (!new_flags[CDFLAG_PBX_BIT]) cdrom_pbx <= 16'h0;
 				end
@@ -459,7 +498,7 @@ if (NATIVE_CD32) begin : g_cd
 			end
 
 			if (tx_busy) begin
-				if (dma_ack && !rx_busy && !pbx_busy) begin
+				if (dma_ack && own_tx) begin
 					if (cdrom_command_length != 6'd32)
 						cdrom_command_buffer[cdrom_command_length] <= dma_rbyte;
 					cdrom_command_length <= cdrom_command_length + 6'd1;
@@ -474,7 +513,7 @@ if (NATIVE_CD32) begin : g_cd
 
 			//
 			if (rx_busy) begin
-				if (rx_inflight && dma_ack) begin
+				if (dma_ack && own_rx) begin
 					cdcomrxinx           <= cdcomrxinx + 8'd1;
 					cdrom_receive_offset <= cdrom_receive_offset + 6'd1;
 					if ((cdrom_receive_offset + 6'd1) == cdrom_receive_length) begin
@@ -509,7 +548,7 @@ if (NATIVE_CD32) begin : g_cd
 					end
 				end
 				PBX_DATA: begin
-					if (dma_ack && !rx_busy) begin
+					if (dma_ack && own_pbx) begin
 						if (pbx_byte_idx == 12'd2351) begin
 							pbx_byte_idx <= 12'h0;
 							pbx_state    <= PBX_ZERO;
@@ -519,7 +558,7 @@ if (NATIVE_CD32) begin : g_cd
 					end
 				end
 				PBX_ZERO: begin
-					if (dma_ack && !rx_busy) begin
+					if (dma_ack && own_pbx) begin
 						if (pbx_byte_idx == 12'd145) begin
 							pbx_byte_idx <= 12'h0;
 							pbx_state    <= PBX_FIN;
@@ -531,25 +570,33 @@ if (NATIVE_CD32) begin : g_cd
 				PBX_FIN: begin
 					cdrom_pbx[pbx_seccnt] <= 1'b0;
 					cdrom_intreq          <= cdrom_intreq | CDINT_PBX;
-					cdrom_sector_counter  <= cdrom_sector_counter + 8'd1;
+					if (!pbx_ship_invalid && !enable_rising)
+						cdrom_sector_counter <= cdrom_sector_counter + 8'd1;
 					sector_ready          <= 1'b0;
 					pbx_busy              <= 1'b0;
 					pbx_state             <= PBX_IDLE;
 				end
 			endcase
 
+			if (enable_rising && (pbx_busy || pbx_starting))
+				pbx_ship_invalid <= 1'b1;
+			else if (pbx_starting)
+				pbx_ship_invalid <= 1'b0;
+
 			if (sec_w_we && !sector_ready) begin
 				sector_buffer[sec_w_addr] <= sec_w_din;
 			end
+
 			if (hps_sec_dma_active) begin
 				if (hps_sec_dma_we && hps_sec_dma_addr == 14'd2351
-				    && !sector_ready) sector_ready <= 1'b1;
+				    && !sector_ready && !enable_rising) sector_ready <= 1'b1;
 			end else begin
-				if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352) begin
+				if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352
+				    && !enable_rising) begin
 					sec_wr_ptr <= sec_wr_ptr + 12'd1;
 				end
 				if (hps_sec_done) begin
-					if (sec_wr_ptr == 12'd2352) sector_ready <= 1'b1;
+					if (sec_wr_ptr == 12'd2352 && !enable_rising) sector_ready <= 1'b1;
 					sec_wr_ptr <= 12'h0;
 				end
 			end
@@ -578,7 +625,7 @@ if (NATIVE_CD32) begin : g_cd
 					end
 				end
 				SUB_DATA: begin
-					if (dma_ack && subcode_grant) begin
+					if (dma_ack && own_sub) begin
 						if (sub_idx == 8'd99) subcode_state <= SUB_FIN;
 						else                  sub_idx <= sub_idx + 8'd1;
 					end

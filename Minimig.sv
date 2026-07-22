@@ -358,6 +358,7 @@ wire [23:0] akiko_dma_baddr_w;
 wire  [7:0] akiko_dma_wbyte_w;
 wire  [7:0] akiko_dma_rbyte_w;
 wire        akiko_dma_ack_w;
+wire        akiko_dma_arm_w;
 
 wire [24:1] arb_chip_addr;
 wire        arb_chip_l;
@@ -761,6 +762,7 @@ chipdma_arb chipdma_arb
 	.akiko_dma_wbyte (akiko_dma_wbyte_w    ),
 	.akiko_dma_rbyte (akiko_dma_rbyte_w    ),
 	.akiko_dma_ack   (akiko_dma_ack_w      ),
+	.akiko_arm       (akiko_dma_arm_w      ),
 
 	.cdtv_dma_req    (cdtv_dma_req_w       ),
 	.cdtv_dma_we     (cdtv_dma_we_w        ),
@@ -905,6 +907,7 @@ fastchip fastchip
 	.akiko_dma_wbyte (akiko_dma_wbyte_w ),
 	.akiko_dma_rbyte (akiko_dma_rbyte_w ),
 	.akiko_dma_ack   (akiko_dma_ack_w   ),
+	.akiko_dma_arm   (akiko_dma_arm_w   ),
 
 	.akiko_uio_cs        (akiko_cs        ),
 	.akiko_uio_cs_sec    (akiko_cs_sec    ),

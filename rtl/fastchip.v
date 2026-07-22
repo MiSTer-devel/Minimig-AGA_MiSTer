@@ -69,6 +69,7 @@ module fastchip
 	output  [7:0] akiko_dma_wbyte,
 	input   [7:0] akiko_dma_rbyte,
 	input         akiko_dma_ack,
+	input         akiko_dma_arm,
 
 	input         akiko_uio_cs,
 	input         akiko_uio_cs_sec,
@@ -151,6 +152,7 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.dma_wbyte(akiko_dma_wbyte),
 	.dma_rbyte(akiko_dma_rbyte),
 	.dma_ack(akiko_dma_ack),
+	.dma_arm(akiko_dma_arm),
 	.hps_cmd_pending(akiko_hps_cmd_pending),
 	.hps_cmd_byte(akiko_hps_cmd_byte),
 	.hps_cmd_pop(akiko_hps_cmd_pop),
