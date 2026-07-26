@@ -283,6 +283,8 @@ wire        ramshared;
 
 wire [7:0] toccata_base;
 wire toccata_ena;
+wire a2065_ena;
+wire [7:0] a2065_base;
 
 cpu_wrapper cpu_wrapper
 (
@@ -318,6 +320,8 @@ cpu_wrapper cpu_wrapper
 	.bootrom      (bootrom         ),
 
 	.toccata_ena  (toccata_ena     ),
+	.a2065_ena    (a2065_ena       ),
+	.a2065_base   (a2065_base      ),
 	.toccata_base (toccata_base    ),
 	
 	.ramsel       (ram_sel         ),
@@ -379,8 +383,7 @@ sdram_ctrl ram1
 
 wire [15:0] ram_dout2;
 wire        ram_ready2;
-wire  [7:0] DDRAM_BE_S;
-   
+
 ddram_ctrl ram2
 (
 	.sysclk       (clk_114         ),
@@ -400,6 +403,16 @@ ddram_ctrl ram2
 	.DDRAM_BE     (DDRAM_BE        ),
 	.DDRAM_WE     (DDRAM_WE        ),
 
+	.mem2_address      (a2065_mem_address),
+	.mem2_burstcount   (a2065_mem_burstcount),
+	.mem2_read         (a2065_mem_read),
+	.mem2_readdata     (a2065_mem_readdata),
+	.mem2_readdatavalid(a2065_mem_readdatavalid),
+	.mem2_writedata    (a2065_mem_writedata),
+	.mem2_byteenable   (a2065_mem_byteenable),
+	.mem2_write        (a2065_mem_write),
+	.mem2_waitrequest  (a2065_mem_waitrequest),
+
 	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr        ),
 	.cpuU         (ram_uds         ),
@@ -410,6 +423,19 @@ ddram_ctrl ram2
 	.ramshared    (ramshared       ),
 	.ramready     (ram_ready2      )
 );
+
+////////////////////////////  A2065 ETHERNET  ///////////////////////////////
+//
+// The card is self-contained inside minimig; all that surfaces here is its
+// memory port, which shares the core's DDR3 interface with the fast-RAM
+// controller above. Fast RAM has priority: it carries every 68k access to
+// Zorro RAM, while the card touches DDR3 rarely and can wait.
+
+wire [28:0] a2065_mem_address;
+wire [7:0]  a2065_mem_burstcount, a2065_mem_byteenable;
+wire        a2065_mem_read, a2065_mem_write;
+wire [63:0] a2065_mem_writedata, a2065_mem_readdata;
+wire        a2065_mem_readdatavalid, a2065_mem_waitrequest;
 
 wire [15:0] fastchip_dout;
 wire        fastchip_sel;
@@ -616,6 +642,8 @@ minimig minimig
 	//toccata soundcard
 	.toccata_ena  (toccata_ena),
 	.toccata_base (toccata_base),
+	.a2065_ena  (a2065_ena),
+	.a2065_base (a2065_base),
 	.toccata_aud_left (toccata_aud_left),
 	.toccata_aud_right(toccata_aud_right),
 	
@@ -633,7 +661,18 @@ minimig minimig
 	.ide_write    (ide_wr           ),
 	.ide_writedata(ide_dout         ),
 	.ide_read     (ide_rd           ),
-	.ide_readdata (ide_c_readdata   )
+	.ide_readdata (ide_c_readdata   ),
+
+	.a2065_clk_ddr(DDRAM_CLK),
+	.a2065_mem_address(a2065_mem_address),
+	.a2065_mem_burstcount(a2065_mem_burstcount),
+	.a2065_mem_read(a2065_mem_read),
+	.a2065_mem_readdata(a2065_mem_readdata),
+	.a2065_mem_readdatavalid(a2065_mem_readdatavalid),
+	.a2065_mem_writedata(a2065_mem_writedata),
+	.a2065_mem_byteenable(a2065_mem_byteenable),
+	.a2065_mem_write(a2065_mem_write),
+	.a2065_mem_waitrequest(a2065_mem_waitrequest)
 );
 
 // power led control

@@ -248,6 +248,10 @@ module minimig
 	output [15:0] toccata_aud_left,
 	output [15:0] toccata_aud_right,
 
+	// A2065 Ethernet
+	input         a2065_ena,
+	input   [7:0] a2065_base,
+
 	//user i/o
 	output  [1:0] cpucfg,
 	output  [2:0] cachecfg,
@@ -262,7 +266,20 @@ module minimig
 	input         ide_write,
 	input  [15:0] ide_writedata,
 	input         ide_read,
-	output [15:0] ide_readdata
+	output [15:0] ide_readdata,
+
+	// A2065 register file + doorbell
+	// A2065 memory port — goes to ddram_ctrl alongside the fast RAM
+	input         a2065_clk_ddr,
+	output [28:0] a2065_mem_address,
+	output [7:0]  a2065_mem_burstcount,
+	output        a2065_mem_read,
+	input  [63:0] a2065_mem_readdata,
+	input         a2065_mem_readdatavalid,
+	output [63:0] a2065_mem_writedata,
+	output [7:0]  a2065_mem_byteenable,
+	output        a2065_mem_write,
+	input         a2065_mem_waitrequest
 );
 
 
@@ -316,11 +333,13 @@ wire        sel_reg;				//chip register select
 wire        sel_rtc;
 wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
-wire        sel_toccata;
+	wire        sel_toccata;
+	wire        sel_a2065;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
 wire        int6_toccata;
+wire        a2065_int2_sync;
 wire        freeze;				//Action Replay freeze button
 wire        _fire0;				//joystick 1 fire signal to cia A
 wire        _fire1;				//joystick 2 fire signal to cia A
@@ -488,7 +507,7 @@ paula PAULA1
 	.sof(sof),
 	.strhor(strhor_paula),
 	.vblint(vbl_int),
-	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)),
+	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|a2065_int2_sync),
 	.int3(int3),
 	.int6(int6 | int6_toccata),
 	._ipl(_iplx),
@@ -663,7 +682,7 @@ minimig_m68k_bridge CPU1
 	.dbr(dbr),
 	.dbs(dbs),
 	.xbs(xbs),
-	.nrdy(gayle_nrdy & rd_cyc),
+	.nrdy((gayle_nrdy & rd_cyc) | a2065_nrdy),
 	.bls(bls),
 	.memory_config(memory_config[3:0]),
 	._as(_cpu_as),
@@ -784,6 +803,8 @@ gary GARY1
 	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
 	.toccata_ena(toccata_ena),
 	.toccata_base(toccata_base),
+	.a2065_ena(a2065_ena),
+	.a2065_base(a2065_base),
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -802,6 +823,7 @@ gary GARY1
 	.sel_gayle(sel_gayle),
 	.sel_rtc(sel_rtc),
 	.sel_toccata(sel_toccata),
+	.sel_a2065(sel_a2065),
 	.reset(reset),
 	.clk(clk),
 	.rom_readonly(rom_readonly),
@@ -892,6 +914,43 @@ toccata #(
 );
 
 //-------------------------------------------------------------------------------------
+// A2065 Ethernet card. Everything the card needs is inside this module; the
+// core sees only the 68k bus, an interrupt, and one memory port.
+
+wire [15:0] a2065_dout;
+wire        a2065_nrdy;
+
+a2065 a2065_inst (
+	.clk_sys          (clk),
+	.rst_n_sys        (~reset),
+
+	.cpu_addr         (cpu_address_out[23:1]),
+	.cpu_data_in      (cpu_data_out),
+	.cpu_data_out     (a2065_dout),
+	.cpu_rw           (cpu_r_w),
+	.cpu_as_n         (_cpu_as),
+	.cpu_uds_n        (_cpu_uds),
+	.cpu_lds_n        (_cpu_lds),
+	.sel              (sel_a2065),
+	.nrdy             (a2065_nrdy),
+	.int2             (a2065_int2_sync),
+
+	.card_base        (a2065_base),
+	.card_configured  (a2065_ena),
+
+	.clk_ddr          (a2065_clk_ddr),
+	.mem_address      (a2065_mem_address),
+	.mem_burstcount   (a2065_mem_burstcount),
+	.mem_read         (a2065_mem_read),
+	.mem_readdata     (a2065_mem_readdata),
+	.mem_readdatavalid(a2065_mem_readdatavalid),
+	.mem_writedata    (a2065_mem_writedata),
+	.mem_byteenable   (a2065_mem_byteenable),
+	.mem_write        (a2065_mem_write),
+	.mem_waitrequest  (a2065_mem_waitrequest)
+);
+
+//-------------------------------------------------------------------------------------
 
 //data multiplexer
 assign cpu_data_in[15:0]= gary_data_out[15:0]
@@ -899,7 +958,8 @@ assign cpu_data_in[15:0]= gary_data_out[15:0]
 							 | gayle_data_out[15:0]
 							 | cart_data_out[15:0]
 							 | rtc_out
-							 | toccata_out;
+							 | toccata_out
+							 | a2065_dout;
 
 assign custom_data_out[15:0] = agnus_data_out[15:0]
 							 | paula_data_out[15:0]
