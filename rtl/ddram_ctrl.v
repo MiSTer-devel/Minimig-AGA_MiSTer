@@ -34,13 +34,26 @@ module ddram_ctrl
 	output            DDRAM_CLK,
 	input             DDRAM_BUSY,
 	output      [7:0] DDRAM_BURSTCNT,
-	output reg [28:0] DDRAM_ADDR,
+	output     [28:0] DDRAM_ADDR,
 	input      [63:0] DDRAM_DOUT,
 	input             DDRAM_DOUT_READY,
-	output reg        DDRAM_RD,
-	output reg [63:0] DDRAM_DIN,
-	output reg  [7:0] DDRAM_BE,
-	output reg        DDRAM_WE,
+	output            DDRAM_RD,
+	output     [63:0] DDRAM_DIN,
+	output      [7:0] DDRAM_BE,
+	output            DDRAM_WE,
+
+	// Second memory port, shared onto the same DDR3 interface. Used by the
+	// A2065 Ethernet card, which touches DDR3 rarely; the CPU's fast RAM has
+	// priority over it and is never made to wait.
+	input      [28:0] mem2_address,
+	input       [7:0] mem2_burstcount,
+	input             mem2_read,
+	output     [63:0] mem2_readdata,
+	output            mem2_readdatavalid,
+	input      [63:0] mem2_writedata,
+	input       [7:0] mem2_byteenable,
+	input             mem2_write,
+	output            mem2_waitrequest,
 
 	// cpu    
 	input      [28:1] cpuAddr,
@@ -126,7 +139,54 @@ end
 assign ramready = cache_hit || write_ena;
 
 assign DDRAM_CLK = sysclk;
-assign DDRAM_BURSTCNT = 1;
+
+// Fast RAM's own view of DDR3. It goes through the arbiter below rather than
+// straight to the pins, so that the second port can share the interface.
+reg  [28:0] ram_addr;
+reg  [63:0] ram_din;
+reg   [7:0] ram_be;
+reg         ram_rd, ram_we;
+wire        ram_busy;
+wire [63:0] ram_dout       = DDRAM_DOUT;
+wire        ram_dout_ready;
+
+a2065_ddram_arbiter arbiter
+(
+	.clk             (sysclk),
+	.rst             (~reset_n),
+
+	.m0_address      (ram_addr),
+	.m0_burstcount   (8'd1),
+	.m0_read         (ram_rd),
+	.m0_readdata     (),
+	.m0_readdatavalid(ram_dout_ready),
+	.m0_writedata    (ram_din),
+	.m0_byteenable   (ram_be),
+	.m0_write        (ram_we),
+	.m0_waitrequest  (ram_busy),
+
+	.m1_address      (mem2_address),
+	.m1_burstcount   (mem2_burstcount),
+	.m1_read         (mem2_read),
+	.m1_readdata     (),
+	.m1_readdatavalid(mem2_readdatavalid),
+	.m1_writedata    (mem2_writedata),
+	.m1_byteenable   (mem2_byteenable),
+	.m1_write        (mem2_write),
+	.m1_waitrequest  (mem2_waitrequest),
+
+	.s_address       (DDRAM_ADDR),
+	.s_burstcount    (DDRAM_BURSTCNT),
+	.s_read          (DDRAM_RD),
+	.s_readdata      (DDRAM_DOUT),
+	.s_readdatavalid (DDRAM_DOUT_READY),
+	.s_writedata     (DDRAM_DIN),
+	.s_byteenable    (DDRAM_BE),
+	.s_write         (DDRAM_WE),
+	.s_waitrequest   (DDRAM_BUSY)
+);
+
+assign mem2_readdata = DDRAM_DOUT;
 
 reg        ddr_swap;
 reg [15:0] ddr_data;
@@ -139,9 +199,9 @@ always @ (posedge sysclk) begin
 	cache_fill <= 0;
 	ddr_data <= dout[{ba, 4'b0000} +:16];
 
-	if(~DDRAM_BUSY) begin
-		DDRAM_WE  <= 0;
-		DDRAM_RD  <= 0;
+	if(~ram_busy) begin
+		ram_we  <= 0;
+		ram_rd  <= 0;
 	end
 
 	if(~reset_n) begin
@@ -150,26 +210,26 @@ always @ (posedge sysclk) begin
 	end
 	else begin
 		case(state)
-			0: if(~DDRAM_BUSY) begin
+			0: if(~ram_busy) begin
 					if(~write_ack & write_req) begin
-						DDRAM_ADDR <= {3'b001, writeAddr[28:3]};
-						DDRAM_BE   <= {6'b000000,writeBE}<<{writeAddr[2:1],1'b0};
-						DDRAM_DIN  <= {writeDat,writeDat,writeDat,writeDat};
-						DDRAM_WE   <= 1;
+						ram_addr <= {3'b001, writeAddr[28:3]};
+						ram_be   <= {6'b000000,writeBE}<<{writeAddr[2:1],1'b0};
+						ram_din  <= {writeDat,writeDat,writeDat,writeDat};
+						ram_we   <= 1;
 						write_ack  <= 1;
 					end
 					else if(cache_req) begin
-						DDRAM_ADDR <= {3'b001, cpuAddr[28:3]};
-						DDRAM_BE   <= 8'hFF;
-						DDRAM_RD   <= 1;
+						ram_addr <= {3'b001, cpuAddr[28:3]};
+						ram_be   <= 8'hFF;
+						ram_rd   <= 1;
 						ba         <= cpuAddr[2:1];
 						state      <= 1;
 						ddr_swap   <= ramshared;
 					end
 				end
-			1: if(~DDRAM_BUSY & DDRAM_DOUT_READY) begin
-					ddr_data      <= DDRAM_DOUT[{ba, 4'b0000} +:16];
-					dout          <= DDRAM_DOUT;
+			1: if(~ram_busy & ram_dout_ready) begin
+					ddr_data      <= ram_dout[{ba, 4'b0000} +:16];
+					dout          <= ram_dout;
 					cache_fill    <= 1;
 					ba            <= ba + 1'd1;
 					state         <= state + 1'd1;
