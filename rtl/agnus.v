@@ -95,14 +95,8 @@ module agnus
 	input         a1k,             // enable A1000 OCS features
 	input         ecs,             // enable ECS features
 	input         aga,             // enables AGA features
-	input         floppy_speed,    // allocates refresh slots for disk DMA
-
-	input             chipset_trace_uio_cs,
-	input             chipset_trace_uio_rd,
-	output      [7:0] chipset_trace_uio_dout
+	input         floppy_speed     // allocates refresh slots for disk DMA
 );
-
-localparam CHIPSET_TRACE = 0;
 
 //register names and adresses
 localparam DMACON  = 9'h096;
@@ -487,47 +481,6 @@ agnus_beamcounter  bc1
 //Minimig isn't cycle exact and compensation for different data delay in implemented Denise's video pipeline is required
 assign strhor_denise = hpos==(6*2-1) && (vpos > 8 || ecs) ? 1'b1 : 1'b0;
 assign strhor_paula = hpos==(6*2+1) ? 1'b1 : 1'b0; //hack
-
-//--------------------------------------------------------------------------------------
-
-wire trace_is_target_reg =
-    (reg_address[8:1] >= 8'h70 && reg_address[8:1] <= 8'h7F) ||
-    (reg_address[8:1] >= 8'h80 && reg_address[8:1] <= 8'h86) ||
-    (reg_address[8:1] >= 8'h40 && reg_address[8:1] <= 8'h45) ||
-    (reg_address[8:1] == 8'h49) || (reg_address[8:1] == 8'h4A) ||
-    (reg_address[8:1] >= 8'hA0 && reg_address[8:1] <= 8'hBF) ||
-    (reg_address[8:1] == 8'hFE);
-
-wire trace_cpu_write = cpu_custom & (hwr | lwr);
-wire trace_cop_write = dma_cop;
-wire trace_blt_write = dma_blt & dbwe;
-
-wire       trace_write_strobe = trace_is_target_reg & (trace_cpu_write | trace_cop_write | trace_blt_write);
-wire [2:0] trace_src          = trace_cop_write ? 3'b001
-                              : trace_blt_write ? 3'b010
-                                                : 3'b000;
-
-generate
-if (CHIPSET_TRACE) begin : g_trace
-    chipset_bus_trace u_trace
-    (
-        .clk          (clk),
-        .reset        (reset),
-        .write_strobe (trace_write_strobe),
-        .reg_addr     (reg_address[8:1]),
-        .data         (data_in),
-        .src          (trace_src),
-        .vpos         (vpos),
-        .hpos         (hpos),
-        .dbwe         (dbwe),
-        .uio_cs_trace (chipset_trace_uio_cs),
-        .uio_rd       (chipset_trace_uio_rd),
-        .uio_dout     (chipset_trace_uio_dout)
-    );
-end else begin : g_no_trace
-    assign chipset_trace_uio_dout = 8'h00;
-end
-endgenerate
 
 endmodule
 

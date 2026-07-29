@@ -87,11 +87,7 @@ module cpu_wrapper
 	output      [3:0] z3ram_base1_out,
 	output            z3ram_ena1_out,
 
-	output            dcache_sw_en,
-
-	input             z2_trace_cs,
-	input             z2_trace_rd,
-	output      [7:0] z2_trace_dout
+	output            dcache_sw_en
 );
 
 wire dcache_sw_en_p;
@@ -144,37 +140,6 @@ memory_router u_memory_router
 	.zram_sel      (              )
 );
 
-`ifdef Z2_TRACE_BUILD
-z2_trace #(.CAPTURE_ENABLE(1)) u_z2_trace(
-	.clk           (clk           ),
-	.reset         (~reset        ),
-	.ramsel        (ramsel        ),
-	.ramready      (ramready      ),
-	.cpu_addr      (cpu_addr      ),
-	.ramaddr       (ramaddr       ),
-	.ramdat        (ramdat        ),
-	.wr            (wr            ),
-	.uds_in        (uds_in        ),
-	.lds_in        (lds_in        ),
-	.cpustate      (cpustate      ),
-	.cchip         (cchip         ),
-	.ckick         (ckick         ),
-	.sel_z2ram     (sel_z2ram     ),
-	.sel_z3ram0    (sel_z3ram0    ),
-	.sel_z3ram1    (sel_z3ram1    ),
-	.sel_kickram   (sel_kickram   ),
-	.sel_kicklower (sel_kicklower ),
-	.sel_chipram   (sel_chipram   ),
-	.sel_dd        (sel_dd        ),
-	.sel_rtg       (sel_rtg       ),
-	.z2ram_ena     (z2ram_ena     ),
-	.uio_cs_trace  (z2_trace_cs   ),
-	.uio_rd        (z2_trace_rd   ),
-	.uio_dout      (z2_trace_dout )
-);
-`else
-assign z2_trace_dout = 8'h00;
-`endif
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
 // decide what to do, would not be good style to replicate that here).

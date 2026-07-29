@@ -284,14 +284,6 @@ wire        akiko_sec_req;
 wire        akiko_rx_busy;
 wire        akiko_nvr_dirty;
 
-wire        akiko_cs_trace;
-wire        akiko_trace_rd;
-wire  [7:0] akiko_trace_din;
-
-wire        chipset_cs_trace;
-wire        chipset_trace_rd;
-wire  [7:0] chipset_trace_din;
-
 wire [15:0] cdtv_din;
 wire [15:0] cdtv_dout;
 wire        cdtv_wr;
@@ -299,12 +291,9 @@ wire        cdtv_rd;
 wire        cdtv_cs;
 wire        cdtv_cs_sec;
 wire        cdtv_cs_stch;
-wire        cdtv_cs_trace;
 wire        cdtv_stch_inject;
 wire        cdtv_sec_byte_push_w;
 wire  [7:0] cdtv_sec_byte_data_w;
-wire  [7:0] cdtv_trace_din;
-wire        cdtv_trace_rd;
 wire        cdtv_req;
 
 //
@@ -650,40 +639,11 @@ cpu_wrapper cpu_wrapper
 	.z3ram_ena0_out  (z3ram_ena0_w    ),
 	.z3ram_base1_out (z3ram_base1_w   ),
 	.z3ram_ena1_out  (z3ram_ena1_w    ),
-	.dcache_sw_en    (dcache_sw_en_w  ),
-
-	.z2_trace_cs     (z2_cs_trace     ),
-	.z2_trace_rd     (z2_trace_rd     ),
-	.z2_trace_dout   (z2_trace_din    )
+	.dcache_sw_en    (dcache_sw_en_w  )
 );
 
 wire dcache_sw_en_w;
 
-wire       z2_cs_trace;
-wire       z2_trace_rd;
-wire [7:0] z2_trace_din;
-
-wire       akiko_cs_peek;
-wire       akiko_peek_rd;
-wire [7:0] akiko_peek_din;
-
-`ifdef Z2_TRACE_BUILD
-akiko_ddr_peek #(.CAPTURE_ENABLE(1)) akiko_ddr_peek_inst(
-	.clk         (clk_sys        ),
-	.reset       (reset_d        ),
-	.dma_cs      (dma_ddr_cs_w   ),
-	.dma_we      (dma_ddr_we_w   ),
-	.dma_addr    (dma_ddr_addr_w ),
-	.dma_l       (dma_ddr_l_w    ),
-	.dma_u       (dma_ddr_u_w    ),
-	.dma_wr      (dma_ddr_wr_w   ),
-	.uio_cs_peek (akiko_cs_peek  ),
-	.uio_rd      (akiko_peek_rd  ),
-	.uio_dout    (akiko_peek_din )
-);
-`else
-assign akiko_peek_din = 8'h00;
-`endif
 
 wire       z2ram_ena_w;
 wire [4:0] z3ram_base0_w;
@@ -929,11 +889,7 @@ fastchip fastchip
 	.hps_sec_dma_active (akiko_sec_dma_active),
 	.hps_sec_dma_byte   (akiko_sec_dma_byte  ),
 	.hps_sec_dma_addr   (akiko_sec_dma_addr  ),
-	.hps_sec_dma_we     (akiko_sec_dma_we    ),
-
-	.akiko_uio_cs_trace   (akiko_cs_trace  ),
-	.akiko_uio_trace_rd   (akiko_trace_rd  ),
-	.akiko_uio_trace_dout (akiko_trace_din )
+	.hps_sec_dma_we     (akiko_sec_dma_we    )
 );
 
 
@@ -1119,10 +1075,6 @@ minimig minimig
 	.cdtv_nvr_dirty      (cdtv_nvr_dirty_w     ),
 	.cdtv_nvr_clear_dirty(1'b0                 ),
 
-	.cdtv_trace_uio_cs   (cdtv_cs_trace        ),
-	.cdtv_trace_uio_rd   (cdtv_trace_rd        ),
-	.cdtv_trace_uio_dout (cdtv_trace_din       ),
-
 	.cdtv_cdda_volume    (cdtv_cdda_volume_w   ),
 
 	//user i/o
@@ -1140,11 +1092,7 @@ minimig minimig
 	.ide_write    (ide_wr           ),
 	.ide_writedata(ide_dout         ),
 	.ide_read     (ide_rd           ),
-	.ide_readdata (ide_c_readdata   ),
-
-	.chipset_trace_uio_cs   (chipset_cs_trace ),
-	.chipset_trace_uio_rd   (chipset_trace_rd ),
-	.chipset_trace_uio_dout (chipset_trace_din)
+	.ide_readdata (ide_c_readdata   )
 );
 
 // power led control

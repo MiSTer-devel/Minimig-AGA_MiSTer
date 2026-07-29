@@ -55,10 +55,7 @@ module cdtv_bridge
 	output            cdtv_dma_we,
 	output     [23:0] cdtv_dma_baddr,
 	output      [7:0] cdtv_dma_wbyte,
-	input             cdtv_dma_ack,
-
-	output            trace_we,
-	output     [63:0] trace_data
+	input             cdtv_dma_ack
 );
 
 localparam CNTR_TCEN_BIT  = 3'd7;
@@ -130,8 +127,6 @@ reg [7:0] last_out;
 reg [12:0] sec_wr_p, sec_rd_p;
 reg  [7:0] sec_fifo_q;
 
-reg [7:0] trace_tag;
-
 reg [7:0] rd_byte_eb;
 reg [7:0] rd_byte_ob;
 
@@ -145,7 +140,6 @@ wire        cmd_out_empty;
 wire        sec_empty;
 wire        dmac_int2;
 wire        tpi_int2;
-wire        any_access;
 wire [15:0] byte_off;
 
 assign byte_off = {addr[15:1], 1'b0};
@@ -220,14 +214,6 @@ wire drain_ack_l    = (drain_state == DRAIN_PUSH_L) && cdtv_dma_ack;
 wire drain_ack_pop  = drain_ack_u | drain_ack_l;
 wire drain_ack_word = drain_ack_l;
 wire drain_ack_now  = drain_ack_pop;
-
-wire wr_any = hwr | lwr;
-assign any_access = sel && (rd || wr_any);
-assign trace_we   = any_access;
-assign trace_data = {32'h0, trace_tag,
-                     wr_any ? din[7:0]
-                            : (byte_off[0] ? rd_byte_ob : rd_byte_eb),
-                     byte_off};
 
 assign selack = sel;
 assign dout   = {rd_byte_eb, rd_byte_ob};
@@ -587,24 +573,6 @@ always @* begin
 	else if (sel_cmda_ob)  rd_byte_ob = cmd_out_empty ? last_out
 	                                                  : cmd_out_fifo[cmd_out_rd_p];
 	else if (in_tpi_range) rd_byte_ob = tpi_rd;
-end
-
-always @* begin
-	trace_tag = {wr_any, 7'h0F};
-	if      (sel_ac_rom)    trace_tag = {wr_any, 7'h08};
-	else if (sel_istr_b)    trace_tag = {wr_any, 7'h01};
-	else if (sel_cntr_b)    trace_tag = {wr_any, 7'h02};
-	else if (sel_wtc_w_hi)  trace_tag = {wr_any, 7'h03};
-	else if (sel_wtc_w_lo)  trace_tag = {wr_any, 7'h04};
-	else if (sel_acr_w_hi)  trace_tag = {wr_any, 7'h05};
-	else if (sel_acr_w_lo)  trace_tag = {wr_any, 7'h06};
-	else if (sel_dawr_w)    trace_tag = {wr_any, 7'h07};
-	else if (sel_cmda_b)    trace_tag = {wr_any, 7'h09};
-	else if (in_tpi_range)  trace_tag = {wr_any, 7'h0A};
-	else if (sel_dma_start) trace_tag = {wr_any, 7'h0B};
-	else if (sel_dma_stop)  trace_tag = {wr_any, 7'h0C};
-	else if (sel_istr_clr)  trace_tag = {wr_any, 7'h0D};
-	else if (sel_fifo_tog)  trace_tag = {wr_any, 7'h0E};
 end
 
 endmodule

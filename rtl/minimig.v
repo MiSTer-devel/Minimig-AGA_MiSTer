@@ -283,10 +283,6 @@ module minimig
 	output        cdtv_nvr_dirty,
 	input         cdtv_nvr_clear_dirty,
 
-	input         cdtv_trace_uio_cs,
-	input         cdtv_trace_uio_rd,
-	output  [7:0] cdtv_trace_uio_dout,
-
 	output  [9:0] cdtv_cdda_volume,
 
 	//user i/o
@@ -304,11 +300,7 @@ module minimig
 	input         ide_write,
 	input  [15:0] ide_writedata,
 	input         ide_read,
-	output [15:0] ide_readdata,
-
-	input         chipset_trace_uio_cs,
-	input         chipset_trace_uio_rd,
-	output  [7:0] chipset_trace_uio_dout
+	output [15:0] ide_readdata
 );
 
 
@@ -525,10 +517,7 @@ agnus AGNUS1
 	.a1k(chipset_config[2]),
 	.ecs(|chipset_config[4:3]),
 	.aga(chipset_config[4]),
-	.floppy_speed(floppy_config[0]),
-	.chipset_trace_uio_cs(chipset_trace_uio_cs),
-	.chipset_trace_uio_rd(chipset_trace_uio_rd),
-	.chipset_trace_uio_dout(chipset_trace_uio_dout)
+	.floppy_speed(floppy_config[0])
 );
 
 //instantiate paula
@@ -958,9 +947,6 @@ toccata #(
 //
 //-------------------------------------------------------------------------------------
 
-wire        cdtv_trace_we;
-wire [63:0] cdtv_trace_data;
-
 cdtv_bridge cdtv_bridge_inst
 (
 	.clk             (clk                  ),
@@ -1002,10 +988,7 @@ cdtv_bridge cdtv_bridge_inst
 	.cdtv_dma_we     (cdtv_dma_we          ),
 	.cdtv_dma_baddr  (cdtv_dma_baddr       ),
 	.cdtv_dma_wbyte  (cdtv_dma_wbyte       ),
-	.cdtv_dma_ack    (cdtv_dma_ack         ),
-
-	.trace_we        (cdtv_trace_we        ),
-	.trace_data      (cdtv_trace_data      )
+	.cdtv_dma_ack    (cdtv_dma_ack         )
 );
 
 cdtv_nvram cdtv_nvram_inst
@@ -1030,19 +1013,6 @@ cdtv_nvram cdtv_nvram_inst
 
 	.dirty           (cdtv_nvr_dirty       ),
 	.clear_dirty     (cdtv_nvr_clear_dirty )
-);
-
-cdtv_trace cdtv_trace_inst
-(
-	.clk             (clk                  ),
-	.reset           (reset                ),
-
-	.trace_we        (cdtv_trace_we        ),
-	.trace_data      (cdtv_trace_data      ),
-
-	.uio_cs          (cdtv_trace_uio_cs    ),
-	.uio_rd          (cdtv_trace_uio_rd    ),
-	.uio_dout        (cdtv_trace_uio_dout  )
 );
 
 assign cdtv_din    = sel_cdtv_nvram ? cdtv_nvr_dout : cdtv_bridge_dout;
