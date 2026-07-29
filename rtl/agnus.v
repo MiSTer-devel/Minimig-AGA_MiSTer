@@ -482,8 +482,5 @@ agnus_beamcounter  bc1
 assign strhor_denise = hpos==(6*2-1) && (vpos > 8 || ecs) ? 1'b1 : 1'b0;
 assign strhor_paula = hpos==(6*2+1) ? 1'b1 : 1'b0; //hack
 
-//--------------------------------------------------------------------------------------
-
-
 endmodule
 
