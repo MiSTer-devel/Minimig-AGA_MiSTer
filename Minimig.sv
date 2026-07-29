@@ -20,7 +20,7 @@ assign HDMI_BOB_DEINT = 0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"Minimig;UART115200:230400,MIDI;",
+	"MinimigCD;UART115200:230400,MIDI;",
 	"J,Red(Fire),Blue,Yellow,Green,RT,LT,Pause;",
 	"jn,A,B,X,Y,R,L,Start;",
 	"jp,B,A,X,Y,R,L,Start;",
