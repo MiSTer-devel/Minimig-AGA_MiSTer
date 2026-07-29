@@ -37,27 +37,3 @@ c5_pin_model_dump.txt
 *.xml
 *_netlist
 *.cdf
-
-# CD32 native-Akiko fork: local build artifacts
-quartus_fit_log.txt
-rbf_archive/
-
-# CD32/CDTV fork: manual RTL backup files from local edits
-*.backup_pre_*
-
-# CD32/CDTV fork: Quartus/ModelSim runtime by-products
-/transcript
-/cr_ie_info.json
-/report_worst_paths.tcl
-
-# CD32/CDTV fork: ModelSim sim work libs + per-sim build artifacts
-rtl/sim/*/work/
-rtl/sim/*/transcript
-rtl/sim/*/modelsim.ini
-rtl/sim/*/*.wlf
-rtl/sim/*/*.vstf
-rtl/sim/*/vsim.dbg
-rtl/sim/*/.modelsim
-
-# CD32/CDTV fork: project-level test logs (live in workspace, not core)
-/research/

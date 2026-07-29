@@ -1,33 +1,3 @@
-# Minimig-AGA — CD32 / CDTV native-Akiko fork
-
-This is a fork of [MiSTer-devel/Minimig-AGA_MiSTer](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer)
-that adds **native Akiko (CD32) and CR-511 (CDTV) CD bridges** in RTL, so CHD
-images mount as real CD drives without IDEFix97, the CD32-Emulator HDF
-launcher, or any other userspace workaround.
-
-The matching userspace driver is at
-[kblood/Main_MiSTer-cd32-cdtv](https://github.com/kblood/Main_MiSTer-cd32-cdtv)
-— both are needed; the bridges here expose UIO channels that the host driver
-there drives over the MiSTer SPI link.
-
-**Status:**
-- **CD32 (Akiko):** native bridge boots a wide compatibility fleet —
-  Cannon Fodder, Banshee, Beneath a Steel Sky, Microcosm, Sim City CD32 and
-  many other titles, including ones that need fast-RAM tweaks per game.
-  4-window LRU PBX prefetch cache lifts CHD read throughput by 8x on
-  cold-cache titles.
-- **CDTV (CR-511):** M1 splash via real autoconfig path + M2 Phase-1b chip-RAM
-  master DMA — Dune intro animation runs end-to-end from a native CHD.
-- The `CONF_STR` is `MinimigCD` so the userspace identifies this as the
-  CD32/CDTV-variant core via prefix-match on `minimig*`.
-
-RTL work happens on `cd32-native-mvp`; `MiSTer` tracks upstream for easy
-merging. Built with Quartus 17.0.2 Lite (full fit ~14 min on the reference
-rig); sim benches live under `rtl/sim/{akiko,cdtv,chipset}/` and use
-ModelSim/Questa via the `run_*.do` scripts.
-
----
-
 # Minimig-AGA_MiSTer
 
 This is a port of the minimig core to the [MiSTer board](https://github.com/MiSTer-devel).
@@ -107,6 +77,8 @@ By default up to 2 IDE devices are supported. For Secondary Master/Slave devices
 Removable/CD mode allows to hot swap CDs. Currently audio portion of CD isn't implemented (although playback commands should be accepted).
 
 ### How to make a new HDF (HDD Image)
+Only plain/raw HDF images are supported. WinUAE Dynamic HDF and Sparse File HDF formats are not supported.
+
 1) Create an empty HDF file of required size on PC (ideally fill it by 0 if possible).
 2) Copy it to MiSTer
 3) Mount it as HDF on OSD, and also mount some adf with HDToolBox (for example install3.2.adf from OS3.2)

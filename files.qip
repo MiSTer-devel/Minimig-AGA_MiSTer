@@ -11,6 +11,7 @@ set_global_assignment -name VERILOG_FILE rtl/gary.v
 set_global_assignment -name VERILOG_FILE rtl/rtg.v
 set_global_assignment -name VERILOG_FILE rtl/akiko.v
 set_global_assignment -name VERILOG_FILE rtl/akiko_hps_bridge.v
+set_global_assignment -name VERILOG_FILE rtl/akiko_nvram.v
 set_global_assignment -name VERILOG_FILE rtl/cdtv_bridge.v
 set_global_assignment -name VERILOG_FILE rtl/cdtv_hps_bridge.v
 set_global_assignment -name VERILOG_FILE rtl/cdtv_nvram.v
