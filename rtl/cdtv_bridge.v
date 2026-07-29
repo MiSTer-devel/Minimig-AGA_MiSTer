@@ -51,6 +51,9 @@ module cdtv_bridge
 	input             scor_pulse,
 	input             sbcp_pulse,
 
+	output reg        stch_ack,
+	input             stch_ack_clr,
+
 	output            cdtv_dma_req,
 	output            cdtv_dma_we,
 	output     [23:0] cdtv_dma_baddr,
@@ -412,7 +415,10 @@ always @(posedge clk) begin
 		subq_head   <= 8'h00;
 		sbcp_state  <= 1'b0;
 		in_air_rd_d <= 1'b0;
+		stch_ack    <= 1'b0;
 	end else begin
+		if (stch_ack_clr) stch_ack <= 1'b0;
+
 		tp_ilatch[4:0] <= tp_ilatch[4:0] | tpi_edges;
 		in_air_rd_d    <= in_air_rd;
 
@@ -491,6 +497,7 @@ always @(posedge clk) begin
 			tp_ilatch[5] <= 1'b0;
 			tp_ilatch2   <= 8'h00;
 			tp_air       <= 8'h00;
+			if (tp_air == 8'h04) stch_ack <= 1'b1;
 		end
 	end
 end

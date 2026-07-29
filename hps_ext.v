@@ -240,7 +240,7 @@ always@(posedge clk_sys) begin : main_proc
 						io_dout  <= akiko_din;
 						akiko_rd <= 1;
 					end
-					if(byte_cnt >= 3 && cdtv_cs) begin
+					if(byte_cnt >= 3 && (cdtv_cs | cdtv_cs_stch)) begin
 						io_dout <= cdtv_din;
 						cdtv_rd <= 1;
 					end

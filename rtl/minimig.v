@@ -265,6 +265,8 @@ module minimig
 	input         cdtv_subq_push,
 	input   [7:0] cdtv_subq_byte,
 	input         cdtv_stch_pulse,
+	output        cdtv_stch_ack,
+	input         cdtv_stch_ack_clr,
 	input         cdtv_sten_pulse,
 	input         cdtv_scor_pulse,
 	input         cdtv_sbcp_pulse,
@@ -980,6 +982,8 @@ cdtv_bridge cdtv_bridge_inst
 	.subq_byte       (cdtv_subq_byte       ),
 
 	.stch_pulse      (cdtv_stch_pulse      ),
+	.stch_ack        (cdtv_stch_ack        ),
+	.stch_ack_clr    (cdtv_stch_ack_clr    ),
 	.sten_pulse_ext  (cdtv_sten_pulse      ),
 	.scor_pulse      (cdtv_scor_pulse      ),
 	.sbcp_pulse      (cdtv_sbcp_pulse      ),

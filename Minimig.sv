@@ -292,6 +292,8 @@ wire        cdtv_cs;
 wire        cdtv_cs_sec;
 wire        cdtv_cs_stch;
 wire        cdtv_stch_inject;
+wire        cdtv_stch_ack;
+wire        cdtv_stch_ack_clr;
 wire        cdtv_sec_byte_push_w;
 wire  [7:0] cdtv_sec_byte_data_w;
 wire        cdtv_req;
@@ -575,6 +577,8 @@ cdtv_hps_bridge cdtv_hps_bridge_inst
 	.sec_byte_push  (cdtv_sec_byte_push_w   ),
 	.sec_byte_data  (cdtv_sec_byte_data_w   ),
 	.stch_inject    (cdtv_stch_inject       ),
+	.stch_ack       (cdtv_stch_ack          ),
+	.stch_ack_clr   (cdtv_stch_ack_clr      ),
 	.req            (cdtv_req               )
 );
 
@@ -1057,6 +1061,8 @@ minimig minimig
 	.cdtv_subq_push      (1'b0                 ),
 	.cdtv_subq_byte      (8'h00                ),
 	.cdtv_stch_pulse     (cdtv_stch_inject     ),
+	.cdtv_stch_ack       (cdtv_stch_ack        ),
+	.cdtv_stch_ack_clr   (cdtv_stch_ack_clr    ),
 	.cdtv_sten_pulse     (1'b0                 ),
 	.cdtv_scor_pulse     (1'b0                 ),
 	.cdtv_sbcp_pulse     (1'b0                 ),

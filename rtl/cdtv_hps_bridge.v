@@ -28,16 +28,20 @@ module cdtv_hps_bridge
 
 	output            stch_inject,
 
+	input             stch_ack,
+	output            stch_ack_clr,
+
 	output            req
 );
 
 assign cmd_in_pop    = uio_rd & uio_cs;
 assign cmd_out_push  = uio_wr & uio_cs;
 assign cmd_out_data  = uio_din;
-assign uio_dout      = {8'h00, cmd_in_byte};
+assign uio_dout      = uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
 assign sec_byte_push = uio_wr & uio_cs_sec;
 assign sec_byte_data = uio_din;
 assign stch_inject   = uio_wr & uio_cs_stch;
+assign stch_ack_clr  = uio_rd & uio_cs_stch;
 assign req           = cmd_in_pending;
 
 endmodule
