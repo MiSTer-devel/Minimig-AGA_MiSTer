@@ -7,7 +7,7 @@
 module emu
 (
 
-	`include "sys/emu_ports.vh"
+	`include "sys/emu_ports.vh"
 );
 
 assign ADC_BUS  = 'Z;
@@ -434,7 +434,7 @@ cdtv_hps_bridge cdtv_hps_bridge_inst
 	.stch_ack       (cdtv_stch_ack          ),
 	.stch_ack_clr   (cdtv_stch_ack_clr      ),
 	.req            (cdtv_req               )
-);
+);
 
 cpu_wrapper cpu_wrapper
 (
