@@ -86,6 +86,7 @@ module a2065_regfile (
     // RAP writes stay local and immediate; reads are unaffected (zero latency).
     localparam W_IDLE = 2'd0, W_WAIT = 2'd1, W_DONE = 2'd2;
     reg [1:0] wstate;
+    reg [15:0] wd_cnt;
 
     wire rdp_wr = sel_chipreg && !cpu_rw && !is_rap;
     wire rap_wr = sel_chipreg && !cpu_rw &&  is_rap;
@@ -97,6 +98,7 @@ module a2065_regfile (
             cmd_rap     <= 7'd0;
             cmd_data    <= 16'd0;
             wstate      <= W_IDLE;
+            wd_cnt      <= 16'd0;
         end else begin
             if (rap_wr)
                 rap <= cpu_data_in[6:0];
@@ -108,13 +110,16 @@ module a2065_regfile (
                     cmd_data    <= cpu_data_in;
                     cmd_pending <= 1'b1;
                     wstate      <= W_WAIT;
+                    wd_cnt      <= 16'd0;
                 end
             end
             W_WAIT: begin
-                if (cmd_clear_s1) begin
+                if (cmd_clear_s1 || &wd_cnt) begin
                     cmd_pending <= 1'b0;
                     wstate      <= W_DONE;
                 end
+                else
+                    wd_cnt <= wd_cnt + 16'd1;
             end
             W_DONE: begin
                 if (!rdp_wr)            // bus cycle ended (DS deasserted)
