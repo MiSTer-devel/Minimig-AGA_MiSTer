@@ -252,15 +252,55 @@ module minimig
 	input         a2065_ena,
 	input   [7:0] a2065_base,
 
+	output        cdtv_mode,
+
+	output [15:0] cdtv_din,
+	output        cdtv_selack,
+	output  [5:0] cdtv_ac_rom_addr,
+	input   [7:0] cdtv_ac_rom_byte,
+
+	input         cdtv_cmd_in_pop,
+	output        cdtv_cmd_in_pending,
+	output  [7:0] cdtv_cmd_in_byte,
+	input         cdtv_cmd_out_push,
+	input   [7:0] cdtv_cmd_out_data,
+	input         cdtv_sec_byte_push,
+	input   [7:0] cdtv_sec_byte_data,
+	input         cdtv_subq_push,
+	input   [7:0] cdtv_subq_byte,
+	input         cdtv_stch_pulse,
+	output        cdtv_stch_ack,
+	input         cdtv_stch_ack_clr,
+	input         cdtv_sten_pulse,
+	input         cdtv_scor_pulse,
+	input         cdtv_sbcp_pulse,
+
+	output        cdtv_dma_req,
+	output        cdtv_dma_we,
+	output [23:0] cdtv_dma_baddr,
+	output  [7:0] cdtv_dma_wbyte,
+	input         cdtv_dma_ack,
+
+	input  [13:0] cdtv_nvr_load_addr,
+	input   [7:0] cdtv_nvr_load_din,
+	input         cdtv_nvr_load_we,
+	input  [13:0] cdtv_nvr_save_addr,
+	output  [7:0] cdtv_nvr_save_dout,
+	output        cdtv_nvr_dirty,
+	input         cdtv_nvr_clear_dirty,
+
+	output  [9:0] cdtv_cdda_volume,
+
 	//user i/o
 	output  [1:0] cpucfg,
-	output  [2:0] cachecfg,
+	output  [3:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
 	output        ide_ena,
 
 	output        ide_fast,
 	input         ide_ext_irq,
+	input         akiko_irq,
 	output  [5:0] ide_req,
 	input   [4:0] ide_address,
 	input         ide_write,
@@ -335,6 +375,12 @@ wire        sel_cia_a;			//cia A select
 wire        sel_cia_b;			//cia B select
 	wire        sel_toccata;
 	wire        sel_a2065;
+wire        sel_cdtv;
+wire        sel_cdtv_nvram;
+wire [15:0] cdtv_bridge_dout;
+wire        cdtv_bridge_selack;
+wire [15:0] cdtv_nvr_dout;
+wire        cdtv_irq_w;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
 wire        int6;					//intterrupt 6
@@ -401,7 +447,8 @@ wire        usrrst;				//user reset from osd interface
 wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
 wire  [7:0] memory_config;		//memory configuration
 wire  [3:0] floppy_config;		//floppy drives configuration (drive number and speed)
-wire  [4:0] chipset_config;	//chipset features selection
+wire  [5:0] chipset_config;
+assign cdtv_mode = chipset_config[5];
 wire  [5:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
 
 //gayle stuff
@@ -432,7 +479,11 @@ wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscon
 assign pwr_led = ~_led;
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
-assign cachecfg = {cachecfg_pre[2], ~ovl, ~ovl};
+wire force_turbo  = ~ovl;
+assign cachecfg = {cachecfg_pre[3],
+                   cachecfg_pre[2],
+                   force_turbo,
+                   force_turbo};
 
 // NTSC/PAL switching is controlled by OSD menu, change requires reset to take effect
 always @(posedge clk) if (clk7_en && reset) ntsc <= chipset_config[1];
@@ -507,7 +558,7 @@ paula PAULA1
 	.sof(sof),
 	.strhor(strhor_paula),
 	.vblint(vbl_int),
-	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|a2065_int2_sync),
+	.int2(int2|(ide_fast ? ide_ext_irq : gayle_irq)|a2065_int2_sync|akiko_irq|cdtv_irq_w),
 	.int3(int3),
 	.int6(int6 | int6_toccata),
 	._ipl(_iplx),
@@ -539,7 +590,7 @@ paula PAULA1
 	.floppy_drives(floppy_config[3:2])
 );
 
-wire [2:0] cachecfg_pre;
+wire [3:0] cachecfg_pre;
 //instantiate user IO
 userio USERIO1 
 (	
@@ -805,6 +856,7 @@ gary GARY1
 	.toccata_base(toccata_base),
 	.a2065_ena(a2065_ena),
 	.a2065_base(a2065_base),
+	.cdtv_mode(chipset_config[5]),
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -824,6 +876,8 @@ gary GARY1
 	.sel_rtc(sel_rtc),
 	.sel_toccata(sel_toccata),
 	.sel_a2065(sel_a2065),
+	.sel_cdtv(sel_cdtv),
+	.sel_cdtv_nvram(sel_cdtv_nvram),
 	.reset(reset),
 	.clk(clk),
 	.rom_readonly(rom_readonly),
@@ -950,6 +1004,81 @@ a2065 a2065_inst (
 	.mem_waitrequest  (a2065_mem_waitrequest)
 );
 
+//
+//-------------------------------------------------------------------------------------
+
+cdtv_bridge cdtv_bridge_inst
+(
+	.clk             (clk                  ),
+	.reset           (reset                ),
+
+	.sel             (sel_cdtv             ),
+	.selack          (cdtv_bridge_selack   ),
+	.addr            (cpu_address_out      ),
+	.din             (cpu_data_out         ),
+	.dout            (cdtv_bridge_dout     ),
+	.rd              (cpu_rd               ),
+	.hwr             (cpu_hwr              ),
+	.lwr             (cpu_lwr              ),
+
+	.ac_rom_byte     (cdtv_ac_rom_byte     ),
+	.ac_rom_addr     (cdtv_ac_rom_addr     ),
+
+	.cdtv_irq        (cdtv_irq_w           ),
+	.cdda_volume     (cdtv_cdda_volume     ),
+
+	.cmd_in_pending  (cdtv_cmd_in_pending  ),
+	.cmd_in_byte     (cdtv_cmd_in_byte     ),
+	.cmd_in_pop      (cdtv_cmd_in_pop      ),
+	.cmd_out_push    (cdtv_cmd_out_push    ),
+	.cmd_out_data    (cdtv_cmd_out_data    ),
+
+	.sec_byte_push   (cdtv_sec_byte_push   ),
+	.sec_byte_data   (cdtv_sec_byte_data   ),
+
+	.subq_push       (cdtv_subq_push       ),
+	.subq_byte       (cdtv_subq_byte       ),
+
+	.stch_pulse      (cdtv_stch_pulse      ),
+	.stch_ack        (cdtv_stch_ack        ),
+	.stch_ack_clr    (cdtv_stch_ack_clr    ),
+	.sten_pulse_ext  (cdtv_sten_pulse      ),
+	.scor_pulse      (cdtv_scor_pulse      ),
+	.sbcp_pulse      (cdtv_sbcp_pulse      ),
+
+	.cdtv_dma_req    (cdtv_dma_req         ),
+	.cdtv_dma_we     (cdtv_dma_we          ),
+	.cdtv_dma_baddr  (cdtv_dma_baddr       ),
+	.cdtv_dma_wbyte  (cdtv_dma_wbyte       ),
+	.cdtv_dma_ack    (cdtv_dma_ack         )
+);
+
+cdtv_nvram cdtv_nvram_inst
+(
+	.clk             (clk                  ),
+	.reset           (reset                ),
+
+	.sel             (sel_cdtv_nvram       ),
+	.addr            (cpu_address_out      ),
+	.din             (cpu_data_out         ),
+	.dout            (cdtv_nvr_dout        ),
+	.rd              (cpu_rd               ),
+	.hwr             (cpu_hwr              ),
+	.lwr             (cpu_lwr              ),
+
+	.hps_load_addr   (cdtv_nvr_load_addr   ),
+	.hps_load_din    (cdtv_nvr_load_din    ),
+	.hps_load_we     (cdtv_nvr_load_we     ),
+
+	.hps_save_addr   (cdtv_nvr_save_addr   ),
+	.hps_save_dout   (cdtv_nvr_save_dout   ),
+
+	.dirty           (cdtv_nvr_dirty       ),
+	.clear_dirty     (cdtv_nvr_clear_dirty )
+);
+
+assign cdtv_din    = sel_cdtv_nvram ? cdtv_nvr_dout : cdtv_bridge_dout;
+assign cdtv_selack = cdtv_bridge_selack | sel_cdtv_nvram;
 //-------------------------------------------------------------------------------------
 
 //data multiplexer

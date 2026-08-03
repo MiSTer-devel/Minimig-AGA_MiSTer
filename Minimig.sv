@@ -6,6 +6,7 @@
 
 module emu
 (
+
 	`include "sys/emu_ports.vh"
 );
 
@@ -68,7 +69,7 @@ wire [21:0] gamma_bus;
 
 wire  [7:0] uart_mode;
 
-hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0), .VDNUM(2), .BLKSZ(3)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS({HPS_BUS[45:42],ce_pix,HPS_BUS[40:0]}),
@@ -84,8 +85,22 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0)) hps_io
 	.joystick_3(JOY3),
 	.joystick_l_analog_0(JOYA0),
 	.joystick_l_analog_1(JOYA1),
-	
+
 	.ioctl_wait(io_wait),
+
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
+
+	.sd_lba(sd_lba),
+	.sd_blk_cnt(sd_blk_cnt),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr),
 
 	.buttons(buttons),
 	.forced_scandoubler(forced_scandoubler),
@@ -104,6 +119,93 @@ wire  [4:0] ide_addr;
 wire        ide_rd;
 wire        ide_wr;
 wire  [5:0] ide_req;
+
+wire [15:0] akiko_din;
+wire [15:0] akiko_dout;
+wire        akiko_wr;
+wire        akiko_rd;
+wire        akiko_cs;
+wire        akiko_cs_sec;
+wire        akiko_cs_nvr;
+wire        akiko_cs_subcode;
+wire        akiko_req;
+wire        akiko_sec_req;
+wire        akiko_rx_busy;
+wire        akiko_nvr_dirty;
+
+wire [15:0] cdtv_din;
+wire [15:0] cdtv_dout;
+wire        cdtv_wr;
+wire        cdtv_rd;
+wire        cdtv_cs;
+wire        cdtv_cs_sec;
+wire        cdtv_cs_stch;
+wire        cdtv_stch_inject;
+wire        cdtv_stch_ack;
+wire        cdtv_stch_ack_clr;
+wire        cdtv_sec_byte_push_w;
+wire  [7:0] cdtv_sec_byte_data_w;
+wire        cdtv_req;
+
+//
+wire        img_mounted;
+wire        img_readonly;
+wire [63:0] img_size;
+wire [31:0] sd_lba   [1:0];
+wire  [5:0] sd_blk_cnt[1:0];
+wire  [1:0] sd_ack;
+wire [13:0] sd_buff_addr;
+wire  [7:0] sd_buff_dout;
+wire  [7:0] sd_buff_din[1:0];
+wire        sd_buff_wr;
+
+reg         sd_rd_nvr;
+reg         sd_wr_nvr;
+reg         img_mounted_d;
+
+wire  [1:0] sd_rd = {1'b0, sd_rd_nvr};
+wire  [1:0] sd_wr = {1'b0, sd_wr_nvr};
+assign sd_lba[0]      = 32'd0;
+assign sd_lba[1]      = 32'd0;
+assign sd_blk_cnt[0]  = 6'd0;
+assign sd_blk_cnt[1]  = 6'd0;
+assign sd_buff_din[0] = 8'h00;
+assign sd_buff_din[1] = 8'h00;
+
+always @(posedge clk_sys) begin
+	img_mounted_d <= img_mounted;
+	if (img_mounted && !img_mounted_d &&
+	    (img_size == 64'd1024) && !img_readonly) begin
+		sd_rd_nvr <= 1'b1;
+	end else if (sd_ack[0]) begin
+		sd_rd_nvr <= 1'b0;
+	end
+	sd_wr_nvr <= 1'b0;
+end
+
+wire [9:0]  nvr_load_addr  = sd_buff_addr[9:0];
+wire [7:0]  nvr_load_din   = sd_buff_dout;
+wire        nvr_load_we    = sd_buff_wr & sd_ack[0];
+
+wire        akiko_sec_dma_active = sd_ack[1];
+wire  [7:0] akiko_sec_dma_byte   = sd_buff_dout;
+wire [13:0] akiko_sec_dma_addr   = sd_buff_addr;
+wire        akiko_sec_dma_we     = sd_buff_wr;
+
+wire        akiko_dma_req_w;
+wire        akiko_dma_we_w;
+wire [23:0] akiko_dma_baddr_w;
+wire  [7:0] akiko_dma_wbyte_w;
+wire  [7:0] akiko_dma_rbyte_w;
+wire        akiko_dma_ack_w;
+wire        akiko_dma_arm_w;
+
+wire [24:1] arb_chip_addr;
+wire        arb_chip_l;
+wire        arb_chip_u;
+wire        arb_chip_rw;
+wire        arb_chip_dma;
+wire [15:0] arb_chip_wr;
 
 wire [35:0] EXT_BUS;
 hps_ext hps_ext(.*, .ide_req(ide_fast ? ide_f_req : ide_c_req),  .ide_din(ide_fast ? ide_f_readdata : ide_c_readdata));
@@ -283,8 +385,56 @@ wire        ramshared;
 
 wire [7:0] toccata_base;
 wire toccata_ena;
+
 wire a2065_ena;
 wire [7:0] a2065_base;
+
+
+wire cdtv_mode;
+
+wire [15:0] cdtv_din_w;
+wire        cdtv_selack_w;
+wire  [5:0] cdtv_ac_rom_addr_w;
+wire  [7:0] cdtv_ac_rom_byte_w;
+
+wire        cdtv_cmd_in_pending_w;
+wire  [7:0] cdtv_cmd_in_byte_w;
+wire        cdtv_cmd_in_pop_w;
+wire        cdtv_cmd_out_push_w;
+wire  [7:0] cdtv_cmd_out_data_w;
+wire  [9:0] cdtv_cdda_volume_w;
+wire        cdtv_nvr_dirty_w;
+wire  [7:0] cdtv_nvr_save_dout_w;
+
+wire        cdtv_dma_req_w;
+wire        cdtv_dma_we_w;
+wire [23:0] cdtv_dma_baddr_w;
+wire  [7:0] cdtv_dma_wbyte_w;
+wire        cdtv_dma_ack_w;
+
+cdtv_hps_bridge cdtv_hps_bridge_inst
+(
+	.clk            (clk_sys                ),
+	.reset          (reset                  ),
+	.uio_cs         (cdtv_cs                ),
+	.uio_cs_sec     (cdtv_cs_sec            ),
+	.uio_cs_stch    (cdtv_cs_stch           ),
+	.uio_wr         (cdtv_wr                ),
+	.uio_rd         (cdtv_rd                ),
+	.uio_din        (cdtv_dout[7:0]         ),
+	.uio_dout       (cdtv_din               ),
+	.cmd_in_pending (cdtv_cmd_in_pending_w  ),
+	.cmd_in_byte    (cdtv_cmd_in_byte_w     ),
+	.cmd_in_pop     (cdtv_cmd_in_pop_w      ),
+	.cmd_out_push   (cdtv_cmd_out_push_w    ),
+	.cmd_out_data   (cdtv_cmd_out_data_w    ),
+	.sec_byte_push  (cdtv_sec_byte_push_w   ),
+	.sec_byte_data  (cdtv_sec_byte_data_w   ),
+	.stch_inject    (cdtv_stch_inject       ),
+	.stch_ack       (cdtv_stch_ack          ),
+	.stch_ack_clr   (cdtv_stch_ack_clr      ),
+	.req            (cdtv_req               )
+);
 
 cpu_wrapper cpu_wrapper
 (
@@ -323,7 +473,13 @@ cpu_wrapper cpu_wrapper
 	.a2065_ena    (a2065_ena       ),
 	.a2065_base   (a2065_base      ),
 	.toccata_base (toccata_base    ),
-	
+	.cdtv_mode    (cdtv_mode       ),
+
+	.cdtv_din           (cdtv_din_w           ),
+	.cdtv_selack        (cdtv_selack_w        ),
+	.cdtv_ac_rom_addr   (cdtv_ac_rom_addr_w   ),
+	.cdtv_ac_rom_byte   (cdtv_ac_rom_byte_w   ),
+
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
 	.ramlds       (ram_lds         ),
@@ -336,8 +492,33 @@ cpu_wrapper cpu_wrapper
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
 	.cacr         (cpu_cacr        ),
-	.nmi_addr     (cpu_nmi_addr    )
+	.nmi_addr     (cpu_nmi_addr    ),
+
+	.z2ram_ena_out   (z2ram_ena_w     ),
+	.z3ram_base0_out (z3ram_base0_w   ),
+	.z3ram_ena0_out  (z3ram_ena0_w    ),
+	.z3ram_base1_out (z3ram_base1_w   ),
+	.z3ram_ena1_out  (z3ram_ena1_w    ),
+	.dcache_sw_en    (dcache_sw_en_w  )
 );
+
+wire dcache_sw_en_w;
+
+
+wire       z2ram_ena_w;
+wire [4:0] z3ram_base0_w;
+wire       z3ram_ena0_w;
+wire [3:0] z3ram_base1_w;
+wire       z3ram_ena1_w;
+
+wire [28:1] dma_ddr_addr_w;
+wire        dma_ddr_l_w;
+wire        dma_ddr_u_w;
+wire        dma_ddr_we_w;
+wire        dma_ddr_cs_w;
+wire [15:0] dma_ddr_wr_w;
+wire        dma_ddr_ack_w;
+wire [15:0] dma_ddr_rd_w;
 
 wire [15:0] ram_dout1;
 wire        ram_ready1;
@@ -350,6 +531,7 @@ sdram_ctrl ram1
 
 	.cache_rst    (cpu_rst         ),
 	.cpu_cache_ctrl(cpu_cacr       ),
+	.dcache_sw_en (dcache_sw_en_w  ),
 
 	.sd_data      (SDRAM_DQ        ),
 	.sd_addr      (SDRAM_A         ),
@@ -371,14 +553,66 @@ sdram_ctrl ram1
 	.cpuRD        (ram_dout1       ),
 	.ramready     (ram_ready1      ),
 
-	.chipWR       (ram_data        ),
-	.chipAddr     (ram_address     ),
-	.chipU        (_ram_bhe        ),
-	.chipL        (_ram_ble        ),
-	.chipRW       (_ram_we         ),
-	.chipDMA      (_ram_oe         ),
+	.chipWR       (arb_chip_wr     ),
+	.chipAddr     (arb_chip_addr   ),
+	.chipU        (arb_chip_u      ),
+	.chipL        (arb_chip_l      ),
+	.chipRW       (arb_chip_rw     ),
+	.chipDMA      (arb_chip_dma    ),
 	.chipRD       (ramdata_in      ),
 	.chip48       (chip48          )
+);
+
+chipdma_arb chipdma_arb
+(
+	.clk             (clk_sys              ),
+	.reset           (reset_d              ),
+	.c_7m            (c1                   ),
+
+	.chip_in_addr    ({1'b0, ram_address}  ),
+	.chip_in_l       (_ram_ble             ),
+	.chip_in_u       (_ram_bhe             ),
+	.chip_in_rw      (_ram_we              ),
+	.chip_in_dma     (_ram_oe              ),
+	.chip_in_wr      (ram_data             ),
+
+	.akiko_dma_req   (akiko_dma_req_w      ),
+	.akiko_dma_we    (akiko_dma_we_w       ),
+	.akiko_dma_baddr (akiko_dma_baddr_w    ),
+	.akiko_dma_wbyte (akiko_dma_wbyte_w    ),
+	.akiko_dma_rbyte (akiko_dma_rbyte_w    ),
+	.akiko_dma_ack   (akiko_dma_ack_w      ),
+	.akiko_arm       (akiko_dma_arm_w      ),
+
+	.cdtv_dma_req    (cdtv_dma_req_w       ),
+	.cdtv_dma_we     (cdtv_dma_we_w        ),
+	.cdtv_dma_baddr  (cdtv_dma_baddr_w     ),
+	.cdtv_dma_wbyte  (cdtv_dma_wbyte_w     ),
+	.cdtv_dma_rbyte  (                     ),
+	.cdtv_dma_ack    (cdtv_dma_ack_w       ),
+
+	.chip_out_addr   (arb_chip_addr        ),
+	.chip_out_l      (arb_chip_l           ),
+	.chip_out_u      (arb_chip_u           ),
+	.chip_out_rw     (arb_chip_rw          ),
+	.chip_out_dma    (arb_chip_dma         ),
+	.chip_out_wr     (arb_chip_wr          ),
+	.chip_in_rd      (ramdata_in           ),
+
+	.z2ram_ena       (z2ram_ena_w          ),
+	.z3ram_base0     (z3ram_base0_w        ),
+	.z3ram_ena0      (z3ram_ena0_w         ),
+	.z3ram_base1     (z3ram_base1_w        ),
+	.z3ram_ena1      (z3ram_ena1_w         ),
+
+	.ddr_out_addr    (dma_ddr_addr_w       ),
+	.ddr_out_l       (dma_ddr_l_w          ),
+	.ddr_out_u       (dma_ddr_u_w          ),
+	.ddr_out_we      (dma_ddr_we_w         ),
+	.ddr_out_cs      (dma_ddr_cs_w         ),
+	.ddr_out_wr      (dma_ddr_wr_w         ),
+	.ddr_in_ack      (dma_ddr_ack_w        ),
+	.ddr_in_rd       (dma_ddr_rd_w         )
 );
 
 wire [15:0] ram_dout2;
@@ -391,6 +625,7 @@ ddram_ctrl ram2
 
 	.cache_rst    (cpu_rst         ),
 	.cpu_cache_ctrl(cpu_cacr       ),
+	.dcache_sw_en (dcache_sw_en_w  ),
 
 	.DDRAM_CLK    (DDRAM_CLK       ),
 	.DDRAM_BUSY   (DDRAM_BUSY      ),
@@ -421,7 +656,16 @@ ddram_ctrl ram2
 	.cpuCS        (zram_sel&ram_cs ),
 	.cpuRD        (ram_dout2       ),
 	.ramshared    (ramshared       ),
-	.ramready     (ram_ready2      )
+	.ramready     (ram_ready2      ),
+
+	.dmaAddr      (dma_ddr_addr_w  ),
+	.dmaCS        (dma_ddr_cs_w    ),
+	.dmaWE        (dma_ddr_we_w    ),
+	.dmaL         (dma_ddr_l_w     ),
+	.dmaU         (dma_ddr_u_w     ),
+	.dmaWR        (dma_ddr_wr_w    ),
+	.dmaRD        (dma_ddr_rd_w    ),
+	.dmaACK       (dma_ddr_ack_w   )
 );
 
 ////////////////////////////  A2065 ETHERNET  ///////////////////////////////
@@ -449,6 +693,7 @@ wire        fastchip_lw;
 wire        ide_fast;
 wire        ide_f_led;
 wire        ide_f_irq;
+wire        akiko_f_irq;
 wire  [5:0] ide_f_req;
 wire [15:0] ide_f_readdata;
 
@@ -494,7 +739,39 @@ fastchip fastchip
 	.ide_writedata(ide_dout          ),
 	.ide_read     (ide_rd            ),
 	.ide_readdata (ide_f_readdata    ),
-	.ide_led      (ide_f_led         )
+	.ide_led      (ide_f_led         ),
+
+	.akiko_irq    (akiko_f_irq       ),
+
+	.akiko_dma_req   (akiko_dma_req_w   ),
+	.akiko_dma_we    (akiko_dma_we_w    ),
+	.akiko_dma_baddr (akiko_dma_baddr_w ),
+	.akiko_dma_wbyte (akiko_dma_wbyte_w ),
+	.akiko_dma_rbyte (akiko_dma_rbyte_w ),
+	.akiko_dma_ack   (akiko_dma_ack_w   ),
+	.akiko_dma_arm   (akiko_dma_arm_w   ),
+
+	.akiko_uio_cs        (akiko_cs        ),
+	.akiko_uio_cs_sec    (akiko_cs_sec    ),
+	.akiko_uio_cs_nvr    (akiko_cs_nvr    ),
+	.akiko_uio_cs_subcode(akiko_cs_subcode),
+	.akiko_uio_wr        (akiko_wr        ),
+	.akiko_uio_rd        (akiko_rd        ),
+	.akiko_uio_din       (akiko_dout      ),
+	.akiko_uio_dout      (akiko_din       ),
+	.akiko_uio_req       (akiko_req       ),
+	.akiko_uio_sec_req   (akiko_sec_req   ),
+	.akiko_uio_rx_busy   (akiko_rx_busy   ),
+	.akiko_uio_nvr_dirty (akiko_nvr_dirty ),
+
+	.nvr_load_addr (nvr_load_addr),
+	.nvr_load_din  (nvr_load_din ),
+	.nvr_load_we   (nvr_load_we  ),
+
+	.hps_sec_dma_active (akiko_sec_dma_active),
+	.hps_sec_dma_byte   (akiko_sec_dma_byte  ),
+	.hps_sec_dma_addr   (akiko_sec_dma_addr  ),
+	.hps_sec_dma_we     (akiko_sec_dma_we    )
 );
 
 
@@ -516,7 +793,7 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 
 //// minimig top ////
 wire  [1:0] cpucfg;
-wire  [2:0] cachecfg;
+wire  [3:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   
 wire [15:0] ram_data;      // sram data bus
@@ -646,7 +923,46 @@ minimig minimig
 	.a2065_base (a2065_base),
 	.toccata_aud_left (toccata_aud_left),
 	.toccata_aud_right(toccata_aud_right),
-	
+
+	.cdtv_mode    (cdtv_mode        ),
+
+	.cdtv_din            (cdtv_din_w           ),
+	.cdtv_selack         (cdtv_selack_w        ),
+	.cdtv_ac_rom_addr    (cdtv_ac_rom_addr_w   ),
+	.cdtv_ac_rom_byte    (cdtv_ac_rom_byte_w   ),
+
+	.cdtv_cmd_in_pop     (cdtv_cmd_in_pop_w    ),
+	.cdtv_cmd_in_pending (cdtv_cmd_in_pending_w),
+	.cdtv_cmd_in_byte    (cdtv_cmd_in_byte_w   ),
+	.cdtv_cmd_out_push   (cdtv_cmd_out_push_w  ),
+	.cdtv_cmd_out_data   (cdtv_cmd_out_data_w  ),
+	.cdtv_sec_byte_push  (cdtv_sec_byte_push_w ),
+	.cdtv_sec_byte_data  (cdtv_sec_byte_data_w ),
+	.cdtv_subq_push      (1'b0                 ),
+	.cdtv_subq_byte      (8'h00                ),
+	.cdtv_stch_pulse     (cdtv_stch_inject     ),
+	.cdtv_stch_ack       (cdtv_stch_ack        ),
+	.cdtv_stch_ack_clr   (cdtv_stch_ack_clr    ),
+	.cdtv_sten_pulse     (1'b0                 ),
+	.cdtv_scor_pulse     (1'b0                 ),
+	.cdtv_sbcp_pulse     (1'b0                 ),
+
+	.cdtv_dma_req        (cdtv_dma_req_w       ),
+	.cdtv_dma_we         (cdtv_dma_we_w        ),
+	.cdtv_dma_baddr      (cdtv_dma_baddr_w     ),
+	.cdtv_dma_wbyte      (cdtv_dma_wbyte_w     ),
+	.cdtv_dma_ack        (cdtv_dma_ack_w       ),
+
+	.cdtv_nvr_load_addr  (14'h0                ),
+	.cdtv_nvr_load_din   (8'h0                 ),
+	.cdtv_nvr_load_we    (1'b0                 ),
+	.cdtv_nvr_save_addr  (14'h0                ),
+	.cdtv_nvr_save_dout  (cdtv_nvr_save_dout_w ),
+	.cdtv_nvr_dirty      (cdtv_nvr_dirty_w     ),
+	.cdtv_nvr_clear_dirty(1'b0                 ),
+
+	.cdtv_cdda_volume    (cdtv_cdda_volume_w   ),
+
 	//user i/o
 	.cpucfg       (cpucfg           ), // CPU config
 	.cachecfg     (cachecfg         ), // Cache config
@@ -655,6 +971,7 @@ minimig minimig
 
 	.ide_fast     (ide_fast         ),
 	.ide_ext_irq  (ide_f_irq        ),
+	.akiko_irq    (akiko_f_irq      ),
 	.ide_ena      (ide_ena          ),
 	.ide_req      (ide_c_req        ),
 	.ide_address  (ide_addr         ),

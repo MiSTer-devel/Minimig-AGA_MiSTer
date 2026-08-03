@@ -70,6 +70,9 @@ module a2065_ddram (
     localparam NR_WAIT  = 2'd1;
     localparam NR_DONE  = 2'd2;
 
+    reg  [15:0] wd_cnt;
+    wire        wd_timeout = &wd_cnt;
+
     always @(posedge clk_sys or negedge rst_n_sys) begin
         if (!rst_n_sys) begin
             sys_req       <= 1'b0;
@@ -103,7 +106,7 @@ module a2065_ddram (
              * drop, so dropping it any earlier would retire the handshake
              * before the read data had been taken. bram_req_ack only reports
              * that the request was picked up. */
-            if (sys_req && rv_sync1) begin
+            if (sys_req && (rv_sync1 || wd_timeout)) begin
                 sys_req        <= 1'b0;
                 bram_req_valid <= 1'b0;
             end
@@ -127,15 +130,20 @@ module a2065_ddram (
     always @(posedge clk_sys or negedge rst_n_sys) begin
         if (!rst_n_sys) begin
             nrdy_state <= NR_IDLE;
+            wd_cnt     <= 16'd0;
         end else begin
             case (nrdy_state)
             NR_IDLE: begin
-                if (sel_br && !sys_req && !sys_got_resp)
+                if (sel_br && !sys_req && !sys_got_resp) begin
                     nrdy_state <= NR_WAIT;
+                    wd_cnt     <= 16'd0;
+                end
             end
             NR_WAIT: begin
-                if (rv_sync1)
+                if (rv_sync1 || wd_timeout)
                     nrdy_state <= NR_DONE;
+                else
+                    wd_cnt <= wd_cnt + 16'd1;
             end
             NR_DONE: begin
                 if (!sel_br)
