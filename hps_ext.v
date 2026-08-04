@@ -159,9 +159,8 @@ always@(posedge clk_sys) begin : main_proc
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
-			if(io_din == 'h63) begin
-				io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
-			end
+			if(io_din == 'h63) io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
+			if(io_din == UIO_GET_VMODE) io_dout <= 1;
 		end else begin
 			case(cmd)
 
