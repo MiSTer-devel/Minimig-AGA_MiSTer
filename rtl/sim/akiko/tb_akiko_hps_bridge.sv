@@ -41,7 +41,7 @@ logic       uio_cs     = 0;
 logic       uio_cs_nvr = 0;
 logic       uio_wr     = 0;
 logic       uio_rd     = 0;
-logic [7:0] uio_din    = 0;
+logic [15:0] uio_din   = 0;
 wire  [7:0] uio_dout;
 wire        uio_req;
 
@@ -81,9 +81,7 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.hps_rx_busy(),
 	.hps_nvr_addr(10'd0),
 	.hps_nvr_dout(), .hps_nvr_clear_dirty(1'b0), .hps_nvr_dirty(),
-	.nvr_load_addr(10'd0), .nvr_load_din(8'h00), .nvr_load_we(1'b0),
-	.hps_sec_dma_active(1'b0), .hps_sec_dma_byte(8'h00),
-	.hps_sec_dma_addr(14'd0), .hps_sec_dma_we(1'b0)
+	.nvr_load_addr(10'd0), .nvr_load_din(8'h00), .nvr_load_we(1'b0)
 );
 
 akiko_hps_bridge u_bridge (
@@ -98,6 +96,7 @@ akiko_hps_bridge u_bridge (
 	.sec_req(1'b0), .sec_status(8'h00),
 	.sec_push(), .sec_byte(), .sec_done(),
 	.nvr_addr(nvr_addr_w), .nvr_dout(nvr_dout_drv),
+	.nvr_load_din(nvr_din_w), .nvr_load_we(nvr_we_w),
 	.nvr_clear_dirty(nvr_clear_dirty_w), .nvr_done(nvr_done_w),
 	.nvr_dirty(nvr_dirty_drv), .nvr_dirty_out(),
 	.rx_busy(1'b0),
@@ -407,23 +406,19 @@ initial begin
 		@(posedge clk);
 		check_bit("I.nvr_addr_reset_pre", 1'b0, |nvr_addr_w);
 
-		@(posedge clk); uio_wr <= 1; uio_din <= 8'hDE;
+		@(posedge clk); uio_wr <= 1; uio_din <= 16'hADDE;
+		check_bit("I.nvr_lo_we",   1'b1, nvr_we_w);
+		check8   ("I.nvr_lo_din",  8'hDE, nvr_din_w);
 		@(posedge clk); uio_wr <= 0;
+		check_bit("I.nvr_hi_we",   1'b1, nvr_we_w);
+		check8   ("I.nvr_hi_din",  8'hAD, nvr_din_w);
 		@(posedge clk);
-		check_bit("I.nvr_addr_post0", 1'b1, nvr_addr_w == 10'd1);
+		check_bit("I.nvr_addr_post0", 1'b1, nvr_addr_w == 10'd2);
 
-		@(posedge clk); uio_wr <= 1; uio_din <= 8'hAD;
+		@(posedge clk); uio_wr <= 1; uio_din <= 16'hEFBE;
 		@(posedge clk); uio_wr <= 0;
 		@(posedge clk);
-		check_bit("I.nvr_addr_post1", 1'b1, nvr_addr_w == 10'd2);
-
-		@(posedge clk); uio_wr <= 1; uio_din <= 8'hBE;
-		@(posedge clk); uio_wr <= 0;
-		@(posedge clk);
-		@(posedge clk); uio_wr <= 1; uio_din <= 8'hEF;
-		@(posedge clk); uio_wr <= 0;
-		@(posedge clk);
-		check_bit("I.nvr_addr_post3", 1'b1, nvr_addr_w == 10'd4);
+		check_bit("I.nvr_addr_post1", 1'b1, nvr_addr_w == 10'd4);
 
 		check_bit("I.no_clear_during_write", 1'b0, nvr_clear_dirty_seen);
 
