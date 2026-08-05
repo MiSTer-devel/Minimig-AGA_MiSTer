@@ -72,11 +72,6 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input       [7:0] nvr_load_din,
 	input             nvr_load_we,
 
-	input             hps_sec_dma_active,
-	input       [7:0] hps_sec_dma_byte,
-	input      [13:0] hps_sec_dma_addr,
-	input             hps_sec_dma_we,
-
 	input             hps_subcode_push,
 	input       [7:0] hps_subcode_byte,
 	input             hps_subcode_done
@@ -196,13 +191,9 @@ if (NATIVE_CD32) begin : g_cd
 	reg [11:0] sec_wr_ptr;
 	reg        sector_ready;
 
-	wire        sec_w_we   = hps_sec_dma_active
-	                          ? (hps_sec_dma_we && hps_sec_dma_addr < 14'd2352)
-	                          : (hps_sec_push  && sec_wr_ptr != 12'd2352);
-	wire [11:0] sec_w_addr = hps_sec_dma_active
-	                          ? hps_sec_dma_addr[11:0] : sec_wr_ptr;
-	wire  [7:0] sec_w_din  = hps_sec_dma_active
-	                          ? hps_sec_dma_byte : hps_sec_byte;
+	wire        sec_w_we   = hps_sec_push && sec_wr_ptr != 12'd2352;
+	wire [11:0] sec_w_addr = sec_wr_ptr;
+	wire  [7:0] sec_w_din  = hps_sec_byte;
 	reg  [7:0] cdrom_sector_counter;
 	reg        pbx_busy;
 	reg  [1:0] pbx_state;
@@ -587,18 +578,13 @@ if (NATIVE_CD32) begin : g_cd
 				sector_buffer[sec_w_addr] <= sec_w_din;
 			end
 
-			if (hps_sec_dma_active) begin
-				if (hps_sec_dma_we && hps_sec_dma_addr == 14'd2351
-				    && !sector_ready && !enable_rising) sector_ready <= 1'b1;
-			end else begin
-				if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352
-				    && !enable_rising) begin
-					sec_wr_ptr <= sec_wr_ptr + 12'd1;
-				end
-				if (hps_sec_done) begin
-					if (sec_wr_ptr == 12'd2352 && !enable_rising) sector_ready <= 1'b1;
-					sec_wr_ptr <= 12'h0;
-				end
+			if (hps_sec_push && !sector_ready && sec_wr_ptr != 12'd2352
+			    && !enable_rising) begin
+				sec_wr_ptr <= sec_wr_ptr + 12'd1;
+			end
+			if (hps_sec_done) begin
+				if (sec_wr_ptr == 12'd2352 && !enable_rising) sector_ready <= 1'b1;
+				sec_wr_ptr <= 12'h0;
 			end
 
 			if (hps_subcode_push && !subcode_ready && !subcode_busy

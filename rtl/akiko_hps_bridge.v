@@ -23,7 +23,7 @@ module akiko_hps_bridge
 	input             uio_cs_subcode,
 	input             uio_wr,
 	input             uio_rd,
-	input       [7:0] uio_din,
+	input      [15:0] uio_din,
 	output      [7:0] uio_dout,
 
 	input             cmd_pending,
@@ -46,6 +46,8 @@ module akiko_hps_bridge
 
 	output      [9:0] nvr_addr,
 	input       [7:0] nvr_dout,
+	output      [7:0] nvr_load_din,
+	output            nvr_load_we,
 	output            nvr_clear_dirty,
 	output            nvr_done,
 	input             nvr_dirty,
@@ -67,7 +69,13 @@ reg saw_write;
 
 reg [9:0] nvr_addr_cnt;
 
+reg hi_sec;
+reg hi_nvr;
+
 wire cs_cmd = uio_cs & ~uio_cs_sec & ~uio_cs_nvr & ~uio_cs_subcode;
+
+wire wr_sec = uio_wr & uio_cs & uio_cs_sec;
+wire wr_nvr = uio_wr & uio_cs & uio_cs_nvr;
 
 always @(posedge clk) begin
 	if (reset) begin
@@ -78,7 +86,11 @@ always @(posedge clk) begin
 		saw_read     <= 1'b0;
 		saw_write    <= 1'b0;
 		nvr_addr_cnt <= 10'd0;
+		hi_sec       <= 1'b0;
+		hi_nvr       <= 1'b0;
 	end else begin
+		hi_sec <= wr_sec;
+		hi_nvr <= wr_nvr;
 		cs_d         <= uio_cs;
 		cs_sec_d     <= uio_cs_sec;
 		cs_nvr_d     <= uio_cs_nvr;
@@ -92,7 +104,7 @@ always @(posedge clk) begin
 		end
 		if (uio_cs_nvr & ~cs_nvr_d) begin
 			nvr_addr_cnt <= 10'd0;
-		end else if (uio_rd & uio_cs_nvr) begin
+		end else if ((uio_rd & uio_cs_nvr) | wr_nvr | hi_nvr) begin
 			nvr_addr_cnt <= nvr_addr_cnt + 10'd1;
 		end
 	end
@@ -102,16 +114,18 @@ wire xfer_end = cs_d & ~uio_cs;
 
 assign cmd_pop         = uio_rd & cs_cmd;
 assign result_push     = uio_wr & cs_cmd;
-assign result_byte     = uio_din;
+assign result_byte     = uio_din[7:0];
 
-assign sec_push        = uio_wr & uio_cs &  uio_cs_sec;
-assign sec_byte        = uio_din;
+assign sec_push        = wr_sec | hi_sec;
+assign sec_byte        = hi_sec ? uio_din[15:8] : uio_din[7:0];
 
 assign subcode_push    = uio_wr & uio_cs &  uio_cs_subcode;
-assign subcode_byte    = uio_din;
+assign subcode_byte    = uio_din[7:0];
 assign subcode_done    = xfer_end &              cs_subcode_d;
 
 assign nvr_addr        = nvr_addr_cnt;
+assign nvr_load_we     = wr_nvr | hi_nvr;
+assign nvr_load_din    = hi_nvr ? uio_din[15:8] : uio_din[7:0];
 assign nvr_clear_dirty = xfer_end & saw_read & cs_nvr_d;
 
 assign uio_dout        = uio_cs_nvr ? nvr_dout    :

@@ -82,16 +82,7 @@ module fastchip
 	output        akiko_uio_req,
 	output        akiko_uio_sec_req,
 	output        akiko_uio_rx_busy,
-	output        akiko_uio_nvr_dirty,
-
-	input   [9:0] nvr_load_addr,
-	input   [7:0] nvr_load_din,
-	input         nvr_load_we,
-
-	input         hps_sec_dma_active,
-	input   [7:0] hps_sec_dma_byte,
-	input  [13:0] hps_sec_dma_addr,
-	input         hps_sec_dma_we
+	output        akiko_uio_nvr_dirty
 );
 
 localparam NATIVE_CD32 = 1;
@@ -123,6 +114,8 @@ wire  [7:0] akiko_uio_dout_byte;
 
 wire  [9:0] akiko_hps_nvr_addr;
 wire  [7:0] akiko_hps_nvr_dout;
+wire  [7:0] akiko_hps_nvr_load_din;
+wire        akiko_hps_nvr_load_we;
 wire        akiko_hps_nvr_clear_dirty;
 wire        akiko_hps_nvr_dirty;
 wire        akiko_hps_nvr_done;
@@ -166,13 +159,9 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_nvr_dout(akiko_hps_nvr_dout),
 	.hps_nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
 	.hps_nvr_dirty(akiko_hps_nvr_dirty),
-	.nvr_load_addr(nvr_load_addr),
-	.nvr_load_din(nvr_load_din),
-	.nvr_load_we(nvr_load_we),
-	.hps_sec_dma_active(hps_sec_dma_active),
-	.hps_sec_dma_byte(hps_sec_dma_byte),
-	.hps_sec_dma_addr(hps_sec_dma_addr),
-	.hps_sec_dma_we(hps_sec_dma_we),
+	.nvr_load_addr(akiko_hps_nvr_addr),
+	.nvr_load_din(akiko_hps_nvr_load_din),
+	.nvr_load_we(akiko_hps_nvr_load_we),
 	.hps_subcode_push(akiko_hps_subcode_push),
 	.hps_subcode_byte(akiko_hps_subcode_byte),
 	.hps_subcode_done(akiko_hps_subcode_done)
@@ -188,7 +177,7 @@ akiko_hps_bridge akiko_hps_bridge
 	.uio_cs_subcode(akiko_uio_cs_subcode),
 	.uio_wr(akiko_uio_wr),
 	.uio_rd(akiko_uio_rd),
-	.uio_din(akiko_uio_din[7:0]),
+	.uio_din(akiko_uio_din),
 	.uio_dout(akiko_uio_dout_byte),
 	.cmd_pending(akiko_hps_cmd_pending),
 	.cmd_byte(akiko_hps_cmd_byte),
@@ -207,6 +196,8 @@ akiko_hps_bridge akiko_hps_bridge
 	.subcode_done(akiko_hps_subcode_done),
 	.nvr_addr(akiko_hps_nvr_addr),
 	.nvr_dout(akiko_hps_nvr_dout),
+	.nvr_load_din(akiko_hps_nvr_load_din),
+	.nvr_load_we(akiko_hps_nvr_load_we),
 	.nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
 	.nvr_done(akiko_hps_nvr_done),
 	.nvr_dirty(akiko_hps_nvr_dirty),
