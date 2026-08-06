@@ -245,6 +245,7 @@ module minimig
 	// Toccata audio
 	input         toccata_ena,
 	input   [7:0] toccata_base,
+	input   [7:0] cdtv_base,
 	output [15:0] toccata_aud_left,
 	output [15:0] toccata_aud_right,
 
@@ -256,21 +257,18 @@ module minimig
 
 	output [15:0] cdtv_din,
 	output        cdtv_selack,
-	output  [5:0] cdtv_ac_rom_addr,
-	input   [7:0] cdtv_ac_rom_byte,
 
-	input         cdtv_cmd_in_pop,
-	output        cdtv_cmd_in_pending,
-	output  [7:0] cdtv_cmd_in_byte,
-	input         cdtv_cmd_out_push,
-	input   [7:0] cdtv_cmd_out_data,
-	input         cdtv_sec_byte_push,
-	input   [7:0] cdtv_sec_byte_data,
+	input         cdtv_cs,
+	input         cdtv_cs_sec,
+	input         cdtv_cs_stch,
+	input         cdtv_cs_nvr,
+	input         cdtv_wr,
+	input         cdtv_rd,
+	input  [15:0] cdtv_uio_din,
+	output [15:0] cdtv_uio_dout,
+	output        cdtv_req,
 	input         cdtv_subq_push,
 	input   [7:0] cdtv_subq_byte,
-	input         cdtv_stch_pulse,
-	output        cdtv_stch_ack,
-	input         cdtv_stch_ack_clr,
 	input         cdtv_sten_pulse,
 	input         cdtv_scor_pulse,
 	input         cdtv_sbcp_pulse,
@@ -281,13 +279,7 @@ module minimig
 	output  [7:0] cdtv_dma_wbyte,
 	input         cdtv_dma_ack,
 
-	input  [13:0] cdtv_nvr_load_addr,
-	input   [7:0] cdtv_nvr_load_din,
-	input         cdtv_nvr_load_we,
-	input  [13:0] cdtv_nvr_save_addr,
-	output  [7:0] cdtv_nvr_save_dout,
 	output        cdtv_nvr_dirty,
-	input         cdtv_nvr_clear_dirty,
 
 	output  [9:0] cdtv_cdda_volume,
 
@@ -380,6 +372,11 @@ wire        sel_cdtv_nvram;
 wire [15:0] cdtv_bridge_dout;
 wire        cdtv_bridge_selack;
 wire [15:0] cdtv_nvr_dout;
+wire [13:0] cdtv_nvr_addr;
+wire  [7:0] cdtv_nvr_load_din;
+wire        cdtv_nvr_load_we;
+wire  [7:0] cdtv_nvr_save_dout;
+wire        cdtv_nvr_clear_dirty;
 wire        cdtv_irq_w;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
@@ -854,6 +851,7 @@ gary GARY1
 	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
 	.toccata_ena(toccata_ena),
 	.toccata_base(toccata_base),
+	.cdtv_base(cdtv_base),
 	.a2065_ena(a2065_ena),
 	.a2065_base(a2065_base),
 	.cdtv_mode(chipset_config[5]),
@@ -1021,27 +1019,29 @@ cdtv_bridge cdtv_bridge_inst
 	.hwr             (cpu_hwr              ),
 	.lwr             (cpu_lwr              ),
 
-	.ac_rom_byte     (cdtv_ac_rom_byte     ),
-	.ac_rom_addr     (cdtv_ac_rom_addr     ),
 
 	.cdtv_irq        (cdtv_irq_w           ),
 	.cdda_volume     (cdtv_cdda_volume     ),
 
-	.cmd_in_pending  (cdtv_cmd_in_pending  ),
-	.cmd_in_byte     (cdtv_cmd_in_byte     ),
-	.cmd_in_pop      (cdtv_cmd_in_pop      ),
-	.cmd_out_push    (cdtv_cmd_out_push    ),
-	.cmd_out_data    (cdtv_cmd_out_data    ),
+	.uio_cs          (cdtv_cs              ),
+	.uio_cs_sec      (cdtv_cs_sec          ),
+	.uio_cs_stch     (cdtv_cs_stch         ),
+	.uio_cs_nvr      (cdtv_cs_nvr          ),
+	.uio_wr          (cdtv_wr              ),
+	.uio_rd          (cdtv_rd              ),
+	.uio_din         (cdtv_uio_din         ),
+	.uio_dout        (cdtv_uio_dout        ),
+	.uio_req         (cdtv_req             ),
 
-	.sec_byte_push   (cdtv_sec_byte_push   ),
-	.sec_byte_data   (cdtv_sec_byte_data   ),
+	.nvr_addr        (cdtv_nvr_addr        ),
+	.nvr_dout        (cdtv_nvr_save_dout   ),
+	.nvr_load_din    (cdtv_nvr_load_din    ),
+	.nvr_load_we     (cdtv_nvr_load_we     ),
+	.nvr_clear_dirty (cdtv_nvr_clear_dirty ),
 
 	.subq_push       (cdtv_subq_push       ),
 	.subq_byte       (cdtv_subq_byte       ),
 
-	.stch_pulse      (cdtv_stch_pulse      ),
-	.stch_ack        (cdtv_stch_ack        ),
-	.stch_ack_clr    (cdtv_stch_ack_clr    ),
 	.sten_pulse_ext  (cdtv_sten_pulse      ),
 	.scor_pulse      (cdtv_scor_pulse      ),
 	.sbcp_pulse      (cdtv_sbcp_pulse      ),
@@ -1066,11 +1066,11 @@ cdtv_nvram cdtv_nvram_inst
 	.hwr             (cpu_hwr              ),
 	.lwr             (cpu_lwr              ),
 
-	.hps_load_addr   (cdtv_nvr_load_addr   ),
+	.hps_load_addr   (cdtv_nvr_addr        ),
 	.hps_load_din    (cdtv_nvr_load_din    ),
 	.hps_load_we     (cdtv_nvr_load_we     ),
 
-	.hps_save_addr   (cdtv_nvr_save_addr   ),
+	.hps_save_addr   (cdtv_nvr_addr        ),
 	.hps_save_dout   (cdtv_nvr_save_dout   ),
 
 	.dirty           (cdtv_nvr_dirty       ),

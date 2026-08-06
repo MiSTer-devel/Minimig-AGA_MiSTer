@@ -126,11 +126,8 @@ wire        cdtv_rd;
 wire        cdtv_cs;
 wire        cdtv_cs_sec;
 wire        cdtv_cs_stch;
-wire        cdtv_stch_inject;
-wire        cdtv_stch_ack;
-wire        cdtv_stch_ack_clr;
-wire        cdtv_sec_byte_push_w;
-wire  [7:0] cdtv_sec_byte_data_w;
+wire        cdtv_cs_nvr;
+wire        cdtv_nvr_dirty;
 wire        cdtv_req;
 
 wire        akiko_dma_req_w;
@@ -325,6 +322,7 @@ wire        zram_sel  = |ram_addr[28:26];
 wire        ramshared;
 
 wire [7:0] toccata_base;
+wire [7:0] cdtv_base;
 wire toccata_ena;
 
 wire a2065_ena;
@@ -335,47 +333,14 @@ wire cdtv_mode;
 
 wire [15:0] cdtv_din_w;
 wire        cdtv_selack_w;
-wire  [5:0] cdtv_ac_rom_addr_w;
-wire  [7:0] cdtv_ac_rom_byte_w;
 
-wire        cdtv_cmd_in_pending_w;
-wire  [7:0] cdtv_cmd_in_byte_w;
-wire        cdtv_cmd_in_pop_w;
-wire        cdtv_cmd_out_push_w;
-wire  [7:0] cdtv_cmd_out_data_w;
 wire  [9:0] cdtv_cdda_volume_w;
-wire        cdtv_nvr_dirty_w;
-wire  [7:0] cdtv_nvr_save_dout_w;
 
 wire        cdtv_dma_req_w;
 wire        cdtv_dma_we_w;
 wire [23:0] cdtv_dma_baddr_w;
 wire  [7:0] cdtv_dma_wbyte_w;
 wire        cdtv_dma_ack_w;
-
-cdtv_hps_bridge cdtv_hps_bridge_inst
-(
-	.clk            (clk_sys                ),
-	.reset          (reset                  ),
-	.uio_cs         (cdtv_cs                ),
-	.uio_cs_sec     (cdtv_cs_sec            ),
-	.uio_cs_stch    (cdtv_cs_stch           ),
-	.uio_wr         (cdtv_wr                ),
-	.uio_rd         (cdtv_rd                ),
-	.uio_din        (cdtv_dout[7:0]         ),
-	.uio_dout       (cdtv_din               ),
-	.cmd_in_pending (cdtv_cmd_in_pending_w  ),
-	.cmd_in_byte    (cdtv_cmd_in_byte_w     ),
-	.cmd_in_pop     (cdtv_cmd_in_pop_w      ),
-	.cmd_out_push   (cdtv_cmd_out_push_w    ),
-	.cmd_out_data   (cdtv_cmd_out_data_w    ),
-	.sec_byte_push  (cdtv_sec_byte_push_w   ),
-	.sec_byte_data  (cdtv_sec_byte_data_w   ),
-	.stch_inject    (cdtv_stch_inject       ),
-	.stch_ack       (cdtv_stch_ack          ),
-	.stch_ack_clr   (cdtv_stch_ack_clr      ),
-	.req            (cdtv_req               )
-);
 
 cpu_wrapper cpu_wrapper
 (
@@ -414,12 +379,11 @@ cpu_wrapper cpu_wrapper
 	.a2065_ena    (a2065_ena       ),
 	.a2065_base   (a2065_base      ),
 	.toccata_base (toccata_base    ),
+	.cdtv_base    (cdtv_base       ),
 	.cdtv_mode    (cdtv_mode       ),
 
 	.cdtv_din           (cdtv_din_w           ),
 	.cdtv_selack        (cdtv_selack_w        ),
-	.cdtv_ac_rom_addr   (cdtv_ac_rom_addr_w   ),
-	.cdtv_ac_rom_byte   (cdtv_ac_rom_byte_w   ),
 
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
@@ -851,6 +815,7 @@ minimig minimig
 	//toccata soundcard
 	.toccata_ena  (toccata_ena),
 	.toccata_base (toccata_base),
+	.cdtv_base    (cdtv_base),
 	.a2065_ena  (a2065_ena),
 	.a2065_base (a2065_base),
 	.toccata_aud_left (toccata_aud_left),
@@ -860,21 +825,18 @@ minimig minimig
 
 	.cdtv_din            (cdtv_din_w           ),
 	.cdtv_selack         (cdtv_selack_w        ),
-	.cdtv_ac_rom_addr    (cdtv_ac_rom_addr_w   ),
-	.cdtv_ac_rom_byte    (cdtv_ac_rom_byte_w   ),
 
-	.cdtv_cmd_in_pop     (cdtv_cmd_in_pop_w    ),
-	.cdtv_cmd_in_pending (cdtv_cmd_in_pending_w),
-	.cdtv_cmd_in_byte    (cdtv_cmd_in_byte_w   ),
-	.cdtv_cmd_out_push   (cdtv_cmd_out_push_w  ),
-	.cdtv_cmd_out_data   (cdtv_cmd_out_data_w  ),
-	.cdtv_sec_byte_push  (cdtv_sec_byte_push_w ),
-	.cdtv_sec_byte_data  (cdtv_sec_byte_data_w ),
+	.cdtv_cs             (cdtv_cs              ),
+	.cdtv_cs_sec         (cdtv_cs_sec          ),
+	.cdtv_cs_stch        (cdtv_cs_stch         ),
+	.cdtv_cs_nvr         (cdtv_cs_nvr          ),
+	.cdtv_wr             (cdtv_wr              ),
+	.cdtv_rd             (cdtv_rd              ),
+	.cdtv_uio_din        (cdtv_dout            ),
+	.cdtv_uio_dout       (cdtv_din             ),
+	.cdtv_req            (cdtv_req             ),
 	.cdtv_subq_push      (1'b0                 ),
 	.cdtv_subq_byte      (8'h00                ),
-	.cdtv_stch_pulse     (cdtv_stch_inject     ),
-	.cdtv_stch_ack       (cdtv_stch_ack        ),
-	.cdtv_stch_ack_clr   (cdtv_stch_ack_clr    ),
 	.cdtv_sten_pulse     (1'b0                 ),
 	.cdtv_scor_pulse     (1'b0                 ),
 	.cdtv_sbcp_pulse     (1'b0                 ),
@@ -885,13 +847,7 @@ minimig minimig
 	.cdtv_dma_wbyte      (cdtv_dma_wbyte_w     ),
 	.cdtv_dma_ack        (cdtv_dma_ack_w       ),
 
-	.cdtv_nvr_load_addr  (14'h0                ),
-	.cdtv_nvr_load_din   (8'h0                 ),
-	.cdtv_nvr_load_we    (1'b0                 ),
-	.cdtv_nvr_save_addr  (14'h0                ),
-	.cdtv_nvr_save_dout  (cdtv_nvr_save_dout_w ),
-	.cdtv_nvr_dirty      (cdtv_nvr_dirty_w     ),
-	.cdtv_nvr_clear_dirty(1'b0                 ),
+	.cdtv_nvr_dirty      (cdtv_nvr_dirty       ),
 
 	.cdtv_cdda_volume    (cdtv_cdda_volume_w   ),
 

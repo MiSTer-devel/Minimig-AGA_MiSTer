@@ -26,33 +26,32 @@ module cdtv_bridge
 	input             hwr,
 	input             lwr,
 
-	input       [7:0] ac_rom_byte,
-	output      [5:0] ac_rom_addr,
-
 	output            cdtv_irq,
 
 	output      [9:0] cdda_volume,
 
-	output            cmd_in_pending,
-	output      [7:0] cmd_in_byte,
-	input             cmd_in_pop,
+	input             uio_cs,
+	input             uio_cs_sec,
+	input             uio_cs_stch,
+	input             uio_cs_nvr,
+	input             uio_wr,
+	input             uio_rd,
+	input      [15:0] uio_din,
+	output     [15:0] uio_dout,
+	output            uio_req,
 
-	input             cmd_out_push,
-	input       [7:0] cmd_out_data,
-
-	input             sec_byte_push,
-	input       [7:0] sec_byte_data,
+	output     [13:0] nvr_addr,
+	input       [7:0] nvr_dout,
+	output      [7:0] nvr_load_din,
+	output            nvr_load_we,
+	output            nvr_clear_dirty,
 
 	input             subq_push,
 	input       [7:0] subq_byte,
 
-	input             stch_pulse,
 	input             sten_pulse_ext,
 	input             scor_pulse,
 	input             sbcp_pulse,
-
-	output reg        stch_ack,
-	input             stch_ack_clr,
 
 	output            cdtv_dma_req,
 	output            cdtv_dma_we,
@@ -76,11 +75,8 @@ reg  [7:0] istr;
 reg  [7:0] cntr;
 reg [31:0] wtc;
 reg [31:0] acr;
-reg [15:0] dawr;
 reg        dmac_dma;
-reg        dma_finished;
 reg        prst_pulse;
-reg        fifo_touch;
 reg        dma_complete_pulse;
 reg        dma_complete_armed;
 
@@ -94,7 +90,6 @@ reg [23:0] drain_baddr;
 reg  [7:0] drain_wbyte;
 reg        drain_req_r;
 
-reg [7:0] tp_a;
 reg [7:0] tp_b;
 reg [7:0] tp_ad;
 reg [7:0] tp_bd;
@@ -140,7 +135,6 @@ wire  [4:0] tpi_edges;
 wire  [4:0] masked_active;
 wire        cmd_in_empty;
 wire        cmd_out_empty;
-wire        sec_empty;
 wire        dmac_int2;
 wire        tpi_int2;
 wire [15:0] byte_off;
@@ -158,8 +152,6 @@ wire sel_acr_b0_eb  = sel && (byte_off == 16'h0084);
 wire sel_acr_b1_ob  = sel && (byte_off == 16'h0084);
 wire sel_acr_b2_eb  = sel && (byte_off == 16'h0086);
 wire sel_acr_b3_ob  = sel && (byte_off == 16'h0086);
-wire sel_dawr_h_eb  = sel && (byte_off == 16'h008E);
-wire sel_dawr_l_ob  = sel && (byte_off == 16'h008E);
 wire sel_cmda_ob    = sel && (byte_off == 16'h00A0);
 wire sel_xt_a3_ob   = sel && (byte_off == 16'h00A2);
 wire sel_xt_a5_ob   = sel && (byte_off == 16'h00A4);
@@ -172,18 +164,35 @@ wire sel_dma_stop   = sel && (byte_off == 16'h00E2);
 wire sel_istr_clr   = sel && (byte_off == 16'h00E4);
 wire sel_fifo_tog   = sel && (byte_off == 16'h00E8);
 
-wire sel_istr_b   = sel_istr_ob;
-wire sel_cntr_b   = sel_cntr_ob;
-wire sel_cmda_b   = sel_cmda_ob;
-wire sel_wtc_w_hi = sel_wtc_b0_eb;
-wire sel_wtc_w_lo = sel_wtc_b2_eb;
-wire sel_acr_w_hi = sel_acr_b0_eb;
-wire sel_acr_w_lo = sel_acr_b2_eb;
-wire sel_dawr_w   = sel_dawr_h_eb;
-wire sel_ac_rom   = sel_ac_rom_w;
 wire sel_xtfloor  = sel_xt_a3_ob | sel_xt_a5_ob | sel_xt_a7_ob;
 
-assign ac_rom_addr = byte_off[6:1];
+wire [5:0] ac_rom_addr = byte_off[6:1];
+
+reg [7:0] ac_rom_byte;
+always @* begin
+	ac_rom_byte = 8'hFF;
+	case (ac_rom_addr)
+		6'h00: ac_rom_byte = 8'hC0;
+		6'h01: ac_rom_byte = 8'h10;
+		6'h02: ac_rom_byte = 8'hF0;
+		6'h03: ac_rom_byte = 8'hC0;
+		6'h04: ac_rom_byte = 8'hB0;
+		6'h05: ac_rom_byte = 8'hF0;
+		6'h08: ac_rom_byte = 8'hF0;
+		6'h09: ac_rom_byte = 8'hD0;
+		6'h0A: ac_rom_byte = 8'hF0;
+		6'h0B: ac_rom_byte = 8'hD0;
+		6'h0C: ac_rom_byte = 8'hF0;
+		6'h0D: ac_rom_byte = 8'hF0;
+		6'h0E: ac_rom_byte = 8'hF0;
+		6'h0F: ac_rom_byte = 8'hF0;
+		6'h10: ac_rom_byte = 8'hF0;
+		6'h11: ac_rom_byte = 8'hF0;
+		6'h12: ac_rom_byte = 8'hF0;
+		6'h13: ac_rom_byte = 8'hF0;
+		default: ac_rom_byte = 8'hFF;
+	endcase
+end
 
 assign istr_any_set = |istr[7:1];
 assign istr_rd      = istr | (istr_any_set ? (8'h01 << ISTR_INT_P_BIT) : 8'h00);
@@ -194,7 +203,6 @@ assign masked_active = tp_ilatch[4:0] & tp_imask[4:0];
 
 assign cmd_in_empty  = (cmd_in_wr_p  == cmd_in_rd_p);
 assign cmd_out_empty = (cmd_out_wr_p == cmd_out_rd_p);
-assign sec_empty     = (sec_wr_p     == sec_rd_p);
 
 wire [12:0] sec_avail = sec_wr_p - sec_rd_p;
 
@@ -204,8 +212,52 @@ assign tpi_int2  = tp_ilatch[5];
 assign cdtv_irq    = dmac_int2 | tpi_int2;
 assign cdda_volume = cd_volume;
 
-assign cmd_in_pending = ~cmd_in_empty;
-assign cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
+wire       cmd_in_pending = ~cmd_in_empty;
+wire [7:0] cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
+
+wire       cmd_in_pop     = uio_rd & uio_cs;
+wire       cmd_out_push   = uio_wr & uio_cs;
+wire [7:0] cmd_out_data   = uio_din[7:0];
+wire       sec_byte_push  = uio_wr & uio_cs_sec;
+wire [7:0] sec_byte_data  = uio_din[7:0];
+wire       stch_pulse     = uio_wr & uio_cs_stch;
+wire       stch_ack_clr   = uio_rd & uio_cs_stch;
+
+reg        stch_ack;
+
+reg [13:0] nvr_addr_cnt;
+reg        cs_nvr_d;
+reg        hi_nvr;
+reg        saw_nvr_read;
+wire       wr_nvr = uio_wr & uio_cs_nvr;
+
+always @(posedge clk) begin
+	if (reset) begin
+		nvr_addr_cnt <= 14'd0;
+		cs_nvr_d     <= 1'b0;
+		hi_nvr       <= 1'b0;
+		saw_nvr_read <= 1'b0;
+	end else begin
+		hi_nvr   <= wr_nvr;
+		cs_nvr_d <= uio_cs_nvr;
+		if (uio_cs_nvr & ~cs_nvr_d) begin
+			nvr_addr_cnt <= 14'd0;
+			saw_nvr_read <= 1'b0;
+		end else if ((uio_rd & uio_cs_nvr) | wr_nvr | hi_nvr) begin
+			nvr_addr_cnt <= nvr_addr_cnt + 14'd1;
+		end
+		if (uio_rd & uio_cs_nvr) saw_nvr_read <= 1'b1;
+	end
+end
+
+assign nvr_addr        = nvr_addr_cnt;
+assign nvr_load_we     = wr_nvr | hi_nvr;
+assign nvr_load_din    = hi_nvr ? uio_din[15:8] : uio_din[7:0];
+assign nvr_clear_dirty = cs_nvr_d & ~uio_cs_nvr & saw_nvr_read;
+
+assign uio_dout = uio_cs_nvr  ? {8'h00, nvr_dout} :
+                  uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
+assign uio_req  = cmd_in_pending;
 
 assign cdtv_dma_req   = drain_req_r;
 assign cdtv_dma_we    = 1'b1;
@@ -216,7 +268,6 @@ wire drain_ack_u    = (drain_state == DRAIN_PUSH_U) && cdtv_dma_ack;
 wire drain_ack_l    = (drain_state == DRAIN_PUSH_L) && cdtv_dma_ack;
 wire drain_ack_pop  = drain_ack_u | drain_ack_l;
 wire drain_ack_word = drain_ack_l;
-wire drain_ack_now  = drain_ack_pop;
 
 assign selack = sel;
 assign dout   = {rd_byte_eb, rd_byte_ob};
@@ -245,17 +296,13 @@ always @(posedge clk) begin
 		cntr               <= 8'h00;
 		wtc                <= 32'h0;
 		acr                <= 32'h0;
-		dawr               <= 16'h0;
 		dmac_dma           <= 1'b0;
-		dma_finished       <= 1'b0;
 		prst_pulse         <= 1'b0;
-		fifo_touch         <= 1'b0;
 		dma_complete_pulse <= 1'b0;
 		dma_complete_armed <= 1'b0;
 		sel_istr_ob_rd_d   <= 1'b0;
 	end else begin
 		prst_pulse         <= 1'b0;
-		fifo_touch         <= 1'b0;
 		dma_complete_pulse <= 1'b0;
 		sel_istr_ob_rd_d   <= sel_istr_ob && rd;
 
@@ -270,7 +317,6 @@ always @(posedge clk) begin
 
 		if (sel_fifo_tog && (rd || hwr || lwr)) begin
 			istr       <= istr | (8'h01 << ISTR_FE_FLG_B);
-			fifo_touch <= 1'b1;
 		end
 
 		if (sel_wtc_b0_eb && hwr) wtc[31:24] <= din[15:8];
@@ -283,8 +329,6 @@ always @(posedge clk) begin
 		if (sel_acr_b2_eb && hwr) acr[15:8]  <= din[15:8];
 		if (sel_acr_b3_ob && lwr) acr[7:1]   <= din[7:1];
 
-		if (sel_dawr_h_eb && hwr) dawr[15:8] <= din[15:8];
-		if (sel_dawr_l_ob && lwr) dawr[7:0]  <= din[7:0];
 
 		if (sel_dma_start && (hwr || lwr)) begin
 			dmac_dma           <= 1'b1;
@@ -292,7 +336,6 @@ always @(posedge clk) begin
 		end
 		if (sel_dma_stop  && (hwr || lwr)) begin
 			dmac_dma           <= 1'b0;
-			dma_finished       <= 1'b0;
 			dma_complete_armed <= 1'b0;
 		end
 
@@ -309,7 +352,6 @@ always @(posedge clk) begin
 		if (dma_complete_pulse && cntr[CNTR_INTEN_BIT] && cntr[CNTR_TCEN_BIT]) begin
 			istr         <= istr | (8'h01 << ISTR_E_INT_BIT)
 			                     | (8'h01 << ISTR_INT_P_BIT);
-			dma_finished <= 1'b0;
 		end
 	end
 end
@@ -398,7 +440,6 @@ wire   air_rd_falling = !in_air_rd && in_air_rd_d;
 
 always @(posedge clk) begin
 	if (reset) begin
-		tp_a        <= 8'h00;
 		tp_b        <= 8'h00;
 		tp_ad       <= 8'h00;
 		tp_bd       <= 8'h00;
@@ -433,7 +474,6 @@ always @(posedge clk) begin
 
 		if (in_tpi_range && (hwr || lwr)) begin
 			case (tpi_reg)
-				3'd0: tp_a <= tpi_data;
 				3'd1: begin
 					tp_b <= tpi_data;
 					if (tpi_data[6] && !tp_b_prev_6)
