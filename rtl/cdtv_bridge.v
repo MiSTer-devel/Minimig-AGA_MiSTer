@@ -26,9 +26,6 @@ module cdtv_bridge
 	input             hwr,
 	input             lwr,
 
-	input       [7:0] ac_rom_byte,
-	output      [5:0] ac_rom_addr,
-
 	output            cdtv_irq,
 
 	output      [9:0] cdda_volume,
@@ -183,7 +180,33 @@ wire sel_dawr_w   = sel_dawr_h_eb;
 wire sel_ac_rom   = sel_ac_rom_w;
 wire sel_xtfloor  = sel_xt_a3_ob | sel_xt_a5_ob | sel_xt_a7_ob;
 
-assign ac_rom_addr = byte_off[6:1];
+wire [5:0] ac_rom_addr = byte_off[6:1];
+
+reg [7:0] ac_rom_byte;
+always @* begin
+	ac_rom_byte = 8'hFF;
+	case (ac_rom_addr)
+		6'h00: ac_rom_byte = 8'hC0;
+		6'h01: ac_rom_byte = 8'h10;
+		6'h02: ac_rom_byte = 8'hF0;
+		6'h03: ac_rom_byte = 8'hC0;
+		6'h04: ac_rom_byte = 8'hB0;
+		6'h05: ac_rom_byte = 8'hF0;
+		6'h08: ac_rom_byte = 8'hF0;
+		6'h09: ac_rom_byte = 8'hD0;
+		6'h0A: ac_rom_byte = 8'hF0;
+		6'h0B: ac_rom_byte = 8'hD0;
+		6'h0C: ac_rom_byte = 8'hF0;
+		6'h0D: ac_rom_byte = 8'hF0;
+		6'h0E: ac_rom_byte = 8'hF0;
+		6'h0F: ac_rom_byte = 8'hF0;
+		6'h10: ac_rom_byte = 8'hF0;
+		6'h11: ac_rom_byte = 8'hF0;
+		6'h12: ac_rom_byte = 8'hF0;
+		6'h13: ac_rom_byte = 8'hF0;
+		default: ac_rom_byte = 8'hFF;
+	endcase
+end
 
 assign istr_any_set = |istr[7:1];
 assign istr_rd      = istr | (istr_any_set ? (8'h01 << ISTR_INT_P_BIT) : 8'h00);

@@ -77,9 +77,6 @@ module cpu_wrapper
 	input      [15:0] cdtv_din,
 	input             cdtv_selack,
 
-	input       [5:0] cdtv_ac_rom_addr,
-	output      [7:0] cdtv_ac_rom_byte,
-
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
 	output reg [31:0] nmi_addr,
@@ -509,33 +506,6 @@ always @(*) begin
 end
 
 wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv); //$E80000 - $E8FFFF
-
-reg [7:0] cdtv_ac_rom_byte_r;
-always @* begin
-	cdtv_ac_rom_byte_r = 8'hFF;
-	case (cdtv_ac_rom_addr)
-		6'h00: cdtv_ac_rom_byte_r = 8'hC0;
-		6'h01: cdtv_ac_rom_byte_r = 8'h10;
-		6'h02: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h03: cdtv_ac_rom_byte_r = 8'hC0;
-		6'h04: cdtv_ac_rom_byte_r = 8'hB0;
-		6'h05: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h08: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h09: cdtv_ac_rom_byte_r = 8'hD0;
-		6'h0A: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h0B: cdtv_ac_rom_byte_r = 8'hD0;
-		6'h0C: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h0D: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h0E: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h0F: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h10: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h11: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h12: cdtv_ac_rom_byte_r = 8'hF0;
-		6'h13: cdtv_ac_rom_byte_r = 8'hF0;
-		default: cdtv_ac_rom_byte_r = 8'hFF;
-	endcase
-end
-assign cdtv_ac_rom_byte = cdtv_ac_rom_byte_r;
 
 reg       z2ram_ena;
 reg [4:0] z3ram_base0;

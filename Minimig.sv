@@ -335,8 +335,6 @@ wire cdtv_mode;
 
 wire [15:0] cdtv_din_w;
 wire        cdtv_selack_w;
-wire  [5:0] cdtv_ac_rom_addr_w;
-wire  [7:0] cdtv_ac_rom_byte_w;
 
 wire        cdtv_cmd_in_pending_w;
 wire  [7:0] cdtv_cmd_in_byte_w;
@@ -418,8 +416,6 @@ cpu_wrapper cpu_wrapper
 
 	.cdtv_din           (cdtv_din_w           ),
 	.cdtv_selack        (cdtv_selack_w        ),
-	.cdtv_ac_rom_addr   (cdtv_ac_rom_addr_w   ),
-	.cdtv_ac_rom_byte   (cdtv_ac_rom_byte_w   ),
 
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
@@ -860,8 +856,6 @@ minimig minimig
 
 	.cdtv_din            (cdtv_din_w           ),
 	.cdtv_selack         (cdtv_selack_w        ),
-	.cdtv_ac_rom_addr    (cdtv_ac_rom_addr_w   ),
-	.cdtv_ac_rom_byte    (cdtv_ac_rom_byte_w   ),
 
 	.cdtv_cmd_in_pop     (cdtv_cmd_in_pop_w    ),
 	.cdtv_cmd_in_pending (cdtv_cmd_in_pending_w),

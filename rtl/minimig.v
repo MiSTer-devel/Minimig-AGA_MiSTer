@@ -256,8 +256,6 @@ module minimig
 
 	output [15:0] cdtv_din,
 	output        cdtv_selack,
-	output  [5:0] cdtv_ac_rom_addr,
-	input   [7:0] cdtv_ac_rom_byte,
 
 	input         cdtv_cmd_in_pop,
 	output        cdtv_cmd_in_pending,
@@ -1021,8 +1019,6 @@ cdtv_bridge cdtv_bridge_inst
 	.hwr             (cpu_hwr              ),
 	.lwr             (cpu_lwr              ),
 
-	.ac_rom_byte     (cdtv_ac_rom_byte     ),
-	.ac_rom_addr     (cdtv_ac_rom_addr     ),
 
 	.cdtv_irq        (cdtv_irq_w           ),
 	.cdda_volume     (cdtv_cdda_volume     ),
