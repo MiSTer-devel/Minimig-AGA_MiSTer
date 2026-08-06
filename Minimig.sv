@@ -320,6 +320,7 @@ wire        zram_sel  = |ram_addr[28:26];
 wire        ramshared;
 
 wire [7:0] toccata_base;
+wire [7:0] cdtv_base;
 wire toccata_ena;
 
 wire a2065_ena;
@@ -378,6 +379,7 @@ cpu_wrapper cpu_wrapper
 	.a2065_ena    (a2065_ena       ),
 	.a2065_base   (a2065_base      ),
 	.toccata_base (toccata_base    ),
+	.cdtv_base    (cdtv_base       ),
 	.cdtv_mode    (cdtv_mode       ),
 
 	.cdtv_din           (cdtv_din_w           ),
@@ -813,6 +815,7 @@ minimig minimig
 	//toccata soundcard
 	.toccata_ena  (toccata_ena),
 	.toccata_base (toccata_base),
+	.cdtv_base    (cdtv_base),
 	.a2065_ena  (a2065_ena),
 	.a2065_base (a2065_base),
 	.toccata_aud_left (toccata_aud_left),

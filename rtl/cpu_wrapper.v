@@ -73,6 +73,7 @@ module cpu_wrapper
 	output reg  [7:0] a2065_base,
 
 	input             cdtv_mode,
+	output reg  [7:0] cdtv_base,
 
 	input      [15:0] cdtv_din,
 	input             cdtv_selack,
@@ -402,7 +403,6 @@ reg       ac_a2065;
 reg       ac_cdtv;
 reg [2:0] ac_memcard;
 reg [3:0] autocfg_data;
-reg [7:0] cdtv_base;
 
 
 always @(*) begin

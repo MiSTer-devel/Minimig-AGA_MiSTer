@@ -80,6 +80,7 @@ module gary
 	input   [7:0] a2065_base,
 	input         toccata_ena,
 	input   [7:0] toccata_base,
+	input   [7:0] cdtv_base,
 
 	input         cdtv_mode,
 
@@ -196,7 +197,7 @@ assign sel_bank_1 = cpu_address_in[23:21]==3'b001;
 assign sel_toccata = toccata_ena && cpu_address_in[23:16]==toccata_base; // Nominally $e9xxxx
 assign sel_a2065   = a2065_ena && cpu_address_in[23:16]==a2065_base;
 
-assign sel_cdtv       = cdtv_mode && cpu_address_in[23:16]==8'hE9;
+assign sel_cdtv       = cdtv_mode && cpu_address_in[23:16]==cdtv_base;
 assign sel_cdtv_nvram = cdtv_mode && cpu_address_in[23:15]==9'b1101_1100_1;
 
 //data bus slow down

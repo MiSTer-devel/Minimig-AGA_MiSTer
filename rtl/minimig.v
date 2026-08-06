@@ -245,6 +245,7 @@ module minimig
 	// Toccata audio
 	input         toccata_ena,
 	input   [7:0] toccata_base,
+	input   [7:0] cdtv_base,
 	output [15:0] toccata_aud_left,
 	output [15:0] toccata_aud_right,
 
@@ -850,6 +851,7 @@ gary GARY1
 	.hdc_ena(ide_ena & ~ide_fast), // Gayle decoding enable	
 	.toccata_ena(toccata_ena),
 	.toccata_base(toccata_base),
+	.cdtv_base(cdtv_base),
 	.a2065_ena(a2065_ena),
 	.a2065_base(a2065_base),
 	.cdtv_mode(chipset_config[5]),
