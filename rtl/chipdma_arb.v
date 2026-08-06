@@ -79,7 +79,6 @@ reg        ak_we;
 reg        ak_baddr0;
 
 reg        ak_is_ddr;
-reg [28:1] ak_ddr_addr;
 
 reg        dma_ddr_cs_r;
 reg [28:1] dma_ddr_addr_r;
@@ -121,7 +120,6 @@ assign cdtv_dma_rbyte  = 8'h00;
 assign cdtv_dma_ack    = cdtv_ack_r;
 
 wire minimig_idle = chip_in_dma & chip_in_rw;
-wire minimig_busy = ~minimig_idle;
 
 wire any_req       = akiko_dma_req_q | cdtv_dma_req_q;
 wire arming_is_cdtv = ~akiko_dma_req_q & cdtv_dma_req_q;
@@ -216,7 +214,6 @@ always @(posedge clk) begin
 				ak_we          <= live_we;
 				ak_baddr0      <= live_baddr[0];
 				ak_is_ddr      <= router_zram_sel;
-				ak_ddr_addr    <= router_ramaddr;
 				slot_cnt       <= 3'd0;
 				active_is_cdtv <= arming_is_cdtv;
 				if (router_zram_sel) begin
