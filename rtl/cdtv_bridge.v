@@ -30,26 +30,21 @@ module cdtv_bridge
 
 	output      [9:0] cdda_volume,
 
-	output            cmd_in_pending,
-	output      [7:0] cmd_in_byte,
-	input             cmd_in_pop,
-
-	input             cmd_out_push,
-	input       [7:0] cmd_out_data,
-
-	input             sec_byte_push,
-	input       [7:0] sec_byte_data,
+	input             uio_cs,
+	input             uio_cs_sec,
+	input             uio_cs_stch,
+	input             uio_wr,
+	input             uio_rd,
+	input       [7:0] uio_din,
+	output     [15:0] uio_dout,
+	output            uio_req,
 
 	input             subq_push,
 	input       [7:0] subq_byte,
 
-	input             stch_pulse,
 	input             sten_pulse_ext,
 	input             scor_pulse,
 	input             sbcp_pulse,
-
-	output reg        stch_ack,
-	input             stch_ack_clr,
 
 	output            cdtv_dma_req,
 	output            cdtv_dma_we,
@@ -227,8 +222,20 @@ assign tpi_int2  = tp_ilatch[5];
 assign cdtv_irq    = dmac_int2 | tpi_int2;
 assign cdda_volume = cd_volume;
 
-assign cmd_in_pending = ~cmd_in_empty;
-assign cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
+wire       cmd_in_pending = ~cmd_in_empty;
+wire [7:0] cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
+
+wire       cmd_in_pop     = uio_rd & uio_cs;
+wire       cmd_out_push   = uio_wr & uio_cs;
+wire [7:0] cmd_out_data   = uio_din;
+wire       sec_byte_push  = uio_wr & uio_cs_sec;
+wire [7:0] sec_byte_data  = uio_din;
+wire       stch_pulse     = uio_wr & uio_cs_stch;
+wire       stch_ack_clr   = uio_rd & uio_cs_stch;
+
+reg        stch_ack;
+assign uio_dout = uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
+assign uio_req  = cmd_in_pending;
 
 assign cdtv_dma_req   = drain_req_r;
 assign cdtv_dma_we    = 1'b1;
