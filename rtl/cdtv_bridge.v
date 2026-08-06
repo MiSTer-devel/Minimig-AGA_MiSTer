@@ -68,11 +68,8 @@ reg  [7:0] istr;
 reg  [7:0] cntr;
 reg [31:0] wtc;
 reg [31:0] acr;
-reg [15:0] dawr;
 reg        dmac_dma;
-reg        dma_finished;
 reg        prst_pulse;
-reg        fifo_touch;
 reg        dma_complete_pulse;
 reg        dma_complete_armed;
 
@@ -86,7 +83,6 @@ reg [23:0] drain_baddr;
 reg  [7:0] drain_wbyte;
 reg        drain_req_r;
 
-reg [7:0] tp_a;
 reg [7:0] tp_b;
 reg [7:0] tp_ad;
 reg [7:0] tp_bd;
@@ -132,7 +128,6 @@ wire  [4:0] tpi_edges;
 wire  [4:0] masked_active;
 wire        cmd_in_empty;
 wire        cmd_out_empty;
-wire        sec_empty;
 wire        dmac_int2;
 wire        tpi_int2;
 wire [15:0] byte_off;
@@ -150,8 +145,6 @@ wire sel_acr_b0_eb  = sel && (byte_off == 16'h0084);
 wire sel_acr_b1_ob  = sel && (byte_off == 16'h0084);
 wire sel_acr_b2_eb  = sel && (byte_off == 16'h0086);
 wire sel_acr_b3_ob  = sel && (byte_off == 16'h0086);
-wire sel_dawr_h_eb  = sel && (byte_off == 16'h008E);
-wire sel_dawr_l_ob  = sel && (byte_off == 16'h008E);
 wire sel_cmda_ob    = sel && (byte_off == 16'h00A0);
 wire sel_xt_a3_ob   = sel && (byte_off == 16'h00A2);
 wire sel_xt_a5_ob   = sel && (byte_off == 16'h00A4);
@@ -164,15 +157,6 @@ wire sel_dma_stop   = sel && (byte_off == 16'h00E2);
 wire sel_istr_clr   = sel && (byte_off == 16'h00E4);
 wire sel_fifo_tog   = sel && (byte_off == 16'h00E8);
 
-wire sel_istr_b   = sel_istr_ob;
-wire sel_cntr_b   = sel_cntr_ob;
-wire sel_cmda_b   = sel_cmda_ob;
-wire sel_wtc_w_hi = sel_wtc_b0_eb;
-wire sel_wtc_w_lo = sel_wtc_b2_eb;
-wire sel_acr_w_hi = sel_acr_b0_eb;
-wire sel_acr_w_lo = sel_acr_b2_eb;
-wire sel_dawr_w   = sel_dawr_h_eb;
-wire sel_ac_rom   = sel_ac_rom_w;
 wire sel_xtfloor  = sel_xt_a3_ob | sel_xt_a5_ob | sel_xt_a7_ob;
 
 wire [5:0] ac_rom_addr = byte_off[6:1];
@@ -212,7 +196,6 @@ assign masked_active = tp_ilatch[4:0] & tp_imask[4:0];
 
 assign cmd_in_empty  = (cmd_in_wr_p  == cmd_in_rd_p);
 assign cmd_out_empty = (cmd_out_wr_p == cmd_out_rd_p);
-assign sec_empty     = (sec_wr_p     == sec_rd_p);
 
 wire [12:0] sec_avail = sec_wr_p - sec_rd_p;
 
@@ -246,7 +229,6 @@ wire drain_ack_u    = (drain_state == DRAIN_PUSH_U) && cdtv_dma_ack;
 wire drain_ack_l    = (drain_state == DRAIN_PUSH_L) && cdtv_dma_ack;
 wire drain_ack_pop  = drain_ack_u | drain_ack_l;
 wire drain_ack_word = drain_ack_l;
-wire drain_ack_now  = drain_ack_pop;
 
 assign selack = sel;
 assign dout   = {rd_byte_eb, rd_byte_ob};
@@ -275,17 +257,13 @@ always @(posedge clk) begin
 		cntr               <= 8'h00;
 		wtc                <= 32'h0;
 		acr                <= 32'h0;
-		dawr               <= 16'h0;
 		dmac_dma           <= 1'b0;
-		dma_finished       <= 1'b0;
 		prst_pulse         <= 1'b0;
-		fifo_touch         <= 1'b0;
 		dma_complete_pulse <= 1'b0;
 		dma_complete_armed <= 1'b0;
 		sel_istr_ob_rd_d   <= 1'b0;
 	end else begin
 		prst_pulse         <= 1'b0;
-		fifo_touch         <= 1'b0;
 		dma_complete_pulse <= 1'b0;
 		sel_istr_ob_rd_d   <= sel_istr_ob && rd;
 
@@ -300,7 +278,6 @@ always @(posedge clk) begin
 
 		if (sel_fifo_tog && (rd || hwr || lwr)) begin
 			istr       <= istr | (8'h01 << ISTR_FE_FLG_B);
-			fifo_touch <= 1'b1;
 		end
 
 		if (sel_wtc_b0_eb && hwr) wtc[31:24] <= din[15:8];
@@ -313,8 +290,6 @@ always @(posedge clk) begin
 		if (sel_acr_b2_eb && hwr) acr[15:8]  <= din[15:8];
 		if (sel_acr_b3_ob && lwr) acr[7:1]   <= din[7:1];
 
-		if (sel_dawr_h_eb && hwr) dawr[15:8] <= din[15:8];
-		if (sel_dawr_l_ob && lwr) dawr[7:0]  <= din[7:0];
 
 		if (sel_dma_start && (hwr || lwr)) begin
 			dmac_dma           <= 1'b1;
@@ -322,7 +297,6 @@ always @(posedge clk) begin
 		end
 		if (sel_dma_stop  && (hwr || lwr)) begin
 			dmac_dma           <= 1'b0;
-			dma_finished       <= 1'b0;
 			dma_complete_armed <= 1'b0;
 		end
 
@@ -339,7 +313,6 @@ always @(posedge clk) begin
 		if (dma_complete_pulse && cntr[CNTR_INTEN_BIT] && cntr[CNTR_TCEN_BIT]) begin
 			istr         <= istr | (8'h01 << ISTR_E_INT_BIT)
 			                     | (8'h01 << ISTR_INT_P_BIT);
-			dma_finished <= 1'b0;
 		end
 	end
 end
@@ -428,7 +401,6 @@ wire   air_rd_falling = !in_air_rd && in_air_rd_d;
 
 always @(posedge clk) begin
 	if (reset) begin
-		tp_a        <= 8'h00;
 		tp_b        <= 8'h00;
 		tp_ad       <= 8'h00;
 		tp_bd       <= 8'h00;
@@ -463,7 +435,6 @@ always @(posedge clk) begin
 
 		if (in_tpi_range && (hwr || lwr)) begin
 			case (tpi_reg)
-				3'd0: tp_a <= tpi_data;
 				3'd1: begin
 					tp_b <= tpi_data;
 					if (tpi_data[6] && !tp_b_prev_6)
