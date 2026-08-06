@@ -2,32 +2,31 @@
 
 module memory_router
 (
-	input      [31:0] cpu_addr,
+	input  [31:0] cpu_addr,
 
-	input             cchip,
-	input             ckick,
-	input             wr,
+	input         cchip,
+	input         ckick,
+	input         wr,
 
-	input             bootrom,
+	input         bootrom,
 
-	input             z2ram_ena,
-	input       [4:0] z3ram_base0,
-	input             z3ram_ena0,
-	input       [3:0] z3ram_base1,
-	input             z3ram_ena1,
+	input         z2ram_ena,
+	input   [4:0] z3ram_base0,
+	input         z3ram_ena0,
+	input   [3:0] z3ram_base1,
+	input         z3ram_ena1,
 
-	output            sel_chipram,
-	output            sel_kickram,
-	output            sel_kicklower,
-	output            sel_z2ram,
-	output            sel_z3ram0,
-	output            sel_z3ram1,
-	output            sel_zram,
-	output            sel_dd,
-	output            sel_rtg,
+	output        sel_chipram,
+	output        sel_kickram,
+	output        sel_kicklower,
+	output        sel_z2ram,
+	output        sel_z3ram0,
+	output        sel_z3ram1,
+	output        sel_zram,
+	output        sel_dd,
+	output        sel_rtg,
 
-	output     [28:1] ramaddr,
-	output            zram_sel
+	output [28:1] ramaddr
 );
 
 assign sel_z3ram0   = (cpu_addr[31:27] == z3ram_base0) && z3ram_ena0;
@@ -60,7 +59,5 @@ assign ramaddr[22:19] = {4{sel_dd}} | cpu_addr[22:19];
 assign ramaddr[18]    =    sel_dd   | (sel_kicklower & bootrom) | cpu_addr[18];
 assign ramaddr[17:16] = {2{sel_dd}} | cpu_addr[17:16];
 assign ramaddr[15:1]  = cpu_addr[15:1];
-
-assign zram_sel = |ramaddr[28:26];
 
 endmodule

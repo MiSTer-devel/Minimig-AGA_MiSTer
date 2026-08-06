@@ -82,23 +82,17 @@ module cpu_wrapper
 	output reg  [3:0] cacr,
 	output reg [31:0] nmi_addr,
 
-	output            z2ram_ena_out,
-	output      [4:0] z3ram_base0_out,
-	output            z3ram_ena0_out,
-	output      [3:0] z3ram_base1_out,
-	output            z3ram_ena1_out,
+	output reg        z2ram_ena,
+	output reg  [4:0] z3ram_base0,
+	output reg        z3ram_ena0,
+	output reg  [3:0] z3ram_base1,
+	output reg        z3ram_ena1,
 
 	output            dcache_sw_en
 );
 
 wire dcache_sw_en_p;
 assign dcache_sw_en = cpucfg[1] ? dcache_sw_en_p : 1'b1;
-
-assign z2ram_ena_out   = z2ram_ena;
-assign z3ram_base0_out = z3ram_base0;
-assign z3ram_ena0_out  = z3ram_ena0;
-assign z3ram_base1_out = z3ram_base1;
-assign z3ram_ena1_out  = z3ram_ena1;
 
 assign ramsel       = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
 assign ramshared    = sel_dd;
@@ -108,10 +102,6 @@ always @(posedge clk) nmi_addr <= vbr + 32'h7c;
 
 wire sel_chipram;
 wire sel_kickram;
-wire sel_kicklower;
-wire sel_z2ram;
-wire sel_z3ram0;
-wire sel_z3ram1;
 wire sel_zram;
 wire sel_dd;
 wire sel_rtg;
@@ -130,15 +120,10 @@ memory_router u_memory_router
 	.z3ram_ena1    (z3ram_ena1    ),
 	.sel_chipram   (sel_chipram   ),
 	.sel_kickram   (sel_kickram   ),
-	.sel_kicklower (sel_kicklower ),
-	.sel_z2ram     (sel_z2ram     ),
-	.sel_z3ram0    (sel_z3ram0    ),
-	.sel_z3ram1    (sel_z3ram1    ),
 	.sel_zram      (sel_zram      ),
 	.sel_dd        (sel_dd        ),
 	.sel_rtg       (sel_rtg       ),
-	.ramaddr       (ramaddr       ),
-	.zram_sel      (              )
+	.ramaddr       (ramaddr       )
 );
 
 
@@ -507,11 +492,6 @@ end
 
 wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv); //$E80000 - $E8FFFF
 
-reg       z2ram_ena;
-reg [4:0] z3ram_base0;
-reg [3:0] z3ram_base1;
-reg       z3ram_ena0;
-reg       z3ram_ena1;
 always @(posedge clk) begin
 	reg old_uds;
 	old_uds <= chip_uds;

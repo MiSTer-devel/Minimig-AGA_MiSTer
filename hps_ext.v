@@ -60,7 +60,6 @@ module hps_ext
 	output reg        cdda_wr,
 	output reg [15:0] cdda_dout,
 
-	//
 	input      [15:0] akiko_din,
 	output reg [15:0] akiko_dout,
 	output reg        akiko_wr,

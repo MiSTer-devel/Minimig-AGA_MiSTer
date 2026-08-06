@@ -136,14 +136,14 @@ assign akiko_arm = arm_now & ~arming_is_cdtv;
 
 wire arb_drive = arb_request & minimig_idle;
 
-wire [24:1] ak_addr_w    = arm_now ? {1'b0, live_baddr[23:1]}            : ak_addr;
-wire        ak_l_w       = arm_now ? ~live_baddr[0]                       : ak_l;
-wire        ak_u_w       = arm_now ?  live_baddr[0]                       : ak_u;
-wire        ak_rw_w      = arm_now ? ~live_we                             : ak_rw;
-wire [15:0] ak_wr_data_w = arm_now ? {live_wbyte, live_wbyte}             : ak_wr_data;
+wire [24:1] ak_addr_w    = arm_now ? {1'b0, live_baddr[23:1]} : ak_addr;
+wire        ak_l_w       = arm_now ? ~live_baddr[0]           : ak_l;
+wire        ak_u_w       = arm_now ?  live_baddr[0]           : ak_u;
+wire        ak_rw_w      = arm_now ? ~live_we                 : ak_rw;
+wire [15:0] ak_wr_data_w = arm_now ? {live_wbyte, live_wbyte} : ak_wr_data;
 
 wire [28:1] router_ramaddr;
-wire        router_zram_sel;
+wire        router_zram_sel = |router_ramaddr[28:26];
 
 memory_router u_router
 (
@@ -157,22 +157,12 @@ memory_router u_router
 	.z3ram_ena0    (z3ram_ena0),
 	.z3ram_base1   (z3ram_base1),
 	.z3ram_ena1    (z3ram_ena1),
-	.sel_chipram   (),
-	.sel_kickram   (),
-	.sel_kicklower (),
-	.sel_z2ram     (),
-	.sel_z3ram0    (),
-	.sel_z3ram1    (),
-	.sel_zram      (),
-	.sel_dd        (),
-	.sel_rtg       (),
-	.ramaddr       (router_ramaddr),
-	.zram_sel      (router_zram_sel)
+	.ramaddr       (router_ramaddr)
 );
 
-wire        is_ddr_now   = arm_now ? router_zram_sel : ak_is_ddr;
+wire    is_ddr_now   = arm_now ? router_zram_sel : ak_is_ddr;
 
-wire arb_drive_chip = arb_drive & ~is_ddr_now;
+wire arb_drive_chip  = arb_drive & ~is_ddr_now;
 
 assign chip_out_addr = arb_drive_chip ? ak_addr_w    : chip_in_addr;
 assign chip_out_l    = arb_drive_chip ? ak_l_w       : chip_in_l;
