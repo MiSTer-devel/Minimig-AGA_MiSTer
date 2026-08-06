@@ -81,7 +81,9 @@ module hps_ext
 	output reg        cdtv_cs,
 	output reg        cdtv_cs_sec,
 	output reg        cdtv_cs_stch,
-	input             cdtv_req
+	output reg        cdtv_cs_nvr,
+	input             cdtv_req,
+	input             cdtv_nvr_dirty
 );
 
 assign EXT_BUS[15:0] = io_fpga ? fpga_dout : io_dout;
@@ -132,6 +134,7 @@ always@(posedge clk_sys) begin : main_proc
 		cdtv_cs <= 0;
 		cdtv_cs_sec <= 0;
 		cdtv_cs_stch <= 0;
+		cdtv_cs_nvr <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -154,12 +157,13 @@ always@(posedge clk_sys) begin : main_proc
 			cdtv_cs          <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] && !io_din[5];
 			cdtv_cs_sec      <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] &&  io_din[5];
 			cdtv_cs_stch     <= (io_din[15:9] == 7'b1111100) && !io_din[7] &&  io_din[6];
+			cdtv_cs_nvr      <= (io_din[15:9] == 7'b1111100) &&  io_din[7];
 		end
 
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
-			if(io_din == 'h63) io_dout <= {4'hE, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
+			if(io_din == 'h63) io_dout <= {3'b000, cdtv_nvr_dirty, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
 			if(io_din == UIO_GET_VMODE) io_dout <= 1;
 		end else begin
 			case(cmd)
@@ -226,7 +230,7 @@ always@(posedge clk_sys) begin : main_proc
 						cdda_wr  <= cdda_cs;
 						ide_wr   <= ide_cs;
 						akiko_wr <= akiko_cs;
-						cdtv_wr  <= cdtv_cs | cdtv_cs_stch | cdtv_cs_sec;
+						cdtv_wr  <= cdtv_cs | cdtv_cs_stch | cdtv_cs_sec | cdtv_cs_nvr;
 					end
 				end
 
@@ -239,7 +243,7 @@ always@(posedge clk_sys) begin : main_proc
 						io_dout  <= akiko_din;
 						akiko_rd <= 1;
 					end
-					if(byte_cnt >= 3 && (cdtv_cs | cdtv_cs_stch)) begin
+					if(byte_cnt >= 3 && (cdtv_cs | cdtv_cs_stch | cdtv_cs_nvr)) begin
 						io_dout <= cdtv_din;
 						cdtv_rd <= 1;
 					end

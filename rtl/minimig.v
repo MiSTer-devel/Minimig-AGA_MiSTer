@@ -261,9 +261,10 @@ module minimig
 	input         cdtv_cs,
 	input         cdtv_cs_sec,
 	input         cdtv_cs_stch,
+	input         cdtv_cs_nvr,
 	input         cdtv_wr,
 	input         cdtv_rd,
-	input   [7:0] cdtv_uio_din,
+	input  [15:0] cdtv_uio_din,
 	output [15:0] cdtv_uio_dout,
 	output        cdtv_req,
 	input         cdtv_subq_push,
@@ -278,13 +279,7 @@ module minimig
 	output  [7:0] cdtv_dma_wbyte,
 	input         cdtv_dma_ack,
 
-	input  [13:0] cdtv_nvr_load_addr,
-	input   [7:0] cdtv_nvr_load_din,
-	input         cdtv_nvr_load_we,
-	input  [13:0] cdtv_nvr_save_addr,
-	output  [7:0] cdtv_nvr_save_dout,
 	output        cdtv_nvr_dirty,
-	input         cdtv_nvr_clear_dirty,
 
 	output  [9:0] cdtv_cdda_volume,
 
@@ -377,6 +372,11 @@ wire        sel_cdtv_nvram;
 wire [15:0] cdtv_bridge_dout;
 wire        cdtv_bridge_selack;
 wire [15:0] cdtv_nvr_dout;
+wire [13:0] cdtv_nvr_addr;
+wire  [7:0] cdtv_nvr_load_din;
+wire        cdtv_nvr_load_we;
+wire  [7:0] cdtv_nvr_save_dout;
+wire        cdtv_nvr_clear_dirty;
 wire        cdtv_irq_w;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
@@ -1026,11 +1026,18 @@ cdtv_bridge cdtv_bridge_inst
 	.uio_cs          (cdtv_cs              ),
 	.uio_cs_sec      (cdtv_cs_sec          ),
 	.uio_cs_stch     (cdtv_cs_stch         ),
+	.uio_cs_nvr      (cdtv_cs_nvr          ),
 	.uio_wr          (cdtv_wr              ),
 	.uio_rd          (cdtv_rd              ),
 	.uio_din         (cdtv_uio_din         ),
 	.uio_dout        (cdtv_uio_dout        ),
 	.uio_req         (cdtv_req             ),
+
+	.nvr_addr        (cdtv_nvr_addr        ),
+	.nvr_dout        (cdtv_nvr_save_dout   ),
+	.nvr_load_din    (cdtv_nvr_load_din    ),
+	.nvr_load_we     (cdtv_nvr_load_we     ),
+	.nvr_clear_dirty (cdtv_nvr_clear_dirty ),
 
 	.subq_push       (cdtv_subq_push       ),
 	.subq_byte       (cdtv_subq_byte       ),
@@ -1059,11 +1066,11 @@ cdtv_nvram cdtv_nvram_inst
 	.hwr             (cpu_hwr              ),
 	.lwr             (cpu_lwr              ),
 
-	.hps_load_addr   (cdtv_nvr_load_addr   ),
+	.hps_load_addr   (cdtv_nvr_addr        ),
 	.hps_load_din    (cdtv_nvr_load_din    ),
 	.hps_load_we     (cdtv_nvr_load_we     ),
 
-	.hps_save_addr   (cdtv_nvr_save_addr   ),
+	.hps_save_addr   (cdtv_nvr_addr        ),
 	.hps_save_dout   (cdtv_nvr_save_dout   ),
 
 	.dirty           (cdtv_nvr_dirty       ),

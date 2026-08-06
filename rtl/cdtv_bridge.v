@@ -33,11 +33,18 @@ module cdtv_bridge
 	input             uio_cs,
 	input             uio_cs_sec,
 	input             uio_cs_stch,
+	input             uio_cs_nvr,
 	input             uio_wr,
 	input             uio_rd,
-	input       [7:0] uio_din,
+	input      [15:0] uio_din,
 	output     [15:0] uio_dout,
 	output            uio_req,
+
+	output     [13:0] nvr_addr,
+	input       [7:0] nvr_dout,
+	output      [7:0] nvr_load_din,
+	output            nvr_load_we,
+	output            nvr_clear_dirty,
 
 	input             subq_push,
 	input       [7:0] subq_byte,
@@ -210,14 +217,46 @@ wire [7:0] cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
 
 wire       cmd_in_pop     = uio_rd & uio_cs;
 wire       cmd_out_push   = uio_wr & uio_cs;
-wire [7:0] cmd_out_data   = uio_din;
+wire [7:0] cmd_out_data   = uio_din[7:0];
 wire       sec_byte_push  = uio_wr & uio_cs_sec;
-wire [7:0] sec_byte_data  = uio_din;
+wire [7:0] sec_byte_data  = uio_din[7:0];
 wire       stch_pulse     = uio_wr & uio_cs_stch;
 wire       stch_ack_clr   = uio_rd & uio_cs_stch;
 
 reg        stch_ack;
-assign uio_dout = uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
+
+reg [13:0] nvr_addr_cnt;
+reg        cs_nvr_d;
+reg        hi_nvr;
+reg        saw_nvr_read;
+wire       wr_nvr = uio_wr & uio_cs_nvr;
+
+always @(posedge clk) begin
+	if (reset) begin
+		nvr_addr_cnt <= 14'd0;
+		cs_nvr_d     <= 1'b0;
+		hi_nvr       <= 1'b0;
+		saw_nvr_read <= 1'b0;
+	end else begin
+		hi_nvr   <= wr_nvr;
+		cs_nvr_d <= uio_cs_nvr;
+		if (uio_cs_nvr & ~cs_nvr_d) begin
+			nvr_addr_cnt <= 14'd0;
+			saw_nvr_read <= 1'b0;
+		end else if ((uio_rd & uio_cs_nvr) | wr_nvr | hi_nvr) begin
+			nvr_addr_cnt <= nvr_addr_cnt + 14'd1;
+		end
+		if (uio_rd & uio_cs_nvr) saw_nvr_read <= 1'b1;
+	end
+end
+
+assign nvr_addr        = nvr_addr_cnt;
+assign nvr_load_we     = wr_nvr | hi_nvr;
+assign nvr_load_din    = hi_nvr ? uio_din[15:8] : uio_din[7:0];
+assign nvr_clear_dirty = cs_nvr_d & ~uio_cs_nvr & saw_nvr_read;
+
+assign uio_dout = uio_cs_nvr  ? {8'h00, nvr_dout} :
+                  uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
 assign uio_req  = cmd_in_pending;
 
 assign cdtv_dma_req   = drain_req_r;

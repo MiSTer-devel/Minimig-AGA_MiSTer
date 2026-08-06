@@ -126,6 +126,8 @@ wire        cdtv_rd;
 wire        cdtv_cs;
 wire        cdtv_cs_sec;
 wire        cdtv_cs_stch;
+wire        cdtv_cs_nvr;
+wire        cdtv_nvr_dirty;
 wire        cdtv_req;
 
 wire        akiko_dma_req_w;
@@ -333,8 +335,6 @@ wire [15:0] cdtv_din_w;
 wire        cdtv_selack_w;
 
 wire  [9:0] cdtv_cdda_volume_w;
-wire        cdtv_nvr_dirty_w;
-wire  [7:0] cdtv_nvr_save_dout_w;
 
 wire        cdtv_dma_req_w;
 wire        cdtv_dma_we_w;
@@ -829,9 +829,10 @@ minimig minimig
 	.cdtv_cs             (cdtv_cs              ),
 	.cdtv_cs_sec         (cdtv_cs_sec          ),
 	.cdtv_cs_stch        (cdtv_cs_stch         ),
+	.cdtv_cs_nvr         (cdtv_cs_nvr          ),
 	.cdtv_wr             (cdtv_wr              ),
 	.cdtv_rd             (cdtv_rd              ),
-	.cdtv_uio_din        (cdtv_dout[7:0]       ),
+	.cdtv_uio_din        (cdtv_dout            ),
 	.cdtv_uio_dout       (cdtv_din             ),
 	.cdtv_req            (cdtv_req             ),
 	.cdtv_subq_push      (1'b0                 ),
@@ -846,13 +847,7 @@ minimig minimig
 	.cdtv_dma_wbyte      (cdtv_dma_wbyte_w     ),
 	.cdtv_dma_ack        (cdtv_dma_ack_w       ),
 
-	.cdtv_nvr_load_addr  (14'h0                ),
-	.cdtv_nvr_load_din   (8'h0                 ),
-	.cdtv_nvr_load_we    (1'b0                 ),
-	.cdtv_nvr_save_addr  (14'h0                ),
-	.cdtv_nvr_save_dout  (cdtv_nvr_save_dout_w ),
-	.cdtv_nvr_dirty      (cdtv_nvr_dirty_w     ),
-	.cdtv_nvr_clear_dirty(1'b0                 ),
+	.cdtv_nvr_dirty      (cdtv_nvr_dirty       ),
 
 	.cdtv_cdda_volume    (cdtv_cdda_volume_w   ),
 

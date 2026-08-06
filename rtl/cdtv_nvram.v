@@ -93,7 +93,56 @@ defparam
 	nvram_inst.width_b                         = 16,
 	nvram_inst.width_byteena_a                 = 2;
 
-assign hps_save_dout = 8'h00;
+wire [15:0] save_q;
+
+altsyncram nvram_save_inst (
+	.address_a      (write_addr),
+	.clock0         (clk),
+	.data_a         (write_data),
+	.byteena_a      (write_byteena),
+	.wren_a         (write_we),
+	.address_b      (hps_save_addr[13:1]),
+	.q_b            (save_q),
+	.aclr0          (1'b0),
+	.aclr1          (1'b0),
+	.addressstall_a (1'b0),
+	.addressstall_b (1'b0),
+	.byteena_b      (1'b1),
+	.clock1         (1'b1),
+	.clocken0       (1'b1),
+	.clocken1       (1'b1),
+	.clocken2       (1'b1),
+	.clocken3       (1'b1),
+	.data_b         (16'h0000),
+	.eccstatus      (),
+	.q_a            (),
+	.rden_a         (1'b1),
+	.rden_b         (1'b1),
+	.wren_b         (1'b0)
+);
+defparam
+	nvram_save_inst.address_aclr_b                  = "NONE",
+	nvram_save_inst.address_reg_b                   = "CLOCK0",
+	nvram_save_inst.clock_enable_input_a            = "BYPASS",
+	nvram_save_inst.clock_enable_input_b            = "BYPASS",
+	nvram_save_inst.clock_enable_output_b           = "BYPASS",
+	nvram_save_inst.intended_device_family          = "Cyclone V",
+	nvram_save_inst.lpm_type                        = "altsyncram",
+	nvram_save_inst.numwords_a                      = 8192,
+	nvram_save_inst.numwords_b                      = 8192,
+	nvram_save_inst.operation_mode                  = "DUAL_PORT",
+	nvram_save_inst.outdata_aclr_b                  = "NONE",
+	nvram_save_inst.outdata_reg_b                   = "UNREGISTERED",
+	nvram_save_inst.power_up_uninitialized          = "FALSE",
+	nvram_save_inst.ram_block_type                  = "M10K",
+	nvram_save_inst.read_during_write_mode_mixed_ports = "OLD_DATA",
+	nvram_save_inst.widthad_a                       = 13,
+	nvram_save_inst.widthad_b                       = 13,
+	nvram_save_inst.width_a                         = 16,
+	nvram_save_inst.width_b                         = 16,
+	nvram_save_inst.width_byteena_a                 = 2;
+
+assign hps_save_dout = hps_save_addr[0] ? save_q[7:0] : save_q[15:8];
 
 always @(posedge clk) begin
 	if (sel & (hwr | lwr)) dirty <= 1'b1;
