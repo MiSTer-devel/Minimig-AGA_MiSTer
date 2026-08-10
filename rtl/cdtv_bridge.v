@@ -118,7 +118,7 @@ reg  [7:0] tpi_rd;
 
 reg        sten_pulse_int;
 
-localparam [19:0] SCOR_PERIOD = 20'd573750;
+localparam [19:0] SCOR_PERIOD = 20'd382500;
 reg [19:0] scor_count;
 reg        scor_pulse_int;
 
@@ -205,7 +205,7 @@ assign istr_any_set = |istr[7:1];
 assign istr_rd      = istr | (istr_any_set ? (8'h01 << ISTR_INT_P_BIT) : 8'h00);
 
 assign sten_any  = sten_pulse_ext | sten_pulse_int;
-assign tpi_edges = {sten_any, sten_any, stch_pulse | prst_pulse, scor_pulse | scor_pulse_int, sbcp_pulse};
+assign tpi_edges = {1'b0, sten_any, stch_pulse | prst_pulse, scor_pulse | scor_pulse_int, sbcp_pulse};
 assign masked_active = tp_ilatch[4:0] & tp_imask[4:0];
 
 assign cmd_in_empty  = (cmd_in_wr_p  == cmd_in_rd_p);
