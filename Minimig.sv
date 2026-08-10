@@ -332,6 +332,7 @@ wire  [7:0] cdtv_base;
 wire [15:0] cdtv_din_w;
 wire        cdtv_selack_w;
 wire  [9:0] cdtv_cdda_volume;
+wire        cdtv_cdda_volume_valid;
 wire        cdtv_dma_req;
 wire        cdtv_dma_we;
 wire [23:0] cdtv_dma_baddr;
@@ -847,6 +848,7 @@ minimig minimig
 	.cdtv_card_dirty     (cdtv_card_dirty      ),
 
 	.cdtv_cdda_volume    (cdtv_cdda_volume     ),
+	.cdtv_cdda_volume_valid(cdtv_cdda_volume_valid),
 
 	//user i/o
 	.cpucfg       (cpucfg           ), // CPU config
@@ -1302,12 +1304,24 @@ cdda #(28375160) cdda
 	.AUDIO_R(cdda_r)
 );
 
+wire [10:0] cdda_gain = (cdtv_mode && cdtv_cdda_volume_valid) ? {1'b0, cdtv_cdda_volume} : 11'd1023;
+
+reg signed [15:0] cdda_sl, cdda_sr;
+always @(posedge CLK_AUDIO) begin
+	reg signed [26:0] pl, pr;
+
+	pl = $signed(cdda_l) * $signed(cdda_gain);
+	pr = $signed(cdda_r) * $signed(cdda_gain);
+	cdda_sl <= pl[25:10];
+	cdda_sr <= pr[25:10];
+end
+
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
 	reg [16:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15],aud_l} + {toccata_aud_left[15],toccata_aud_left} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_l[15], cdda_l};
-	tmp_r <= {aud_r[15],aud_r} + {toccata_aud_right[15],toccata_aud_right} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_r[15], cdda_r};
+	tmp_l <= {aud_l[15],aud_l} + {toccata_aud_left[15],toccata_aud_left} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_sl[15], cdda_sl};
+	tmp_r <= {aud_r[15],aud_r} + {toccata_aud_right[15],toccata_aud_right} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_sr[15], cdda_sr};
 
 	// clamp the output
 	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];

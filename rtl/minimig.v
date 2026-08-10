@@ -284,6 +284,7 @@ module minimig
 	output        cdtv_card_dirty,
 
 	output  [9:0] cdtv_cdda_volume,
+	output        cdtv_cdda_volume_valid,
 
 	//user i/o
 	output  [1:0] cpucfg,
@@ -1032,6 +1033,7 @@ cdtv_bridge cdtv_bridge_inst
 
 	.cdtv_irq        (cdtv_irq_w           ),
 	.cdda_volume     (cdtv_cdda_volume     ),
+	.cdda_volume_valid(cdtv_cdda_volume_valid),
 
 	.uio_cs          (cdtv_cs              ),
 	.uio_cs_sec      (cdtv_cs_sec          ),

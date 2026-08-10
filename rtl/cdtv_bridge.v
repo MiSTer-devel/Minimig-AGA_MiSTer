@@ -29,6 +29,7 @@ module cdtv_bridge
 	output            cdtv_irq,
 
 	output      [9:0] cdda_volume,
+	output            cdda_volume_valid,
 
 	input             uio_cs,
 	input             uio_cs_sec,
@@ -109,6 +110,7 @@ reg [7:0] tp_ilatch2;
 
 reg [11:0] dac_shift;
 reg  [9:0] cd_volume;
+reg        vol_latched;
 reg        tp_b_prev_6, tp_b_prev_7;
 
 reg [7:0] subq_head;
@@ -217,7 +219,8 @@ assign dmac_int2 = cntr[CNTR_INTEN_BIT] & (istr[ISTR_E_INT_BIT] | istr[ISTR_INTS
 assign tpi_int2  = tp_ilatch[5];
 
 assign cdtv_irq    = dmac_int2 | tpi_int2;
-assign cdda_volume = cd_volume;
+assign cdda_volume       = cd_volume;
+assign cdda_volume_valid = vol_latched;
 
 wire       cmd_in_pending = ~cmd_in_empty;
 wire [7:0] cmd_in_byte    = cmd_in_fifo[cmd_in_rd_p];
@@ -489,6 +492,7 @@ always @(posedge clk) begin
 		tp_ilatch2  <= 8'h00;
 		dac_shift   <= 12'h0;
 		cd_volume   <= 10'h0;
+		vol_latched <= 1'b0;
 		tp_b_prev_6 <= 1'b0;
 		tp_b_prev_7 <= 1'b0;
 		subq_head   <= 8'h00;
@@ -516,8 +520,10 @@ always @(posedge clk) begin
 					tp_b <= tpi_data;
 					if (tpi_data[6] && !tp_b_prev_6)
 						dac_shift <= {tpi_data[5], dac_shift[11:1]};
-					if (tpi_data[7] && !tp_b_prev_7)
-						cd_volume <= dac_shift[9:0];
+					if (tpi_data[7] && !tp_b_prev_7) begin
+						cd_volume   <= dac_shift[9:0];
+						vol_latched <= 1'b1;
+					end
 					tp_b_prev_6 <= tpi_data[6];
 					tp_b_prev_7 <= tpi_data[7];
 				end
