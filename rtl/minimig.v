@@ -262,6 +262,7 @@ module minimig
 	input         cdtv_cs_sec,
 	input         cdtv_cs_stch,
 	input         cdtv_cs_nvr,
+	input         cdtv_cs_card,
 	input         cdtv_wr,
 	input         cdtv_rd,
 	input  [15:0] cdtv_uio_din,
@@ -280,6 +281,7 @@ module minimig
 	input         cdtv_dma_ack,
 
 	output        cdtv_nvr_dirty,
+	output        cdtv_card_dirty,
 
 	output  [9:0] cdtv_cdda_volume,
 
@@ -369,6 +371,7 @@ wire        sel_cia_b;			//cia B select
 	wire        sel_a2065;
 wire        sel_cdtv;
 wire        sel_cdtv_nvram;
+wire        sel_cdtv_card;
 wire [15:0] cdtv_bridge_dout;
 wire        cdtv_bridge_selack;
 wire [15:0] cdtv_nvr_dout;
@@ -377,6 +380,12 @@ wire  [7:0] cdtv_nvr_load_din;
 wire        cdtv_nvr_load_we;
 wire  [7:0] cdtv_nvr_save_dout;
 wire        cdtv_nvr_clear_dirty;
+wire [15:0] cdtv_card_dout;
+wire [12:0] cdtv_card_addr;
+wire  [7:0] cdtv_card_load_din;
+wire        cdtv_card_load_we;
+wire  [7:0] cdtv_card_save_dout;
+wire        cdtv_card_clear_dirty;
 wire        cdtv_irq_w;
 wire        int2;					//intterrupt 2
 wire        int3;					//intterrupt 3 
@@ -876,6 +885,7 @@ gary GARY1
 	.sel_a2065(sel_a2065),
 	.sel_cdtv(sel_cdtv),
 	.sel_cdtv_nvram(sel_cdtv_nvram),
+	.sel_cdtv_card(sel_cdtv_card),
 	.reset(reset),
 	.clk(clk),
 	.rom_readonly(rom_readonly),
@@ -1027,6 +1037,7 @@ cdtv_bridge cdtv_bridge_inst
 	.uio_cs_sec      (cdtv_cs_sec          ),
 	.uio_cs_stch     (cdtv_cs_stch         ),
 	.uio_cs_nvr      (cdtv_cs_nvr          ),
+	.uio_cs_card     (cdtv_cs_card         ),
 	.uio_wr          (cdtv_wr              ),
 	.uio_rd          (cdtv_rd              ),
 	.uio_din         (cdtv_uio_din         ),
@@ -1038,6 +1049,12 @@ cdtv_bridge cdtv_bridge_inst
 	.nvr_load_din    (cdtv_nvr_load_din    ),
 	.nvr_load_we     (cdtv_nvr_load_we     ),
 	.nvr_clear_dirty (cdtv_nvr_clear_dirty ),
+
+	.card_addr        (cdtv_card_addr       ),
+	.card_dout        (cdtv_card_save_dout  ),
+	.card_load_din    (cdtv_card_load_din   ),
+	.card_load_we     (cdtv_card_load_we    ),
+	.card_clear_dirty (cdtv_card_clear_dirty),
 
 	.subq_push       (cdtv_subq_push       ),
 	.subq_byte       (cdtv_subq_byte       ),
@@ -1077,8 +1094,32 @@ cdtv_nvram cdtv_nvram_inst
 	.clear_dirty     (cdtv_nvr_clear_dirty )
 );
 
-assign cdtv_din    = sel_cdtv_nvram ? cdtv_nvr_dout : cdtv_bridge_dout;
-assign cdtv_selack = cdtv_bridge_selack | sel_cdtv_nvram;
+cdtv_nvram #(.ADDR_W(13)) cdtv_card_inst
+(
+	.clk             (clk                   ),
+	.reset           (reset                 ),
+
+	.sel             (sel_cdtv_card         ),
+	.addr            (cpu_address_out       ),
+	.din             (cpu_data_out          ),
+	.dout            (cdtv_card_dout        ),
+	.rd              (cpu_rd                ),
+	.hwr             (cpu_hwr               ),
+	.lwr             (cpu_lwr               ),
+
+	.hps_load_addr   (cdtv_card_addr        ),
+	.hps_load_din    (cdtv_card_load_din    ),
+	.hps_load_we     (cdtv_card_load_we     ),
+
+	.hps_save_addr   (cdtv_card_addr        ),
+	.hps_save_dout   (cdtv_card_save_dout   ),
+
+	.dirty           (cdtv_card_dirty       ),
+	.clear_dirty     (cdtv_card_clear_dirty )
+);
+
+assign cdtv_din    = sel_cdtv_nvram ? cdtv_nvr_dout : sel_cdtv_card ? cdtv_card_dout : cdtv_bridge_dout;
+assign cdtv_selack = cdtv_bridge_selack | sel_cdtv_nvram | sel_cdtv_card;
 //-------------------------------------------------------------------------------------
 
 //data multiplexer

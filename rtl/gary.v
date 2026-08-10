@@ -106,6 +106,7 @@ module gary
 
 	output       sel_cdtv,
 	output       sel_cdtv_nvram,
+	output       sel_cdtv_card,
 
 	output reg   rom_readonly = 0 //when zero allows to write to $fc-$ff, blocks effect of kick256kmirror.  
 );
@@ -134,6 +135,7 @@ assign ram_lwr = dbr ?  dbwe : cpu_lwr;
 wire kick_mirror_a8 = cpu_address_in[23:19] == 5'b1010_1;
 wire kick_mirror_b0 = cpu_address_in[23:19] == 5'b1011_0;
 wire kick_mirror_f0 = cdtv_mode && cpu_address_in[23:19] == 5'b1111_0;
+wire cdtv_card_win  = cdtv_mode && cpu_address_in[23:19] == 5'b1110_0 && !cpu_hlt;
 wire [4:0] cpu_addr_hi_remap = kick_mirror_a8 ? 5'b1111_1 :
                                kick_mirror_b0 ? 5'b1110_0 :
                                kick_mirror_f0 ? 5'b1110_0 :
@@ -175,7 +177,7 @@ begin
 		sel_slow[1] = t_sel_slow[1];
 		sel_slow[2] = t_sel_slow[2];
 		sel_kick    = (cpu_address_in[23:19]==5'b1111_1 && (cpu_rd || cpu_hlt || (!rom_readonly && cpu_address_in[18])))  || (cpu_rd && ovl && cpu_address_in[23:19]==5'b0000_0) || (cpu_rd && kick_mirror_a8);
-		sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && (cpu_rd || cpu_hlt)) || (cpu_rd && kick_mirror_b0) || (cpu_rd && kick_mirror_f0);
+		sel_kick1mb = (cpu_address_in[23:19]==5'b1110_0 && ((cpu_rd && !cdtv_card_win) || cpu_hlt)) || (cpu_rd && kick_mirror_b0) || (cpu_rd && kick_mirror_f0);
 		sel_kick256kmirror = cpu_address_in[23:19]==5'b1111_1 &&  cpu_rd && rom_readonly && !cpu_hlt && bootrom;
 	end
 end
@@ -199,6 +201,7 @@ assign sel_a2065   = a2065_ena && cpu_address_in[23:16]==a2065_base;
 
 assign sel_cdtv       = cdtv_mode && cpu_address_in[23:16]==cdtv_base;
 assign sel_cdtv_nvram = cdtv_mode && cpu_address_in[23:15]==9'b1101_1100_1;
+assign sel_cdtv_card  = cdtv_card_win;
 
 //data bus slow down
 assign dbs = cpu_address_in[23:21]==3'b000 || cpu_address_in[23:20]==4'b1100 || cpu_address_in[23:19]==5'b1101_0 || cpu_address_in[23:16]==8'b1101_1111;

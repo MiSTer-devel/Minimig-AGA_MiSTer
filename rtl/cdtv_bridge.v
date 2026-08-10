@@ -34,6 +34,7 @@ module cdtv_bridge
 	input             uio_cs_sec,
 	input             uio_cs_stch,
 	input             uio_cs_nvr,
+	input             uio_cs_card,
 	input             uio_wr,
 	input             uio_rd,
 	input      [15:0] uio_din,
@@ -45,6 +46,12 @@ module cdtv_bridge
 	output      [7:0] nvr_load_din,
 	output            nvr_load_we,
 	output            nvr_clear_dirty,
+
+	output     [12:0] card_addr,
+	input       [7:0] card_dout,
+	output      [7:0] card_load_din,
+	output            card_load_we,
+	output            card_clear_dirty,
 
 	input             subq_push,
 	input       [7:0] subq_byte,
@@ -255,7 +262,38 @@ assign nvr_load_we     = wr_nvr | hi_nvr;
 assign nvr_load_din    = hi_nvr ? uio_din[15:8] : uio_din[7:0];
 assign nvr_clear_dirty = cs_nvr_d & ~uio_cs_nvr & saw_nvr_read;
 
+reg [12:0] card_addr_cnt;
+reg        cs_card_d;
+reg        hi_card;
+reg        saw_card_read;
+wire       wr_card = uio_wr & uio_cs_card;
+
+always @(posedge clk) begin
+	if (reset) begin
+		card_addr_cnt <= 13'd0;
+		cs_card_d     <= 1'b0;
+		hi_card       <= 1'b0;
+		saw_card_read <= 1'b0;
+	end else begin
+		hi_card   <= wr_card;
+		cs_card_d <= uio_cs_card;
+		if (uio_cs_card & ~cs_card_d) begin
+			card_addr_cnt <= 13'd0;
+			saw_card_read <= 1'b0;
+		end else if ((uio_rd & uio_cs_card) | wr_card | hi_card) begin
+			card_addr_cnt <= card_addr_cnt + 13'd1;
+		end
+		if (uio_rd & uio_cs_card) saw_card_read <= 1'b1;
+	end
+end
+
+assign card_addr        = card_addr_cnt;
+assign card_load_we     = wr_card | hi_card;
+assign card_load_din    = hi_card ? uio_din[15:8] : uio_din[7:0];
+assign card_clear_dirty = cs_card_d & ~uio_cs_card & saw_card_read;
+
 assign uio_dout = uio_cs_nvr  ? {8'h00, nvr_dout} :
+                  uio_cs_card ? {8'h00, card_dout} :
                   uio_cs_stch ? {15'h0000, stch_ack} : {8'h00, cmd_in_byte};
 assign uio_req  = cmd_in_pending;
 

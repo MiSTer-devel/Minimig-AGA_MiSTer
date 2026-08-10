@@ -126,7 +126,9 @@ wire        cdtv_cs;
 wire        cdtv_cs_sec;
 wire        cdtv_cs_stch;
 wire        cdtv_cs_nvr;
+wire        cdtv_cs_card;
 wire        cdtv_nvr_dirty;
+wire        cdtv_card_dirty;
 wire        cdtv_req;
 
 wire        akiko_dma_req;
@@ -823,6 +825,7 @@ minimig minimig
 	.cdtv_cs_sec         (cdtv_cs_sec          ),
 	.cdtv_cs_stch        (cdtv_cs_stch         ),
 	.cdtv_cs_nvr         (cdtv_cs_nvr          ),
+	.cdtv_cs_card        (cdtv_cs_card         ),
 	.cdtv_wr             (cdtv_wr              ),
 	.cdtv_rd             (cdtv_rd              ),
 	.cdtv_uio_din        (cdtv_dout            ),
@@ -841,6 +844,7 @@ minimig minimig
 	.cdtv_dma_ack        (cdtv_dma_ack         ),
 
 	.cdtv_nvr_dirty      (cdtv_nvr_dirty       ),
+	.cdtv_card_dirty     (cdtv_card_dirty      ),
 
 	.cdtv_cdda_volume    (cdtv_cdda_volume     ),
 
