@@ -37,7 +37,7 @@ module akiko_hps_bridge
 	input             sec_req,
 	input       [7:0] sec_status,
 	output            sec_push,
-	output      [7:0] sec_byte,
+	output     [15:0] sec_word,
 	output            sec_done,
 
 	output            subcode_push,
@@ -69,7 +69,6 @@ reg saw_write;
 
 reg [9:0] nvr_addr_cnt;
 
-reg hi_sec;
 reg hi_nvr;
 
 wire cs_cmd = uio_cs & ~uio_cs_sec & ~uio_cs_nvr & ~uio_cs_subcode;
@@ -86,10 +85,8 @@ always @(posedge clk) begin
 		saw_read     <= 1'b0;
 		saw_write    <= 1'b0;
 		nvr_addr_cnt <= 10'd0;
-		hi_sec       <= 1'b0;
 		hi_nvr       <= 1'b0;
 	end else begin
-		hi_sec <= wr_sec;
 		hi_nvr <= wr_nvr;
 		cs_d         <= uio_cs;
 		cs_sec_d     <= uio_cs_sec;
@@ -116,8 +113,8 @@ assign cmd_pop         = uio_rd & cs_cmd;
 assign result_push     = uio_wr & cs_cmd;
 assign result_byte     = uio_din[7:0];
 
-assign sec_push        = wr_sec | hi_sec;
-assign sec_byte        = hi_sec ? uio_din[15:8] : uio_din[7:0];
+assign sec_push        = wr_sec;
+assign sec_word        = uio_din;
 
 assign subcode_push    = uio_wr & uio_cs &  uio_cs_subcode;
 assign subcode_byte    = uio_din[7:0];
