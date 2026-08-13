@@ -104,7 +104,7 @@ wire        akiko_hps_result_done;
 wire        akiko_hps_sec_req;
 wire  [7:0] akiko_hps_sec_status;
 wire        akiko_hps_sec_push;
-wire  [7:0] akiko_hps_sec_byte;
+wire [15:0] akiko_hps_sec_word;
 wire        akiko_hps_sec_done;
 wire        akiko_hps_subcode_push;
 wire  [7:0] akiko_hps_subcode_byte;
@@ -152,7 +152,7 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 	.hps_sec_req(akiko_hps_sec_req),
 	.hps_sec_status(akiko_hps_sec_status),
 	.hps_sec_push(akiko_hps_sec_push),
-	.hps_sec_byte(akiko_hps_sec_byte),
+	.hps_sec_word(akiko_hps_sec_word),
 	.hps_sec_done(akiko_hps_sec_done),
 	.hps_rx_busy(akiko_hps_rx_busy),
 	.hps_nvr_addr(akiko_hps_nvr_addr),
@@ -189,7 +189,7 @@ akiko_hps_bridge akiko_hps_bridge
 	.sec_req(akiko_hps_sec_req),
 	.sec_status(akiko_hps_sec_status),
 	.sec_push(akiko_hps_sec_push),
-	.sec_byte(akiko_hps_sec_byte),
+	.sec_word(akiko_hps_sec_word),
 	.sec_done(akiko_hps_sec_done),
 	.subcode_push(akiko_hps_subcode_push),
 	.subcode_byte(akiko_hps_subcode_byte),

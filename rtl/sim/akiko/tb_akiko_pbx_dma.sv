@@ -28,11 +28,12 @@ wire [23:0] dma_baddr;
 wire  [7:0] dma_wbyte;
 logic [7:0] dma_rbyte;
 logic       dma_ack;
+logic       dma_arm;
 
 wire        hps_sec_req;
 wire  [7:0] hps_sec_status;
 logic       hps_sec_push = 0;
-logic [7:0] hps_sec_byte = 0;
+logic [15:0] hps_sec_word = 0;
 logic       hps_sec_done = 0;
 
 
@@ -44,19 +45,20 @@ akiko #(.NATIVE_CD32(1)) u_dut (
 	.akiko_irq(irq),
 	.dma_req(dma_req), .dma_we(dma_we),
 	.dma_baddr(dma_baddr), .dma_wbyte(dma_wbyte),
-	.dma_rbyte(dma_rbyte), .dma_ack(dma_ack),
+	.dma_rbyte(dma_rbyte), .dma_ack(dma_ack), .dma_arm(dma_arm),
 	.hps_cmd_pending(), .hps_cmd_byte(),
 	.hps_cmd_pop(1'b0), .hps_cmd_done(1'b0),
 	.hps_result_push(1'b0), .hps_result_byte(8'h00), .hps_result_done(1'b0),
 	.hps_sec_req(hps_sec_req),
 	.hps_sec_status(hps_sec_status),
 	.hps_sec_push(hps_sec_push),
-	.hps_sec_byte(hps_sec_byte),
+	.hps_sec_word(hps_sec_word),
 	.hps_sec_done(hps_sec_done),
 	.hps_rx_busy(),
 	.hps_nvr_addr(10'd0),
 	.hps_nvr_dout(), .hps_nvr_clear_dirty(1'b0), .hps_nvr_dirty(),
-	.nvr_load_addr(10'd0), .nvr_load_din(8'h00), .nvr_load_we(1'b0)
+	.nvr_load_addr(10'd0), .nvr_load_din(8'h00), .nvr_load_we(1'b0),
+	.hps_subcode_push(1'b0), .hps_subcode_byte(8'h00), .hps_subcode_done(1'b0)
 );
 
 localparam [31:0] CDINT_PBX       = 32'h04000000;
@@ -131,12 +133,14 @@ logic       bfm_in_xfer = 1'b0;
 
 initial begin
 	dma_ack   = 0;
+	dma_arm   = 0;
 	dma_rbyte = 8'h00;
 	for (int i = 0; i < 262144; i++) mem[i] = 8'h55;
 end
 
 always @(posedge clk) begin
 	dma_ack <= 0;
+	dma_arm <= 0;
 	if (bfm_in_xfer) begin
 		if (dma_we) mem[dma_baddr[17:0]] <= dma_wbyte;
 		else        dma_rbyte <= mem[dma_baddr[17:0]];
@@ -144,18 +148,21 @@ always @(posedge clk) begin
 		bfm_in_xfer <= 1'b0;
 	end else if (dma_req && !dma_ack) begin
 		bfm_in_xfer <= 1'b1;
+		dma_arm     <= 1'b1;
 	end
 end
 
 task automatic push_sector(input [7:0] seed);
 	@(posedge clk);
-	for (int i = 0; i < 2352; i++) begin
-		hps_sec_byte <= seed + i[7:0];
+	for (int i = 0; i < 1176; i++) begin
+		automatic int lo = 2*i;
+		automatic int hi = 2*i + 1;
+		hps_sec_word <= {seed + hi[7:0], seed + lo[7:0]};
 		hps_sec_push <= 1'b1;
 		@(posedge clk);
 	end
 	hps_sec_push <= 1'b0;
-	hps_sec_byte <= 8'h00;
+	hps_sec_word <= 16'h0000;
 	@(posedge clk);
 	hps_sec_done <= 1'b1;
 	@(posedge clk);
