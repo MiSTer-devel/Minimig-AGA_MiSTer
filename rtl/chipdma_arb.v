@@ -152,6 +152,7 @@ memory_router u_router
 	.ckick         (1'b0),
 	.wr            (1'b0),
 	.bootrom       (1'b0),
+	.cdtv_mode     (1'b0),
 	.z2ram_ena     (z2ram_ena),
 	.z3ram_base0   (z3ram_base0),
 	.z3ram_ena0    (z3ram_ena0),
