@@ -9,6 +9,7 @@ module memory_router
 	input         wr,
 
 	input         bootrom,
+	input         cdtv_mode,
 
 	input         z2ram_ena,
 	input   [4:0] z3ram_base0,
@@ -37,7 +38,7 @@ assign sel_dd       = (cpu_addr[31:16] == 16'h00DD) && (cpu_addr[15:13] == 3'b01
 assign sel_rtg      = (cpu_addr[31:24] == 8'h02);
 
 // don't sel_kickram when writing
-assign sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (cpu_addr[23:19] == 5'b11100) || (cpu_addr[23:19] == 5'b10101) || (cpu_addr[23:19] == 5'b10110)) && ckick && wr;
+assign sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (!cdtv_mode && cpu_addr[23:19] == 5'b11100) || (cpu_addr[23:19] == 5'b10101) || (cpu_addr[23:19] == 5'b10110)) && ckick && wr;
 assign sel_kicklower = !cpu_addr[31:24] && (cpu_addr[23:18] == 6'b111110);
 assign sel_chipram   = !cpu_addr[31:21] && cchip;
 

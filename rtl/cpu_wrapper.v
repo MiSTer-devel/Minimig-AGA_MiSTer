@@ -113,6 +113,7 @@ memory_router u_memory_router
 	.ckick         (ckick         ),
 	.wr            (wr            ),
 	.bootrom       (bootrom       ),
+	.cdtv_mode     (cdtv_mode     ),
 	.z2ram_ena     (z2ram_ena     ),
 	.z3ram_base0   (z3ram_base0   ),
 	.z3ram_ena0    (z3ram_ena0    ),
@@ -305,7 +306,7 @@ always @(posedge clk) begin
 end
 
 wire stock_speed   = cachecfg[3];
-wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready | cdtv_selack;
+wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
 
 reg [3:0] cooldown;
 always @(posedge clk) begin
@@ -318,7 +319,7 @@ wire clkena_p_throttled = clkena_p_base & (cooldown == 4'd0);
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel & ~fastchip_selack & ~cdtv_selack;
+	chipreq <= cpu_req & ~ramsel & ~fastchip_selack;
 	cpu_ipl <= ipl_i;
 end
 
