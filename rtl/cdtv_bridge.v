@@ -130,9 +130,8 @@ reg [7:0] cmd_out_fifo [0:31];
 reg [4:0] cmd_out_wr_p, cmd_out_rd_p;
 reg [7:0] last_out;
 
-(* ramstyle = "M10K" *) reg [7:0] sec_fifo [0:8191];
 reg [12:0] sec_wr_p, sec_rd_p;
-reg  [7:0] sec_fifo_q;
+wire [7:0] sec_fifo_q;
 
 reg [7:0] rd_byte_eb;
 reg [7:0] rd_byte_ob;
@@ -397,7 +396,17 @@ always @(posedge clk) begin
 	end
 end
 
-always @(posedge clk) sec_fifo_q <= sec_fifo[sec_rd_p];
+wire sec_fifo_wren = sec_byte_push && (sec_avail != 13'h1FFF);
+
+dpram #(13,8) sec_fifo_ram (
+	.clock    (clk),
+	.address_a(sec_wr_p),
+	.data_a   (sec_byte_data),
+	.wren_a   (sec_fifo_wren),
+	.address_b(sec_rd_p),
+	.wren_b   (1'b0),
+	.q_b      (sec_fifo_q)
+);
 
 always @(posedge clk) begin
 	if (reset) begin
@@ -640,9 +649,8 @@ always @(posedge clk) begin
 			end
 		end
 
-		if (sec_byte_push && (sec_avail != 13'h1FFF)) begin
-			sec_fifo[sec_wr_p] <= sec_byte_data;
-			sec_wr_p           <= sec_wr_p + 13'd1;
+		if (sec_fifo_wren) begin
+			sec_wr_p <= sec_wr_p + 13'd1;
 		end
 
 		if (drain_ack_pop) sec_rd_p <= sec_rd_p + 13'd1;
