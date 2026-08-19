@@ -310,7 +310,21 @@ wire drain_ack_pop  = drain_ack_u | drain_ack_l;
 wire drain_ack_word = drain_ack_l;
 
 assign selack = sel;
-assign dout   = {rd_byte_eb, rd_byte_ob};
+
+wire rd_active = sel && rd;
+reg  rd_active_d;
+reg [15:0] dout_hold;
+always @(posedge clk) begin
+	if (reset) begin
+		rd_active_d <= 1'b0;
+		dout_hold   <= 16'h0000;
+	end else begin
+		rd_active_d <= rd_active;
+		if (rd_active && !rd_active_d) dout_hold <= {rd_byte_eb, rd_byte_ob};
+	end
+end
+
+assign dout   = rd_active ? {rd_byte_eb, rd_byte_ob} : dout_hold;
 
 always @(posedge clk) begin
 	if (reset) begin
