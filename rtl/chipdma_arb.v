@@ -23,7 +23,7 @@ module chipdma_arb
 
 	input             cdtv_dma_req,
 	input             cdtv_dma_we,
-	input      [23:0] cdtv_dma_baddr,
+	input      [31:0] cdtv_dma_baddr,
 	input       [7:0] cdtv_dma_wbyte,
 	output      [7:0] cdtv_dma_rbyte,
 	output            cdtv_dma_ack,
@@ -125,7 +125,7 @@ wire any_req       = akiko_dma_req_q | cdtv_dma_req_q;
 wire arming_is_cdtv = ~akiko_dma_req_q & cdtv_dma_req_q;
 
 wire        live_we     = arming_is_cdtv ? cdtv_dma_we    : akiko_dma_we;
-wire [23:0] live_baddr  = arming_is_cdtv ? cdtv_dma_baddr : akiko_dma_baddr;
+wire [31:0] live_baddr  = arming_is_cdtv ? cdtv_dma_baddr : {8'h00, akiko_dma_baddr};
 wire  [7:0] live_wbyte  = arming_is_cdtv ? cdtv_dma_wbyte : akiko_dma_wbyte;
 
 wire arm_now = (state == S_IDLE) & c_7m_rise & minimig_idle & any_req;
@@ -147,7 +147,7 @@ wire        router_zram_sel = |router_ramaddr[28:26];
 
 memory_router u_router
 (
-	.cpu_addr      ({8'h00, live_baddr}),
+	.cpu_addr      (live_baddr),
 	.cchip         (1'b0),
 	.ckick         (1'b0),
 	.wr            (1'b0),
@@ -163,7 +163,11 @@ memory_router u_router
 
 wire    is_ddr_now   = arm_now ? router_zram_sel : ak_is_ddr;
 
-wire arb_drive_chip  = arb_drive & ~is_ddr_now;
+wire        addr_unmapped   = |live_baddr[31:24] & ~router_zram_sel;
+reg         ak_unmapped;
+wire        is_unmapped_now = arm_now ? addr_unmapped : ak_unmapped;
+
+wire arb_drive_chip  = arb_drive & ~is_ddr_now & ~is_unmapped_now;
 
 assign chip_out_addr = arb_drive_chip ? ak_addr_w    : chip_in_addr;
 assign chip_out_l    = arb_drive_chip ? ak_l_w       : chip_in_l;
@@ -188,6 +192,7 @@ always @(posedge clk) begin
 		ak_rbyte_r     <= 8'h00;
 		active_is_cdtv <= 1'b0;
 		ak_is_ddr      <= 1'b0;
+		ak_unmapped    <= 1'b0;
 		dma_ddr_cs_r   <= 1'b0;
 		dma_ddr_we_r   <= 1'b1;
 	end else begin
@@ -205,6 +210,7 @@ always @(posedge clk) begin
 				ak_we          <= live_we;
 				ak_baddr0      <= live_baddr[0];
 				ak_is_ddr      <= router_zram_sel;
+				ak_unmapped    <= addr_unmapped;
 				slot_cnt       <= 3'd0;
 				active_is_cdtv <= arming_is_cdtv;
 				if (router_zram_sel) begin

@@ -276,7 +276,7 @@ module minimig
 
 	output        cdtv_dma_req,
 	output        cdtv_dma_we,
-	output [23:0] cdtv_dma_baddr,
+	output [31:0] cdtv_dma_baddr,
 	output  [7:0] cdtv_dma_wbyte,
 	input         cdtv_dma_ack,
 

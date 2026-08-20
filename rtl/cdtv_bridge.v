@@ -63,7 +63,7 @@ module cdtv_bridge
 
 	output            cdtv_dma_req,
 	output            cdtv_dma_we,
-	output     [23:0] cdtv_dma_baddr,
+	output     [31:0] cdtv_dma_baddr,
 	output      [7:0] cdtv_dma_wbyte,
 	input             cdtv_dma_ack
 );
@@ -94,7 +94,7 @@ localparam [2:0] DRAIN_PUSH_U = 3'd2;
 localparam [2:0] DRAIN_WAIT_L = 3'd3;
 localparam [2:0] DRAIN_PUSH_L = 3'd4;
 reg [2:0]  drain_state;
-reg [23:0] drain_baddr;
+reg [31:0] drain_baddr;
 reg  [7:0] drain_wbyte;
 reg        drain_req_r;
 
@@ -426,7 +426,7 @@ always @(posedge clk) begin
 	if (reset) begin
 		drain_state <= DRAIN_IDLE;
 		drain_req_r <= 1'b0;
-		drain_baddr <= 24'h0;
+		drain_baddr <= 32'h0;
 		drain_wbyte <= 8'h00;
 	end else begin
 		if (!dmac_dma || prst_pulse) begin
@@ -444,7 +444,7 @@ always @(posedge clk) begin
 					drain_state <= DRAIN_PUSH_U;
 				end
 				DRAIN_PUSH_U: begin
-					drain_baddr <= acr[23:0];
+					drain_baddr <= acr;
 					drain_wbyte <= sec_fifo_q;
 					drain_req_r <= 1'b1;
 					if (cdtv_dma_ack) begin
@@ -456,7 +456,7 @@ always @(posedge clk) begin
 					drain_state <= DRAIN_PUSH_L;
 				end
 				DRAIN_PUSH_L: begin
-					drain_baddr <= acr[23:0] + 24'd1;
+					drain_baddr <= acr + 32'd1;
 					drain_wbyte <= sec_fifo_q;
 					drain_req_r <= 1'b1;
 					if (cdtv_dma_ack) begin

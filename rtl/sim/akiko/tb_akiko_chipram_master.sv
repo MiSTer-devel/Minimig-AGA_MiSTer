@@ -66,7 +66,7 @@ chipdma_arb u_dut (
 
 	.cdtv_dma_req    (1'b0            ),
 	.cdtv_dma_we     (1'b0            ),
-	.cdtv_dma_baddr  (24'h000000      ),
+	.cdtv_dma_baddr  (32'h00000000    ),
 	.cdtv_dma_wbyte  (8'h00           ),
 	.cdtv_dma_rbyte  (                ),
 	.cdtv_dma_ack    (                ),

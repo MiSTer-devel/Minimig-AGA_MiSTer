@@ -335,7 +335,7 @@ wire  [9:0] cdtv_cdda_volume;
 wire        cdtv_cdda_volume_valid;
 wire        cdtv_dma_req;
 wire        cdtv_dma_we;
-wire [23:0] cdtv_dma_baddr;
+wire [31:0] cdtv_dma_baddr;
 wire  [7:0] cdtv_dma_wbyte;
 wire        cdtv_dma_ack;
 
