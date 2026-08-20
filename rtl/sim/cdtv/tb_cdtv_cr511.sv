@@ -51,7 +51,7 @@ module tb_cdtv_cr511;
 
 	wire         cdtv_dma_req;
 	wire         cdtv_dma_we;
-	wire  [23:0] cdtv_dma_baddr;
+	wire  [31:0] cdtv_dma_baddr;
 	wire   [7:0] cdtv_dma_wbyte;
 
 	cdtv_bridge u_dut (
