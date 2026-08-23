@@ -58,7 +58,33 @@ module hps_ext
 
 	input             cdda_req,
 	output reg        cdda_wr,
-	output reg [15:0] cdda_dout
+	output reg [15:0] cdda_dout,
+
+	input      [15:0] akiko_din,
+	output reg [15:0] akiko_dout,
+	output reg        akiko_wr,
+	output reg        akiko_rd,
+	output reg        akiko_cs,
+	output reg        akiko_cs_sec,
+	output reg        akiko_cs_nvr,
+	output reg        akiko_cs_subcode,
+	input             akiko_req,
+	input             akiko_sec_req,
+	input             akiko_rx_busy,
+	input             akiko_nvr_dirty,
+
+	input      [15:0] cdtv_din,
+	output reg [15:0] cdtv_dout,
+	output reg        cdtv_wr,
+	output reg        cdtv_rd,
+	output reg        cdtv_cs,
+	output reg        cdtv_cs_sec,
+	output reg        cdtv_cs_stch,
+	output reg        cdtv_cs_nvr,
+	output reg        cdtv_cs_card,
+	input             cdtv_req,
+	input             cdtv_nvr_dirty,
+	input             cdtv_card_dirty
 );
 
 assign EXT_BUS[15:0] = io_fpga ? fpga_dout : io_dout;
@@ -83,7 +109,7 @@ reg [15:0] io_dout;
 reg        dout_en;
 reg  [4:0] byte_cnt;
 
-always@(posedge clk_sys) begin
+always@(posedge clk_sys) begin : main_proc
 	reg [15:0] cmd;
 	reg ide_cs = 0;
 	reg cdda_cs = 0;
@@ -92,6 +118,8 @@ always@(posedge clk_sys) begin
 
 	{ide_rd, ide_wr} <= 0;
 	cdda_wr <= 0;
+	{akiko_rd, akiko_wr} <= 0;
+	{cdtv_rd, cdtv_wr} <= 0;
 	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
 
 	if(~io_uio) begin
@@ -100,6 +128,15 @@ always@(posedge clk_sys) begin
 		byte_cnt <= 0;
 		ide_cs <= 0;
 		cdda_cs <= 0;
+		akiko_cs <= 0;
+		akiko_cs_sec <= 0;
+		akiko_cs_nvr <= 0;
+		akiko_cs_subcode <= 0;
+		cdtv_cs <= 0;
+		cdtv_cs_sec <= 0;
+		cdtv_cs_stch <= 0;
+		cdtv_cs_nvr <= 0;
+		cdtv_cs_card <= 0;
 		if(cmd == 'h2D) sset <= 1;
 	end
 	else if(io_strobe) begin
@@ -109,21 +146,31 @@ always@(posedge clk_sys) begin
 
 		ide_dout <= io_din;
 		cdda_dout <= io_din;
+		akiko_dout <= io_din;
+		cdtv_dout <= io_din;
 		if(byte_cnt == 1) begin
-			ide_addr <= {io_din[8],io_din[3:0]};
-			ide_cs   <= (io_din[15:9] == 7'b1111000);
-			cdda_cs  <= (io_din[15:9] == 7'b1111001);
+			ide_addr     <= {io_din[8],io_din[3:0]};
+			ide_cs       <= (io_din[15:9] == 7'b1111000);
+			cdda_cs      <= (io_din[15:9] == 7'b1111001);
+			akiko_cs        <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5];
+			akiko_cs_sec    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[8];
+			akiko_cs_nvr    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[6];
+			akiko_cs_subcode<= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[4];
+			cdtv_cs          <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] && !io_din[5];
+			cdtv_cs_sec      <= (io_din[15:9] == 7'b1111100) && !io_din[7] && !io_din[6] &&  io_din[5];
+			cdtv_cs_stch     <= (io_din[15:9] == 7'b1111100) && !io_din[7] &&  io_din[6];
+			cdtv_cs_nvr      <= (io_din[15:9] == 7'b1111100) &&  io_din[7] && !io_din[6];
+			cdtv_cs_card     <= (io_din[15:9] == 7'b1111100) &&  io_din[7] &&  io_din[6];
 		end
 
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
-			if(io_din == 'h63) begin
-				io_dout <= {4'hE, 2'b00, 1'b0, cdda_req, 2'b00, ide_req};
-			end
+			if(io_din == 'h63) io_dout <= {2'b00, cdtv_card_dirty, cdtv_nvr_dirty, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
+			if(io_din == UIO_GET_VMODE) io_dout <= 1;
 		end else begin
 			case(cmd)
-			
+
 				UIO_MOUSE:
 					case(byte_cnt)
 						1: begin
@@ -135,7 +182,7 @@ always@(posedge clk_sys) begin
 								// second byte contains movement data
 								kbd_mouse_data <= io_din[7:0];
 								kbd_mouse_type <= 1;
-								kbd_mouse_level <= ~kbd_mouse_level; 
+								kbd_mouse_level <= ~kbd_mouse_level;
 							end
 						3: begin
 								// third byte contains the buttons
@@ -144,7 +191,7 @@ always@(posedge clk_sys) begin
 						4: begin
 								// wheel
 								kbd_mouse_data <= io_din[7:0];
-								kbd_mouse_level <= ~kbd_mouse_level; 
+								kbd_mouse_level <= ~kbd_mouse_level;
 							end
 					endcase
 
@@ -180,18 +227,30 @@ always@(posedge clk_sys) begin
 						3: svbl_t <= io_din[11:0];
 						4: svbl_b <= io_din[11:0];
 					endcase
-					
+
 				'h61: begin
 					if(byte_cnt >= 3) begin
-						cdda_wr <= cdda_cs;
-						ide_wr  <= ide_cs;
+						cdda_wr  <= cdda_cs;
+						ide_wr   <= ide_cs;
+						akiko_wr <= akiko_cs;
+						cdtv_wr  <= cdtv_cs | cdtv_cs_stch | cdtv_cs_sec | cdtv_cs_nvr | cdtv_cs_card;
 					end
 				end
 
-				'h62: if(byte_cnt >= 3 && ide_cs) begin
-							io_dout <= ide_din;
-							ide_rd <= 1;
-						end
+				'h62: begin
+					if(byte_cnt >= 3 && ide_cs) begin
+						io_dout <= ide_din;
+						ide_rd  <= 1;
+					end
+					if(byte_cnt >= 3 && akiko_cs) begin
+						io_dout  <= akiko_din;
+						akiko_rd <= 1;
+					end
+					if(byte_cnt >= 3 && (cdtv_cs | cdtv_cs_stch | cdtv_cs_nvr | cdtv_cs_card)) begin
+						io_dout <= cdtv_din;
+						cdtv_rd <= 1;
+					end
+				end
 			endcase
 		end
 	end
