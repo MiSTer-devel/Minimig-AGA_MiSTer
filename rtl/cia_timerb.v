@@ -38,7 +38,9 @@ reg    [2:0] cnt_sync;    // CNT pin synchroniser and edge detect
 wire  cnt_rise;           // CNT pin positive transition
 
 always @(posedge clk)
-  if (clk7_en)
+  if (reset)
+    cnt_sync[2:0] <= 3'b111;
+  else if (clk7_en)
     cnt_sync[2:0] <= {cnt_sync[1:0],cnt};
 
 assign cnt_rise = cnt_sync[1] & ~cnt_sync[2];
