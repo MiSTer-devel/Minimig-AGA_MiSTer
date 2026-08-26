@@ -166,6 +166,8 @@ if (NATIVE_CD32) begin : g_cd
 	reg        tx_busy;
 	reg        rx_busy;
 	reg        rx_inflight;
+	reg        pio_wr_d;
+	reg        pio_rd_d;
 
 	localparam [1:0] OWN_RX = 2'd0, OWN_PBX = 2'd1, OWN_TX = 2'd2, OWN_SUB = 2'd3;
 	reg        dma_owned;
@@ -257,6 +259,23 @@ if (NATIVE_CD32) begin : g_cd
 	                  && (cdcomrxinx != cdcomrxcmp)
 	                  && (rx_dma_delay == 2'd0);
 
+	wire       pio_tx_allowed  = !cdrom_flags[CDFLAG_TXD_BIT] && !tx_busy;
+	wire       pio_tx_can_send = (cdrom_receive_length == 6'd0)
+	                          && (cdrom_command_length != 6'd32)
+	                          && !cmd_pending;
+	wire [3:0] pio_tx_op       = (cdrom_command_length == 6'd0) ? din[11:8] : cmd_op;
+	wire [5:0] pio_tx_next_len = cdrom_command_length + 6'd1;
+	wire       pio_tx_more     = (pio_tx_next_len < expected_total_len(pio_tx_op))
+	                          && (pio_tx_next_len != 6'd32);
+
+	wire       pio_rx_allowed  = !cdrom_flags[CDFLAG_RXD_BIT] && !rx_busy;
+	wire       pio_rx_avail    = pio_rx_allowed
+	                          && (cdrom_receive_offset < cdrom_receive_length);
+	wire [7:0] pio_rx_data     = pio_rx_avail
+	                          ? cdrom_result_buffer[cdrom_receive_offset]
+	                          : pio_byte;
+	wire       pio_rx_last     = (cdrom_receive_offset + 6'd1) == cdrom_receive_length;
+
 	wire pbx_can_start =  (pbx_state == PBX_IDLE)
 	                   && cdrom_flags[CDFLAG_ENABLE_BIT]
 	                   && cdrom_flags[CDFLAG_PBX_BIT]
@@ -306,6 +325,12 @@ if (NATIVE_CD32) begin : g_cd
 	               && !pbx_busy;
 
 	wire write = wr & cs;
+	wire read  = rd & cs;
+
+	wire pio_wr_sel  = write && (addr == 5'b10100) && uds;
+	wire pio_rd_sel  = read  && (addr == 5'b10100);
+	wire pio_wr_edge = pio_wr_sel & ~pio_wr_d;
+	wire pio_rd_edge = pio_rd_sel & ~pio_rd_d;
 
 	wire enable_rising = write && (addr == 5'b10010) && uds && din[10]
 	                  && !cdrom_flags[CDFLAG_ENABLE_BIT];
@@ -330,6 +355,8 @@ if (NATIVE_CD32) begin : g_cd
 			cdcomtxcmp          <= 8'h0;
 			cdcomrxcmp          <= 8'h0;
 			pio_byte            <= 8'h0;
+			pio_wr_d            <= 1'b0;
+			pio_rd_d            <= 1'b0;
 			nvram_io            <= 8'h0;
 			nvram_dir           <= 8'h0;
 			cdrom_command_length <= 6'h0;
@@ -362,6 +389,9 @@ if (NATIVE_CD32) begin : g_cd
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+
+			pio_wr_d <= pio_wr_sel;
+			pio_rd_d <= pio_rd_sel;
 
 			if (dma_arm) begin
 				dma_owned <= rx_busy | pbx_busy | tx_busy | subcode_busy;
@@ -470,9 +500,13 @@ if (NATIVE_CD32) begin : g_cd
 					cdrom_flags <= new_flags;
 				end
 				5'b10100: begin
-					if (uds) begin
-						pio_byte     <= din[15:8];
-						cdrom_intreq <= cdrom_intreq & ~CDINT_DRIVEXMIT;
+					if (pio_wr_edge && pio_tx_allowed) begin
+						cdrom_intreq <= (cdrom_intreq & ~CDINT_DRIVEXMIT)
+						              | ((pio_tx_can_send && pio_tx_more) ? CDINT_DRIVEXMIT : 32'h0);
+						if (pio_tx_can_send) begin
+							cdrom_command_buffer[cdrom_command_length] <= din[15:8];
+							cdrom_command_length <= pio_tx_next_len;
+						end
 					end
 				end
 				5'b11000: begin
@@ -484,6 +518,20 @@ if (NATIVE_CD32) begin : g_cd
 				end
 				default: ;
 			endcase
+			end
+
+			if (pio_rd_edge) begin
+				pio_byte <= pio_rx_data;
+				if (pio_rx_avail) begin
+					cdrom_receive_offset <= cdrom_receive_offset + 6'd1;
+					if (pio_rx_last) begin
+						cdrom_receive_length <= 6'd0;
+						cdrom_receive_offset <= 6'd0;
+						cdrom_intreq <= (cdrom_intreq & ~CDINT_DRIVERECV) | CDINT_DRIVEXMIT;
+					end
+				end else begin
+					cdrom_intreq <= cdrom_intreq & ~CDINT_DRIVERECV;
+				end
 			end
 
 			if (tx_busy) begin
@@ -661,7 +709,7 @@ if (NATIVE_CD32) begin : g_cd
 			5'b10000: cd_dout_r = cdrom_pbx;
 			5'b10010: cd_dout_r = cdrom_flags[31:16];
 			5'b10011: cd_dout_r = cdrom_flags[15:0];
-			5'b10100: cd_dout_r = {pio_byte, 8'h0};
+			5'b10100: cd_dout_r = {pio_rx_data, 8'h0};
 			5'b11000: cd_dout_r = {nvram_scl_bus, nvram_sda_bus, 6'h0, 8'h0};
 			5'b11001: cd_dout_r = {nvram_dir, 8'h0};
 			default:  cd_dout_r = 16'h0;
