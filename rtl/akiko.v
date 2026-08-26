@@ -694,7 +694,8 @@ if (NATIVE_CD32) begin : g_cd
 			if (hps_result_done && (cdrom_receive_length == 6'd0)) begin
 				cdrom_receive_length <= hps_result_wr_ptr;
 				hps_result_wr_ptr    <= 6'd0;
-				cdrom_intreq         <= cdrom_intreq | CDINT_DRIVERECV;
+				if (hps_result_wr_ptr != 6'd0)
+					cdrom_intreq <= cdrom_intreq | CDINT_DRIVERECV;
 			end
 		end
 	end
