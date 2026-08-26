@@ -233,7 +233,13 @@ if (NATIVE_CD32) begin : g_cd
 	endfunction
 
 	wire [3:0] cmd_op       = cdrom_command_buffer[0][3:0];
+	wire [7:0] cmd_arg1     = cdrom_command_buffer[1];
 	wire [5:0] cmd_total    = expected_total_len(cmd_op);
+
+	wire cmd_zero_result = ((cmd_op == 4'h5) && !cmd_arg1[7])
+	                    ||  (cmd_op == 4'h8)
+	                    ||  (cmd_op == 4'h9)
+	                    ||  (cmd_op == 4'ha);
 	wire       cmd_pending  = (cdrom_command_length != 6'd0)
 	                       && ((cdrom_command_length >= cmd_total)
 	                          || (cdrom_command_length == 6'd32));
@@ -677,6 +683,9 @@ if (NATIVE_CD32) begin : g_cd
 				cdrom_command_length <= 6'd0;
 				hps_cmd_rd_ptr       <= 6'd0;
 			end
+
+			if (hps_cmd_done && cmd_zero_result && !hps_result_done)
+				cdrom_intreq <= cdrom_intreq | CDINT_DRIVEXMIT;
 
 			if (hps_result_push && (hps_result_wr_ptr != 6'd32)) begin
 				cdrom_result_buffer[hps_result_wr_ptr[4:0]] <= hps_result_byte;
