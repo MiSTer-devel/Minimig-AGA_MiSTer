@@ -68,6 +68,7 @@ module agnus_copper
 	input	blit_busy,					// blitter busy flag input
 	input	[7:0] vpos,					// vertical beam counter
 	input	[8:0] hpos,					// horizontal beam counter
+	input	[8:0] hpos_slot,			// dma slot grid index
 	input 	[15:0] data_in,	    		// data bus input
 	input 	[8:1] reg_address_in,		// register address input
 	output 	reg [8:1] reg_address_out,	// register address output
@@ -342,7 +343,7 @@ such a behaviour is caused by dma request pipelining in real Agnus
 always @(posedge clk)
   if (clk7_en) begin
   	if (clk_ena)
-  		if (hpos[8:1]==8'h01)
+  		if (hpos_slot[8:1]==8'h01)
   			bus_blk <= 1; //cycle $E1 is blocked
   		else
   			bus_blk <= 0;
