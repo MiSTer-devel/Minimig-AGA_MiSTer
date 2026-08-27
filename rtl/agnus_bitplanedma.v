@@ -38,6 +38,7 @@ module agnus_bitplanedma (
   input  wire           dmaena,           // enable dma input
   input  wire [ 11-1:0] vpos,             // vertical position counter
   input  wire [  9-1:0] hpos,             // agnus internal horizontal position counter (advanced by 4 CCK)
+  input  wire [  9-1:0] hpos_slot,        // dma slot grid index
   output reg            hde,              // video data enable (horizontal)
   output wire           dma,              // true if bitplane dma engine uses it's cycle
   input  wire [  9-1:1] reg_address_in,   // register address inputs
@@ -316,7 +317,7 @@ assign bp_fmode3  = (fmode[1:0] == 2'b11);
 // bitplane dma enable bit delayed by 4 CCKs
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (hpos[1:0]==2'b11)
+    if (hpos_slot[1:0]==2'b11)
       dmaena_delayed[1:0] <= #1 {dmaena_delayed[0], dmaena};
   end
 end
@@ -336,7 +337,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0])
-      if (hpos[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})
+      if (hpos_slot[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})
         soft_start <= #1 1'b1;
       else
         soft_start <= #1 1'b0;
@@ -346,7 +347,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0])
-      if (hpos[8:1] == {ddfstop[8:3], ddfstop[2] & ecs, 1'b0})
+      if (hpos_slot[8:1] == {ddfstop[8:3], ddfstop[2] & ecs, 1'b0})
         soft_stop <= #1 1'b1;
       else
         soft_stop <= #1 1'b0;
@@ -356,7 +357,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0])
-      if (hpos[8:1]==8'h18)
+      if (hpos_slot[8:1]==8'h18)
         hard_start <= #1 1'b1;
       else
         hard_start <= #1 1'b0;
@@ -366,7 +367,7 @@ end
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0])
-      if (hpos[8:1]==8'hD8)
+      if (hpos_slot[8:1]==8'hD8)
         hard_stop <= #1 1'b1;
       else
         hard_stop <= #1 1'b0;
@@ -422,7 +423,7 @@ assign ddfseq_match = ((!hires && !shres && bp_fmode3)                          
 always @ (posedge clk) begin
   if (clk7_en) begin
     if (hpos[0]) //cycle alligment
-      if (ddfena && vdiwena && !hpos[1] && dmaena_delayed[0]) // bitplane DMA starts at odd timeslot
+      if (ddfena && vdiwena && !hpos_slot[1] && dmaena_delayed[0]) // bitplane DMA starts at odd timeslot
         ddfrun <= #1 1'b1;
       else if ((ddfend || !vdiwena) && ddfseq_match) // cleared at the end of last bitplane DMA cycle
         ddfrun <= #1 1'b0;

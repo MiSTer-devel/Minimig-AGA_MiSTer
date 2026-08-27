@@ -268,7 +268,7 @@ wire  dma_ref;        //refresh dma slots
 
 agnus_refresh ref1
 (
-	.hpos(hpos),
+	.hpos(hpos_slot),
 	.dma(dma_ref)
 );
 
@@ -286,7 +286,7 @@ agnus_diskdma dsk1
 	.dmal(disk_dmal),
 	.dmas(disk_dmas),
 	.speed(floppy_speed),
-	.hpos(hpos),
+	.hpos(hpos_slot),
 	.wr(wr_dsk),
 	.reg_address_in(reg_address),
 	.reg_address_out(reg_address_dsk),
@@ -308,7 +308,7 @@ agnus_audiodma aud1
 	.dma(dma_aud),
 	.audio_dmal(audio_dmal),
 	.audio_dmas(audio_dmas),
-	.hpos(hpos),
+	.hpos(hpos_slot),
 	.reg_address_in(reg_address),
 	.reg_address_out(reg_address_aud),
 	.data_in(data_in),
@@ -335,6 +335,7 @@ agnus_bitplanedma bpd1
 	.dmaena(bplen),
 	.vpos(vpos),
 	.hpos(hpos),
+	.hpos_slot(hpos_slot),
 	.hde(hde),
 	.dma(dma_bpl),
 	.reg_address_in(reg_address),
@@ -359,7 +360,7 @@ agnus_spritedma spr1
 	.ecs(ecs),
 	.reqdma(req_spr),
 	.ackdma(ack_spr),
-	.hpos(hpos),
+	.hpos(hpos_slot),
 	.vpos(vpos),
 	.vbl(vbl),
 	.vblend(vblend),
@@ -389,6 +390,7 @@ agnus_copper cp1
 	.blit_busy(blit_busy),
 	.vpos(vpos[7:0]),
 	.hpos(hpos),
+	.hpos_slot(hpos_slot),
 	.data_in(data_in),
 	.reg_address_in(reg_address),
 	.reg_address_out(reg_address_cop),
@@ -438,6 +440,8 @@ agnus_blitter bl1
 //--------------------------------------------------------------------------------------
 
 wire  [8:0] hpos;      //alternative horizontal beam counter
+wire  [7:0] hpos_slot_hi = (hpos[8:1] == htotal[8:1]) ? 8'd0 : hpos[8:1] + 8'd1;
+wire  [8:0] hpos_slot = {hpos_slot_hi, hpos[0]};
 wire [10:0] vpos;      //vertical beam counter
 wire        vbl;       //JB: vertical blanking
 wire        vblend;    //JB: last line of vertical blanking
@@ -479,7 +483,7 @@ agnus_beamcounter  bc1
 //horizontal strobe for Denise
 //in real Amiga Denise's hpos counter seems to be advanced by 4 CCKs in regards to Agnus' one
 //Minimig isn't cycle exact and compensation for different data delay in implemented Denise's video pipeline is required
-assign strhor_denise = hpos==(6*2-1) && (vpos > 8 || ecs) ? 1'b1 : 1'b0;
+assign strhor_denise = hpos_slot==(6*2-1) && (vpos > 8 || ecs) ? 1'b1 : 1'b0;
 assign strhor_paula = hpos==(6*2+1) ? 1'b1 : 1'b0; //hack
 
 //--------------------------------------------------------------------------------------
