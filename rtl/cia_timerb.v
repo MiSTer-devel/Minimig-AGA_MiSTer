@@ -16,6 +16,7 @@ module cia_timerb
   input   [7:0] data_in,  // CPU data bus input
   output   [7:0] data_out, // CPU data bus output
   input  eclk,            // External clock input (usually E clock)
+  input  cnt,             // CNT pin input
   input  tmra_ovf,        // Timer A underflow signal for cascade mode
   output  irq             // Timer underflow interrupt request
 );
@@ -33,12 +34,20 @@ wire  reload;             // Reload timer from latch
 wire  zero;               // Timer reached zero
 wire  underflow;          // Timer underflow condition
 wire  count;              // Count enable signal
+reg    [2:0] cnt_sync;    // CNT pin synchroniser and edge detect
+wire  cnt_rise;           // CNT pin positive transition
 
-// Timer B special feature: can count Timer A underflows
-// Control register bit 6 selects count source:
-// 0 = Count system clock pulses (eclk)
-// 1 = Count Timer A underflows (cascade mode)
-assign count = tmcr[6] ? tmra_ovf : eclk;
+always @(posedge clk)
+  if (reset)
+    cnt_sync[2:0] <= 3'b111;
+  else if (clk7_en)
+    cnt_sync[2:0] <= {cnt_sync[1:0],cnt};
+
+assign cnt_rise = cnt_sync[1] & ~cnt_sync[2];
+
+// Count source selected by CRB bits 6:5 (INMODE)
+assign count = tmcr[6] ? (tmcr[5] ? (tmra_ovf & cnt_sync[1]) : tmra_ovf)
+                       : (tmcr[5] ? cnt_rise : eclk);
 
 // Timer Control Register (CRB) bit definitions:
 // Bit 0: START - Start/stop timer (1=start, 0=stop)
@@ -47,8 +56,10 @@ assign count = tmcr[6] ? tmra_ovf : eclk;
 // Bit 3: RUNMODE - 0=continuous, 1=one-shot
 // Bit 4: LOAD - Force load timer from latch (strobe, write-only)
 // Bit 5-6: INMODE - Count source:
-//          00,01 = System clock
-//          10,11 = Timer A underflow (cascade mode)
+//          00 = System clock
+//          01 = CNT pin
+//          10 = Timer A underflow (cascade mode)
+//          11 = Timer A underflow while CNT is high
 // Bit 7: ALARM - TOD clock write select (0=TOD, 1=ALARM)
 
 // Write to control register
