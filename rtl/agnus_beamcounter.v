@@ -345,7 +345,7 @@ end
 //in interlaced mode every second frame is vtotal+1 long
 wire last_line = long_frame ? extra_line : vpos_equ_vtotal;
 
-assign field1 = ~long_frame;
+assign field1 = (~long_frame) & lace;
 
 //generate end of frame signal
 wire end_of_frame = vpos_inc & last_line;
