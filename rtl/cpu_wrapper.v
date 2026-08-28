@@ -312,7 +312,7 @@ reg [3:0] cooldown;
 always @(posedge clk) begin
 	if (~reset)                                cooldown <= 4'd0;
 	else if (cooldown != 4'd0)                 cooldown <= cooldown - 4'd1;
-	else if (stock_speed & clkena_p_base)      cooldown <= 4'd9;
+	else if (stock_speed & clkena_p_base)      cooldown <= 4'd4;
 end
 wire clkena_p_throttled = clkena_p_base & (cooldown == 4'd0);
 
