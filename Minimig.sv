@@ -684,8 +684,8 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 ///////////////////////////////////////////////////////////////////////
 
 //// minimig top ////
-wire  [1:0] cpucfg;
-wire  [3:0] cachecfg;
+wire  [2:0] cpucfg;
+wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   
 wire [15:0] ram_data;      // sram data bus

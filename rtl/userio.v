@@ -59,8 +59,8 @@ module userio
 	output reg  [1:0] ar,
 	output reg  [1:0] blver,
 	output reg  [5:0] ide_config,
-	output reg  [1:0] cpu_config,
-	output reg  [3:0] cache_config,
+	output reg  [2:0] cpu_config,
+	output reg  [2:0] cache_config,
 	output reg        bootrom =0, // do the A1000 bootrom magic in gary.v
 	output reg        usrrst,     // user reset from osd module
 	output reg        cpurst,
@@ -396,12 +396,12 @@ reg [5:0] t_chipset_config = 0;
 // configuration changes only while reset is active
 always @(posedge clk) begin
 	reg [5:0] ide_cfg = 0;
-	reg [1:0] cpu_cfg = 0;
+	reg [2:0] cpu_cfg = 0;
 
 	if (reset) begin
 		chipset_config <= t_chipset_config;
 		ide_cfg <= t_ide_config;
-		cpu_cfg <= t_cpu_config[1:0];
+		cpu_cfg <= {t_cpu_config[5], t_cpu_config[1:0]};
 		memory_config[5:0] <= t_memory_config[5:0];
 		memory_config[7] <= t_memory_config[7];
 	end
@@ -411,7 +411,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	cache_config <= {t_cpu_config[5], t_cpu_config[4:2]};
+	cache_config <= t_cpu_config[4:2];
 	memory_config[6] <= t_memory_config[6];
 end
 

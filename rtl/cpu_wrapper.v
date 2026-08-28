@@ -33,9 +33,9 @@ module cpu_wrapper
 	input             ph1,
 	input             ph2,
 
-	input       [1:0] cpucfg,
+	input       [2:0] cpucfg,
 	input       [2:0] fastramcfg,
-	input       [3:0] cachecfg,
+	input       [2:0] cachecfg,
 	input             bootrom,
 
 	output reg [23:1] chip_addr,
@@ -235,7 +235,7 @@ cpu_inst_p
   .nresetout(reset_out_p),
   .longword(longword),
   
-  .cpu(cpucfg),
+  .cpu(cpucfg[1:0]),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
   .d_cache_out(dcache_sw_en_p),
@@ -305,7 +305,7 @@ always @(posedge clk) begin
 	end
 end
 
-wire stock_speed   = cachecfg[3];
+wire stock_speed   = cpucfg[2];
 wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
 
 reg [3:0] cooldown;

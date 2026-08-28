@@ -287,8 +287,8 @@ module minimig
 	output        cdtv_cdda_volume_valid,
 
 	//user i/o
-	output  [1:0] cpucfg,
-	output  [3:0] cachecfg,
+	output  [2:0] cpucfg,
+	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
 	output        ide_ena,
@@ -487,8 +487,7 @@ assign pwr_led = ~_led;
 
 assign memcfg = {memory_config[7],memory_config[5:0]};
 wire force_turbo  = ~ovl;
-assign cachecfg = {cachecfg_pre[3],
-                   cachecfg_pre[2],
+assign cachecfg = {cachecfg_pre[2],
                    force_turbo,
                    force_turbo};
 
@@ -597,7 +596,7 @@ paula PAULA1
 	.floppy_drives(floppy_config[3:2])
 );
 
-wire [3:0] cachecfg_pre;
+wire [2:0] cachecfg_pre;
 //instantiate user IO
 userio USERIO1 
 (	
