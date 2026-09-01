@@ -288,8 +288,7 @@ assign desc = ~line & bltcon1[1]; // descending blit mode
 assign efe = ~line & bltcon1[4]; // exclusive fill mode
 assign ife = ~line & bltcon1[3]; // inclusive fill mode
 
-// Absolute Inebriation compatibility:
-// real Amiga blitter freezes when BLTCON1 disables fill
+// Real Amiga blitter freezes when BLTCON1 disables fill
 // while an extra-cycle D-only fill blit is still active.
 wire bltcon1_write =
     reg_address_in[8:1] == BLTCON1[8:1];
