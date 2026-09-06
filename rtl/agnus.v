@@ -335,7 +335,6 @@ agnus_bitplanedma bpd1
 	.dmaena(bplen),
 	.vpos(vpos),
 	.hpos(hpos),
-	.hpos_slot(hpos_slot),
 	.hde(hde),
 	.dma(dma_bpl),
 	.reg_address_in(reg_address),
