@@ -59,8 +59,33 @@ module fastchip
 	input         ide_read,
 	output [15:0] ide_readdata,
 
-	output        ide_led
+	output        ide_led,
+
+	output        akiko_irq,
+
+	output        akiko_dma_req,
+	output        akiko_dma_we,
+	output [23:0] akiko_dma_baddr,
+	output  [7:0] akiko_dma_wbyte,
+	input   [7:0] akiko_dma_rbyte,
+	input         akiko_dma_ack,
+	input         akiko_dma_arm,
+
+	input         akiko_uio_cs,
+	input         akiko_uio_cs_sec,
+	input         akiko_uio_cs_nvr,
+	input         akiko_uio_cs_subcode,
+	input         akiko_uio_wr,
+	input         akiko_uio_rd,
+	input  [15:0] akiko_uio_din,
+	output [15:0] akiko_uio_dout,
+	output        akiko_uio_req,
+	output        akiko_uio_sec_req,
+	output        akiko_uio_rx_busy,
+	output        akiko_uio_nvr_dirty
 );
+
+localparam NATIVE_CD32 = 1;
 
 assign sel_ack = sel_akiko  | sel_ide   | sel_rtg   | sel_gayle;
 assign ready   = sel_akiko  | ide_ready | rtg_ready;
@@ -69,15 +94,118 @@ assign dout    = akiko_dout | ide_dout  | rtg_dout;
 wire        sel_akiko = sel && (addr[23:8] == 'hB800);
 wire [15:0] akiko_dout;
 
-akiko akiko
+wire        akiko_hps_cmd_pending;
+wire  [7:0] akiko_hps_cmd_byte;
+wire        akiko_hps_cmd_pop;
+wire        akiko_hps_cmd_done;
+wire        akiko_hps_result_push;
+wire  [7:0] akiko_hps_result_byte;
+wire        akiko_hps_result_done;
+wire        akiko_hps_sec_req;
+wire  [7:0] akiko_hps_sec_status;
+wire        akiko_hps_sec_push;
+wire [15:0] akiko_hps_sec_word;
+wire        akiko_hps_sec_done;
+wire        akiko_hps_subcode_push;
+wire  [7:0] akiko_hps_subcode_byte;
+wire        akiko_hps_subcode_done;
+wire        akiko_hps_rx_busy;
+wire  [7:0] akiko_uio_dout_byte;
+
+wire  [9:0] akiko_hps_nvr_addr;
+wire  [7:0] akiko_hps_nvr_dout;
+wire  [7:0] akiko_hps_nvr_load_din;
+wire        akiko_hps_nvr_load_we;
+wire        akiko_hps_nvr_clear_dirty;
+wire        akiko_hps_nvr_dirty;
+wire        akiko_hps_nvr_done;
+
+assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
+
+akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 (
 	.clk(clk_sys),
+	.reset(reset),
 	.cs(sel_akiko && !addr[7:6]),
 	.rd(rnw),
 	.wr(~rnw & (lds|uds)),
+	.lds(lds),
+	.uds(uds),
 	.addr(addr[5:1]),
 	.din(din),
-	.dout(akiko_dout)
+	.dout(akiko_dout),
+	.akiko_irq(akiko_irq),
+	.dma_req(akiko_dma_req),
+	.dma_we(akiko_dma_we),
+	.dma_baddr(akiko_dma_baddr),
+	.dma_wbyte(akiko_dma_wbyte),
+	.dma_rbyte(akiko_dma_rbyte),
+	.dma_ack(akiko_dma_ack),
+	.dma_arm(akiko_dma_arm),
+	.hps_cmd_pending(akiko_hps_cmd_pending),
+	.hps_cmd_byte(akiko_hps_cmd_byte),
+	.hps_cmd_pop(akiko_hps_cmd_pop),
+	.hps_cmd_done(akiko_hps_cmd_done),
+	.hps_result_push(akiko_hps_result_push),
+	.hps_result_byte(akiko_hps_result_byte),
+	.hps_result_done(akiko_hps_result_done),
+	.hps_sec_req(akiko_hps_sec_req),
+	.hps_sec_status(akiko_hps_sec_status),
+	.hps_sec_push(akiko_hps_sec_push),
+	.hps_sec_word(akiko_hps_sec_word),
+	.hps_sec_done(akiko_hps_sec_done),
+	.hps_rx_busy(akiko_hps_rx_busy),
+	.hps_nvr_addr(akiko_hps_nvr_addr),
+	.hps_nvr_dout(akiko_hps_nvr_dout),
+	.hps_nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
+	.hps_nvr_dirty(akiko_hps_nvr_dirty),
+	.nvr_load_addr(akiko_hps_nvr_addr),
+	.nvr_load_din(akiko_hps_nvr_load_din),
+	.nvr_load_we(akiko_hps_nvr_load_we),
+	.hps_subcode_push(akiko_hps_subcode_push),
+	.hps_subcode_byte(akiko_hps_subcode_byte),
+	.hps_subcode_done(akiko_hps_subcode_done)
+);
+
+akiko_hps_bridge akiko_hps_bridge
+(
+	.clk(clk_sys),
+	.reset(reset),
+	.uio_cs(akiko_uio_cs),
+	.uio_cs_sec(akiko_uio_cs_sec),
+	.uio_cs_nvr(akiko_uio_cs_nvr),
+	.uio_cs_subcode(akiko_uio_cs_subcode),
+	.uio_wr(akiko_uio_wr),
+	.uio_rd(akiko_uio_rd),
+	.uio_din(akiko_uio_din),
+	.uio_dout(akiko_uio_dout_byte),
+	.cmd_pending(akiko_hps_cmd_pending),
+	.cmd_byte(akiko_hps_cmd_byte),
+	.cmd_pop(akiko_hps_cmd_pop),
+	.cmd_done(akiko_hps_cmd_done),
+	.result_push(akiko_hps_result_push),
+	.result_byte(akiko_hps_result_byte),
+	.result_done(akiko_hps_result_done),
+	.sec_req(akiko_hps_sec_req),
+	.sec_status(akiko_hps_sec_status),
+	.sec_push(akiko_hps_sec_push),
+	.sec_word(akiko_hps_sec_word),
+	.sec_done(akiko_hps_sec_done),
+	.subcode_push(akiko_hps_subcode_push),
+	.subcode_byte(akiko_hps_subcode_byte),
+	.subcode_done(akiko_hps_subcode_done),
+	.nvr_addr(akiko_hps_nvr_addr),
+	.nvr_dout(akiko_hps_nvr_dout),
+	.nvr_load_din(akiko_hps_nvr_load_din),
+	.nvr_load_we(akiko_hps_nvr_load_we),
+	.nvr_clear_dirty(akiko_hps_nvr_clear_dirty),
+	.nvr_done(akiko_hps_nvr_done),
+	.nvr_dirty(akiko_hps_nvr_dirty),
+	.rx_busy(akiko_hps_rx_busy),
+	.req(akiko_uio_req),
+	.sec_req_out(akiko_uio_sec_req),
+	.rx_busy_out(akiko_uio_rx_busy),
+	.nvr_dirty_out(akiko_uio_nvr_dirty)
 );
 
 wire sel_ide   = ide_ena && sel && addr[23:16] ==  8'b1101_1010;       //IDE registers at $DA0000 - $DAFFFF	
@@ -117,7 +245,7 @@ gayle gayle
 	.led(ide_led)
 );
 
-wire        sel_rtg = sel && (addr[23:12] == 'hB80);
+wire        sel_rtg = sel && !sel_akiko && (addr[23:12] == 'hB80);
 wire [15:0] rtg_dout;
 wire        rtg_ready;
 

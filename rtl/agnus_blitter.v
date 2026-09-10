@@ -130,6 +130,7 @@ parameter BLT_L1   = 5'b11001;
 parameter BLT_L2   = 5'b11011;
 parameter BLT_L3   = 5'b11010;
 parameter BLT_L4   = 5'b11000;
+parameter BLT_FROZEN = 5'b11111;
 
 //local signals
 reg		[15:0] bltcon0;			// blitter control register 0
@@ -286,6 +287,24 @@ assign line = bltcon1[0]; // line mode
 assign desc = ~line & bltcon1[1]; // descending blit mode		
 assign efe = ~line & bltcon1[4]; // exclusive fill mode
 assign ife = ~line & bltcon1[3]; // inclusive fill mode
+
+// Real Amiga blitter freezes when BLTCON1 disables fill
+// while an extra-cycle D-only fill blit is still active.
+wire bltcon1_write =
+    reg_address_in[8:1] == BLTCON1[8:1];
+
+wire extra_fill_mode =
+    !line &&
+    (ife || efe) &&
+    (bltcon0[9:8] == 2'b01);
+
+wire freeze_on_bltcon1 =
+    busy &&
+    bltcon1_write &&
+    extra_fill_mode &&
+    !data_in[0] &&
+    !data_in[4] &&
+    !data_in[3];
 
 //--------------------------------------------------------------------------------------
 
@@ -615,10 +634,20 @@ wire   linesub = !bltcon1[4] &&  bltcon1[2] ||  bltcon1[4] &&  bltcon1[3] && !si
 // blitter FSM
 always @(posedge clk)
   if (clk7_en) begin
-  	if (reset)
-  		blt_state <= BLT_IDLE;
-  	else
-  		blt_state <= blt_next;
+    if (reset)
+      blt_state <= BLT_IDLE;
+    else if (blt_state == BLT_FROZEN) begin
+      // A new BLTSIZE starts the next blit and releases the freeze.
+      if (reg_address_in[8:1] == BLTSIZE[8:1] ||
+          (reg_address_in[8:1] == BLTSIZH[8:1] && ecs))
+        blt_state <= BLT_INIT;
+      else
+        blt_state <= BLT_FROZEN;
+    end
+    else if (freeze_on_bltcon1)
+      blt_state <= BLT_FROZEN;
+    else
+      blt_state <= blt_next;
   end
 
 always @(*)
@@ -868,7 +897,26 @@ always @(*)
 			else
 				blt_next = BLT_L4;
 		end
-				
+
+		BLT_FROZEN:
+			begin
+			// Real Amiga blitter is frozen.
+			// No DMA cycle, no address generation and no state progress.
+			chsel  = 2'bXX;
+			ptrsel = 2'bXX;
+			modsel = 2'bXX;
+
+			enaptr = 1'b0;
+			incptr = 1'b0;
+			decptr = 1'b0;
+			addmod = 1'b0;
+			submod = 1'b0;
+
+			dma_req = 1'b0;
+
+			blt_next = BLT_FROZEN;
+		end
+
 		default:
 		begin
 			chsel = CHA;

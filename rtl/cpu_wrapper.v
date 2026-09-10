@@ -33,7 +33,7 @@ module cpu_wrapper
 	input             ph1,
 	input             ph2,
 
-	input       [1:0] cpucfg,
+	input       [2:0] cpucfg,
 	input       [2:0] fastramcfg,
 	input       [2:0] cachecfg,
 	input             bootrom,
@@ -69,10 +69,30 @@ module cpu_wrapper
 	output            toccata_ena,
 	output reg  [7:0] toccata_base,
 
+	output            a2065_ena,
+	output reg  [7:0] a2065_base,
+
+	input             cdtv_mode,
+	output reg  [7:0] cdtv_base,
+
+	input      [15:0] cdtv_din,
+	input             cdtv_selack,
+
 	output reg  [1:0] cpustate,
 	output reg  [3:0] cacr,
-	output reg [31:0] nmi_addr
+	output reg [31:0] nmi_addr,
+
+	output reg        z2ram_ena,
+	output reg  [4:0] z3ram_base0,
+	output reg        z3ram_ena0,
+	output reg  [3:0] z3ram_base1,
+	output reg        z3ram_ena1,
+
+	output            dcache_sw_en
 );
+
+wire dcache_sw_en_p;
+assign dcache_sw_en = cpucfg[1] ? dcache_sw_en_p : 1'b1;
 
 assign ramsel       = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
 assign ramshared    = sel_dd;
@@ -80,20 +100,36 @@ assign ramshared    = sel_dd;
 // NMI
 always @(posedge clk) nmi_addr <= vbr + 32'h7c;
 
-wire sel_z3ram0 = (cpu_addr[31:27] == z3ram_base0) && z3ram_ena0;
-wire sel_z3ram1 = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;
-wire sel_z2ram  = !cpu_addr[31:24] && (cpu_addr[23] ^ |cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4
-wire sel_zram   = sel_z3ram0 | sel_z3ram1 | sel_z2ram;
-wire sel_dd     = (cpu_addr[31:16] == 16'h00DD) && (cpu_addr[15:13] == 'b010);
-wire sel_rtg    = (cpu_addr[31:24] == 8'h02);
+wire sel_chipram;
+wire sel_kickram;
+wire sel_zram;
+wire sel_dd;
+wire sel_rtg;
 
-// don't sel_kickram when writing
-wire sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (cpu_addr[23:19] == 5'b11100)) && ckick && wr;	// $f8xxxx, e0xxxx
-wire sel_kicklower = !cpu_addr[31:24] && (cpu_addr[23:18] == 6'b111110);
-wire sel_chipram   = !cpu_addr[31:21] && cchip; 		             //$000000 - $1FFFFF
+memory_router u_memory_router
+(
+	.cpu_addr      (cpu_addr      ),
+	.cchip         (cchip         ),
+	.ckick         (ckick         ),
+	.wr            (wr            ),
+	.bootrom       (bootrom       ),
+	.cdtv_mode     (cdtv_mode     ),
+	.z2ram_ena     (z2ram_ena     ),
+	.z3ram_base0   (z3ram_base0   ),
+	.z3ram_ena0    (z3ram_ena0    ),
+	.z3ram_base1   (z3ram_base1   ),
+	.z3ram_ena1    (z3ram_ena1    ),
+	.sel_chipram   (sel_chipram   ),
+	.sel_kickram   (sel_kickram   ),
+	.sel_zram      (sel_zram      ),
+	.sel_dd        (sel_dd        ),
+	.sel_rtg       (sel_rtg       ),
+	.ramaddr       (ramaddr       )
+);
+
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
-// decide what to do, would not be good style to replicate that here). 
+// decide what to do, would not be good style to replicate that here).
 wire sel_nmi_vector = (cpu_addr[31:2] == nmi_addr[31:2]) && (cpustate == 2);
 
 wire [15:0] ramdat;
@@ -103,34 +139,16 @@ assign ramuds = sel_rtg ? lds_in : uds_in;
 assign ramdin = sel_rtg ? {cpu_dout[7:0],cpu_dout[15:8]} : cpu_dout;
 assign ramdat = sel_rtg ? {ramdout[7:0], ramdout[15:8]}  : ramdout;
 
-//       Main  DDx  RTG  8M  128M  256M
-//       ----  ---  ---  --  ----  ----
-//        SDR  DDR  RTG  Z2  Z3_0  Z3_1
-// 28      0    0    0   1    0     1
-// 27      0    0    0   1    1     X
-// 26      0    1    1   0    X     X
-// 25-23   0   111  110  0    X     X
-// supported configs: SDR + (Z2, Z3_1, Z3_0+Z3_1)
-
-// This is the mapping to the sram
-// map 00-1f to 00-1f (chipram), a0-ff to 20-7f. All non-fastram goes into the first
-// 8M block(SDRAM). This map should be the same as in minimig_sram_bridge.v 
-// All Zorro RAM goes to DDR3
-assign ramaddr[28]    = sel_zram & ~sel_z3ram0;
-assign ramaddr[27]    = sel_zram & (~sel_z3ram1 | cpu_addr[27]);
-assign ramaddr[26:23] = (sel_z3ram0 | sel_z3ram1) ? cpu_addr[26:23]: (sel_rtg ? 4'b1110 : {4{sel_dd}});
-assign ramaddr[22:19] = {4{sel_dd}} | cpu_addr[22:19];
-assign ramaddr[18]    =    sel_dd   | (sel_kicklower & bootrom) | cpu_addr[18];
-assign ramaddr[17:16] = {2{sel_dd}} | cpu_addr[17:16];
-assign ramaddr[15:1]  = cpu_addr[15:1];
-
 assign fastchip_lds = lds_in;
 assign fastchip_uds = uds_in;
 assign fastchip_rnw = wr;
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel ? ramdat : fastchip_selack ? fastchip_dout : {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire [15:0] cpu_din = ramsel ? ramdat :
+                      fastchip_selack ? fastchip_dout :
+                      cdtv_selack ? cdtv_din :
+                      {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
 reg         wr;
 reg         uds_in;
 reg         lds_in;
@@ -204,7 +222,7 @@ cpu_inst_p
 (
   .clk(clk),
   .nreset(reset),
-  .clkena_in(~cpu_req | chipready | ramready | fastchip_ready),
+  .clkena_in(clkena_p_throttled),
   .data_in(cpu_din),
   .ipl(cpu_ipl),
   .ipl_autovector(1),
@@ -217,9 +235,10 @@ cpu_inst_p
   .nresetout(reset_out_p),
   .longword(longword),
   
-  .cpu(cpucfg),
+  .cpu(cpucfg[1:0]),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
+  .d_cache_out(dcache_sw_en_p),
   .vbr_out(vbr_p)
 );
 
@@ -267,7 +286,7 @@ fx68k cpu_inst_o
 
 wire cpu_req = (cpustate != 1);
 
-wire cchip = turbochip_d & (!cpustate | dcache_d);
+wire cchip = turbochip_d & (!cpustate | (dcache_d & (cpustate != 2'd3)));
 wire ckick = turbokick_d & (!cpustate | dcache_d);
 
 reg turbochip_d;
@@ -285,6 +304,17 @@ always @(posedge clk) begin
 		dcache_d    <= cachecfg[2];
 	end
 end
+
+wire stock_speed   = cpucfg[2];
+wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
+
+reg [3:0] cooldown;
+always @(posedge clk) begin
+	if (~reset)                                cooldown <= 4'd0;
+	else if (cooldown != 4'd0)                 cooldown <= cooldown - 4'd1;
+	else if (stock_speed & clkena_p_base)      cooldown <= 4'd4;
+end
+wire clkena_p_throttled = clkena_p_base & (cooldown == 4'd0);
 
 reg       chipreq;
 reg [2:0] cpu_ipl;
@@ -355,27 +385,43 @@ end
 ///////////////////// AUTOCONFIG ////////////////////////////
 
 reg       ac_toccata;
+reg       ac_a2065;
+reg       ac_cdtv;
 reg [2:0] ac_memcard;
 reg [3:0] autocfg_data;
+
 
 always @(*) begin
 	autocfg_data = 4'b1111;
 
-	// Zorro II RAM (Up to 8 meg at 0x200000). It has a fixed base, so it must be first in the chain.
-	if (~ac_memcard[2] && ac_memcard[1:0]) begin
+	if (ac_cdtv) begin
 		case (chip_addr[6:1])
-			6'b000000: autocfg_data = 4'b1110;	// Zorro-II card, add mem, no ROM
+			6'h00: autocfg_data = 4'b1100;
+			6'h01: autocfg_data = 4'b0001;
+			6'h03: autocfg_data = 4'b1100;
+			6'h04: autocfg_data = 4'b1011;
+			6'h09: autocfg_data = 4'b1101;
+			6'h0B: autocfg_data = 4'b1101;
+			default: autocfg_data = 4'b1111;
+		endcase
+	end
+	// Zorro II RAM (Up to 8 meg at 0x200000). It has a fixed base, so it must be first in the chain.
+	else if (~ac_memcard[2] && ac_memcard[1:0]) begin
+		case (chip_addr[6:1])
+			6'b000000: autocfg_data = 4'b1110;
 			6'b000001:
 				case (ac_memcard[1:0])
 							1: autocfg_data = 4'b0110; // 2MB
 							2: autocfg_data = 4'b0111; // 4MB
 					default: autocfg_data = 4'b0000; // 8MB
 				endcase
-			6'b001000: autocfg_data = 4'b1110;	// Manufacturer ID: 0x139c
-			6'b001001: autocfg_data = 4'b1100;
-			6'b001010: autocfg_data = 4'b0110;
-			6'b001011: autocfg_data = 4'b0011;
-			6'b010011: autocfg_data = 4'b1110; //serial=1
+			6'b000010: autocfg_data = 4'b1010;
+			6'b000011: autocfg_data = 4'b1110;
+			6'b001000: autocfg_data = 4'b1111;
+			6'b001001: autocfg_data = 4'b1000;
+			6'b001010: autocfg_data = 4'b0010;
+			6'b001011: autocfg_data = 4'b0100;
+			6'b010011: autocfg_data = 4'b1110;
 			  default:;
 		endcase
 	end
@@ -393,7 +439,40 @@ always @(*) begin
 			6'hb: autocfg_data = 4'b1011;
 			default: ;
 		endcase
-	end 
+	end
+	// A2065 Ethernet (Commodore, mfr=0x0202, product=0x70)
+	else if(ac_a2065) begin
+		case (chip_addr[6:1])
+			6'h0: autocfg_data = 4'b1100; // Zorro-II card, no link, no ROM
+			6'h1: autocfg_data = 4'b0001; // size 64KB
+			// Inverted from here on
+			6'h2: autocfg_data = 4'b1000; // er_Product high nibble
+			6'h3: autocfg_data = 4'b1111; // er_Product low nibble -> 0x70
+			6'h4: autocfg_data = 4'b1111; // er_Flags high
+			6'h5: autocfg_data = 4'b1111; // er_Flags low
+			6'h8: autocfg_data = 4'b1111; // er_Manufacturer high high
+			6'h9: autocfg_data = 4'b1101; // er_Manufacturer high low
+			6'ha: autocfg_data = 4'b1111; // er_Manufacturer low high
+			6'hb: autocfg_data = 4'b1101; // er_Manufacturer low low -> 0x0202
+			// er_SerialNumber bytes 2..5 — the A2065 station address low
+			// bytes, which AmigaOS reads as the card's MAC. Left at zero
+			// (nibbles are inverted, so 4'b1111 reads as 0): the host side
+			// rewrites the source address on the wire, so the card does not
+			// need a unique serial here. Driving these from a register would
+			// mean a real MAC arriving before autoconfig has run.
+			6'hc:  autocfg_data = 4'b1111;
+			6'hd:  autocfg_data = 4'b1111;
+			6'he:  autocfg_data = 4'b1111;
+			6'hf:  autocfg_data = 4'b1111;
+			6'h10: autocfg_data = 4'b1111;
+			6'h11: autocfg_data = 4'b1111;
+			6'h12: autocfg_data = 4'b1111;
+			6'h13: autocfg_data = 4'b1111;
+			6'h14: autocfg_data = 4'b1111; // er_InitDiagVec
+			6'h15: autocfg_data = 4'b1111; // er_InitDiagVec
+			default: ;
+		endcase
+	end
 	// Zorro III RAM 128MB/256MB/384MB
 	else if(ac_memcard[2]) begin
 		case (chip_addr[6:1])
@@ -412,20 +491,18 @@ always @(*) begin
 	end
 end
 
-wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata); //$E80000 - $E8FFFF
+wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv); //$E80000 - $E8FFFF
 
-reg       z2ram_ena;
-reg [4:0] z3ram_base0;
-reg [3:0] z3ram_base1;
-reg       z3ram_ena0;
-reg       z3ram_ena1;
 always @(posedge clk) begin
 	reg old_uds;
 	old_uds <= chip_uds;
 
 	if (~reset | ~reset_out) begin
 		ac_memcard  <= cpucfg[1] ? fastramcfg : fastramcfg[2] ? 3'd3 : {1'b0, fastramcfg[1:0]};
-		ac_toccata  <= 1;
+		ac_toccata  <= cdtv_mode ? 1'b0 : 1'b1;
+		ac_a2065    <= 1;
+		ac_cdtv     <= cdtv_mode;
+		cdtv_base   <= 8'hE9;
 		z2ram_ena   <= 0;
 		z3ram_ena0  <= 0;
 		z3ram_ena1  <= 0;
@@ -433,7 +510,16 @@ always @(posedge clk) begin
 		z3ram_base1 <= 1;
 	end
 	else if (sel_autoconfig && ~chip_rw && ~chip_uds && old_uds) begin
-		if(~ac_memcard[2] && ac_memcard[1:0]) begin
+		if(ac_cdtv) begin
+			if (chip_addr[6:1] == 6'b100100) begin
+				cdtv_base <= cpu_dout[15:8];
+				ac_cdtv   <= 0;
+			end
+			else if (chip_addr[6:1] == 6'b100110) begin
+				ac_cdtv   <= 0;
+			end
+		end
+		else if(~ac_memcard[2] && ac_memcard[1:0]) begin
 			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, ZII RAM
 				z2ram_ena <= 1;
 				ac_memcard <= 0;
@@ -443,7 +529,13 @@ always @(posedge clk) begin
 			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, Toccata card in ZII io space ($E90000)
 				toccata_base <= cpu_dout[7:0];
 				ac_toccata<=0;
-			end		
+			end
+		end
+		else if(ac_a2065) begin
+			if (chip_addr[6:1] == 6'b100100) begin // Register 0x48 - config, A2065 Ethernet
+				a2065_base <= cpu_dout[7:0];
+				ac_a2065<=0;
+			end
 		end
 		else if(ac_memcard[2]) begin
 			if(chip_addr[6:1] == 6'b100010) begin // Register 0x44, assign base address to ZIII RAM.
@@ -462,6 +554,7 @@ always @(posedge clk) begin
 	end
 end
 
-assign toccata_ena = ~ac_toccata;
+assign toccata_ena = ~ac_toccata & ~cdtv_mode;
+assign a2065_ena   = ~ac_a2065;
 
 endmodule

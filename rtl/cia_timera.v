@@ -16,6 +16,7 @@ module cia_timera
   input   [7:0] data_in,  // CPU data bus input
   output   [7:0] data_out, // CPU data bus output
   input  eclk,            // External clock input (usually E clock = system clock/10)
+  input  cnt,             // CNT pin input
   output  tmra_ovf,       // Timer A overflow signal (used by Timer B cascade mode)
   output  spmode,         // Serial port mode: 0=input, 1=output
   output  irq             // Timer underflow interrupt request
@@ -34,9 +35,19 @@ wire  reload;             // Reload timer from latch
 wire  zero;               // Timer reached zero
 wire  underflow;          // Timer underflow condition
 wire  count;              // Count enable signal
+reg    [2:0] cnt_sync;    // CNT pin synchroniser and edge detect
+wire  cnt_rise;           // CNT pin positive transition
 
-// Count source is always eclk for Timer A
-assign count = eclk;
+always @(posedge clk)
+  if (reset)
+    cnt_sync[2:0] <= 3'b111;
+  else if (clk7_en)
+    cnt_sync[2:0] <= {cnt_sync[1:0],cnt};
+
+assign cnt_rise = cnt_sync[1] & ~cnt_sync[2];
+
+// Count source selected by CRA bit 5 (INMODE)
+assign count = tmcr[5] ? cnt_rise : eclk;
 
 // Timer Control Register (CRA) bit definitions:
 // Bit 0: START - Start/stop timer (1=start, 0=stop)
@@ -44,7 +55,7 @@ assign count = eclk;
 // Bit 2: OUTMODE - PB6 output mode (not implemented)
 // Bit 3: RUNMODE - 0=continuous, 1=one-shot
 // Bit 4: LOAD - Force load timer from latch (strobe, write-only)
-// Bit 5: INMODE - Count source: 0=system clock, 1=CNT pin (simplified to eclk only)
+// Bit 5: INMODE - Count source: 0=system clock, 1=CNT pin
 // Bit 6: SPMODE - Serial port mode: 0=input, 1=output (for baud rate generation)
 // Bit 7: Unused (TOD clock select on CRB register only)
 

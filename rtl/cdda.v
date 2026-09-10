@@ -39,6 +39,9 @@ reg [15:0] DATA;
 reg [BUFFER_WIDTH-1:0] READ_ADDR, WRITE_ADDR;
 reg [BUFFER_WIDTH:0] AVAILABLE_COUNT;
 
+reg [31:0] BUFFER[BUFFER_SIZE];
+reg [31:0] BUFFER_Q;
+
 always @(posedge CLK) begin
 	if (~nRESET) begin
 		OLD_WRITE <= 0;
@@ -80,8 +83,6 @@ always @(posedge CLK) begin
 	end
 end
 
-reg [31:0] BUFFER[BUFFER_SIZE];
-reg [31:0] BUFFER_Q;
 always @(posedge CLK) begin
 	BUFFER_Q <= BUFFER[READ_ADDR];
 	if (WR_REQ) BUFFER[WRITE_ADDR] <= {DIN,DATA};

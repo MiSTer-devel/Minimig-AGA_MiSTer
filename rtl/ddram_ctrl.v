@@ -29,20 +29,34 @@ module ddram_ctrl
 	input             cache_rst,
 	input             cache_inhibit,
 	input       [3:0] cpu_cache_ctrl,
+	input             dcache_sw_en,
 
 	// DDR3    
 	output            DDRAM_CLK,
 	input             DDRAM_BUSY,
 	output      [7:0] DDRAM_BURSTCNT,
-	output reg [28:0] DDRAM_ADDR,
+	output     [28:0] DDRAM_ADDR,
 	input      [63:0] DDRAM_DOUT,
 	input             DDRAM_DOUT_READY,
-	output reg        DDRAM_RD,
-	output reg [63:0] DDRAM_DIN,
-	output reg  [7:0] DDRAM_BE,
-	output reg        DDRAM_WE,
+	output            DDRAM_RD,
+	output     [63:0] DDRAM_DIN,
+	output      [7:0] DDRAM_BE,
+	output            DDRAM_WE,
 
-	// cpu    
+	// Second memory port, shared onto the same DDR3 interface. Used by the
+	// A2065 Ethernet card, which touches DDR3 rarely; the CPU's fast RAM has
+	// priority over it and is never made to wait.
+	input      [28:0] mem2_address,
+	input       [7:0] mem2_burstcount,
+	input             mem2_read,
+	output     [63:0] mem2_readdata,
+	output            mem2_readdatavalid,
+	input      [63:0] mem2_writedata,
+	input       [7:0] mem2_byteenable,
+	input             mem2_write,
+	output            mem2_waitrequest,
+
+	// cpu
 	input      [28:1] cpuAddr,
 	input             cpuCS,
 	input       [1:0] cpustate,
@@ -51,7 +65,16 @@ module ddram_ctrl
 	input      [15:0] cpuWR,
 	output     [15:0] cpuRD,
 	input             ramshared,
-	output            ramready
+	output            ramready,
+
+	input      [28:1] dmaAddr,
+	input             dmaCS,
+	input             dmaWE,
+	input             dmaL,
+	input             dmaU,
+	input      [15:0] dmaWR,
+	output reg [15:0] dmaRD,
+	output            dmaACK
 );
 
 wire ramsel = cpuCS & (~&cpustate | ~cpuU | ~cpuL);
@@ -61,11 +84,17 @@ wire cache_req;
 reg  cache_fill;
 wire cache_ack;
 
+reg        dma_snoop_act;
+reg [28:1] dma_snoop_adr;
+reg [15:0] dma_snoop_dat;
+reg  [1:0] dma_snoop_bs;
+
 cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                 // clock
 	.rst              (~reset_n | ~cache_rst),  // cache reset
 	.cpu_cache_ctrl   (cpu_cache_ctrl),         // CPU cache control
+	.dcache_sw_en     (dcache_sw_en),
 	.cache_inhibit    (cache_inhibit | ramshared), // cache inhibit
 	.cpu_cs           (ramsel),                 // cpu activity
 	.cpu_adr          (cpuAddr),                // cpu address
@@ -79,7 +108,11 @@ cpu_cache_new cpu_cache
 	.wb_en            (cache_ack),              // write enable
 	.sdr_dat_r        (ddr_swap ? {ddr_data[7:0], ddr_data[15:8]} : ddr_data), // sdram read data
 	.sdr_read_req     (cache_req),              // sdram read request from cache
-	.sdr_read_ack     (cache_fill)              // sdram read acknowledge to cache
+	.sdr_read_ack     (cache_fill),             // sdram read acknowledge to cache
+	.snoop_act        (dma_snoop_act),
+	.snoop_adr        (dma_snoop_adr),
+	.snoop_dat_w      (dma_snoop_dat),
+	.snoop_bs         (dma_snoop_bs)
 );
 
 // write buffer, enables CPU to continue while a write is in progress
@@ -125,8 +158,124 @@ end
 
 assign ramready = cache_hit || write_ena;
 
+reg dmaCS_sync1;
+reg dmaCS_sync2;
+reg dmaCS_sync3;
+always @ (posedge sysclk) begin
+	if (~reset_n) begin
+		dmaCS_sync1 <= 0;
+		dmaCS_sync2 <= 0;
+		dmaCS_sync3 <= 0;
+	end else begin
+		dmaCS_sync1 <= dmaCS;
+		dmaCS_sync2 <= dmaCS_sync1;
+		dmaCS_sync3 <= dmaCS_sync2;
+	end
+end
+wire dmaCS_rise = dmaCS_sync2 & ~dmaCS_sync3;
+
+reg        dma_write_req;
+reg        dma_write_ack;
+reg [28:1] dmaWriteAddr;
+reg [15:0] dmaWriteDat;
+reg  [1:0] dmaWriteBE;
+reg        dmaACK_r;
+
+reg        dma_read_req;
+reg        dma_read_ack;
+reg [28:1] dmaReadAddr;
+reg  [1:0] dmaReadBA;
+reg        dma_read_in_flight;
+
+assign dmaACK = dmaACK_r;
+
+always @ (posedge sysclk) begin
+	dma_snoop_act <= 0;
+
+	if (~reset_n) begin
+		dma_write_req <= 0;
+		dma_read_req  <= 0;
+		dmaACK_r      <= 0;
+	end else begin
+		if (dmaCS_rise & ~dma_write_req & ~dma_read_req & ~dmaACK_r) begin
+			if (dmaWE) begin
+			dmaWriteAddr  <= dmaAddr;
+			dmaWriteDat   <= dmaWR;
+			dmaWriteBE    <= ~{dmaU, dmaL};
+			dma_write_req <= 1'b1;
+			dma_snoop_act <= 1'b1;
+			dma_snoop_adr <= dmaAddr;
+			dma_snoop_dat <= dmaWR;
+			dma_snoop_bs  <= ~{dmaU, dmaL};
+			end else begin
+				dmaReadAddr  <= dmaAddr;
+				dma_read_req <= 1'b1;
+			end
+		end
+
+		if (dma_write_ack) begin
+			dma_write_req <= 1'b0;
+			dmaACK_r      <= 1'b1;
+		end
+
+		if (dma_read_ack) begin
+			dma_read_req <= 1'b0;
+			dmaACK_r     <= 1'b1;
+		end
+
+		if (~dmaCS_sync2) dmaACK_r <= 1'b0;
+	end
+end
+
 assign DDRAM_CLK = sysclk;
-assign DDRAM_BURSTCNT = 1;
+
+// Fast RAM's own view of DDR3. It goes through the arbiter below rather than
+// straight to the pins, so that the second port can share the interface.
+reg  [28:0] ram_addr;
+reg  [63:0] ram_din;
+reg   [7:0] ram_be;
+reg         ram_rd, ram_we;
+wire        ram_busy;
+wire [63:0] ram_dout       = DDRAM_DOUT;
+wire        ram_dout_ready;
+
+a2065_ddram_arbiter arbiter
+(
+	.clk             (sysclk),
+	.rst             (~reset_n),
+
+	.m0_address      (ram_addr),
+	.m0_burstcount   (8'd1),
+	.m0_read         (ram_rd),
+	.m0_readdata     (),
+	.m0_readdatavalid(ram_dout_ready),
+	.m0_writedata    (ram_din),
+	.m0_byteenable   (ram_be),
+	.m0_write        (ram_we),
+	.m0_waitrequest  (ram_busy),
+
+	.m1_address      (mem2_address),
+	.m1_burstcount   (mem2_burstcount),
+	.m1_read         (mem2_read),
+	.m1_readdata     (),
+	.m1_readdatavalid(mem2_readdatavalid),
+	.m1_writedata    (mem2_writedata),
+	.m1_byteenable   (mem2_byteenable),
+	.m1_write        (mem2_write),
+	.m1_waitrequest  (mem2_waitrequest),
+
+	.s_address       (DDRAM_ADDR),
+	.s_burstcount    (DDRAM_BURSTCNT),
+	.s_read          (DDRAM_RD),
+	.s_readdata      (DDRAM_DOUT),
+	.s_readdatavalid (DDRAM_DOUT_READY),
+	.s_writedata     (DDRAM_DIN),
+	.s_byteenable    (DDRAM_BE),
+	.s_write         (DDRAM_WE),
+	.s_waitrequest   (DDRAM_BUSY)
+);
+
+assign mem2_readdata = DDRAM_DOUT;
 
 reg        ddr_swap;
 reg [15:0] ddr_data;
@@ -139,40 +288,65 @@ always @ (posedge sysclk) begin
 	cache_fill <= 0;
 	ddr_data <= dout[{ba, 4'b0000} +:16];
 
-	if(~DDRAM_BUSY) begin
-		DDRAM_WE  <= 0;
-		DDRAM_RD  <= 0;
+	if(~ram_busy) begin
+		ram_we  <= 0;
+		ram_rd  <= 0;
 	end
 
 	if(~reset_n) begin
-		state     <= 0;
-		write_ack <= 0;
+		state         <= 0;
+		write_ack     <= 0;
+		dma_write_ack <= 0;
+		dma_read_ack       <= 0;
+		dma_read_in_flight <= 0;
 	end
 	else begin
 		case(state)
-			0: if(~DDRAM_BUSY) begin
-					if(~write_ack & write_req) begin
-						DDRAM_ADDR <= {3'b001, writeAddr[28:3]};
-						DDRAM_BE   <= {6'b000000,writeBE}<<{writeAddr[2:1],1'b0};
-						DDRAM_DIN  <= {writeDat,writeDat,writeDat,writeDat};
-						DDRAM_WE   <= 1;
+			0: if(~ram_busy) begin
+					if(~dma_write_ack & dma_write_req) begin
+						ram_addr      <= {3'b001, dmaWriteAddr[28:3]};
+						ram_be        <= {6'b000000,dmaWriteBE}<<{dmaWriteAddr[2:1],1'b0};
+						ram_din       <= {dmaWriteDat,dmaWriteDat,dmaWriteDat,dmaWriteDat};
+						ram_we        <= 1;
+						dma_write_ack <= 1;
+					end
+					else if(~dma_read_ack & dma_read_req & ~dma_read_in_flight) begin
+						ram_addr           <= {3'b001, dmaReadAddr[28:3]};
+						ram_be             <= 8'hFF;
+						ram_rd             <= 1;
+						dmaReadBA          <= dmaReadAddr[2:1];
+						dma_read_in_flight <= 1;
+						state              <= 1;
+					end
+					else if(~write_ack & write_req) begin
+						ram_addr <= {3'b001, writeAddr[28:3]};
+						ram_be   <= {6'b000000,writeBE}<<{writeAddr[2:1],1'b0};
+						ram_din  <= {writeDat,writeDat,writeDat,writeDat};
+						ram_we   <= 1;
 						write_ack  <= 1;
 					end
 					else if(cache_req) begin
-						DDRAM_ADDR <= {3'b001, cpuAddr[28:3]};
-						DDRAM_BE   <= 8'hFF;
-						DDRAM_RD   <= 1;
+						ram_addr <= {3'b001, cpuAddr[28:3]};
+						ram_be   <= 8'hFF;
+						ram_rd   <= 1;
 						ba         <= cpuAddr[2:1];
 						state      <= 1;
 						ddr_swap   <= ramshared;
 					end
 				end
-			1: if(~DDRAM_BUSY & DDRAM_DOUT_READY) begin
-					ddr_data      <= DDRAM_DOUT[{ba, 4'b0000} +:16];
-					dout          <= DDRAM_DOUT;
+			1: if(~ram_busy & ram_dout_ready) begin
+					if (dma_read_in_flight) begin
+						dmaRD              <= ram_dout[{dmaReadBA, 4'b0000} +:16];
+						dma_read_ack       <= 1;
+						dma_read_in_flight <= 0;
+						state              <= 0;
+					end else begin
+					ddr_data      <= ram_dout[{ba, 4'b0000} +:16];
+					dout          <= ram_dout;
 					cache_fill    <= 1;
 					ba            <= ba + 1'd1;
 					state         <= state + 1'd1;
+				end
 				end
 			2,3: begin
 					cache_fill    <= 1;
@@ -186,6 +360,8 @@ always @ (posedge sysclk) begin
 		endcase
 
 		if(~write_req) write_ack <= 0;
+		if(~dma_write_req) dma_write_ack <= 0;
+		if(~dma_read_req)  dma_read_ack  <= 0;
 	end
 end
 

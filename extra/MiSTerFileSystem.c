@@ -195,9 +195,9 @@ void dbg(const char* fmt, ...)
 }
 #endif
 
-char *DosAllocMem(int len)
+char *DosAllocMem(long len)
 {
-	long *p = (long *)AllocMem(len + 4, MEMF_PUBLIC | MEMF_CLEAR);
+	long *p = (long *)AllocMem(len + sizeof(long), MEMF_PUBLIC | MEMF_CLEAR);
 	*p++ = len;
 	return((char *)p);
 }
@@ -206,7 +206,7 @@ void DosFreeMem(char *p)
 {
 	long *lp = (long *)p;
 	long len = *--lp;
-	FreeMem((char *)lp, len);
+	FreeMem((char *)lp, len + sizeof(long));
 }
 
 void reply_packet(struct DosPacket *dp)
