@@ -458,8 +458,9 @@ wire [15:0] cart_data_out;
 wire        usrrst;				//user reset from osd interface
 wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
 wire  [7:0] memory_config;		//memory configuration
-wire  [3:0] floppy_config;		//floppy drives configuration (external settings, drive number and speed)
+wire  [4:0] floppy_config;		//floppy drives configuration (external settings, drive number and speed)
 wire  [11:0] floppy_ext_drive; // external floppy drive config
+reg         floppy_disabled = 1'b0;
 wire  [5:0] chipset_config;
 assign cdtv_mode = chipset_config[5];
 wire  [5:0] ide_config;			//HDD & HDC config: bit #0 enables Gayle, bit #1 enables Master drive, bit #2 enables Slave drive
@@ -485,6 +486,9 @@ wire        sys_reset;    		//reset output from minimig_syscontrol.v
 wire        rom_readonly; 		//writeprotect $f8-ff in gary.v
 
 wire        reset = sys_reset | ~_cpu_reset_in; // both tg68k and minimig_syscontrol hold the reset signal for some clicks
+
+always @(posedge clk) if (clk7_en && reset) floppy_disabled <= floppy_config[4];
+wire [3:0] floppy_sel = {_sel3,_sel2,_sel1,_sel0} | {4{floppy_disabled}};
 
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
@@ -582,7 +586,7 @@ paula PAULA1
 	.disk_dmas(disk_dmas),
 	._step(_step),
 	.direc(direc),
-	._sel({_sel3,_sel2,_sel1,_sel0}),
+	._sel(floppy_sel),
 	.side(side),
 	._motor(_motor),
 	._track0(_track0),
@@ -602,6 +606,7 @@ paula PAULA1
 	.rdata_okk(rdata_okk),
 
 	.floppy_drives(floppy_config[3:2]),
+	.floppy_zero_active(floppy_disabled),
 	.floppy_ext_drive(floppy_ext_drive),
 	.floppy_speed_allowed(floppy_config[0]),
 	.floppy_speed(floppy_speed),

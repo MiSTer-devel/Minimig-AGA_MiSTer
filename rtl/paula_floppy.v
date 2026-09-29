@@ -107,6 +107,7 @@ module paula_floppy
 
 	output        fdd_led,			//disk activity LED, active when DMA is on
 	input	[1:0]   floppy_drives,	//floppy drive number
+	input         floppy_zero_active,
 	input [11:0]  floppy_ext_drive,   // external drive number to use AAABBBCCCDDD
 	input floppy_speed_allowed,
 	output floppy_speed,
@@ -416,7 +417,7 @@ always @(*) begin
 	casex ({cmd_cnt, cmd_fdd, hostRead,  sel_external ? 1'b0 : trackwr })
 		
 		// fdd request status - To simulate a virtual drive properly, while its 'READY' it needs to be constantly outputting data, it just doesnt get written
-		'b00xxx: tx_data = {sel[1:0], drives[1:0], 2'b00, sel_external ? 1'b0 : trackwr, hostRead, track[7:0]};
+		'b00xxx: tx_data = {sel[1:0], drives[1:0], 1'b1, floppy_zero_active, sel_external ? 1'b0 : trackwr, hostRead, track[7:0]};
 
 		// fdd data
 		'b01xxx: tx_data = dsksync[15:0];

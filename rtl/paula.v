@@ -108,6 +108,7 @@ module paula
 	output [8:0] rdata_okk, 	//right DAC data (PWM volume)
 	// system configuration
 	input	  [1:0] floppy_drives,	//number of extra floppy drives
+	input         floppy_zero_active,
 	input [11:0]   floppy_ext_drive, // external floppy drive config
 	input floppy_speed_allowed,
 	output floppy_speed,	// set to 1 if we allow fast speed
@@ -277,6 +278,7 @@ paula_floppy pf1
 	.IO_DOUT(IO_DOUT),
 	.fdd_led(fdd_led),
 	.floppy_drives(floppy_drives),
+	.floppy_zero_active(floppy_zero_active),
 	.floppy_ext_drive(floppy_ext_drive),
 	.floppy_speed_allowed(floppy_speed_allowed),
 	.floppy_speed(floppy_speed),
