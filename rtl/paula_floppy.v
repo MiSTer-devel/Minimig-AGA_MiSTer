@@ -603,7 +603,14 @@ assign _ready = flux_inuse ? (virtualFloppyMode ? _virtualFluxDataReady : _ready
 //--------------------------------------------------------------------------------------
 
 // For real disks this register is now more accurate, supports DSKBYT and associated bit properly
-assign dskbytr = (reg_address_in[8:1]==DSKBYTR[8:1]) ? {flux_inuse ? diskByteReady : 1'b1, (trackrd|trackwr),dsklen[14],syncWordNOW,4'b0000,diskByte} : 16'h00_00;
+assign dskbytr = (reg_address_in[8:1]==DSKBYTR[8:1]) ? {
+	flux_inuse ? diskByteReady : 1'b1,
+	(trackrd|trackwr),
+	dsklen[14],
+	flux_inuse ? syncWordNOW : 1'b1,
+	4'b0000,
+	flux_inuse ? diskByte : 8'h00
+} : 16'h00_00;
 
 //disk data byte and status read
 always @(posedge clk) begin
