@@ -54,7 +54,7 @@ module userio
 	input      [15:0] IO_DIN,
 	output reg  [7:0] memory_config,
 	output reg  [5:0] chipset_config,
-	output reg  [3:0] floppy_config,
+	output reg  [4:0] floppy_config,
 	output reg  [11:0] floppy_ext_drive,
 	output reg        user_port_mode,			// 1=MiSTer Floppy, 0=MT32Pi
 	output reg  [2:0] scanline,
@@ -467,7 +467,7 @@ always @(posedge clk) begin
 				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[5:0];
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};
-				if (floppy_cfg_sel)   floppy_config <= IO_DIN[3:0];
+				if (floppy_cfg_sel)   floppy_config <= IO_DIN[4:0];
 				if (floppyex01_cfg_sel) { floppy_ext_drive[5:3], floppy_ext_drive[2:0]}  = IO_DIN[5:0];
 				if (floppyex23_cfg_sel) { floppy_ext_drive[11:9], floppy_ext_drive[8:6]}  = IO_DIN[5:0];
 				if (userport_cfg_sel) user_port_mode = IO_DIN[0];
