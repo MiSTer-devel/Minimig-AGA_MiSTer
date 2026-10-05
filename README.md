@@ -75,6 +75,33 @@ On Amiga:
 
 On Linux side the folder is "shared" inside Amiga folder.
 
+### Ethernet (A2065)
+
+The core emulates a Commodore A2065 Zorro II Ethernet card (AMD Am7990 LANCE). It appears to AmigaOS as a real A2065, so the standard `a2065.device` SANA-II driver is used. No MiSTer-specific Amiga software is needed.
+
+The card is selected in the OSD under System → Ethernet. The setting is saved with the Minimig config. Modes not supported by the current hardware/kernel are skipped:
+* OFF - card idle (it still appears in autoconfig, but no traffic is passed).
+* eth0 - MiSTer's onboard NIC, shared with Linux. The Amiga gets its own MAC address on the LAN.
+* eth1 - a dedicated second NIC (e.g. USB Ethernet adapter), used exclusively by the Amiga.
+* macvlan - a virtual interface on top of eth0, so the Amiga has its own MAC/IP on the LAN without a second NIC.
+* tap0 - a tap device on a private subnet. Routing/NAT on the Linux side must be set up by the user. Use this for Amiga↔MiSTer-only networking or for going out over WiFi (a WiFi station can't carry a second MAC address).
+
+On Amiga:
+- install a TCP/IP stack. Tested with [AmiNetXDuo](https://github.com/tinic/AmiNetXDuo) (free, MIT-licensed, IPv4+IPv6), Roadshow, MiamiDX and AmiTCP 3.3.
+- copy a2065.device to DEVS:Networks (if it isn't there already). Tested with v2.16a from Aminet: [a2065v216a.lha](https://aminet.net/package/driver/net/a2065v216a).
+- configure the interface with a2065.device, unit 0 and DHCP. For AmiNetXDuo or Roadshow (both use the same configuration files) create DEVS:NetInterfaces/A2065 containing:
+```
+device=a2065.device
+unit=0
+configure=dhcp
+```
+- open CLI and type there: AddNetInterface A2065
+- if it works, then you can add this command into user-startup file.
+
+Notes:
+* The Amiga shows its station address as 00:80:10:00:00:00. This is cosmetic. On the wire, a unique address derived from the MiSTer NIC is used.
+* Throughput is limited by the Amiga CPU rather than by the card (around 500KB/s with a 68020).
+
 ### RTG
 
 * install [Picasso96.lha](http://aminet.net/package/driver/video/Picasso96) Choose uaegfx while installing.
