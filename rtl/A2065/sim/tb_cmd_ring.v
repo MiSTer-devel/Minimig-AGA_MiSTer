@@ -10,6 +10,12 @@
  * The host is deliberately absent here: nothing in this bench ever reads the
  * ring or writes anything back. If a write still needs the host, the bus never
  * releases and the test fails.
+ *
+ * The same holds for acknowledging CSR0. The level 2 server of a2065.device
+ * writes the interrupt bits back and loops until they read clear, at
+ * interrupt level, so a CSR0 acknowledge must show in the next 68k read
+ * without the host. The bench's host model only publishes the CSR and
+ * INT_STATE words the mailbox polls, as Main does.
  */
 `timescale 1ns/1ps
 
@@ -26,6 +32,8 @@ module tb_cmd_ring;
     wire        regs_nrdy;
 
     wire        cmd_pending, cmd_clear;
+    wire [15:0] csr0_mb;
+    wire        int2_mb;
     wire [6:0]  cmd_rap;
     wire [15:0] cmd_data;
 
@@ -45,7 +53,7 @@ module tb_cmd_ring;
         .card_base(8'hEA), .card_configured(1'b1),
         .cmd_pending(cmd_pending), .cmd_rap(cmd_rap), .cmd_data(cmd_data),
         .cmd_clear(cmd_clear),
-        .csr0_in(16'h0004), .csr1_in(16'd0), .csr2_in(16'd0), .csr3_in(16'd0)
+        .csr0_in(csr0_mb), .csr1_in(16'd0), .csr2_in(16'd0), .csr3_in(16'd0)
     );
 
     wire [28:0] avl_address;
@@ -60,7 +68,7 @@ module tb_cmd_ring;
         .clk(clk_ddr), .rst_n(rst_n),
         .cmd_pending(cmd_pending), .cmd_rap(cmd_rap), .cmd_data(cmd_data),
         .cmd_clear(cmd_clear),
-        .csr0_out(), .csr1_out(), .csr2_out(), .csr3_out(), .a2065_int2(),
+        .csr0_out(csr0_mb), .csr1_out(), .csr2_out(), .csr3_out(), .a2065_int2(int2_mb),
         .bram_req_valid(1'b0), .bram_req_addr(14'd0), .bram_req_wdata(16'd0),
         .bram_req_rw(1'b0), .bram_req_be(2'b11),
         .bram_req_ack(), .bram_resp_valid(), .bram_resp_data(),
@@ -71,7 +79,19 @@ module tb_cmd_ring;
         .avl_write(avl_write), .avl_waitrequest(avl_waitrequest)
     );
 
-    always @(posedge clk_ddr) avl_readdatavalid <= avl_read;
+    // Host model: the CSR and INT_STATE words Main writes to DDR3
+    localparam AV_CSR = 29'h03FE0000 + 29'h1002;
+    localparam AV_INT = 29'h03FE0000 + 29'h1003;
+    reg [15:0] host_csr0 = 16'd0;
+    reg        host_int  = 1'b0;
+    reg        host_pub  = 1'b0;     // publishes its read index (INT bit 1)
+    reg [31:0] host_rd   = 32'd0;
+    always @(posedge clk_ddr) begin
+        avl_readdatavalid <= avl_read;
+        if (avl_read)
+            avl_readdata <= (avl_address == AV_CSR) ? {48'd0, host_csr0} :
+                            (avl_address == AV_INT) ? {host_rd, 30'd0, host_pub, host_int} : 64'd0;
+    end
 
     // Watch what the mailbox posts, so the bench can tell a ring entry from
     // the index publication that follows it.
@@ -109,7 +129,29 @@ module tb_cmd_ring;
         end
     endtask
 
+    // A 68k read of RDP (RAP is 0 throughout: CSR0)
+    task rdp_read(output [15:0] val);
+        begin
+            @(negedge clk_sys);
+            cpu_addr = 24'hEA4000; cpu_rw = 1;
+            @(negedge clk_sys);
+            cpu_as_n = 0; cpu_ds_n = 0;
+            @(negedge clk_sys);
+            val = cpu_data_out;
+            cpu_as_n = 1; cpu_ds_n = 1;
+            repeat (3) @(negedge clk_sys);
+        end
+    endtask
+
+    // Long enough for several CSR/INT polls (one per 64 DDR clocks)
+    task polls;
+        begin
+            repeat (60) @(negedge clk_sys);
+        end
+    endtask
+
     reg done;
+    reg [15:0] rv;
     integer i, before;
 
     initial begin
@@ -135,6 +177,56 @@ module tb_cmd_ring;
             rdp_write(16'h0040 + i[15:0], done);
         check(done, "12 back-to-back register writes all complete");
         check(last_wptr == 32'd13, "index advanced once per write");
+
+        // ---- CSR0 acknowledge, older host (no read index published) ----
+        // Unchanged behaviour: the shadow follows the host.
+        host_csr0 = 16'h04F3; host_int = 1; host_pub = 0; host_rd = 32'd13;
+        polls;
+        rdp_read(rv);
+        check(rv == 16'h04F3 && int2_mb, "RINT pending is seen: CSR0 04F3, INT2 set");
+        rdp_write(16'h0440, done);
+        polls;
+        rdp_read(rv);
+        check(done && rv == 16'h04F3, "older host: shadow still follows the host");
+
+        // ---- host publishing its read index, but stalled ----
+        // Main is blocked (its IDE handler waits on the Amiga): the ring is
+        // never drained and the DDR3 words never change after this.
+        host_pub = 1; host_rd = last_wptr;
+        polls;
+        before = last_wptr;
+        rdp_write(16'h0440, done);
+        check(done, "acknowledge write completes with the host stalled");
+        rdp_read(rv);
+        check(rv == 16'h0073, "acknowledge shows in the very next read: CSR0 0073");
+        check(!int2_mb, "interrupt line drops with the last cause cleared");
+        polls; polls;
+        rdp_read(rv);
+        check(rv == 16'h0073 && !int2_mb, "polls of the stale host value keep RINT cleared");
+
+        // the handler's loop terminates: one more read, no further writes
+        check(last_wptr == before + 1, "exactly one ring entry for the acknowledge");
+
+        // ---- host catches up, then a new frame arrives ----
+        host_csr0 = 16'h0073; host_int = 0; host_rd = last_wptr;
+        polls;
+        rdp_read(rv);
+        check(rv == 16'h0073 && !int2_mb, "host consumed the acknowledge: values agree");
+        host_csr0 = 16'h04F3; host_int = 1;
+        polls;
+        rdp_read(rv);
+        check(rv == 16'h04F3 && int2_mb, "a later RINT from the host is not masked");
+
+        // ---- only the acknowledged bits are held ----
+        // TINT pending too; the driver acknowledges RINT alone.
+        host_csr0 = 16'h06F3; host_int = 1;
+        polls;
+        rdp_write(16'h0440, done);
+        rdp_read(rv);
+        check(rv == 16'h02F3 && int2_mb, "RINT cleared, TINT and INTR stay, line stays up");
+        polls;
+        rdp_read(rv);
+        check(rv == 16'h02F3, "stale host value: only RINT masked");
 
         $display("=== %0d passed, %0d failed ===\\n", pass, fail);
         if (fail) $fatal(1, "cmd ring tests failed");
