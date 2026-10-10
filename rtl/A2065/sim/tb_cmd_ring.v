@@ -86,12 +86,30 @@ module tb_cmd_ring;
     reg        host_int  = 1'b0;
     reg        host_pub  = 1'b0;     // publishes its read index (INT bit 1)
     reg [31:0] host_rd   = 32'd0;
+    // A host drain landing inside one poll: armed, it is applied (CSR, then
+    // INT, as Main writes them) right after the poll's first read is served,
+    // so that read sees the old words and the second read the new ones.
+    reg        drain_arm = 1'b0;
+    reg [15:0] drain_csr0;
+    reg        drain_int;
+    reg [31:0] drain_rd;
     always @(posedge clk_ddr) begin
         avl_readdatavalid <= avl_read;
-        if (avl_read)
+        if (avl_read) begin
             avl_readdata <= (avl_address == AV_CSR) ? {48'd0, host_csr0} :
                             (avl_address == AV_INT) ? {host_rd, 30'd0, host_pub, host_int} : 64'd0;
+            if (drain_arm) begin
+                host_csr0 <= drain_csr0;
+                host_int  <= drain_int;
+                host_rd   <= drain_rd;
+                drain_arm <= 1'b0;
+            end
+        end
     end
+
+    // Any instant the 68k could read RINT back in CSR0
+    reg rint_seen = 1'b0;
+    always @(posedge clk_sys) if (csr0_mb[10]) rint_seen <= 1'b1;
 
     // Watch what the mailbox posts, so the bench can tell a ring entry from
     // the index publication that follows it.
@@ -227,6 +245,25 @@ module tb_cmd_ring;
         polls;
         rdp_read(rv);
         check(rv == 16'h02F3, "stale host value: only RINT masked");
+
+        // ---- host drains the acknowledge in the middle of a poll ----
+        // The poll must not pair a CSR value from before the drain with a
+        // read index from after it: that unmasks RINT on the stale value.
+        host_csr0 = 16'h0073; host_int = 0; host_rd = last_wptr;
+        polls;
+        host_csr0 = 16'h04F3; host_int = 1;
+        polls;
+        rdp_read(rv);
+        check(rv == 16'h04F3 && int2_mb, "new RINT seen before the race");
+        rdp_write(16'h0440, done);
+        drain_csr0 = 16'h0073; drain_int = 0; drain_rd = last_wptr;
+        rint_seen = 1'b0;
+        drain_arm = 1'b1;
+        polls; polls;
+        check(!drain_arm, "the drain landed inside a poll");
+        check(!rint_seen, "RINT never reappears across the drain");
+        rdp_read(rv);
+        check(rv == 16'h0073 && !int2_mb, "settles on the host's value: CSR0 0073, INT2 low");
 
         $display("=== %0d passed, %0d failed ===\\n", pass, fail);
         if (fail) $fatal(1, "cmd ring tests failed");
