@@ -342,6 +342,10 @@ wire [15:0] ar3_data_out;	   //Action Replay data out
 //local signals for address bus
 wire [23:1] cpu_address_out;	//cpu address out
 wire [20:1] dma_address_out;	//agnus address out
+wire        bitplane_dma;
+wire        bitplane_fetch_phase;
+wire        bitplane_fetch_phase_valid;
+wire        bitplane_fetch_unit_start;
 wire [23:1] ram_address_out;	//ram address out
 
 //local signals for control bus
@@ -527,6 +531,10 @@ agnus AGNUS1
 	.address_in(cpu_address_out[8:1]),
 	.address_out(dma_address_out),
 	.reg_address_out(reg_address),
+	.bitplane_dma(bitplane_dma),
+	.bitplane_fetch_phase(bitplane_fetch_phase),
+	.bitplane_fetch_phase_valid(bitplane_fetch_phase_valid),
+	.bitplane_fetch_unit_start(bitplane_fetch_unit_start),
 	.cpu_custom(cpu_custom),
 	.dbr(dbr),
 	.dbwe(dbwe),
@@ -684,6 +692,10 @@ denise DENISE1
 	.cck(cck),
 	.reset(reset),
 	.strhor(strhor_denise),
+	.bitplane_dma(bitplane_dma),
+	.bitplane_fetch_phase(bitplane_fetch_phase),
+	.bitplane_fetch_phase_valid(bitplane_fetch_phase_valid),
+	.bitplane_fetch_unit_start(bitplane_fetch_unit_start),
 	.reg_address_in(reg_address),
 	.data_in(custom_data_in),
 	.chip48(chip48),

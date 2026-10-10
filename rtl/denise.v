@@ -36,6 +36,10 @@ module denise (
   input  wire           cck,            // colour clock enable
   input  wire           reset,          // reset
   input  wire           strhor,         // horizontal strobe
+  input  wire           bitplane_dma,
+  input  wire           bitplane_fetch_phase,
+  input  wire           bitplane_fetch_phase_valid,
+  input  wire           bitplane_fetch_unit_start,
   input  wire [  9-1:1] reg_address_in, // register adress inputs
   input  wire [ 16-1:0] data_in,        // bus data in
   input  wire [ 48-1:0] chip48,         // big chipram read
@@ -327,6 +331,14 @@ denise_bitplanes bplm0
   .hires(hires),
   .shres(shres & ecs),
   .hpos(hpos),
+  .strhor(strhor),
+  .bitplane_dma(bitplane_dma),
+  .bitplane_fetch_phase(bitplane_fetch_phase),
+  .bitplane_fetch_phase_valid(bitplane_fetch_phase_valid),
+  .bitplane_fetch_unit_start(bitplane_fetch_unit_start),
+  .blank(blank),
+  .hdiw(window),
+  .planes(bpu),
   .bpldata(bpldata_out)
 );
 
