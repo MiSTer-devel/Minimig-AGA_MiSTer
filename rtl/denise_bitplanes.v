@@ -37,6 +37,14 @@ module denise_bitplanes
   input   hires,             // high resolution mode select
   input   shres,             // super high resolution mode select
   input  [8:0] hpos,        // horizontal position (70ns resolution)
+  input   strhor,
+  input   bitplane_dma,
+  input   bitplane_fetch_phase,
+  input   bitplane_fetch_phase_valid,
+  input   bitplane_fetch_unit_start,
+  input   blank,
+  input   hdiw,
+  input   [3:0] planes,
   output   [8:1] bpldata      // bitplane data out
 );
 
@@ -259,6 +267,299 @@ end
 //generate load signal when plane 1 is written
 always @(posedge clk) if (clk7_en) load <= reg_address_in[8:1] == BPL1DAT[8:1];
 
+wire ocs_lores_fmode0 = !aga && !hires && !shres && (fmode[1:0] == 2'b00);
+wire ocs_bplcon1_write = clk7_en && (reg_address_in[8:1] == BPLCON1[8:1]);
+wire [7:0] ocs_bplcon1_effective = ocs_bplcon1_write ? data_in[7:0] : bplcon1[7:0];
+wire [3:0] ocs_phase_pf1 = ocs_bplcon1_effective[3:0];
+wire [3:0] ocs_phase_pf2 = ocs_bplcon1_effective[7:4];
+
+
+reg [8:0] ocs_hcmp;
+wire [3:0] ocs_hphase = (strhor && clk7_en) ? 4'd2 : ocs_hcmp[3:0];
+wire bpl1dat_now = ocs_lores_fmode0 && clk7_en &&
+                   (reg_address_in[8:1] == BPL1DAT[8:1]);
+wire bpl4dat_now = ocs_lores_fmode0 && clk7_en && bitplane_dma &&
+                   (reg_address_in[8:1] == BPL4DAT[8:1]);
+wire bpl5dat_now = ocs_lores_fmode0 && clk7_en && bitplane_dma &&
+                   (reg_address_in[8:1] == BPL5DAT[8:1]);
+wire bpl6dat_now = ocs_lores_fmode0 && clk7_en && bitplane_dma &&
+                   (reg_address_in[8:1] == BPL6DAT[8:1]);
+wire ocs_snapshot_event = ocs_lores_fmode0 && clk7_en && load;
+
+reg [15:0] ocs_pending [1:6];
+reg [15:0] ocs_active [1:6];
+reg [3:0]  ocs_pipe [1:6];
+reg ocs_pending_pf1, ocs_pending_pf2;
+reg ocs_trigger;
+reg ocs_trigger_delay;
+reg seen_bpl1dat_this_line;
+
+
+reg ocs_handoff_done;
+reg ocs_seen_second_bpl1dat;
+reg ocs_third_fetch_armed;
+reg ocs_third_pf1_done;
+reg ocs_third_pf2_done;
+
+
+reg ocs_first_fetch_latched;
+reg ocs_delayed_ownership_latched;
+reg ocs_delayed_ownership_wait;
+reg ocs_delayed_ownership_enable;
+reg ocs_first_saw_bpl4;
+reg ocs_first_saw_bpl5;
+reg ocs_first_saw_bpl6;
+integer ocs_i;
+
+function [15:0] ocs_holding_word;
+  input [2:0] idx;
+  begin
+    case (idx)
+      3'd1: ocs_holding_word = bpl1dat[63:48];
+      3'd2: ocs_holding_word = bpl2dat[63:48];
+      3'd3: ocs_holding_word = bpl3dat[63:48];
+      3'd4: ocs_holding_word = bpl4dat[63:48];
+      3'd5: ocs_holding_word = bpl5dat[63:48];
+      default: ocs_holding_word = bpl6dat[63:48];
+    endcase
+  end
+endfunction
+
+function [15:0] ocs_snapshot_word;
+  input [2:0] idx;
+  begin
+    ocs_snapshot_word = ocs_holding_word(idx);
+  end
+endfunction
+
+wire ocs_same_phase = (ocs_phase_pf1 == ocs_phase_pf2);
+
+wire ocs_match_pf1  = (ocs_hphase == ocs_phase_pf1);
+wire ocs_match_pf2  = (ocs_hphase == ocs_phase_pf2);
+wire first_bpl1dat_of_line = bpl1dat_now && !seen_bpl1dat_this_line;
+
+always @(posedge clk) begin
+  if (reset) begin
+    ocs_hcmp <= 9'd2;
+    for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1) begin
+      ocs_pending[ocs_i] <= 0;
+      ocs_active[ocs_i] <= 0;
+      ocs_pipe[ocs_i] <= 0;
+    end
+    ocs_pending_pf1 <= 0;
+    ocs_pending_pf2 <= 0;
+    ocs_trigger <= 0;
+    ocs_trigger_delay <= 0;
+    seen_bpl1dat_this_line <= 0;
+  end else if (ocs_lores_fmode0) begin
+    for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
+      ocs_pipe[ocs_i] <= {ocs_pipe[ocs_i][2:0],ocs_active[ocs_i][15]};
+
+    if (blank) begin
+      ocs_trigger <= 0;
+      ocs_trigger_delay <= 0;
+    end
+
+    if (clk7_en) begin
+      ocs_hcmp <= strhor ? 9'd2 : ocs_hcmp + 9'd1;
+
+      if (strhor) begin
+        ocs_trigger <= 0;
+        ocs_trigger_delay <= 0;
+        seen_bpl1dat_this_line <= 0;
+      end
+
+      if (ocs_trigger_delay) begin
+        ocs_trigger <= 1;
+        ocs_trigger_delay <= 0;
+      end
+
+      if (bpl1dat_now) begin
+        if (!seen_bpl1dat_this_line) begin
+          seen_bpl1dat_this_line <= 1;
+          if (!hdiw)
+            ocs_trigger <= 1;
+          else
+            ocs_trigger_delay <= 1;
+        end
+      end
+
+      if (ocs_snapshot_event) begin
+        for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
+          ocs_pending[ocs_i] <= ocs_snapshot_word(ocs_i[2:0]);
+        ocs_pending_pf1 <= 1;
+        ocs_pending_pf2 <= 1;
+      end
+
+      for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
+        ocs_active[ocs_i] <= {ocs_active[ocs_i][14:0],1'b0};
+
+      if (ocs_same_phase) begin
+        if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
+          for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
+            if (planes >= ocs_i[3:0])
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+          ocs_pending_pf1 <= 0;
+          ocs_pending_pf2 <= 0;
+        end
+      end else begin
+        if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
+          for (ocs_i=1; ocs_i<=5; ocs_i=ocs_i+2)
+            if (planes >= ocs_i[3:0])
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+          ocs_pending_pf1 <= 0;
+        end
+        if (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2)) begin
+          for (ocs_i=2; ocs_i<=6; ocs_i=ocs_i+2)
+            if (planes >= ocs_i[3:0])
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+          ocs_pending_pf2 <= 0;
+        end
+      end
+    end
+  end else begin
+    ocs_pending_pf1 <= 0;
+    ocs_pending_pf2 <= 0;
+    ocs_trigger <= 0;
+    ocs_trigger_delay <= 0;
+    seen_bpl1dat_this_line <= 0;
+    for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
+      ocs_pipe[ocs_i] <= 0;
+  end
+end
+
+
+
+wire ocs_immediate_ownership_now = first_bpl1dat_of_line && (extra_delay_f0 == 8'h30);
+wire ocs_first_dma_exact4 = ocs_first_saw_bpl4 &&
+                            !ocs_first_saw_bpl5 && !ocs_first_saw_bpl6;
+
+always @(posedge clk) begin
+  if (reset || !ocs_lores_fmode0) begin
+    ocs_handoff_done <= 1'b0;
+    ocs_seen_second_bpl1dat <= 1'b0;
+    ocs_third_fetch_armed <= 1'b0;
+    ocs_third_pf1_done <= 1'b0;
+    ocs_third_pf2_done <= 1'b0;
+    ocs_first_fetch_latched <= 1'b0;
+    ocs_delayed_ownership_latched <= 1'b0;
+    ocs_delayed_ownership_wait <= 1'b0;
+    ocs_delayed_ownership_enable <= 1'b0;
+    ocs_first_saw_bpl4 <= 1'b0;
+    ocs_first_saw_bpl5 <= 1'b0;
+    ocs_first_saw_bpl6 <= 1'b0;
+  end else if (blank) begin
+    ocs_handoff_done <= 1'b0;
+    ocs_seen_second_bpl1dat <= 1'b0;
+    ocs_third_fetch_armed <= 1'b0;
+    ocs_third_pf1_done <= 1'b0;
+    ocs_third_pf2_done <= 1'b0;
+    ocs_first_fetch_latched <= 1'b0;
+    ocs_delayed_ownership_latched <= 1'b0;
+    ocs_delayed_ownership_wait <= 1'b0;
+    ocs_delayed_ownership_enable <= 1'b0;
+    ocs_first_saw_bpl4 <= 1'b0;
+    ocs_first_saw_bpl5 <= 1'b0;
+    ocs_first_saw_bpl6 <= 1'b0;
+  end else if (clk7_en) begin
+    if (strhor) begin
+      ocs_handoff_done <= 1'b0;
+      ocs_seen_second_bpl1dat <= 1'b0;
+      ocs_third_fetch_armed <= 1'b0;
+      ocs_third_pf1_done <= 1'b0;
+      ocs_third_pf2_done <= 1'b0;
+      ocs_first_fetch_latched <= 1'b0;
+      ocs_delayed_ownership_latched <= 1'b0;
+      ocs_delayed_ownership_wait <= 1'b0;
+      ocs_delayed_ownership_enable <= 1'b0;
+      ocs_first_saw_bpl4 <= 1'b0;
+      ocs_first_saw_bpl5 <= 1'b0;
+      ocs_first_saw_bpl6 <= 1'b0;
+    end else begin
+      if (!seen_bpl1dat_this_line) begin
+        if (bitplane_fetch_unit_start) begin
+          ocs_first_saw_bpl4 <= 1'b0;
+          ocs_first_saw_bpl5 <= 1'b0;
+          ocs_first_saw_bpl6 <= 1'b0;
+        end
+        if (bpl4dat_now) ocs_first_saw_bpl4 <= 1'b1;
+        if (bpl5dat_now) ocs_first_saw_bpl5 <= 1'b1;
+        if (bpl6dat_now) ocs_first_saw_bpl6 <= 1'b1;
+      end
+
+      if (ocs_delayed_ownership_wait) begin
+        ocs_delayed_ownership_wait <= 1'b0;
+        ocs_delayed_ownership_enable <= 1'b1;
+      end
+
+      if (bpl1dat_now) begin
+        if (!seen_bpl1dat_this_line) begin
+          ocs_first_fetch_latched <= (extra_delay_f0 == 8'h30);
+          ocs_delayed_ownership_latched <= ((extra_delay_f0 == 8'h10) && hdiw &&
+                                    ocs_first_dma_exact4 && bitplane_fetch_phase_valid &&
+                                    !bitplane_fetch_phase);
+          ocs_delayed_ownership_wait <= ((extra_delay_f0 == 8'h10) && hdiw &&
+                                      ocs_first_dma_exact4 && bitplane_fetch_phase_valid &&
+                                      !bitplane_fetch_phase);
+          ocs_delayed_ownership_enable <= 1'b0;
+        end else begin
+          ocs_first_fetch_latched <= 1'b0;
+          if (ocs_delayed_ownership_latched && !ocs_handoff_done &&
+              !ocs_third_fetch_armed) begin
+            if (!ocs_seen_second_bpl1dat)
+              ocs_seen_second_bpl1dat <= 1'b1;
+            else begin
+              ocs_third_fetch_armed <= 1'b1;
+              ocs_third_pf1_done <= 1'b0;
+              ocs_third_pf2_done <= 1'b0;
+            end
+          end
+        end
+      end
+
+      if (ocs_delayed_ownership_latched && ocs_third_fetch_armed) begin
+        if (ocs_same_phase) begin
+          if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
+            ocs_third_fetch_armed <= 1'b0;
+            ocs_third_pf1_done <= 1'b1;
+            ocs_third_pf2_done <= 1'b1;
+            ocs_handoff_done <= 1'b1;
+            ocs_delayed_ownership_latched <= 1'b0;
+            ocs_delayed_ownership_enable <= 1'b0;
+            ocs_delayed_ownership_wait <= 1'b0;
+          end
+        end else begin
+          if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1))
+            ocs_third_pf1_done <= 1'b1;
+          if (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2))
+            ocs_third_pf2_done <= 1'b1;
+
+          if ((ocs_third_pf1_done ||
+               (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1))) &&
+              (ocs_third_pf2_done ||
+               (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2)))) begin
+            ocs_third_fetch_armed <= 1'b0;
+            ocs_handoff_done <= 1'b1;
+            ocs_delayed_ownership_latched <= 1'b0;
+            ocs_delayed_ownership_enable <= 1'b0;
+            ocs_delayed_ownership_wait <= 1'b0;
+          end
+        end
+      end
+    end
+  end
+end
+
+wire [8:1] legacy_bpldata;
+wire [8:1] ocs_raw = {2'b00,
+                       ocs_pipe[6][3],ocs_pipe[5][3],ocs_pipe[4][3],
+                       ocs_pipe[3][3],ocs_pipe[2][3],ocs_pipe[1][3]};
+wire [8:1] ocs_bpldata = ocs_trigger ? ocs_raw : 8'b0;
+
+wire use_ocs_pending_stream = ocs_lores_fmode0 &&
+                              (ocs_immediate_ownership_now || ocs_first_fetch_latched ||
+                               (ocs_delayed_ownership_latched && ocs_delayed_ownership_enable));
+
 //--------------------------------------------------------------------------------------
 
 //instantiate bitplane 1 parallel to serial converters, this plane is loaded directly from bus
@@ -275,7 +576,7 @@ denise_bitplane_shifter bplshft1
   .aga(aga),
   .data_in(bpl1dat),
   .scroll(pf1h_del),
-  .out(bpldata[1])
+  .out(legacy_bpldata[1])
 );
 
 //instantiate bitplane 2 to 6 parallel to serial converters, (loaded from buffer registers)
@@ -292,7 +593,7 @@ denise_bitplane_shifter bplshft2
   .aga(aga),
   .data_in(bpl2dat),
   .scroll(pf2h_del),
-  .out(bpldata[2])
+  .out(legacy_bpldata[2])
 );
 
 denise_bitplane_shifter bplshft3
@@ -308,7 +609,7 @@ denise_bitplane_shifter bplshft3
   .aga(aga),
   .data_in(bpl3dat),
   .scroll(pf1h_del),
-  .out(bpldata[3])
+  .out(legacy_bpldata[3])
 );
 
 denise_bitplane_shifter bplshft4
@@ -324,7 +625,7 @@ denise_bitplane_shifter bplshft4
   .aga(aga),
   .data_in(bpl4dat),
   .scroll(pf2h_del),
-  .out(bpldata[4])
+  .out(legacy_bpldata[4])
 );
 
 denise_bitplane_shifter bplshft5
@@ -340,7 +641,7 @@ denise_bitplane_shifter bplshft5
   .aga(aga),
   .data_in(bpl5dat),
   .scroll(pf1h_del),
-  .out(bpldata[5])
+  .out(legacy_bpldata[5])
 );
 
 denise_bitplane_shifter bplshft6
@@ -356,7 +657,7 @@ denise_bitplane_shifter bplshft6
   .aga(aga),
   .data_in(bpl6dat),
   .scroll(pf2h_del),
-  .out(bpldata[6])
+  .out(legacy_bpldata[6])
 );
 
 denise_bitplane_shifter bplshft7
@@ -372,7 +673,7 @@ denise_bitplane_shifter bplshft7
   .aga(aga),
   .data_in(bpl7dat),
   .scroll(pf1h_del),
-  .out(bpldata[7])
+  .out(legacy_bpldata[7])
 );
 
 denise_bitplane_shifter bplshft8
@@ -388,9 +689,11 @@ denise_bitplane_shifter bplshft8
   .aga(aga),
   .data_in(bpl8dat),
   .scroll(pf2h_del),
-  .out(bpldata[8])
+  .out(legacy_bpldata[8])
 );
 
+
+assign bpldata = use_ocs_pending_stream ? ocs_bpldata : legacy_bpldata;
 
 endmodule
 
