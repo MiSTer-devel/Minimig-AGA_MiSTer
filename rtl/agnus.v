@@ -66,6 +66,10 @@ module agnus
 	input   [8:1] address_in,      // 256 words (512 bytes) adress input,
 	output reg [20:1] address_out, // chip address output,
 	output  [8:1] reg_address_out, // 256 words (512 bytes) register address out,
+	output        bitplane_dma,
+	output reg    bitplane_fetch_phase,
+	output reg    bitplane_fetch_phase_valid,
+	output        bitplane_fetch_unit_start,
 	output reg    cpu_custom,      // CPU has access to custom chipset (registers and chipRAM / slowRAM)
 	output reg    dbr,             // agnus requests data bus
 	output reg    dbwe,            // agnus does a memory write cycle (only disk and blitter dma channels may do this)
@@ -318,8 +322,27 @@ agnus_audiodma aud1
 //--------------------------------------------------------------------------------------
 
 wire        dma_bpl;         //bitplane dma engine uses it's slot
+assign bitplane_dma = dma_bpl;
+
+always @(posedge clk) begin
+	if (clk7_en) begin
+		if (reset) begin
+			bitplane_fetch_phase <= 1'b0;
+			bitplane_fetch_phase_valid <= 1'b0;
+		end else begin
+			if (bitplane_fetch_unit_start)
+				bitplane_fetch_phase_valid <= 1'b0;
+			if (dma_bpl && (reg_address_bpl == 8'h8B)) begin
+				bitplane_fetch_phase <= hpos[4];
+				bitplane_fetch_phase_valid <= 1'b1;
+			end
+		end
+	end
+end
+
 wire [20:1] address_bpl;     //bitplane dma engine chip address out
 wire  [8:1] reg_address_bpl; //bitplane dma engine register address out
+assign bitplane_fetch_unit_start = clk7_en && hpos[0] && (reg_address_bpl == 8'h8F);
 
 //instantiate bitplane dma
 agnus_bitplanedma bpd1
