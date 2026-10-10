@@ -114,7 +114,9 @@ end
 //playfield 1 effective horizontal scroll
 always @(posedge clk)
   if (clk7_en) begin
-    if (load)
+    if (!aga && (reg_address_in[8:1] == BPLCON1[8:1]))
+      pf1h <= {2'b11,data_in[3:0],2'b11};
+    else if (load)
       pf1h <= {bplcon1[11:10],bplcon1[3:0],bplcon1[9:8]};
   end
 
@@ -126,7 +128,9 @@ always @(posedge clk)
 //playfield 2 effective horizontal scroll
 always @(posedge clk)
   if (clk7_en) begin
-    if (load)
+    if (!aga && (reg_address_in[8:1] == BPLCON1[8:1]))
+      pf2h <= {2'b11,data_in[7:4],2'b11};
+    else if (load)
       pf2h <= {bplcon1[15:14],bplcon1[7:4],bplcon1[13:12]};
   end
 
