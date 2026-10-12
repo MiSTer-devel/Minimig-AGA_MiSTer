@@ -295,17 +295,13 @@ reg ocs_trigger_delay;
 reg seen_bpl1dat_this_line;
 
 
-reg ocs_handoff_done;
-reg ocs_seen_second_bpl1dat;
-reg ocs_third_fetch_armed;
-reg ocs_third_pf1_done;
-reg ocs_third_pf2_done;
-
-
-reg ocs_first_fetch_latched;
-reg ocs_delayed_ownership_latched;
-reg ocs_delayed_ownership_wait;
-reg ocs_delayed_ownership_enable;
+localparam [1:0] OCS_OWN_IDLE         = 2'd0;
+localparam [1:0] OCS_OWN_INITIAL      = 2'd1;
+localparam [1:0] OCS_OWN_DELAY_WAIT   = 2'd2;
+localparam [1:0] OCS_OWN_DELAY_ACTIVE = 2'd3;
+reg [1:0] ocs_ownership_state;
+reg [1:0] ocs_delayed_fetch_stage;
+reg [1:0] ocs_third_done;
 reg ocs_first_saw_bpl4;
 reg ocs_first_saw_bpl5;
 reg ocs_first_saw_bpl6;
@@ -322,13 +318,6 @@ function [15:0] ocs_holding_word;
       3'd5: ocs_holding_word = bpl5dat[63:48];
       default: ocs_holding_word = bpl6dat[63:48];
     endcase
-  end
-endfunction
-
-function [15:0] ocs_snapshot_word;
-  input [2:0] idx;
-  begin
-    ocs_snapshot_word = ocs_holding_word(idx);
   end
 endfunction
 
@@ -386,7 +375,7 @@ always @(posedge clk) begin
 
       if (ocs_snapshot_event) begin
         for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
-          ocs_pending[ocs_i] <= ocs_snapshot_word(ocs_i[2:0]);
+          ocs_pending[ocs_i] <= ocs_holding_word(ocs_i[2:0]);
         ocs_pending_pf1 <= 1;
         ocs_pending_pf2 <= 1;
       end
@@ -398,7 +387,7 @@ always @(posedge clk) begin
         if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
           for (ocs_i=1; ocs_i<=6; ocs_i=ocs_i+1)
             if (planes >= ocs_i[3:0])
-              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_holding_word(ocs_i[2:0]) : ocs_pending[ocs_i];
           ocs_pending_pf1 <= 0;
           ocs_pending_pf2 <= 0;
         end
@@ -406,13 +395,13 @@ always @(posedge clk) begin
         if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
           for (ocs_i=1; ocs_i<=5; ocs_i=ocs_i+2)
             if (planes >= ocs_i[3:0])
-              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_holding_word(ocs_i[2:0]) : ocs_pending[ocs_i];
           ocs_pending_pf1 <= 0;
         end
         if (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2)) begin
           for (ocs_i=2; ocs_i<=6; ocs_i=ocs_i+2)
             if (planes >= ocs_i[3:0])
-              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_snapshot_word(ocs_i[2:0]) : ocs_pending[ocs_i];
+              ocs_active[ocs_i] <= ocs_snapshot_event ? ocs_holding_word(ocs_i[2:0]) : ocs_pending[ocs_i];
           ocs_pending_pf2 <= 0;
         end
       end
@@ -433,45 +422,27 @@ end
 wire ocs_immediate_ownership_now = first_bpl1dat_of_line && (extra_delay_f0 == 8'h30);
 wire ocs_first_dma_exact4 = ocs_first_saw_bpl4 &&
                             !ocs_first_saw_bpl5 && !ocs_first_saw_bpl6;
+wire ocs_delayed_ownership_now = (extra_delay_f0 == 8'h10) && hdiw &&
+                                 ocs_first_dma_exact4 && bitplane_fetch_phase_valid &&
+                                 !bitplane_fetch_phase;
+wire ocs_third_pf1_event = ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1);
+wire ocs_third_pf2_event = ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2);
+wire [1:0] ocs_third_done_now = ocs_third_done |
+                                {ocs_third_pf2_event, ocs_third_pf1_event};
 
 always @(posedge clk) begin
-  if (reset || !ocs_lores_fmode0) begin
-    ocs_handoff_done <= 1'b0;
-    ocs_seen_second_bpl1dat <= 1'b0;
-    ocs_third_fetch_armed <= 1'b0;
-    ocs_third_pf1_done <= 1'b0;
-    ocs_third_pf2_done <= 1'b0;
-    ocs_first_fetch_latched <= 1'b0;
-    ocs_delayed_ownership_latched <= 1'b0;
-    ocs_delayed_ownership_wait <= 1'b0;
-    ocs_delayed_ownership_enable <= 1'b0;
-    ocs_first_saw_bpl4 <= 1'b0;
-    ocs_first_saw_bpl5 <= 1'b0;
-    ocs_first_saw_bpl6 <= 1'b0;
-  end else if (blank) begin
-    ocs_handoff_done <= 1'b0;
-    ocs_seen_second_bpl1dat <= 1'b0;
-    ocs_third_fetch_armed <= 1'b0;
-    ocs_third_pf1_done <= 1'b0;
-    ocs_third_pf2_done <= 1'b0;
-    ocs_first_fetch_latched <= 1'b0;
-    ocs_delayed_ownership_latched <= 1'b0;
-    ocs_delayed_ownership_wait <= 1'b0;
-    ocs_delayed_ownership_enable <= 1'b0;
+  if (reset || !ocs_lores_fmode0 || blank) begin
+    ocs_ownership_state <= OCS_OWN_IDLE;
+    ocs_delayed_fetch_stage <= 2'd0;
+    ocs_third_done <= 2'b00;
     ocs_first_saw_bpl4 <= 1'b0;
     ocs_first_saw_bpl5 <= 1'b0;
     ocs_first_saw_bpl6 <= 1'b0;
   end else if (clk7_en) begin
     if (strhor) begin
-      ocs_handoff_done <= 1'b0;
-      ocs_seen_second_bpl1dat <= 1'b0;
-      ocs_third_fetch_armed <= 1'b0;
-      ocs_third_pf1_done <= 1'b0;
-      ocs_third_pf2_done <= 1'b0;
-      ocs_first_fetch_latched <= 1'b0;
-      ocs_delayed_ownership_latched <= 1'b0;
-      ocs_delayed_ownership_wait <= 1'b0;
-      ocs_delayed_ownership_enable <= 1'b0;
+      ocs_ownership_state <= OCS_OWN_IDLE;
+      ocs_delayed_fetch_stage <= 2'd0;
+      ocs_third_done <= 2'b00;
       ocs_first_saw_bpl4 <= 1'b0;
       ocs_first_saw_bpl5 <= 1'b0;
       ocs_first_saw_bpl6 <= 1'b0;
@@ -487,62 +458,47 @@ always @(posedge clk) begin
         if (bpl6dat_now) ocs_first_saw_bpl6 <= 1'b1;
       end
 
-      if (ocs_delayed_ownership_wait) begin
-        ocs_delayed_ownership_wait <= 1'b0;
-        ocs_delayed_ownership_enable <= 1'b1;
-      end
+      if (ocs_ownership_state == OCS_OWN_DELAY_WAIT)
+        ocs_ownership_state <= OCS_OWN_DELAY_ACTIVE;
 
       if (bpl1dat_now) begin
         if (!seen_bpl1dat_this_line) begin
-          ocs_first_fetch_latched <= (extra_delay_f0 == 8'h30);
-          ocs_delayed_ownership_latched <= ((extra_delay_f0 == 8'h10) && hdiw &&
-                                    ocs_first_dma_exact4 && bitplane_fetch_phase_valid &&
-                                    !bitplane_fetch_phase);
-          ocs_delayed_ownership_wait <= ((extra_delay_f0 == 8'h10) && hdiw &&
-                                      ocs_first_dma_exact4 && bitplane_fetch_phase_valid &&
-                                      !bitplane_fetch_phase);
-          ocs_delayed_ownership_enable <= 1'b0;
-        end else begin
-          ocs_first_fetch_latched <= 1'b0;
-          if (ocs_delayed_ownership_latched && !ocs_handoff_done &&
-              !ocs_third_fetch_armed) begin
-            if (!ocs_seen_second_bpl1dat)
-              ocs_seen_second_bpl1dat <= 1'b1;
-            else begin
-              ocs_third_fetch_armed <= 1'b1;
-              ocs_third_pf1_done <= 1'b0;
-              ocs_third_pf2_done <= 1'b0;
-            end
+          if (extra_delay_f0 == 8'h30)
+            ocs_ownership_state <= OCS_OWN_INITIAL;
+          else if (ocs_delayed_ownership_now)
+            ocs_ownership_state <= OCS_OWN_DELAY_WAIT;
+          else
+            ocs_ownership_state <= OCS_OWN_IDLE;
+          ocs_delayed_fetch_stage <= 2'd0;
+          ocs_third_done <= 2'b00;
+        end else if (ocs_ownership_state == OCS_OWN_INITIAL) begin
+          ocs_ownership_state <= OCS_OWN_IDLE;
+        end else if ((ocs_ownership_state == OCS_OWN_DELAY_WAIT) ||
+                     (ocs_ownership_state == OCS_OWN_DELAY_ACTIVE)) begin
+          if (ocs_delayed_fetch_stage == 2'd0)
+            ocs_delayed_fetch_stage <= 2'd1;
+          else if (ocs_delayed_fetch_stage == 2'd1) begin
+            ocs_delayed_fetch_stage <= 2'd2;
+            ocs_third_done <= 2'b00;
           end
         end
       end
 
-      if (ocs_delayed_ownership_latched && ocs_third_fetch_armed) begin
+      if (((ocs_ownership_state == OCS_OWN_DELAY_WAIT) ||
+           (ocs_ownership_state == OCS_OWN_DELAY_ACTIVE)) &&
+          (ocs_delayed_fetch_stage == 2'd2)) begin
         if (ocs_same_phase) begin
-          if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1)) begin
-            ocs_third_fetch_armed <= 1'b0;
-            ocs_third_pf1_done <= 1'b1;
-            ocs_third_pf2_done <= 1'b1;
-            ocs_handoff_done <= 1'b1;
-            ocs_delayed_ownership_latched <= 1'b0;
-            ocs_delayed_ownership_enable <= 1'b0;
-            ocs_delayed_ownership_wait <= 1'b0;
+          if (ocs_third_pf1_event) begin
+            ocs_ownership_state <= OCS_OWN_IDLE;
+            ocs_delayed_fetch_stage <= 2'd0;
+            ocs_third_done <= 2'b00;
           end
         end else begin
-          if (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1))
-            ocs_third_pf1_done <= 1'b1;
-          if (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2))
-            ocs_third_pf2_done <= 1'b1;
-
-          if ((ocs_third_pf1_done ||
-               (ocs_match_pf1 && (ocs_snapshot_event || ocs_pending_pf1))) &&
-              (ocs_third_pf2_done ||
-               (ocs_match_pf2 && (ocs_snapshot_event || ocs_pending_pf2)))) begin
-            ocs_third_fetch_armed <= 1'b0;
-            ocs_handoff_done <= 1'b1;
-            ocs_delayed_ownership_latched <= 1'b0;
-            ocs_delayed_ownership_enable <= 1'b0;
-            ocs_delayed_ownership_wait <= 1'b0;
+          ocs_third_done <= ocs_third_done_now;
+          if (ocs_third_done_now == 2'b11) begin
+            ocs_ownership_state <= OCS_OWN_IDLE;
+            ocs_delayed_fetch_stage <= 2'd0;
+            ocs_third_done <= 2'b00;
           end
         end
       end
@@ -557,8 +513,9 @@ wire [8:1] ocs_raw = {2'b00,
 wire [8:1] ocs_bpldata = ocs_trigger ? ocs_raw : 8'b0;
 
 wire use_ocs_pending_stream = ocs_lores_fmode0 &&
-                              (ocs_immediate_ownership_now || ocs_first_fetch_latched ||
-                               (ocs_delayed_ownership_latched && ocs_delayed_ownership_enable));
+                              (ocs_immediate_ownership_now ||
+                               (ocs_ownership_state == OCS_OWN_INITIAL) ||
+                               (ocs_ownership_state == OCS_OWN_DELAY_ACTIVE));
 
 //--------------------------------------------------------------------------------------
 
