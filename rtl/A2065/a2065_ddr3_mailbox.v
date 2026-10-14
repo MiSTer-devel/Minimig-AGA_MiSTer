@@ -19,6 +19,23 @@
  *      back to regfile for 68k zero-latency reads.  INT_STATE drives
  *      the a2065_int2 output.
  *
+ *      CSR0's interrupt bits are write-1-to-clear.  A driver acknowledges
+ *      them and loops until they read back clear (the Commodore a2065.device
+ *      level 2 server does), so the acknowledge is applied to the shadow
+ *      here, at once, and the cleared bits stay masked out of later polls
+ *      until the host has consumed that command.  Waiting for the host
+ *      instead deadlocks when Main is blocked in its IDE handler waiting on
+ *      the Amiga.  INT_STATE bit 1 says the host publishes its ring read
+ *      index in bits 63:32; without it (an older Main) no masking is done.
+ *
+ *      The poll reads INT_STATE first and CSR_SHADOW second.  The host
+ *      writes them the other way round (CSR, then INT with its read index),
+ *      so a CSR read after an INT read is at least as new as the index in
+ *      it: once the index has passed an acknowledge, the CSR value read next
+ *      already has it applied.  Read CSR first and a host drain landing
+ *      between the two reads unmasks a CSR0 value from before the
+ *      acknowledge, bringing the cleared interrupt bits back.
+ *
  * Priority: CMD doorbell > boardram window > CSR/INT poll.
  */
 
@@ -100,6 +117,24 @@ module a2065_ddr3_mailbox (
 
     reg  [7:0] poll_div;
 
+    // CSR0 acknowledges applied locally, not yet consumed by the host
+    localparam [15:0] CSR0_W1C = 16'h7F00;   // BABL CERR MISS MERR RINT TINT IDON
+    reg [15:0] clr_pend;
+    reg [31:0] clr_seq;        // ring index just past the latest acknowledge
+    reg        host_seq_ok;    // host publishes its read index
+    reg  [1:0] int_word;       // INT_STATE bits 1:0, read before CSR_SHADOW
+    reg [31:0] host_seq;       // INT_STATE high half: host's CMD ring read index
+
+    // ERR and INTR summarise the bits they cover
+    function [15:0] csr0_sum;
+        input [15:0] c;
+        begin
+            csr0_sum     = c;
+            csr0_sum[15] = |c[14:11];
+            csr0_sum[7]  = |c[14:8];
+        end
+    endfunction
+
     reg  [13:0] br_addr;
     reg  [15:0] br_wdata;
     reg         br_rw;
@@ -146,6 +181,16 @@ module a2065_ddr3_mailbox (
 
     wire cmd_active = cmd_pending_s1;
 
+    wire [15:0] ack_w1c  = cmd_data_s & CSR0_W1C;
+    wire        ack_csr0 = host_seq_ok && cmd_rap_s == 7'd0 && |ack_w1c;
+    wire [15:0] csr0_ack = csr0_sum(csr0_out & ~ack_w1c);
+
+    wire        host_valid = int_word[1];
+    wire [31:0] host_lag   = host_seq - clr_seq;
+    wire [15:0] pend_eff   = (host_valid && host_lag[31]) ? clr_pend : 16'd0;
+    wire [15:0] csr0_rd    = avl_readdata[15:0];
+    wire [15:0] csr0_poll  = |pend_eff ? csr0_sum(csr0_rd & ~pend_eff) : csr0_rd;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state           <= S_IDLE;
@@ -169,6 +214,11 @@ module a2065_ddr3_mailbox (
             br_be           <= 2'b11;
             cmd_wr_idx      <= 32'd0;
             wptr_published  <= 1'b0;
+            clr_pend        <= 16'd0;
+            clr_seq         <= 32'd0;
+            host_seq_ok     <= 1'b0;
+            int_word        <= 2'd0;
+            host_seq        <= 32'd0;
         end else begin
             avl_read        <= 0;
             avl_write       <= 0;
@@ -217,10 +267,11 @@ module a2065_ddr3_mailbox (
                     bram_req_ack <= 1'b1;
                     state        <= S_BR_CAPTURE;
                 end else if (&poll_div[5:0]) begin
-                    avl_address    <= DDR3_BASE + AV_CSR;
+                    // INT_STATE before CSR_SHADOW: see the header
+                    avl_address    <= DDR3_BASE + AV_INT;
                     avl_burstcount <= 1;
                     avl_read       <= 1;
-                    state          <= S_CSR_RD_W;
+                    state          <= S_INT_RD_W;
                 end
             end
 
@@ -229,6 +280,12 @@ module a2065_ddr3_mailbox (
                     // Entry is in DDR3; publish the advanced write index so the
                     // host can see it.
                     cmd_wr_idx     <= cmd_wr_idx + 1'b1;
+                    if (ack_csr0) begin
+                        clr_pend   <= clr_pend | ack_w1c;
+                        clr_seq    <= cmd_wr_idx + 1'b1;
+                        csr0_out   <= csr0_ack;
+                        if (!csr0_ack[7]) a2065_int2 <= 1'b0;
+                    end
                     avl_address    <= DDR3_BASE + AV_CMD_WPTR;
                     avl_writedata  <= {32'b0, cmd_wr_idx + 1'b1};
                     avl_byteenable <= 8'hFF;
@@ -362,14 +419,14 @@ module a2065_ddr3_mailbox (
 
             S_CSR_RD_D: begin
                 if (avl_readdatavalid) begin
-                    csr0_out <= avl_readdata[15:0];
-                    csr1_out <= avl_readdata[31:16];
-                    csr2_out <= avl_readdata[47:32];
-                    csr3_out <= avl_readdata[63:48];
-                    avl_address    <= DDR3_BASE + AV_INT;
-                    avl_burstcount <= 1;
-                    avl_read       <= 1;
-                    state          <= S_INT_RD_W;
+                    host_seq_ok <= host_valid;
+                    if (!pend_eff) clr_pend <= 16'd0;
+                    csr0_out   <= csr0_poll;
+                    csr1_out   <= avl_readdata[31:16];
+                    csr2_out   <= avl_readdata[47:32];
+                    csr3_out   <= avl_readdata[63:48];
+                    a2065_int2 <= int_word[0] && (!pend_eff || csr0_poll[7]);
+                    state      <= S_IDLE;
                 end
             end
 
@@ -384,8 +441,12 @@ module a2065_ddr3_mailbox (
 
             S_INT_RD_D: begin
                 if (avl_readdatavalid) begin
-                    a2065_int2 <= avl_readdata[0];
-                    state      <= S_IDLE;
+                    int_word       <= avl_readdata[1:0];
+                    host_seq       <= avl_readdata[63:32];
+                    avl_address    <= DDR3_BASE + AV_CSR;
+                    avl_burstcount <= 1;
+                    avl_read       <= 1;
+                    state          <= S_CSR_RD_W;
                 end
             end
 
