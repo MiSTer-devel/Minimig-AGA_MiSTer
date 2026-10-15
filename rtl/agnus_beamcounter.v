@@ -185,8 +185,10 @@ reg [ 8:0] htotal_reg;
 reg [ 8:0] hsstrt_reg;
 reg [ 8:0] hsstop_reg;
 reg [ 8:0] hcenter_reg;
-reg [ 8:0] hbstrt_reg; // not correct size, this should have [10:0]
+reg [ 8:0] hbstrt_reg;
 reg [ 8:0] hbstop_reg;
+reg [ 1:0] hbstrt_lo;
+reg [ 1:0] hbstop_lo;
 reg [10:0] vtotal_reg;
 reg [10:0] vsstrt_reg;
 reg [10:0] vsstop_reg;
@@ -202,6 +204,8 @@ always @ (posedge clk) begin
 			hcenter_reg <= HCENTER_VAL[8:0];
 			hbstrt_reg  <= HBSTRT_VAL[8:0];
 			hbstop_reg  <= HBSTOP_VAL[8:0];
+			hbstrt_lo   <= 2'b00;
+			hbstop_lo   <= 2'b00;
 			vtotal_reg  <= pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
 			vsstrt_reg  <= VSSTRT_VAL[10:0];
 			vsstop_reg  <= VSSTOP_VAL[10:0];
@@ -213,8 +217,8 @@ always @ (posedge clk) begin
 				HSSTRT [8:1] : hsstrt_reg  <= {data_in[ 7:0], 1'b0};
 				HSSTOP [8:1] : hsstop_reg  <= {data_in[ 7:0], 1'b0};
 				HCENTER[8:1] : hcenter_reg <= {data_in[ 7:0], 1'b0};
-				HBSTRT [8:1] : hbstrt_reg  <= {data_in[ 7:0], 1'b0}; // TODO fix this
-				HBSTOP [8:1] : hbstop_reg  <= {data_in[ 7:0], 1'b0};
+				HBSTRT [8:1] : {hbstrt_reg, hbstrt_lo} <= {data_in[7:0], aga ? data_in[10:8] : 3'b000};
+				HBSTOP [8:1] : {hbstop_reg, hbstop_lo} <= {data_in[7:0], aga ? data_in[10:8] : 3'b000};
 				VTOTAL [8:1] : vtotal_reg  <= {data_in[10:0]};
 				VSSTRT [8:1] : vsstrt_reg  <= {data_in[10:0]};
 				VSSTOP [8:1] : vsstop_reg  <= {data_in[10:0]};
@@ -232,6 +236,8 @@ wire [ 8:0] hsstop  = varhsyen && varbeamen ? hsstop_reg  : HSSTOP_VAL[8:0];
 wire [ 8:0] hcenter = varhsyen && varbeamen ? hcenter_reg : HCENTER_VAL[8:0];
 wire [ 8:0] hbstrt  =             varbeamen ? hbstrt_reg  : HBSTRT_VAL[8:0];
 wire [ 8:0] hbstop  =             varbeamen ? hbstop_reg  : HBSTOP_VAL[8:0];
+wire [ 1:0] hbstrt_f =            varbeamen ? hbstrt_lo   : 2'b00;
+wire [ 1:0] hbstop_f =            varbeamen ? hbstop_lo   : 2'b00;
 wire [10:0] vtotal  =             varbeamen ? vtotal_reg  : pal ? VTOTAL_PAL_VAL : VTOTAL_NTSC_VAL;
 wire [10:0] vsstrt  = varvsyen && varbeamen ? vsstrt_reg  : VSSTRT_VAL[10:0];
 wire [10:0] vsstop  = varvsyen && varbeamen ? vsstop_reg  : VSSTOP_VAL[10:0];
@@ -433,14 +439,18 @@ assign vbl = (vpos <= vbstop);
 assign vblend = vpos==vbstop;
 
 //composite display blanking
+reg  [2:0] hbs_d, hbe_d;
+wire [3:0] hbs_s = {hbs_d, clk7_en && hpos==hbstrt};
+wire [3:0] hbe_s = {hbe_d, clk7_en && hpos==hbstop};
+
 always @(posedge clk) begin
-	if (clk7_en) begin
-		if (hpos==hbstrt)//start of blanking (active line=51.88us)
-			hblank <= 1;
-		else if (hpos==hbstop) begin //end of blanking (back porch=5.78us)
-			vblank <= vbl;
-			hblank <= 0;
-		end
+	hbs_d <= hbs_s[2:0];
+	hbe_d <= hbe_s[2:0];
+	if (hbs_s[hbstrt_f])       //start of blanking (active line=51.88us)
+		hblank <= 1;
+	else if (hbe_s[hbstop_f]) begin //end of blanking (back porch=5.78us)
+		vblank <= vbl;
+		hblank <= 0;
 	end
 end
 
