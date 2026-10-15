@@ -103,9 +103,6 @@ reg          vdiwena;             // vertical display window enable
 reg    [8:0] hdiwstrt;
 reg    [8:0] hdiwstop;
 
-wire [ 2: 0] bplptr_sel;          // bitplane pointer select
-wire [20:16] bplpth_in;
-wire [15: 1] bplptl_in;
 wire         ddfstrt_sel;
 
 wire         bp_fmode0;           // FMODE == 0
@@ -214,28 +211,54 @@ always @ (posedge clk) begin
   end
 end
 
-assign bplptr_sel = dma ? plane[2:0] : reg_address_in[4:2];
+reg  [ 2: 0] wsel_h, wsel_l;      // bitplane pointer select
+reg  [20:16] wdat_h;
+reg  [15: 1] wdat_l;
+reg          wpend_h, wpend_l;
 
-// high word pointer register bank (implemented using distributed ram)
-assign bplpth_in = dma ? newpt[20:16] : data_in[4:0];
+wire wr_pt = (reg_address_in[8:5]==BPLPTBASE_REG[8:5]);
 
-// TODO high bitplane pointer probably needs a delay (writing to pointer doesn't seem to take effect next cycle ...)
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (dma || ((reg_address_in[8:5]==BPLPTBASE_REG[8:5]) && !reg_address_in[1])) // if bitplane dma cycle or bus write
-      bplpth[bplptr_sel] <= #1 bplpth_in;
+    if (reset) begin
+      wpend_h <= #1 1'b0;
+      wpend_l <= #1 1'b0;
+    end
+    else begin
+      if (wr_pt && !reg_address_in[1]) begin
+        wpend_h <= #1 1'b1;
+        wsel_h  <= #1 reg_address_in[4:2];
+        wdat_h  <= #1 data_in[4:0];
+      end
+      else if (dma ? (plane[2:0] == wsel_h) : wpend_h)
+        wpend_h <= #1 1'b0;
+
+      if (wr_pt &&  reg_address_in[1]) begin
+        wpend_l <= #1 1'b1;
+        wsel_l  <= #1 reg_address_in[4:2];
+        wdat_l  <= #1 data_in[15:1];
+      end
+      else if (dma ? (plane[2:0] == wsel_l) : wpend_l)
+        wpend_l <= #1 1'b0;
+    end
+  end
+end
+
+// high word pointer register bank (implemented using distributed ram)
+always @ (posedge clk) begin
+  if (clk7_en) begin
+    if (dma || wpend_h) // if bitplane dma cycle or bus write
+      bplpth[dma ? plane[2:0] : wsel_h] <= #1 dma ? newpt[20:16] : wdat_h;
   end
 end
 
 assign address_out[20:16] = bplpth[plane[2:0]];
 
 // low word pointer register bank (implemented using distributed ram)
-assign bplptl_in = dma ? newpt[15:1] : data_in[15:1];
-
 always @ (posedge clk) begin
   if (clk7_en) begin
-    if (dma || ((reg_address_in[8:5]==BPLPTBASE_REG[8:5]) && reg_address_in[1])) // if bitplane dma cycle or bus write
-      bplptl[bplptr_sel] <= #1 bplptl_in;
+    if (dma || wpend_l) // if bitplane dma cycle or bus write
+      bplptl[dma ? plane[2:0] : wsel_l] <= #1 dma ? newpt[15:1] : wdat_l;
   end
 end
 
