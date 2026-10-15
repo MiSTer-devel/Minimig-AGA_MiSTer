@@ -10,7 +10,7 @@ import os, sys, struct
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 src = sys.argv[1] if len(sys.argv) > 1 else HERE
-out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, 'drivesounds.bin')
+out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, '..', '..', 'releases', 'drivesounds.bin')
 
 SOUNDS = ['DiskInsert', 'DiskEject', 'MotorStart', 'MotorLoop', 'MotorStop', 'Step1', 'Step2', 'Step3', 'Step4']
 

@@ -132,8 +132,8 @@ FastRAM can be none, 2M, 4M or 8M, and with the 68030 also 64M, 128M, 256M or 38
 ### Floppy drive sounds
 
 Audio & Video > Drive Sounds plays the sounds of the floppy drives: Off, Quiet, Normal or Loud. It needs
-[drivesounds.bin](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/raw/MiSTer/tools/drive_sounds/drivesounds.bin) in `games/Amiga`
-on the SD card. The samples are by Alastair M. Robinson, from
+[drivesounds.bin](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/raw/MiSTer/releases/drivesounds.bin) in `games/Amiga`
+on the SD card, where the updater puts it. The samples are by Alastair M. Robinson, from
 [MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) (GPL v3).
 
 ### IDE and CDROM
