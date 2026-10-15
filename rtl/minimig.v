@@ -157,6 +157,9 @@ module minimig
 	input 	     _cpu_uds,    // m68k upper data strobe
 	input 	     _cpu_lds,    // m68k lower data strobe
 	input 	     cpu_r_w,     // m68k read / write
+	input 	     cpu_long,
+	output 	     chip32_en,
+	output 	     ram_long,
 	output 	     _cpu_dtack,  // m68k data acknowledge
 	output 	     _cpu_reset,  // m68k reset
 	input 	     _cpu_reset_in,//m68k reset in
@@ -287,7 +290,7 @@ module minimig
 	output        cdtv_cdda_volume_valid,
 
 	//user i/o
-	output  [2:0] cpucfg,
+	output  [4:0] cpucfg,
 	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
@@ -307,6 +310,7 @@ module minimig
 	output  [6:0] USER_OUT,
 	output  user_port_mode,
 	output   [2:0] mister_floppy_status,
+	output   [8:0] drive_snd,
 
 	// A2065 register file + doorbell
 	// A2065 memory port — goes to ddram_ctrl alongside the fast RAM
@@ -621,6 +625,7 @@ paula PAULA1
 	
 	.enable_mister_floppy(user_port_mode),	
 	.mister_floppy_status(mister_floppy_status),
+	.drive_snd(drive_snd),
 
 	.USER_IN(USER_IN),
 	.USER_OUT(USER_OUT)
@@ -763,6 +768,10 @@ ciab CIAB1
 	.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})
 );
 
+wire cpu_long_en;
+assign chip32_en = chipset_config[4] & ~ovr & ~cpuhlt;
+assign ram_long  = cpu_long_en & ~dbr & |bank[3:0];
+
 //instantiate cpu bridge
 minimig_m68k_bridge CPU1 
 (
@@ -784,6 +793,8 @@ minimig_m68k_bridge CPU1
 	._lds(_cpu_lds),
 	._uds(_cpu_uds),
 	.r_w(cpu_r_w),
+	.cpu_long(cpu_long),
+	.long_en(cpu_long_en),
 	._dtack(_cpu_dtack),
 	.rd(cpu_rd),
 	.rd_cyc(rd_cyc),

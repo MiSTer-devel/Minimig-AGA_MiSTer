@@ -124,7 +124,9 @@ module paula_floppy
 	input   [6:0] USER_IN,
 	output  [6:0] USER_OUT,
 	
-	output	[2:0]  mister_floppy_status  // bit 0=Detected, Bit1= running in IBM Drive mode (compared to Shuggart), Bit2=Swapped Cable
+	output	[2:0]  mister_floppy_status,  // bit 0=Detected, Bit1= running in IBM Drive mode (compared to Shuggart), Bit2=Swapped Cable
+
+	output reg [8:0] drive_snd
 );
 
 
@@ -211,27 +213,30 @@ wire     virtualFloppyMode;			 // Set to 1 means we're emulating a floppy drive 
 wire     sel_external;			    // Set to 1 if a real drive is selected
 wire     flux_inuse;				    // Means the PLL is in use (real drive or flux data)
 
-assign _exsel[0] = (floppy_ext_drive[2:0]  == 3'd1) ? _sel[0] :
-                   (floppy_ext_drive[5:3]  == 3'd1) ? _sel[1] :
-                   (floppy_ext_drive[8:6]  == 3'd1) ? _sel[2] :
-                   (floppy_ext_drive[11:9] == 3'd1) ? _sel[3] : 1'b1;
+reg [3:0] exsel_map[0:3];
+reg [3:0] exsel_any;
+always @(posedge clk) begin : exsel_decode
+	integer k, i;
+	reg [3:0] taken, first, any;
+	any = 4'b0000;
+	for (k = 0; k < 4; k = k + 1) begin
+		taken = 4'b0000;
+		for (i = 0; i < 4; i = i + 1) begin
+			first[i] = (floppy_ext_drive[3*i +: 3] == k + 1) & ~|taken;
+			taken[i] = (floppy_ext_drive[3*i +: 3] == k + 1);
+		end
+		exsel_map[k] <= first;
+		any = any | first;
+	end
+	exsel_any <= enable_mister_floppy ? any : 4'b0000;
+end
 
-assign _exsel[1] = (floppy_ext_drive[2:0]  == 3'd2) ? _sel[0] :
-                   (floppy_ext_drive[5:3]  == 3'd2) ? _sel[1] :
-                   (floppy_ext_drive[8:6]  == 3'd2) ? _sel[2] :
-                   (floppy_ext_drive[11:9] == 3'd2) ? _sel[3] : 1'b1;
+assign _exsel[0] = &(~exsel_map[0] | _sel);
+assign _exsel[1] = &(~exsel_map[1] | _sel);
+assign _exsel[2] = &(~exsel_map[2] | _sel);
+assign _exsel[3] = &(~exsel_map[3] | _sel);
 
-assign _exsel[2] = (floppy_ext_drive[2:0]  == 3'd3) ? _sel[0] :
-                   (floppy_ext_drive[5:3]  == 3'd3) ? _sel[1] :
-                   (floppy_ext_drive[8:6]  == 3'd3) ? _sel[2] :
-                   (floppy_ext_drive[11:9] == 3'd3) ? _sel[3] : 1'b1;
-
-assign _exsel[3] = (floppy_ext_drive[2:0]  == 3'd4) ? _sel[0] :
-                   (floppy_ext_drive[5:3]  == 3'd4) ? _sel[1] :
-                   (floppy_ext_drive[8:6]  == 3'd4) ? _sel[2] :
-                   (floppy_ext_drive[11:9] == 3'd4) ? _sel[3] : 1'b1;
-
-assign sel_external    = ((~_exsel[0]) | (~_exsel[1]) | (~_exsel[2]) | (~_exsel[3])) & enable_mister_floppy;
+assign sel_external    = |(exsel_any & ~_sel);
 assign flux_inuse      = sel_external | ((disk_fluxmode[sel]|disk_fluxdensitymode[sel]) & ~_selx);
 assign virtualFloppyMode = (disk_fluxmode[sel]|disk_fluxdensitymode[sel]) & ~sel_external & ~_selx;
 assign floppy_speed   = (reset | ~flux_inuse) ? floppy_speed_allowed : 1'b0;
@@ -584,6 +589,12 @@ always @(posedge clk) begin
   end
 end
 
+wire [3:0] drive_emu = {drives == 2'd3, drives[1], |drives, 1'b1} & ~exsel_any & {4{~floppy_zero_active}};
+always @(posedge clk) begin
+  drive_snd[8:1] <= {reset, disk_present & drive_emu, |(motor_on[3:1] & drive_emu[3:1]), motor_on[0] & drive_emu[0], |sel};
+  drive_snd[0]   <= clk7_en & !_selx & _step & !_step_del & step_ena & (!direc | _dsktrack0) & drive_emu[sel];
+end
+
 // _dsktrack0 detect
 assign _dsktrack0 = ~(dsktrack[sel]==0);
 
@@ -733,8 +744,10 @@ wire flux_fifo_rd   = flux_inuse ? (busrd & dmaon) | ext_floppy_rd : 1'b0;      
 // This is used to decrement the dma length left
 wire selected_fifo_empty;
 wire selected_fifo_full;
-assign selected_fifo_empty = flux_inuse ? flux_fifo_empty : fifo_empty;
-assign selected_fifo_full =  flux_inuse ? flux_fifo_full : fifo_full;
+reg  flux_inuse_dma;
+always @(posedge clk) flux_inuse_dma <= flux_inuse;
+assign selected_fifo_empty = flux_inuse_dma ? flux_fifo_empty : fifo_empty;
+assign selected_fifo_full =  flux_inuse_dma ? flux_fifo_full : fifo_full;
 assign output_fifo_write = flux_inuse ? flux_fifo_wr : paula_fifo_wr;
 
 // OK: disk data read output gate

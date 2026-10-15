@@ -120,7 +120,8 @@ module paula
 	output        floppy_frd,
 	input   [6:0] USER_IN,
 	output  [6:0] USER_OUT,
-	output [2:0] mister_floppy_status
+	output [2:0] mister_floppy_status,
+	output  [8:0] drive_snd
 );
 //--------------------------------------------------------------------------------------
 
@@ -293,7 +294,8 @@ paula_floppy pf1
 	
 	.USER_IN(USER_IN),
 	.USER_OUT(USER_OUT),
-	.mister_floppy_status(mister_floppy_status)
+	.mister_floppy_status(mister_floppy_status),
+	.drive_snd(drive_snd)
 );
 
 //instantiate audio controller

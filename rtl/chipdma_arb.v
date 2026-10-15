@@ -12,6 +12,8 @@ module chipdma_arb
 	input             chip_in_rw,
 	input             chip_in_dma,
 	input      [15:0] chip_in_wr,
+	input             chip_in_long,
+	input      [15:0] chip_in_wr2,
 
 	input             akiko_dma_req,
 	input             akiko_dma_we,
@@ -34,6 +36,8 @@ module chipdma_arb
 	output            chip_out_rw,
 	output            chip_out_dma,
 	output     [15:0] chip_out_wr,
+	output            chip_out_long,
+	output     [15:0] chip_out_wr2,
 	input      [15:0] chip_in_rd,
 
 	input             z2ram_ena,
@@ -41,6 +45,13 @@ module chipdma_arb
 	input             z3ram_ena0,
 	input       [3:0] z3ram_base1,
 	input             z3ram_ena1,
+	input       [7:0] z3sdr_base0,
+	input             z3sdr_ena0,
+	input       [7:0] z3sdr_base1,
+	input             z3sdr_ena1,
+	input       [7:0] z3sdr_base2,
+	input             z3sdr_ena2,
+	input             sdram_big,
 
 	output     [28:1] ddr_out_addr,
 	output            ddr_out_l,
@@ -155,6 +166,13 @@ memory_router u_router
 	.z3ram_ena0    (z3ram_ena0),
 	.z3ram_base1   (z3ram_base1),
 	.z3ram_ena1    (z3ram_ena1),
+	.z3sdr_base0   (z3sdr_base0),
+	.z3sdr_ena0    (z3sdr_ena0),
+	.z3sdr_base1   (z3sdr_base1),
+	.z3sdr_ena1    (z3sdr_ena1),
+	.z3sdr_base2   (z3sdr_base2),
+	.z3sdr_ena2    (z3sdr_ena2),
+	.sdram_big     (sdram_big),
 	.ramaddr       (router_ramaddr)
 );
 
@@ -170,6 +188,8 @@ assign chip_out_u    = arb_drive_chip ? ak_u_w       : chip_in_u;
 assign chip_out_rw   = arb_drive_chip ? ak_rw_w      : chip_in_rw;
 assign chip_out_dma  = arb_drive_chip ? 1'b0         : chip_in_dma;
 assign chip_out_wr   = arb_drive_chip ? ak_wr_data_w : chip_in_wr;
+assign chip_out_long = ~arb_drive_chip & chip_in_long;
+assign chip_out_wr2  = chip_in_wr2;
 
 assign ddr_out_cs   = dma_ddr_cs_r;
 assign ddr_out_addr = dma_ddr_addr_r;
