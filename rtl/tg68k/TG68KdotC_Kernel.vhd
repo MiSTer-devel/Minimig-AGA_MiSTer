@@ -307,6 +307,7 @@ architecture logic of TG68KdotC_Kernel is
 	signal trapd				: bit;
 	signal trap_SR				: std_logic_vector(7 downto 0);
 	signal make_trace			: std_logic;
+	signal t0_arm				: std_logic;
 	signal make_berr			: std_logic;
 	signal useStackframe2	: std_logic;
 	
@@ -1552,14 +1553,23 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 				preMmode <= '0';
 				FlagsSR <= "00100111";
 				make_trace <= '0';
+				t0_arm <= '0';
 			ELSIF clkena_lw = '1' THEN
 				IF setopcode='1' THEN
 					make_trace <= FlagsSR(7);
+					t0_arm <= FlagsSR(6) AND NOT FlagsSR(7) AND cpu(1);
 					IF set(changeMode)='1' THEN
 						SVmode <= NOT SVmode; 
 					ELSE
 						SVmode <= preSVmode;
 					END IF;	
+				END IF;
+				IF t0_arm='1' AND (TG68_PC_brw='1' OR exec(ea_to_pc)='1' OR exec(to_SR)='1' OR
+				   (exec(to_CCR)='1' AND (exec(andiSR)='1' OR exec(eoriSR)='1' OR exec(oriSR)='1')) OR
+				   (decodeOPC='1' AND (opcode=X"4E74" OR opcode=X"4E75" OR opcode=X"4E77")) OR
+				   (micro_state=trap3 AND writePCnext='1') OR
+				   (exec(directSR)='1' AND opcode=X"4E73" AND (data_read(15 downto 8) AND X"F7")/=(FlagsSR AND X"F7"))) THEN
+					make_trace <= '1';
 				END IF;
 				IF trap_berr='1' OR trap_illegal='1' OR trap_addr_error='1' OR trap_priv='1' OR trap_1010='1' OR trap_1111='1' THEN
 					make_trace <= '0';
@@ -1575,6 +1585,7 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 				END IF;
 				IF micro_state=trap3 THEN
 					FlagsSR(7) <= '0';
+					FlagsSR(6) <= '0';
 				END IF;
 				IF trap_trace='1' AND state="10" THEN
 					make_trace <= '0';
