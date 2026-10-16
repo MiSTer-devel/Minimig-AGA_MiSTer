@@ -25,7 +25,7 @@ parameter FIXED_ONE            = 32'sd32768; // Fixed-point representation of 1.
 parameter integer ATTEN_LEVELS = 64; // 6 bits for attenuation level
 
 // LUT for attenuation factors
-wire signed [31:0] attenuation_factors[ATTEN_LEVELS];
+logic signed [31:0] attenuation_factors[ATTEN_LEVELS];
 
 // Initialize the LUT
 initial begin
