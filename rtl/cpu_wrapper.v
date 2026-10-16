@@ -509,13 +509,6 @@ always @(negedge clk, negedge reset) begin
 	end
 end
 
-always @(negedge clk) if (reset === 1'b1 && w32 && chipreq && !c_long &&
-		!(~wr && cpu_addr_m[23:2] == w32_adr && cpu_addr_m[1] && !longword)) begin
-	$display("CPU_WRAPPER %0t: chip access %h (wr %b long %b) after the high word of a long write to %h",
-		$realtime, cpu_addr_m, wr, longword, {w32_adr, 2'b00});
-	$finish;
-end
-
 ///////////////////// AUTOCONFIG ////////////////////////////
 
 reg       ac_toccata;

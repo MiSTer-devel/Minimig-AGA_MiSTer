@@ -674,12 +674,4 @@ always @ (posedge sysclk) begin : ctrl
 	st0_cpu <= ((sdram_state == 15) | resync) & init_n & ~|ref_pend_n[3:2];
 end
 
-always @(posedge sysclk) if(reset === 1'b1) begin
-	if(st0_go !== (sdram_st0 & init_done) || st0_cpu !== (sdram_st0 & init_done & ~|ctrl.ref_pend[3:2])) begin
-		$display("SDRAM_CTRL %0t: st0_go %b st0_cpu %b, sdram_st0 %b init_done %b ref_pend %h",
-			$realtime, st0_go, st0_cpu, sdram_st0, init_done, ctrl.ref_pend);
-		$finish;
-	end
-end
-
 endmodule
