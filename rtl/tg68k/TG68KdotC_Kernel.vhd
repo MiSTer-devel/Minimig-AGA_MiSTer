@@ -4356,7 +4356,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		if CPU030 = '1' then
 		  movec_data <= "000000000000000000" & CACR;
 		else
-		  movec_data <= "00000000000000000000000" & CACR_DC & "0000" & (CACR(3 downto 0) AND "0011");
+		  movec_data <= "000000000000000000000000000000" & CACR(1 downto 0);
 		end if;
 
 	  when X"801" => 
