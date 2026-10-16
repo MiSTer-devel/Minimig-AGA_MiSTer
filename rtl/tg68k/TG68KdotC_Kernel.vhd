@@ -518,7 +518,7 @@ ALU: TG68K_ALU
 	FC <= FC_eff;
 	FC_eff <= moves_fcv WHEN moves_fc='1' ELSE FC_i;
 	state_mmu <= "01" WHEN moves_skip='1' OR ae_halt='1' OR (ae_block='1' AND state="00") ELSE state;
-	moves_op <= '1' WHEN cpu(0)='1' AND opcode(15 downto 8)="00001110" AND opcode(7 downto 6)/="11" ELSE '0';
+	moves_op <= '1' WHEN cpu(0)='1' AND opcode(15 downto 8)="00001110" AND opcode(7 downto 6)/="11" AND trapmake='0' ELSE '0';
 	-- AMR - let the parent module know this is a longword access.  (Easy way to enable burst writes.)
 	longword_i <= not memmaskmux(3);
 	
