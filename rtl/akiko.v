@@ -228,7 +228,7 @@ if (NATIVE_CD32) begin : g_cd
 			4'h8: expected_total_len = 6'd5;
 			4'h9: expected_total_len = 6'd2;
 			4'ha: expected_total_len = 6'd3;
-			default: expected_total_len = 6'd32;
+			default: expected_total_len = 6'd1;
 		endcase
 	endfunction
 
