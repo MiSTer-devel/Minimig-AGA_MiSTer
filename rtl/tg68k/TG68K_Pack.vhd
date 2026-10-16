@@ -124,8 +124,10 @@ package TG68K_Pack is
 	constant opcCHK2				: integer := 87; --
 	constant opcEXTB				: integer := 88; --
 	constant pmmu_rd				: integer := 89; --
+	constant changeMstk			: integer := 90; --
+	constant from_SSTK			: integer := 91; --
 
-	constant lastOpcBit			: integer := 89;
+	constant lastOpcBit			: integer := 91;
 
 	component TG68K_ALU
 	generic(

@@ -326,6 +326,9 @@ architecture logic of TG68KdotC_Kernel is
 	signal setinterrupt		: bit;
 	signal SVmode				: std_logic;
 	signal preSVmode			: std_logic;
+	signal preMmode			: std_logic;
+	signal a7_live				: std_logic_vector(31 downto 0);
+	signal movec_src			: bit;
 	signal Suppress_Base		: bit;
 	signal set_Suppress_Base: bit;
 	signal set_Z_error 		: bit;
@@ -662,10 +665,19 @@ PROCESS (clk, regfile, RDindex_A, RDindex_B, exec)
 				RDindex_B <= conv_integer(rf_source_addr(3 downto 0));
 				IF Wwrena='1' THEN
 					regfile(RDindex_A) <= regin;
+					IF RDindex_A=15 THEN
+						a7_live <= regin;
+					END IF;
 				END IF;
 				
 				IF exec(to_USP)='1' THEN
-					USP <= reg_QA;
+					IF exec(changeMstk)='1' AND preMmode='1' THEN
+						USP <= MSP;
+					ELSIF exec(changeMstk)='1' THEN
+						USP <= ISP;
+					ELSE
+						USP <= reg_QA;
+					END IF;
 				END IF;	
 			END IF;
 		END IF;
@@ -674,7 +686,7 @@ PROCESS (clk, regfile, RDindex_A, RDindex_B, exec)
 -----------------------------------------------------------------------------
 -- Write Reg
 -----------------------------------------------------------------------------
-PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, movem_actiond, exec, ALUout, memaddr, memaddr_a, ea_only, USP, movec_data, mmu_desc)
+PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, movem_actiond, exec, ALUout, memaddr, memaddr_a, ea_only, USP, movec_data, mmu_desc, MSP, ISP, preMmode, reg_QB)
 	BEGIN
 		regin <= ALUout;
 		IF exec(save_memaddr)='1' THEN
@@ -683,6 +695,12 @@ PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, mov
 			regin <= memaddr_a;	
 		ELSIF exec(from_USP)='1' THEN
 			regin <= USP;	
+		ELSIF exec(changeMstk)='1' AND preMmode='1' THEN
+			regin <= MSP;
+		ELSIF exec(changeMstk)='1' THEN
+			regin <= ISP;
+		ELSIF exec(from_SSTK)='1' THEN
+			regin <= reg_QB;
 		ELSIF exec(movec_rd)='1' THEN
 			regin <= movec_data;
 		ELSIF exec(pmmu_rd)='1' THEN
@@ -699,7 +717,7 @@ PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, mov
 		Bwrena <= '0';
 		Wwrena <= '0';
 		Lwrena <= '0';
-		IF exec(presub)='1' OR exec(postadd)='1' OR exec(changeMode)='1' THEN		-- -(An)+
+		IF exec(presub)='1' OR exec(postadd)='1' OR exec(changeMode)='1' OR exec(changeMstk)='1' OR exec(from_SSTK)='1' THEN		-- -(An)+
 			Wwrena <= '1';
 			Lwrena <= '1';
 		ELSIF Regwrena_now='1' THEN		--dbcc	
@@ -760,7 +778,7 @@ PROCESS (opcode, rf_source_addrd, brief, setstackaddr, dest_hbits, dest_areg, de
 -----------------------------------------------------------------------------
 -- set source regaddr
 -----------------------------------------------------------------------------
-PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOPC, exec, set, source_2ndLbits, source_2ndHbits, 	source_LDRLbits, source_LDRMbits, last_data_read, source_2ndMbits, source_2ndHAbits)
+PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOPC, exec, set, source_2ndLbits, source_2ndHbits, 	source_LDRLbits, source_LDRMbits, last_data_read, source_2ndMbits, source_2ndHAbits, movec_src, brief)
 	BEGIN
 		IF exec(movem_action)='1' OR set(movem_action) ='1' THEN
 			IF movem_presub='1' THEN
@@ -780,6 +798,8 @@ PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOP
 			rf_source_addr <= '0'&last_data_read(2 downto 0);
 		ELSIF source_LDRMbits='1' THEN
 			rf_source_addr <= '0'&last_data_read(8 downto 6);
+		ELSIF movec_src='1' THEN
+			rf_source_addr <= brief(15 downto 12);
 		ELSIF source_lowbits='1' THEN
 			rf_source_addr <= source_areg&opcode(2 downto 0);
 		ELSIF exec(linksp)='1' THEN
@@ -1529,6 +1549,7 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 				FC_i(2) <= '1';
 				SVmode <= '1';
 				preSVmode <= '1';
+				preMmode <= '0';
 				FlagsSR <= "00100111";
 				make_trace <= '0';
 			ELSIF clkena_lw = '1' THEN
@@ -1548,6 +1569,9 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 					preSVmode <= NOT preSVmode;
 					FlagsSR(5) <= NOT preSVmode;
 					FC_i(2) <= NOT preSVmode;
+				END IF;
+				IF set(changeMstk)='1' THEN
+					preMmode <= NOT preMmode;
 				END IF;
 				IF micro_state=trap3 THEN
 					FlagsSR(7) <= '0';
@@ -1587,7 +1611,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		 SVmode, preSVmode, stop, long_done, ea_only, setstate, addrvalue, execOPC, exec_write_back, exe_datatype,
 		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, last_data_in, use_VBR_Stackframe,
 		 long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr,
-		 CPU030, MMU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg)
+		 CPU030, MMU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg, preMmode)
 	BEGIN
 		TG68_PC_brw <= '0';	
 		setstate <= "00";
@@ -1617,6 +1641,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		source_LDRMbits <= '0';
 		source_2ndHbits <= '0';
 		source_2ndHAbits <= '0';
+		movec_src <= '0';
 		source_2ndMbits <= '0';
 		source_2ndLbits <= '0';
 		dest_LDRHbits <= '0';
@@ -1725,6 +1750,10 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 			set(changeMode) <= '1';
 --			setstate <= "01";
 --			next_micro_state <= nop;
+		END IF;
+		IF setexecOPC='1' AND cpu(1)='1' AND preSVmode='1' AND FlagsSR(4)/=preMmode THEN
+			set(changeMstk) <= '1';
+			setstackaddr <= '1';
 		END IF;
 
 		IF interrupt='1' AND trap_interrupt='1'THEN
@@ -4088,7 +4117,13 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					set(Regwrena) <= '1';
 					
 				WHEN movec1 =>		-- MOVEC
-					set(briefext) <= '1';
+					IF opcode(0)='1' AND cpu(1)='1' AND ((brief(11 downto 0)=X"803" AND preMmode='1') OR (brief(11 downto 0)=X"804" AND preMmode='0')) THEN
+						setstackaddr <= '1';
+						movec_src <= '1';
+						set(from_SSTK) <= '1';
+					ELSE
+						set(briefext) <= '1';
+					END IF;
 					set_writePCbig <='1';
 					IF (brief(11 downto 0)=X"000" OR brief(11 downto 0)=X"001" OR brief(11 downto 0)=X"800" OR brief(11 downto 0)=X"801") OR 
 					   (cpu(1)='1' AND (brief(11 downto 0)=X"002" OR brief(11 downto 0)=X"802" OR brief(11 downto 0)=X"803" OR brief(11 downto 0)=X"804")) THEN
@@ -4254,7 +4289,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 -----------------------------------------------------------------------------
 -- MOVEC
 -----------------------------------------------------------------------------
-  process (clk, SFC, DFC, VBR, CACR, CAAR, MSP, ISP, CACR_DC, CPU030, brief)
+  process (clk, SFC, DFC, VBR, CACR, CAAR, MSP, ISP, CACR_DC, CPU030, brief, a7_live, preMmode)
   begin
 	-- all other hexa codes should give illegal isntruction exception
 	if rising_edge(clk) then
@@ -4292,6 +4327,13 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		    when others => NULL;
 		  end case;
 		end if;
+		if clkena_lw = '1' and exec(changeMstk) = '1' then
+		  if preMmode = '1' then
+		    ISP <= reg_QA;
+		  else
+		    MSP <= reg_QA;
+		  end if;
+		end if;
 	  end if;
 	end if;
 
@@ -4310,8 +4352,18 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		movec_data <= VBR;
 		--end if;
 	  when X"802" => movec_data <= CAAR;
-	  when X"803" => movec_data <= MSP;
-	  when X"804" => movec_data <= ISP;
+	  when X"803" =>
+		if preMmode = '1' then
+		  movec_data <= a7_live;
+		else
+		  movec_data <= MSP;
+		end if;
+	  when X"804" =>
+		if preMmode = '0' then
+		  movec_data <= a7_live;
+		else
+		  movec_data <= ISP;
+		end if;
 	  when others => NULL;
 	end case;
   end process;
