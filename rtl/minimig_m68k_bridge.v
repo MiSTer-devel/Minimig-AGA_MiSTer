@@ -47,6 +47,8 @@ module minimig_m68k_bridge
 	input	        _lds,          // m68k lower data strobe d0-d7
 	input	        _uds,          // m68k upper data strobe d8-d15
 	input	        r_w,           // m68k read / write
+	input         cpu_long,
+	output        long_en,
 	output        _dtack,        // m68k data acknowledge to cpu
 	output        rd,            // bus read 
 	output        hwr,           // bus high write
@@ -126,12 +128,13 @@ always @(posedge clk) begin
 end
 
 //latched CPU bus control signals
-reg lr_w,l_as,l_dtack; // synchronised inputs
+reg lr_w,l_as,l_dtack,l_long; // synchronised inputs
 always @ (posedge clk) begin
 	if (clk7_en) begin
 		lr_w <= !halt ? r_w : !host_we;
 		l_as <= !halt ? _as : !host_cs;
 		l_dtack <= _dtack;
+		l_long <= !halt & cpu_long;
 	end
 end
 
@@ -160,6 +163,7 @@ wire   enable = ~l_as & ~l_dtack & ~cck;
 assign rd = enable & lr_w;
 assign hwr = enable & ~lr_w & ~l_uds;
 assign lwr = enable & ~lr_w & ~l_lds;
+assign long_en = enable & l_long;
 assign rd_cyc = ~l_as & lr_w;
 
 //blitter slow down signalling, asserted whenever CPU is missing bus access to chip ram, slow ram and custom registers 

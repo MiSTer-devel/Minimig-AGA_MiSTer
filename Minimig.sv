@@ -96,9 +96,18 @@ hps_io #(.CONF_STR(CONF_STR), .CONF_STR_BRAM(0)) hps_io
 
 	.RTC(RTC),
 	.gamma_bus(gamma_bus),
+	.sdram_sz(sdram_sz),
 
 	.EXT_BUS(EXT_BUS)
 );
+
+wire [15:0] sdram_sz;
+reg         sdram_big = 0;
+reg         sdram_dual = 0;
+always @(posedge clk_sys) begin
+	sdram_big  <= sdram_sz[15] & sdram_sz[1];
+	sdram_dual <= sdram_sz[15] & (sdram_sz[1:0] == 2'd3);
+end
 
 wire [15:0] ide_din;
 wire [15:0] ide_dout;
@@ -313,6 +322,13 @@ wire        chip_rw;
 wire [15:0] chip_dout;
 wire [15:0] chip_din;
 wire [23:1] chip_addr;
+wire        chip32_en;
+wire        chip_long;
+wire [15:0] chip_din2;
+wire [15:0] chip_rd2;
+wire        ram_long;
+wire        arb_chip_long;
+wire [15:0] arb_chip_wr2;
 
 wire [28:1] ram_addr;
 wire        ram_sel;
@@ -322,6 +338,10 @@ wire [15:0] ram_din;
 wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
 wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
 wire        zram_sel  = |ram_addr[28:26];
+wire        ram_l1;
+wire [15:0] ram_din_lo;
+wire [15:0] ram_dout2_hi;
+wire        ram_ready2_l;
 wire        ramshared;
 
 wire [7:0] toccata_base;
@@ -359,6 +379,10 @@ cpu_wrapper cpu_wrapper
 	.chip_rw      (chip_rw         ),
 	.chip_dtack   (chip_dtack      ),
 	.chip_ipl     (chip_ipl        ),
+	.chip32_en    (chip32_en       ),
+	.chip_long    (chip_long       ),
+	.chip_din2    (chip_din2       ),
+	.chip_dout2   (chip_rd2        ),
 
 	.fastchip_dout   (fastchip_dout   ),
 	.fastchip_sel    (fastchip_sel    ),
@@ -370,9 +394,12 @@ cpu_wrapper cpu_wrapper
 	.fastchip_lw     (fastchip_lw     ),
 
 	.cpucfg       (cpucfg          ),
+	.ntsc         (ntsc            ),
 	.cachecfg     (cachecfg        ),
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
+	.sdram_big    (sdram_big       ),
+	.sdram_dual   (sdram_dual      ),
 
 	.toccata_ena  (toccata_ena     ),
 	.a2065_ena    (a2065_ena       ),
@@ -392,6 +419,10 @@ cpu_wrapper cpu_wrapper
 	.ramdin       (ram_din         ),
 	.ramready     (ram_ready       ),
 	.ramshared    (ramshared       ),
+	.ramlong1     (ram_l1          ),
+	.ramdin_lo    (ram_din_lo      ),
+	.ramdout_hi   (ram_dout2_hi    ),
+	.ramready_l   (zram_sel & ram_ready2_l),
 
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
@@ -403,12 +434,24 @@ cpu_wrapper cpu_wrapper
 	.z3ram_ena0   (z3ram_ena0      ),
 	.z3ram_base1  (z3ram_base1     ),
 	.z3ram_ena1   (z3ram_ena1      ),
+	.z3sdr_base0  (z3sdr_base0     ),
+	.z3sdr_ena0   (z3sdr_ena0      ),
+	.z3sdr_base1  (z3sdr_base1     ),
+	.z3sdr_ena1   (z3sdr_ena1      ),
+	.z3sdr_base2  (z3sdr_base2     ),
+	.z3sdr_ena2   (z3sdr_ena2      ),
 	.dcache_sw_en (dcache_sw_en    )
 );
 
 wire        dcache_sw_en;
 
 wire        z2ram_ena;
+wire  [7:0] z3sdr_base0;
+wire        z3sdr_ena0;
+wire  [7:0] z3sdr_base1;
+wire        z3sdr_ena1;
+wire  [7:0] z3sdr_base2;
+wire        z3sdr_ena2;
 wire  [4:0] z3ram_base0;
 wire        z3ram_ena0;
 wire  [3:0] z3ram_base1;
@@ -426,6 +469,21 @@ wire [15:0] dma_ddr_rd;
 wire [15:0] ram_dout1;
 wire        ram_ready1;
 
+wire        sdr_req;
+wire        sdr_we;
+wire [26:1] sdr_addr;
+wire  [1:0] sdr_dqm;
+wire [15:0] sdr_wdat;
+wire        sdr_ack;
+wire        sdr_rvalid;
+wire [15:0] sdr_rdat;
+wire        sdr_w2;
+wire  [1:0] sdr_dqm2;
+wire [15:0] sdr_wdat2;
+
+reg         sdram_big_114 = 0;
+always @(posedge clk_114) sdram_big_114 <= sdram_big;
+
 sdram_ctrl ram1
 (
 	.sysclk       (clk_114         ),
@@ -435,6 +493,7 @@ sdram_ctrl ram1
 	.cache_rst    (cpu_rst         ),
 	.cpu_cache_ctrl(cpu_cacr       ),
 	.dcache_sw_en (dcache_sw_en    ),
+	.sdram_big    (sdram_big_114   ),
 
 	.sd_data      (SDRAM_DQ        ),
 	.sd_addr      (SDRAM_A         ),
@@ -463,7 +522,22 @@ sdram_ctrl ram1
 	.chipRW       (arb_chip_rw     ),
 	.chipDMA      (arb_chip_dma    ),
 	.chipRD       (ramdata_in      ),
-	.chip48       (chip48          )
+	.chip48       (chip48          ),
+	.chip32       (arb_chip_long   ),
+	.chipWR2      (arb_chip_wr2    ),
+	.chipRD2      (chip_rd2        ),
+
+	.fast_req     (sdr_req         ),
+	.fast_we      (sdr_we          ),
+	.fast_addr    (sdr_addr        ),
+	.fast_dqm     (sdr_dqm         ),
+	.fast_wdat    (sdr_wdat        ),
+	.fast_w2      (sdr_w2          ),
+	.fast_dqm2    (sdr_dqm2        ),
+	.fast_wdat2   (sdr_wdat2       ),
+	.fast_ack     (sdr_ack         ),
+	.fast_rvalid  (sdr_rvalid      ),
+	.fast_rdat    (sdr_rdat        )
 );
 
 chipdma_arb chipdma_arb
@@ -478,6 +552,8 @@ chipdma_arb chipdma_arb
 	.chip_in_rw      (_ram_we              ),
 	.chip_in_dma     (_ram_oe              ),
 	.chip_in_wr      (ram_data             ),
+	.chip_in_long    (ram_long             ),
+	.chip_in_wr2     (chip_din2            ),
 
 	.akiko_dma_req   (akiko_dma_req        ),
 	.akiko_dma_we    (akiko_dma_we         ),
@@ -500,6 +576,8 @@ chipdma_arb chipdma_arb
 	.chip_out_rw     (arb_chip_rw          ),
 	.chip_out_dma    (arb_chip_dma         ),
 	.chip_out_wr     (arb_chip_wr          ),
+	.chip_out_long   (arb_chip_long        ),
+	.chip_out_wr2    (arb_chip_wr2         ),
 	.chip_in_rd      (ramdata_in           ),
 
 	.z2ram_ena       (z2ram_ena            ),
@@ -507,6 +585,13 @@ chipdma_arb chipdma_arb
 	.z3ram_ena0      (z3ram_ena0           ),
 	.z3ram_base1     (z3ram_base1          ),
 	.z3ram_ena1      (z3ram_ena1           ),
+	.z3sdr_base0     (z3sdr_base0          ),
+	.z3sdr_ena0      (z3sdr_ena0           ),
+	.z3sdr_base1     (z3sdr_base1          ),
+	.z3sdr_ena1      (z3sdr_ena1           ),
+	.z3sdr_base2     (z3sdr_base2          ),
+	.z3sdr_ena2      (z3sdr_ena2           ),
+	.sdram_big       (sdram_big            ),
 
 	.ddr_out_addr    (dma_ddr_addr         ),
 	.ddr_out_l       (dma_ddr_l            ),
@@ -541,15 +626,15 @@ ddram_ctrl ram2
 	.DDRAM_BE     (DDRAM_BE        ),
 	.DDRAM_WE     (DDRAM_WE        ),
 
-	.mem2_address      (a2065_mem_address),
-	.mem2_burstcount   (a2065_mem_burstcount),
-	.mem2_read         (a2065_mem_read),
-	.mem2_readdata     (a2065_mem_readdata),
-	.mem2_readdatavalid(a2065_mem_readdatavalid),
-	.mem2_writedata    (a2065_mem_writedata),
-	.mem2_byteenable   (a2065_mem_byteenable),
-	.mem2_write        (a2065_mem_write),
-	.mem2_waitrequest  (a2065_mem_waitrequest),
+	.mem2_address      (mem2_address),
+	.mem2_burstcount   (mem2_burstcount),
+	.mem2_read         (mem2_read),
+	.mem2_readdata     (mem2_readdata),
+	.mem2_readdatavalid(mem2_readdatavalid),
+	.mem2_writedata    (mem2_writedata),
+	.mem2_byteenable   (mem2_byteenable),
+	.mem2_write        (mem2_write),
+	.mem2_waitrequest  (mem2_waitrequest),
 
 	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr        ),
@@ -559,7 +644,12 @@ ddram_ctrl ram2
 	.cpuCS        (zram_sel&ram_cs ),
 	.cpuRD        (ram_dout2       ),
 	.ramshared    (ramshared       ),
+	.cpuLong      (fastchip_lw & ~ram_addr[1]),
 	.ramready     (ram_ready2      ),
+	.cpuLong1     (ram_l1 & zram_sel),
+	.cpuWR_lo     (ram_din_lo      ),
+	.cpuRD_hi     (ram_dout2_hi    ),
+	.ramready_l   (ram_ready2_l    ),
 
 	.dmaAddr      (dma_ddr_addr    ),
 	.dmaCS        (dma_ddr_cs      ),
@@ -568,7 +658,20 @@ ddram_ctrl ram2
 	.dmaU         (dma_ddr_u       ),
 	.dmaWR        (dma_ddr_wr      ),
 	.dmaRD        (dma_ddr_rd      ),
-	.dmaACK       (dma_ddr_ack     )
+	.dmaACK       (dma_ddr_ack     ),
+
+	.sdr_hi       (z3sdr_ena1      ),
+	.sdr_req      (sdr_req         ),
+	.sdr_we       (sdr_we          ),
+	.sdr_addr     (sdr_addr        ),
+	.sdr_dqm      (sdr_dqm         ),
+	.sdr_wdat     (sdr_wdat        ),
+	.sdr_w2       (sdr_w2          ),
+	.sdr_dqm2     (sdr_dqm2        ),
+	.sdr_wdat2    (sdr_wdat2       ),
+	.sdr_ack      (sdr_ack         ),
+	.sdr_rvalid   (sdr_rvalid      ),
+	.sdr_rdat     (sdr_rdat        )
 );
 
 ////////////////////////////  A2065 ETHERNET  ///////////////////////////////
@@ -583,6 +686,51 @@ wire [7:0]  a2065_mem_burstcount, a2065_mem_byteenable;
 wire        a2065_mem_read, a2065_mem_write;
 wire [63:0] a2065_mem_writedata, a2065_mem_readdata;
 wire        a2065_mem_readdatavalid, a2065_mem_waitrequest;
+
+wire [28:0] mem2_address;
+wire [7:0]  mem2_burstcount, mem2_byteenable;
+wire        mem2_read, mem2_write;
+wire [63:0] mem2_writedata, mem2_readdata;
+wire        mem2_readdatavalid, mem2_waitrequest;
+
+wire [28:0] dsnd_addr;
+wire        dsnd_rd, dsnd_busy, dsnd_ready;
+
+a2065_ddram_arbiter dsnd_arb
+(
+	.clk             (clk_114),
+	.rst             (reset_d),
+
+	.m0_address      (a2065_mem_address),
+	.m0_burstcount   (a2065_mem_burstcount),
+	.m0_read         (a2065_mem_read),
+	.m0_readdata     (a2065_mem_readdata),
+	.m0_readdatavalid(a2065_mem_readdatavalid),
+	.m0_writedata    (a2065_mem_writedata),
+	.m0_byteenable   (a2065_mem_byteenable),
+	.m0_write        (a2065_mem_write),
+	.m0_waitrequest  (a2065_mem_waitrequest),
+
+	.m1_address      (dsnd_addr),
+	.m1_burstcount   (8'd1),
+	.m1_read         (dsnd_rd),
+	.m1_readdata     (),
+	.m1_readdatavalid(dsnd_ready),
+	.m1_writedata    (64'd0),
+	.m1_byteenable   (8'hFF),
+	.m1_write        (1'b0),
+	.m1_waitrequest  (dsnd_busy),
+
+	.s_address       (mem2_address),
+	.s_burstcount    (mem2_burstcount),
+	.s_read          (mem2_read),
+	.s_readdata      (mem2_readdata),
+	.s_readdatavalid (mem2_readdatavalid),
+	.s_writedata     (mem2_writedata),
+	.s_byteenable    (mem2_byteenable),
+	.s_write         (mem2_write),
+	.s_waitrequest   (mem2_waitrequest)
+);
 
 wire [15:0] fastchip_dout;
 wire        fastchip_sel;
@@ -686,7 +834,7 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 ///////////////////////////////////////////////////////////////////////
 
 //// minimig top ////
-wire  [2:0] cpucfg;
+wire  [4:0] cpucfg;
 wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   
@@ -715,6 +863,8 @@ wire        ide_ena;
 wire [15:0] toccata_aud_left;
 wire [15:0] toccata_aud_right;
 
+wire  [8:0] drive_snd;
+
 wire [6:0]  IndirectUserOutmt32;
 wire [6:0]  IndirectUserOutFlop;
 wire        user_port_mode;
@@ -732,6 +882,9 @@ minimig minimig
 	._cpu_uds     (chip_uds         ), // M68K upper data strobe
 	._cpu_lds     (chip_lds         ), // M68K lower data strobe
 	.cpu_r_w      (chip_rw          ), // M68K read / write
+	.cpu_long     (chip_long        ),
+	.chip32_en    (chip32_en        ),
+	.ram_long     (ram_long         ),
 	._cpu_dtack   (chip_dtack       ), // M68K data acknowledge
 	._cpu_reset   (cpu_rst          ), // M68K reset
 	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out
@@ -889,7 +1042,8 @@ minimig minimig
 	.USER_IN      			(USER_IN),
 	.USER_OUT     			(IndirectUserOutFlop),
 	.user_port_mode 		(user_port_mode),
-	.mister_floppy_status	(mister_floppy_status)
+	.mister_floppy_status	(mister_floppy_status),
+	.drive_snd    			(drive_snd)
 );
 
 // power led control
@@ -1248,6 +1402,22 @@ wire flt_en    = ~status[48] ? pwr_led : status[47];
 wire aud_1200  = status[49];
 wire paula_pwm = status[50];
 
+wire [15:0] dsnd_l, dsnd_r;
+drive_sounds drive_sounds
+(
+	.clk(clk_114),
+	.rst(reset_d),
+	.volume(status[52:51]),
+	.drive_snd(drive_snd),
+	.sample_l(dsnd_l),
+	.sample_r(dsnd_r),
+	.ddr_addr(dsnd_addr),
+	.ddr_rd(dsnd_rd),
+	.ddr_busy(dsnd_busy),
+	.ddr_dout(DDRAM_DOUT),
+	.ddr_dout_ready(dsnd_ready)
+);
+
 wire [15:0] paula_smp_l = (paula_pwm ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
 wire [15:0] paula_smp_r = (paula_pwm ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
 
@@ -1338,16 +1508,25 @@ always @(posedge CLK_AUDIO) begin
 	cdda_sr <= pr[25:10];
 end
 
+reg [15:0] dsnd_al, dsnd_ar;
+always @(posedge CLK_AUDIO) begin
+	reg [31:0] old_d0, old_d1;
+
+	old_d0 <= {dsnd_l, dsnd_r};
+	old_d1 <= old_d0;
+	if(old_d0 == old_d1) {dsnd_al, dsnd_ar} <= old_d1;
+end
+
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
-	reg [16:0] tmp_l, tmp_r;
+	reg [17:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15],aud_l} + {toccata_aud_left[15],toccata_aud_left} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_sl[15], cdda_sl};
-	tmp_r <= {aud_r[15],aud_r} + {toccata_aud_right[15],toccata_aud_right} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_sr[15], cdda_sr};
+	tmp_l <= {{2{aud_l[15]}},aud_l} + {{2{toccata_aud_left[15]}},toccata_aud_left} + (mt32_mute ? 18'd0 : {{2{mt32_i2s_l[15]}},mt32_i2s_l}) + {{2{cdda_sl[15]}}, cdda_sl} + {{2{dsnd_al[15]}}, dsnd_al};
+	tmp_r <= {{2{aud_r[15]}},aud_r} + {{2{toccata_aud_right[15]}},toccata_aud_right} + (mt32_mute ? 18'd0 : {{2{mt32_i2s_r[15]}},mt32_i2s_r}) + {{2{cdda_sr[15]}}, cdda_sr} + {{2{dsnd_ar[15]}}, dsnd_ar};
 
 	// clamp the output
-	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
-	out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
+	out_l <= (tmp_l[17:15] == 3'b000 || tmp_l[17:15] == 3'b111) ? tmp_l[15:0] : {tmp_l[17], {15{~tmp_l[17]}}};
+	out_r <= (tmp_r[17:15] == 3'b000 || tmp_r[17:15] == 3'b111) ? tmp_r[15:0] : {tmp_r[17], {15{~tmp_r[17]}}};
 end
 
 assign AUDIO_S = 1;
