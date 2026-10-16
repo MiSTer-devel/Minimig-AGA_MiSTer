@@ -340,7 +340,7 @@ always @ (posedge sysclk) begin
 						ddr_swap   <= ramshared;
 					end
 				end
-			1: if(~ram_busy & ram_dout_ready) begin
+			1: if(ram_dout_ready) begin
 					if (dma_read_in_flight) begin
 						dmaRD              <= ram_dout[{dmaReadBA, 4'b0000} +:16];
 						dma_read_ack       <= 1;
