@@ -125,6 +125,7 @@ entity TG68KdotC_Kernel is
 		berr						: in std_logic:='0';					-- only 68000 Stackpointer dummy
 		CPU						: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only some parts - yet)
 		CPU030					: in std_logic:='0';
+		MMU030					: in std_logic:='1';
 		addr_out					: out std_logic_vector(31 downto 0);
 		data_write				: out std_logic_vector(15 downto 0);
 		nWr						: out std_logic;
@@ -151,7 +152,7 @@ entity TG68KdotC_Kernel is
 		opc_cond				: out std_logic;
 		opc_snd					: out std_logic_vector(15 downto 0);
 		opc_dbx					: out std_logic;
-		opc_cacr				: out std_logic_vector(13 downto 0);
+		opc_cacr				: out std_logic_vector(1 downto 0);
 		mmu_busy				: out std_logic
 		);
 end TG68KdotC_Kernel;
@@ -1558,7 +1559,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		 SVmode, preSVmode, stop, long_done, ea_only, setstate, addrvalue, execOPC, exec_write_back, exe_datatype,
 		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, last_data_in, use_VBR_Stackframe,
 		 long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr,
-		 CPU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg)
+		 CPU030, MMU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg)
 	BEGIN
 		TG68_PC_brw <= '0';	
 		setstate <= "00";
@@ -3238,7 +3239,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 --				
 ---- 1111 ----------------------------------------------------------------------------		
 			WHEN "1111" =>
-				IF CPU030='1' AND opcode(11 downto 9)="000" THEN
+				IF CPU030='1' AND MMU030='1' AND opcode(11 downto 9)="000" THEN
 					IF SVmode='0' THEN
 						trap_priv <= '1';
 						trapmake <= '1';
@@ -4418,8 +4419,8 @@ PROCESS (clk)
   opc_cond  <= exe_condition;
   opc_snd   <= sndOPC;
   opc_dbx   <= '1' when micro_state = dbcc1 and exe_condition = '0' and c_out(1) = '0' else '0';
-  opc_cacr  <= CACR;
-  pmmu_ins <= '1' WHEN CPU030='1' AND opcode(15 downto 6)="1111000000" ELSE '0';
+  opc_cacr  <= CACR(1 downto 0);
+  pmmu_ins <= '1' WHEN CPU030='1' AND MMU030='1' AND opcode(15 downto 6)="1111000000" ELSE '0';
   pmmu_flush <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' AND pmmu_ext(8)='0' AND movem_run='0' AND
                 (pmmu_ext(14 downto 10)="00010" OR pmmu_ext(14 downto 10)="00011" OR pmmu_ext(14 downto 10)="10000" OR
                  pmmu_ext(14 downto 10)="10010" OR pmmu_ext(14 downto 10)="10011") ELSE '0';

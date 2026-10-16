@@ -33,8 +33,7 @@ module cpu_wrapper
 	input             ph1,
 	input             ph2,
 
-	input       [4:0] cpucfg,
-	input             ntsc,
+	input       [2:0] cpucfg,
 	input       [2:0] fastramcfg,
 	input       [2:0] cachecfg,
 	input             bootrom,
@@ -245,7 +244,7 @@ wire [15:0] opc_out;
 wire        opc_cond;
 wire [15:0] opc_snd;
 wire        opc_dbx;
-wire [13:0] cacr_x;
+wire  [1:0] cacr_x;
 wire        mmu_busy;
 wire        s21_en;
 wire        long_cand;
@@ -285,6 +284,7 @@ cpu_inst_p
   
   .cpu({cpucfg[1], cpucfg[1] | cpucfg[0]}),
   .cpu030(cpu030),
+  .mmu030(~cpucfg[2]),
   .opc_start(opc_start),
   .opc_out(opc_out),
   .opc_cond(opc_cond),
@@ -367,9 +367,7 @@ cpu_cycles cycles
 (
 	.clk(clk),
 	.reset(reset),
-	.ntsc(ntsc),
-	.mode({cpu030, stock_speed}),
-	.speed({cpu030 & cpucfg[2], cpucfg[4:3]}),
+	.ena(stock_speed),
 	.opc_start(opc_start),
 	.opc(opc_out),
 	.opc_cond(opc_cond),
@@ -601,11 +599,11 @@ always @(*) begin
 			default: ;
 		endcase
 	end
-	// Zorro III RAM 64MB/128MB/256MB/384MB
+	// Zorro III RAM 128MB/256MB/384MB
 	else if(ac_memcard[2]) begin
 		case (chip_addr[6:1])
 			6'b000000: autocfg_data = 4'b1010;	// Zorro-III card, add mem, no ROM
-			6'b000001: autocfg_data = ac_memcard[1] ? {3'b001, ~ac_memcard[0]} : 4'b0100; // 64MB, 128MB or 256MB, extended
+			6'b000001: autocfg_data = ac_memcard[1] ? 4'b0011 : 4'b0100; // 128MB or 256MB, extended
 			6'b000010: autocfg_data = 4'b1110;	// ProductID=0x10 (only setting upper nibble)
 			6'b000100: autocfg_data = 4'b0000;	// Memory card, not silenceable, Extended size, reserved.
 			6'b000101: autocfg_data = 4'b1111;	// 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.

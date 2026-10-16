@@ -290,7 +290,7 @@ module minimig
 	output        cdtv_cdda_volume_valid,
 
 	//user i/o
-	output  [4:0] cpucfg,
+	output  [2:0] cpucfg,
 	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v

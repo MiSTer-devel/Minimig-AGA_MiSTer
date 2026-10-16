@@ -16,7 +16,7 @@ This version has been modified to add support for MiSTer Floppy, SCP and IPF sup
 * ChipRAM : 0.5MB - 2.0MB
 * SlowRAM : 0.0MB - 1.5MB
 * FastRAM : 0.0MB - 384MB
-* CPU core : 68000, 68010, 68EC020, 68030 (with MMU, no FPU)
+* CPU core : 68000, 68010, 68EC020, 68030 (with or without MMU, no FPU)
 * Kickstart : 1.2, 1.3, 2.0, 3.0, 3.1, 3.1.4, 3.2 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
 * Floppy drives : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
@@ -117,17 +117,17 @@ RTG is available only for 68030 CPU.
 
 ### 68030 CPU
 
-The CPU item of the System page offers 68000, 68010, 68EC020 and 68030.
+The CPU item of the System page offers 68000, 68010, 68EC020, 68030 and 68030 no MMU.
 
 * **68EC020** runs at the speed of a stock A1200.
-* **68030** has an MMU and runs at 25, 33, 40 or 50MHz, the clocks of the real accelerator cards, or at 56.7MHz with
-  no speed limit. There is no FPU.
+* **68030** has an MMU and runs at 56.7MHz with no speed limit. There is no FPU.
+* **68030 no MMU** is the same 68030 with the MMU instructions taking the F-line exception, as on a 68020 with no MMU,
+  for software that does not expect an MMU.
 
-From 25 to 50MHz the 68030 runs as fast as a real 68030 card at the same clock (checked with AIBB against an
-ACA1233n). As on the real machines, chip RAM, ROM and the custom registers are always read through the bus, and the
-data cache is switched on and off by software (SetPatch, CPU, WHDLoad).
+As on the real machines, chip RAM, ROM and the custom registers are always read through the bus, and the data cache is
+switched on and off by software (SetPatch, CPU, WHDLoad).
 
-FastRAM can be none, 2M, 4M or 8M, and with the 68030 also 64M, 128M, 256M or 384M.
+FastRAM can be none, 2M, 4M or 8M, and with the 68030 also 256M or 384M.
 
 ### Floppy drive sounds
 
