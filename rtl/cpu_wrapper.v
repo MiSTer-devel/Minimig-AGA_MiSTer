@@ -196,8 +196,8 @@ always @* begin
 		chip_rw      = c_rw;
 		chip_uds     = c_uds;
 		chip_lds     = c_lds;
-		chip_addr    = (c_long & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
-		chip_din     = (c_long & ~c_rw) ? w32_hi : cpu_dout_p;
+		chip_addr    = ((c_long | w32_fl) & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
+		chip_din     = ((c_long | w32_fl) & ~c_rw) ? w32_hi : cpu_dout_p;
 		chip_long    = c_long;
 		chip_din2    = cpu_dout_p;
 		chip_data    = chipdout_i;
@@ -423,6 +423,7 @@ reg        c_long;
 reg        w32;
 reg [23:2] w32_adr;
 reg [15:0] w32_hi;
+reg        w32_fl;
 reg        r32;
 reg [23:2] r32_adr;
 reg [15:0] r32_lo;
@@ -443,6 +444,7 @@ always @(negedge clk, negedge reset) begin
 		c_long <= 0;
 		ready <= 0;
 		w32 <= 0;
+		w32_fl <= 0;
 		r32 <= 0;
 	end
 	else begin
@@ -473,10 +475,19 @@ always @(negedge clk, negedge reset) begin
 			case (stage)
 				0: if (chipreq & ~now) begin
 						c_as <= 0;
-						c_rw <= wr;
-						c_uds <= uds_in;
-						c_lds <= lds_in;
-						c_long <= w32 | (c32 & wr);
+						if (w32 & (wr | (cpu_addr_m[23:2] != w32_adr) | ~cpu_addr_m[1] | uds_in | lds_in)) begin
+							c_rw <= 0;
+							c_uds <= 0;
+							c_lds <= 0;
+							c_long <= 0;
+							w32_fl <= 1;
+						end
+						else begin
+							c_rw <= wr;
+							c_uds <= uds_in;
+							c_lds <= lds_in;
+							c_long <= w32 | (c32 & wr);
+						end
 						r32 <= 0;
 						stage <= 1;
 					end
@@ -494,7 +505,8 @@ always @(negedge clk, negedge reset) begin
 								r32     <= 1;
 								r32_adr <= cpu_addr_m[23:2];
 							end
-							ready <= 1;
+							ready <= ~w32_fl;
+							w32_fl <= 0;
 							stage <= 3;
 						end
 					end
