@@ -118,6 +118,8 @@ assign ramshared    = sel_dd;
 
 // NMI
 always @(posedge clk) nmi_addr <= vbr + 32'h7c;
+reg [31:0] nmi_addr2;
+always @(posedge clk) nmi_addr2 <= vbr + 32'h7e;
 
 wire sel_chipram;
 wire sel_kickram;
@@ -156,7 +158,7 @@ memory_router u_memory_router
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
 // decide what to do, would not be good style to replicate that here).
-wire sel_nmi_vector = (cpu_addr[31:2] == nmi_addr[31:2]) && (cpustate == 2);
+wire sel_nmi_vector = ((cpu_addr[31:1] == nmi_addr[31:1]) || (cpu_addr[31:1] == nmi_addr2[31:1])) && (cpustate == 2);
 
 wire [15:0] ramdat;
 
