@@ -69,13 +69,16 @@ assign sel_cart = ~dbr && (cpu_address_in[23:19]==5'b1010_0) && (stealth | cpuhl
 
 // latch VBR + NMI vector offset
 reg [31:0] nmi_vec_adr=0;
+reg [23:1] nmi_vec_adr2=0;
 always @ (posedge clk) if (clk7_en) nmi_vec_adr <= nmi_addr; // $7C = NMI vector offset
+always @ (posedge clk) if (clk7_en) nmi_vec_adr2 <= nmi_addr[23:1] + 1'd1;
+wire nmi_vec_hi = (cpu_address_in[23:1] == nmi_vec_adr[23:1]);
 
 // override decoding of NMI
-assign ovr = active && ~dbr && ~ovl && cpu_rd && (cpu_address_in[23:2] == nmi_vec_adr[23:2]);
+assign ovr = active && ~dbr && ~ovl && cpu_rd && (nmi_vec_hi || (cpu_address_in[23:1] == nmi_vec_adr2));
 
 // custom NMI vector address output $a1000c
-wire [15:0] nmi_adr_out = ovr ? (!cpu_address_in[1] ? 16'h00a1 : 16'h000c) : 16'h0000; 
+wire [15:0] nmi_adr_out = ovr ? (nmi_vec_hi ? 16'h00a1 : 16'h000c) : 16'h0000;
 
 // freeze button
 reg freeze_d=0;

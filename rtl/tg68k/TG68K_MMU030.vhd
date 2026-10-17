@@ -7,6 +7,7 @@ entity TG68K_MMU030 is
 		clk        : in  std_logic;
 		reset      : in  std_logic;
 		k_ena      : in  std_logic;
+		cfg_wr     : in  std_logic;
 
 		tc         : in  std_logic_vector(31 downto 0);
 		crp        : in  std_logic_vector(63 downto 0);
@@ -123,6 +124,16 @@ architecture rtl of TG68K_MMU030 is
 	signal b_addr    : std_logic_vector(31 downto 0);
 	signal b_state   : std_logic_vector(1 downto 0);
 
+	type u24_t is array(0 to 2) of std_logic_vector(23 downto 0);
+	type u3_t  is array(0 to 2) of std_logic_vector(2 downto 0);
+	signal u_log, u_phy : u24_t;
+	signal u_fc         : u3_t;
+	signal u_v, u_rok, u_wok, u_ci : std_logic_vector(2 downto 0) := (others => '0');
+	signal u_s          : integer range 0 to 2;
+	signal u_hit        : std_logic;
+	signal tt_rhit      : std_logic;
+	signal tt_whit      : std_logic;
+
 	function tt_match(tt : std_logic_vector(31 downto 0); a : std_logic_vector(31 downto 0);
 	                  fc : std_logic_vector(2 downto 0); rd : std_logic; rmw : std_logic) return std_logic is
 	begin
@@ -211,16 +222,27 @@ begin
 	          tt_match(tt0, lk_addr, lk_fc, c_rd, '0') or tt_match(tt1, lk_addr, lk_fc, c_rd, '0');
 	tt_ci  <= (tt_match(tt0, l_addr, l_fc, not is_wr, l_rmw) and tt0(10)) or
 	          (tt_match(tt1, l_addr, l_fc, not is_wr, l_rmw) and tt1(10));
+	tt_rhit <= tt_match(tt0, l_addr, l_fc, '1', l_rmw) or tt_match(tt1, l_addr, l_fc, '1', l_rmw);
+	tt_whit <= tt_match(tt0, l_addr, l_fc, '0', l_rmw) or tt_match(tt1, l_addr, l_fc, '0', l_rmw);
 
-	stall <= '1' when st /= S_IDLE or (need = '1' and xv = '0') else '0';
+	u_s   <= 0 when l_state(1) = '0' else 1 when l_state(0) = '0' else 2;
+	u_hit <= '1' when st = S_IDLE and f_hold = '0' and u_v(u_s) = '1' and u_fc(u_s) = l_fc and
+	                  ((u_log(u_s) xor l_addr(31 downto 8)) and pm) = x"000000" and
+	                  ((is_wr = '1' and u_wok(u_s) = '1') or (is_wr = '0' and u_rok(u_s) = '1')) else '0';
+
+	stall <= '1' when st /= S_IDLE or (need = '1' and xv = '0' and u_hit = '0') else '0';
 	fault <= f_hold;
 
-	process (st, need, xv, l_addr, l_state, phys, b_addr, b_state, l_uds, l_lds, l_wr, l_long, wb_data, ci_r)
+	process (st, need, xv, u_hit, u_s, u_phy, u_ci, pm, l_addr, l_state, phys, b_addr, b_state, l_uds, l_lds, l_wr, l_long, wb_data, ci_r)
 	begin
 		if st = S_IDLE then
 			if need = '1' then
-				p_addr <= phys;
 				if xv = '1' then
+					p_addr <= phys;
+				else
+					p_addr <= (u_phy(u_s) or (l_addr(31 downto 8) and not pm)) & l_addr(7 downto 0);
+				end if;
+				if xv = '1' or u_hit = '1' then
 					p_state <= l_state;
 				else
 					p_state <= "01";
@@ -233,7 +255,11 @@ begin
 			p_lds  <= l_lds;
 			p_wr   <= l_wr;
 			p_long <= l_long;
-			p_ci   <= ci_r and need;
+			if xv = '1' then
+				p_ci <= ci_r and need;
+			else
+				p_ci <= u_ci(u_s) and need;
+			end if;
 		else
 			p_addr  <= b_addr;
 			p_state <= b_state;
@@ -264,6 +290,7 @@ begin
 				xv <= '0';
 				c_act <= '0';
 				b_state <= "01";
+				u_v <= "000";
 			else
 				case st is
 
@@ -272,17 +299,31 @@ begin
 					if need = '0' or (xv = '1' and p_ack = '1') then
 						xv <= '0';
 					end if;
-					if need = '1' and xv = '0' and f_hold = '0' then
+					if need = '1' and xv = '0' and u_hit = '0' and f_hold = '0' then
 						if tt_hit = '1' then
 							phys <= l_addr;
 							ci_r <= tt_ci;
 							xv <= '1';
+							u_v(u_s) <= '1';
+							u_fc(u_s) <= l_fc;
+							u_log(u_s) <= l_addr(31 downto 8) and pm;
+							u_phy(u_s) <= l_addr(31 downto 8) and pm;
+							u_rok(u_s) <= tt_rhit;
+							u_wok(u_s) <= tt_whit;
+							u_ci(u_s) <= tt_ci;
 						elsif hit = '1' and (a_b(hit_i) = '1' or (is_wr = '1' and a_wp(hit_i) = '1')) then
 							f_hold <= '1';
 						elsif hit = '1' and (is_wr = '0' or a_m(hit_i) = '1') then
 							phys <= ((a_phy(hit_i) and pm) or (l_addr(31 downto 8) and not pm)) & l_addr(7 downto 0);
 							ci_r <= a_ci(hit_i);
 							xv <= '1';
+							u_v(u_s) <= '1';
+							u_fc(u_s) <= l_fc;
+							u_log(u_s) <= l_addr(31 downto 8) and pm;
+							u_phy(u_s) <= a_phy(hit_i) and pm;
+							u_rok(u_s) <= not tt_rhit;
+							u_wok(u_s) <= not tt_whit and a_m(hit_i) and not a_wp(hit_i);
+							u_ci(u_s) <= a_ci(hit_i);
 							hn := a_h;
 							hn(hit_i) := '1';
 							if hn = (hn'range => '1') then
@@ -300,6 +341,9 @@ begin
 							w_test <= '0';
 							st <= S_WSH;
 						end if;
+					end if;
+					if (cmd_go = '1' or cfg_wr = '1') and k_ena = '1' then
+						u_v <= "000";
 					end if;
 					if cmd_go = '1' and k_ena = '1' then
 						c_op <= cmd_op;
