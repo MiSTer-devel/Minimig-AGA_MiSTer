@@ -394,7 +394,6 @@ cpu_wrapper cpu_wrapper
 	.fastchip_lw     (fastchip_lw     ),
 
 	.cpucfg       (cpucfg          ),
-	.ntsc         (ntsc            ),
 	.cachecfg     (cachecfg        ),
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
@@ -834,7 +833,7 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 ///////////////////////////////////////////////////////////////////////
 
 //// minimig top ////
-wire  [4:0] cpucfg;
+wire  [2:0] cpucfg;
 wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   

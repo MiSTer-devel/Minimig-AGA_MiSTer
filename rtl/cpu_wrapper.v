@@ -33,8 +33,7 @@ module cpu_wrapper
 	input             ph1,
 	input             ph2,
 
-	input       [4:0] cpucfg,
-	input             ntsc,
+	input       [2:0] cpucfg,
 	input       [2:0] fastramcfg,
 	input       [2:0] cachecfg,
 	input             bootrom,
@@ -197,8 +196,8 @@ always @* begin
 		chip_rw      = c_rw;
 		chip_uds     = c_uds;
 		chip_lds     = c_lds;
-		chip_addr    = (c_long & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
-		chip_din     = (c_long & ~c_rw) ? w32_hi : cpu_dout_p;
+		chip_addr    = ((c_long | w32_fl) & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
+		chip_din     = ((c_long | w32_fl) & ~c_rw) ? w32_hi : cpu_dout_p;
 		chip_long    = c_long;
 		chip_din2    = cpu_dout_p;
 		chip_data    = chipdout_i;
@@ -245,7 +244,7 @@ wire [15:0] opc_out;
 wire        opc_cond;
 wire [15:0] opc_snd;
 wire        opc_dbx;
-wire [13:0] cacr_x;
+wire  [1:0] cacr_x;
 wire        mmu_busy;
 wire        s21_en;
 wire        long_cand;
@@ -285,6 +284,7 @@ cpu_inst_p
   
   .cpu({cpucfg[1], cpucfg[1] | cpucfg[0]}),
   .cpu030(cpu030),
+  .mmu030(~cpucfg[2]),
   .opc_start(opc_start),
   .opc_out(opc_out),
   .opc_cond(opc_cond),
@@ -367,9 +367,7 @@ cpu_cycles cycles
 (
 	.clk(clk),
 	.reset(reset),
-	.ntsc(ntsc),
-	.mode({cpu030, stock_speed}),
-	.speed({cpu030 & cpucfg[2], cpucfg[4:3]}),
+	.ena(stock_speed),
 	.opc_start(opc_start),
 	.opc(opc_out),
 	.opc_cond(opc_cond),
@@ -425,6 +423,7 @@ reg        c_long;
 reg        w32;
 reg [23:2] w32_adr;
 reg [15:0] w32_hi;
+reg        w32_fl;
 reg        r32;
 reg [23:2] r32_adr;
 reg [15:0] r32_lo;
@@ -445,6 +444,7 @@ always @(negedge clk, negedge reset) begin
 		c_long <= 0;
 		ready <= 0;
 		w32 <= 0;
+		w32_fl <= 0;
 		r32 <= 0;
 	end
 	else begin
@@ -475,10 +475,19 @@ always @(negedge clk, negedge reset) begin
 			case (stage)
 				0: if (chipreq & ~now) begin
 						c_as <= 0;
-						c_rw <= wr;
-						c_uds <= uds_in;
-						c_lds <= lds_in;
-						c_long <= w32 | (c32 & wr);
+						if (w32 & (wr | (cpu_addr_m[23:2] != w32_adr) | ~cpu_addr_m[1] | uds_in | lds_in)) begin
+							c_rw <= 0;
+							c_uds <= 0;
+							c_lds <= 0;
+							c_long <= 0;
+							w32_fl <= 1;
+						end
+						else begin
+							c_rw <= wr;
+							c_uds <= uds_in;
+							c_lds <= lds_in;
+							c_long <= w32 | (c32 & wr);
+						end
 						r32 <= 0;
 						stage <= 1;
 					end
@@ -496,7 +505,8 @@ always @(negedge clk, negedge reset) begin
 								r32     <= 1;
 								r32_adr <= cpu_addr_m[23:2];
 							end
-							ready <= 1;
+							ready <= ~w32_fl;
+							w32_fl <= 0;
 							stage <= 3;
 						end
 					end
@@ -601,11 +611,11 @@ always @(*) begin
 			default: ;
 		endcase
 	end
-	// Zorro III RAM 64MB/128MB/256MB/384MB
+	// Zorro III RAM 128MB/256MB/384MB
 	else if(ac_memcard[2]) begin
 		case (chip_addr[6:1])
 			6'b000000: autocfg_data = 4'b1010;	// Zorro-III card, add mem, no ROM
-			6'b000001: autocfg_data = ac_memcard[1] ? {3'b001, ~ac_memcard[0]} : 4'b0100; // 64MB, 128MB or 256MB, extended
+			6'b000001: autocfg_data = ac_memcard[1] ? 4'b0011 : 4'b0100; // 128MB or 256MB, extended
 			6'b000010: autocfg_data = 4'b1110;	// ProductID=0x10 (only setting upper nibble)
 			6'b000100: autocfg_data = 4'b0000;	// Memory card, not silenceable, Extended size, reserved.
 			6'b000101: autocfg_data = 4'b1111;	// 0000 - logical size matches physical size TODO change this to 0001, so it is autosized by the OS, WHEN it will be 24MB.

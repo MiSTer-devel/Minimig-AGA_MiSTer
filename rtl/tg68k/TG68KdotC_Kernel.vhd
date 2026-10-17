@@ -125,6 +125,7 @@ entity TG68KdotC_Kernel is
 		berr						: in std_logic:='0';					-- only 68000 Stackpointer dummy
 		CPU						: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only some parts - yet)
 		CPU030					: in std_logic:='0';
+		MMU030					: in std_logic:='1';
 		addr_out					: out std_logic_vector(31 downto 0);
 		data_write				: out std_logic_vector(15 downto 0);
 		nWr						: out std_logic;
@@ -151,7 +152,7 @@ entity TG68KdotC_Kernel is
 		opc_cond				: out std_logic;
 		opc_snd					: out std_logic_vector(15 downto 0);
 		opc_dbx					: out std_logic;
-		opc_cacr				: out std_logic_vector(13 downto 0);
+		opc_cacr				: out std_logic_vector(1 downto 0);
 		mmu_busy				: out std_logic
 		);
 end TG68KdotC_Kernel;
@@ -267,6 +268,7 @@ architecture logic of TG68KdotC_Kernel is
 	signal source_2ndHbits	: bit;
 	signal source_2ndMbits	: bit;
 	signal source_2ndLbits	: bit;
+	signal source_2ndHAbits	: bit;
 	signal dest_areg			: std_logic;
 	signal dest_LDRareg		: std_logic;
 	signal dest_LDRHbits		: bit;
@@ -305,8 +307,19 @@ architecture logic of TG68KdotC_Kernel is
 	signal trapd				: bit;
 	signal trap_SR				: std_logic_vector(7 downto 0);
 	signal make_trace			: std_logic;
+	signal t0_arm				: std_logic;
 	signal make_berr			: std_logic;
 	signal useStackframe2	: std_logic;
+	signal ae_pend				: std_logic;
+	signal ae_block			: std_logic;
+	signal ae_halt				: std_logic;
+	signal trap_ae				: std_logic;
+	signal vec_load			: std_logic;
+	signal ae_pc				: std_logic_vector(31 downto 0);
+	signal ae_cnt				: std_logic_vector(4 downto 0);
+	signal rte_cnt				: std_logic_vector(4 downto 0);
+	signal rte_peek			: bit;
+	signal trap_format		: bit;
 	
 	signal set_stop			: bit;
 	signal stop					: bit;
@@ -324,6 +337,9 @@ architecture logic of TG68KdotC_Kernel is
 	signal setinterrupt		: bit;
 	signal SVmode				: std_logic;
 	signal preSVmode			: std_logic;
+	signal preMmode			: std_logic;
+	signal a7_live				: std_logic_vector(31 downto 0);
+	signal movec_src			: bit;
 	signal Suppress_Base		: bit;
 	signal set_Suppress_Base: bit;
 	signal set_Z_error 		: bit;
@@ -401,6 +417,12 @@ architecture logic of TG68KdotC_Kernel is
 	signal micro_state		: micro_states;
 	signal clkena_i			: std_logic;
 	signal FC_i				: std_logic_vector(2 downto 0);
+	signal FC_eff			: std_logic_vector(2 downto 0);
+	signal moves_op		: std_logic;
+	signal moves_fc		: std_logic;
+	signal moves_fcv		: std_logic_vector(2 downto 0);
+	signal moves_skip		: std_logic;
+	signal state_mmu		: std_logic_vector(1 downto 0);
 	signal data_write_i		: std_logic_vector(15 downto 0);
 	signal longword_i		: std_logic;
 	signal mmu_stall		: std_logic;
@@ -423,6 +445,55 @@ architecture logic of TG68KdotC_Kernel is
 	signal pmmu_flush		: std_logic;
 	signal dest_pmmu		: bit;
 	signal next_micro_state	: micro_states;
+	signal clk_hold		: std_logic;
+	signal pf_defer		: std_logic;
+	signal pf_drop		: std_logic;
+	signal pf_bcc			: std_logic;
+	signal pf_lazy		: std_logic;
+	signal sk_drop		: std_logic;
+	signal skipFetch_i	: std_logic;
+	signal pf_bad			: std_logic;
+	signal pf_wait		: std_logic;
+	signal mmu_abort	: std_logic;
+	signal mmu_f_ack	: std_logic;
+	signal exc_seq		: std_logic;
+	signal in_exc			: std_logic;
+	signal frameB			: std_logic;
+	signal data_in_i	: std_logic_vector(15 downto 0);
+	signal f_ssw			: std_logic_vector(15 downto 0);
+	signal f_addr			: std_logic_vector(31 downto 0);
+	signal f_dob			: std_logic_vector(31 downto 0);
+	signal f_dib			: std_logic_vector(31 downto 0);
+	signal f_pc			: std_logic_vector(31 downto 0);
+	signal f_info			: std_logic_vector(15 downto 0);
+	signal ccr_snap		: std_logic_vector(7 downto 0);
+	signal sr_snap		: std_logic_vector(7 downto 0);
+	signal ccr_frame	: std_logic_vector(7 downto 0);
+	signal sr_frame		: std_logic_vector(7 downto 0);
+	signal dec_d			: bit;
+	signal fb_long		: std_logic_vector(31 downto 0);
+	signal wr_idx			: std_logic_vector(3 downto 0);
+	signal undo_v			: std_logic_vector(1 downto 0);
+	signal undo_r0		: std_logic_vector(3 downto 0);
+	signal undo_r1		: std_logic_vector(3 downto 0);
+	signal undo_d0		: std_logic_vector(31 downto 0);
+	signal undo_d1		: std_logic_vector(31 downto 0);
+	signal dest_undo0	: bit;
+	signal dest_undo1	: bit;
+	type rp_log_t is array(0 to 17) of std_logic_vector(15 downto 0);
+	signal rp_log			: rp_log_t;
+	signal rp_cnt			: std_logic_vector(5 downto 0);
+	signal rp_act			: std_logic;
+	signal rp_arm			: std_logic;
+	signal rp_k			: std_logic_vector(5 downto 0);
+	signal rp_df			: std_logic;
+	signal rp_dfault	: std_logic;
+	signal rp_n2			: std_logic;
+	signal rp_stick		: std_logic;
+	signal rp_fromdib	: std_logic;
+	signal rp_dib			: std_logic_vector(31 downto 0);
+	signal rp_skip		: std_logic;
+	signal rp_word		: std_logic_vector(15 downto 0);
 	
 
 
@@ -483,17 +554,39 @@ ALU: TG68K_ALU
 	port map(
 		clk => clk, reset => Reset, k_ena => clkena_lw,
 		tc => MMU_TC, crp => MMU_CRP, srp => MMU_SRP, tt0 => MMU_TT0, tt1 => MMU_TT1,
-		l_addr => addr, l_state => state, l_fc => FC_i, l_rmw => '0',
+		l_addr => addr, l_state => state_mmu, l_fc => FC_eff, l_rmw => '0',
 		l_uds => memmaskmux(5), l_lds => memmaskmux(4), l_wr => data_write_i, l_long => longword_i,
 		p_addr => addr_out, p_state => mmu_pstate, p_uds => nUDS, p_lds => nLDS, p_wr => data_write,
 		p_long => longword, p_ci => open, p_ack => clkena_in, p_rd => data_in, stall => mmu_stall,
 		cmd_go => mmu_cmd_go, cmd_op => mmu_cmd_op, cmd_ea => addr, cmd_fc => mmu_cmd_fc,
 		cmd_mask => pmmu_ext(7 downto 5), cmd_rd => pmmu_ext(9), cmd_level => pmmu_ext(12 downto 10),
-		mmusr => mmu_sr_in, mmusr_we => mmu_sr_we, desc_addr => mmu_desc, fault => mmu_fault);
+		mmusr => mmu_sr_in, mmusr_we => mmu_sr_we, desc_addr => mmu_desc, fault => mmu_fault, f_ack => mmu_f_ack);
 
-	mmu_busy <= mmu_stall;
-	clkena_i <= clkena_in AND NOT mmu_stall;
-	FC <= FC_i;
+	clk_hold <= (mmu_stall AND NOT pf_defer AND NOT sk_drop) OR (pf_bad AND NOT pf_wait);
+	mmu_busy <= clk_hold;
+	clkena_i <= clkena_in AND NOT clk_hold AND NOT ae_halt;
+	skipFetch <= skipFetch_i;
+	sk_drop <= '1' WHEN mmu_fault='1' AND skipFetch_i='1' AND pf_bad='0' AND exc_seq='0' ELSE '0';
+	pf_defer <= '1' WHEN mmu_fault='1' AND state="00" AND pf_bad='0' AND exc_seq='0' AND skipFetch_i='0' ELSE '0';
+	pf_drop <= '1' WHEN decodeOPC='1' AND setopcode='0' AND (opcode=X"4E75" OR opcode=X"4E77" OR opcode=X"4E73" OR
+	                    opcode(15 downto 3)="0100111010010" OR opcode(15 downto 3)="0100111011010" OR
+	                    (opcode(15 downto 9)="0110000" AND opcode(7 downto 0)/=X"00" AND opcode(7 downto 0)/=X"FF")) ELSE '0';
+	pf_bcc <= '1' WHEN decodeOPC='1' AND setopcode='0' AND opcode(15 downto 12)="0110" AND opcode(11 downto 9)/="000" AND
+	                   opcode(7 downto 0)/=X"00" AND opcode(7 downto 0)/=X"FF" ELSE '0';
+	mmu_abort <= '1' WHEN clkena_in='1' AND exc_seq='0' AND ((mmu_fault='1' AND state(1)='1' AND pf_bad='0' AND skipFetch_i='0') OR
+	                          (pf_bad='1' AND pf_wait='0')) ELSE '0';
+	mmu_f_ack <= mmu_abort OR ((pf_defer OR sk_drop) AND clkena_in);
+	data_in_i <= X"4E71" WHEN pf_defer='1' OR pf_bad='1' OR sk_drop='1' ELSE rp_word WHEN rp_skip='1' ELSE data_in;
+	exc_seq <= '1' WHEN in_exc='1' OR micro_state=trap00 OR micro_state=trap0 OR micro_state=trap1 OR micro_state=trap2 OR
+	                    micro_state=trap3 OR micro_state=trap4 OR micro_state=trap5 OR micro_state=trap6 OR micro_state=trapB OR
+	                    micro_state=berr0 OR micro_state=berr1 OR micro_state=berr2 OR
+	                    micro_state=rte1 OR micro_state=rte2 OR micro_state=rte3 OR micro_state=rte4 OR micro_state=rte5 OR
+	                    micro_state=rte_f1 OR micro_state=rte_f2 OR micro_state=rte6 ELSE '0';
+	rp_fromdib <= rp_stick OR (rp_dfault AND NOT rp_df);
+	FC <= FC_eff;
+	FC_eff <= moves_fcv WHEN moves_fc='1' ELSE FC_i;
+	state_mmu <= "01" WHEN pf_bad='1' OR rp_skip='1' OR moves_skip='1' OR ae_halt='1' OR (ae_block='1' AND state="00") ELSE state;
+	moves_op <= '1' WHEN cpu(0)='1' AND opcode(15 downto 8)="00001110" AND opcode(7 downto 6)/="11" AND trapmake='0' ELSE '0';
 	-- AMR - let the parent module know this is a longword access.  (Easy way to enable burst writes.)
 	longword_i <= not memmaskmux(3);
 	
@@ -519,7 +612,7 @@ ALU: TG68K_ALU
 	-- does shift for byte access. note active low me
 	-- should produce address error on 68000
 	memmaskmux <= memmask when addr(0) = '1' else memmask(4 downto 0) & '1';
-	cand <= '1' WHEN s21_en='1' AND mm_plain='1' AND memmask="100001" AND addr(1 downto 0)="00" AND state(1)='1' ELSE '0';
+	cand <= '1' WHEN s21_en='1' AND mm_plain='1' AND memmask="100001" AND addr(1 downto 0)="00" AND state(1)='1' AND MMU_TC(31)='0' ELSE '0';
 	long_cand <= cand AND NOT mmu_stall;
 	l1 <= long_ack AND cand;
 	addr_p2 <= addr + 2;
@@ -547,12 +640,12 @@ ALU: TG68K_ALU
 		END IF;
 	END PROCESS;
 			
-PROCESS (clk, long_done, last_data_in, data_in, addr, long_start, memmaskmux, memread, memmask, data_read, l1, data_in_hi)
+PROCESS (clk, long_done, last_data_in, data_in, addr, long_start, memmaskmux, memread, memmask, data_read, l1, data_in_hi, data_in_i)
 	BEGIN
 		IF memmaskmux(4)='0' THEN
-			data_read <= last_data_in(15 downto 0)&data_in;
+			data_read <= last_data_in(15 downto 0)&data_in_i;
 		ELSE
-			data_read <= last_data_in(23 downto 0)&data_in(15 downto 8);
+			data_read <= last_data_in(23 downto 0)&data_in_i(15 downto 8);
 		END IF;
 		IF memread(0)='1' OR (memread(1 downto 0)="10" AND memmaskmux(4)='1')THEN
 			data_read(31 downto 16) <= (OTHERS=>data_read(15));
@@ -577,13 +670,13 @@ PROCESS (clk, long_done, last_data_in, data_in, addr, long_start, memmaskmux, me
 					IF state(1)='0' AND memmask(1)='0' THEN
 						last_data_read(31 downto 16) <= last_opc_read;
 					ELSIF state(1)='0' OR (memread(1)='1' AND l1='0') THEN
-						last_data_read(31 downto 16) <= (OTHERS=>data_in(15));
+						last_data_read(31 downto 16) <= (OTHERS=>data_in_i(15));
 					END IF;
 				END IF;
 				IF l1='1' THEN
 					last_data_in <= data_in_hi&data_in;
 				ELSE
-					last_data_in <= last_data_in(15 downto 0)&data_in(15 downto 0);
+					last_data_in <= last_data_in(15 downto 0)&data_in_i(15 downto 0);
 				END IF;
 				
 			END IF;
@@ -651,10 +744,19 @@ PROCESS (clk, regfile, RDindex_A, RDindex_B, exec)
 				RDindex_B <= conv_integer(rf_source_addr(3 downto 0));
 				IF Wwrena='1' THEN
 					regfile(RDindex_A) <= regin;
+					IF RDindex_A=15 THEN
+						a7_live <= regin;
+					END IF;
 				END IF;
 				
 				IF exec(to_USP)='1' THEN
-					USP <= reg_QA;
+					IF exec(changeMstk)='1' AND preMmode='1' THEN
+						USP <= MSP;
+					ELSIF exec(changeMstk)='1' THEN
+						USP <= ISP;
+					ELSE
+						USP <= reg_QA;
+					END IF;
 				END IF;	
 			END IF;
 		END IF;
@@ -663,7 +765,7 @@ PROCESS (clk, regfile, RDindex_A, RDindex_B, exec)
 -----------------------------------------------------------------------------
 -- Write Reg
 -----------------------------------------------------------------------------
-PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, movem_actiond, exec, ALUout, memaddr, memaddr_a, ea_only, USP, movec_data, mmu_desc)
+PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, movem_actiond, exec, ALUout, memaddr, memaddr_a, ea_only, USP, movec_data, mmu_desc, MSP, ISP, preMmode, reg_QB, undo_d0, undo_d1)
 	BEGIN
 		regin <= ALUout;
 		IF exec(save_memaddr)='1' THEN
@@ -672,10 +774,21 @@ PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, mov
 			regin <= memaddr_a;	
 		ELSIF exec(from_USP)='1' THEN
 			regin <= USP;	
+		ELSIF exec(changeMstk)='1' AND preMmode='1' THEN
+			regin <= MSP;
+		ELSIF exec(changeMstk)='1' THEN
+			regin <= ISP;
+		ELSIF exec(from_SSTK)='1' THEN
+			regin <= reg_QB;
 		ELSIF exec(movec_rd)='1' THEN
 			regin <= movec_data;
 		ELSIF exec(pmmu_rd)='1' THEN
 			regin <= mmu_desc;
+		END IF;
+		IF exec(undo_wr0)='1' THEN
+			regin <= undo_d0;
+		ELSIF exec(undo_wr1)='1' THEN
+			regin <= undo_d1;
 		END IF;
 		
 		IF Bwrena='1' THEN
@@ -688,7 +801,7 @@ PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, mov
 		Bwrena <= '0';
 		Wwrena <= '0';
 		Lwrena <= '0';
-		IF exec(presub)='1' OR exec(postadd)='1' OR exec(changeMode)='1' THEN		-- -(An)+
+		IF exec(presub)='1' OR exec(postadd)='1' OR exec(changeMode)='1' OR exec(changeMstk)='1' OR exec(from_SSTK)='1' THEN		-- -(An)+
 			Wwrena <= '1';
 			Lwrena <= '1';
 		ELSIF Regwrena_now='1' THEN		--dbcc	
@@ -706,12 +819,17 @@ PROCESS (OP1in, reg_QA, Regwrena_now, Bwrena, Lwrena, exe_datatype, WR_AReg, mov
 					Lwrena <= '1';
 			END CASE;
 		END IF;	
+		IF exec(undo_wr0)='1' OR exec(undo_wr1)='1' THEN
+			Wwrena <= '1';
+			Lwrena <= '1';
+		END IF;
 	END PROCESS;
 	
 -----------------------------------------------------------------------------
 -- set dest regaddr
 -----------------------------------------------------------------------------
-PROCESS (opcode, rf_source_addrd, brief, setstackaddr, dest_hbits, dest_areg, dest_LDRareg, data_is_source, sndOPC, exec, set, dest_2ndHbits, dest_2ndLbits, dest_LDRHbits, dest_LDRLbits, last_data_read, dest_pmmu, pmmu_ext)
+PROCESS (opcode, rf_source_addrd, brief, setstackaddr, dest_hbits, dest_areg, dest_LDRareg, data_is_source, sndOPC, exec, set, dest_2ndHbits, dest_2ndLbits, dest_LDRHbits, dest_LDRLbits, last_data_read, dest_pmmu, pmmu_ext,
+		 dest_undo0, dest_undo1, undo_r0, undo_r1)
 	BEGIN
 		IF exec(movem_action) ='1' THEN
 			rf_dest_addr <= rf_source_addrd;
@@ -744,12 +862,17 @@ PROCESS (opcode, rf_source_addrd, brief, setstackaddr, dest_hbits, dest_areg, de
 				rf_dest_addr <= '1'&opcode(2 downto 0);
 			END IF;
 		END IF;	
+		IF dest_undo0='1' THEN
+			rf_dest_addr <= undo_r0;
+		ELSIF dest_undo1='1' THEN
+			rf_dest_addr <= undo_r1;
+		END IF;
 	END PROCESS;
 	
 -----------------------------------------------------------------------------
 -- set source regaddr
 -----------------------------------------------------------------------------
-PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOPC, exec, set, source_2ndLbits, source_2ndHbits, 	source_LDRLbits, source_LDRMbits, last_data_read, source_2ndMbits)
+PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOPC, exec, set, source_2ndLbits, source_2ndHbits, 	source_LDRLbits, source_LDRMbits, last_data_read, source_2ndMbits, source_2ndHAbits, movec_src, brief)
 	BEGIN
 		IF exec(movem_action)='1' OR set(movem_action) ='1' THEN
 			IF movem_presub='1' THEN
@@ -759,6 +882,8 @@ PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOP
 			END IF; 
 		ELSIF source_2ndLbits='1' THEN
 			rf_source_addr <= '0'&sndOPC(2 downto 0);
+		ELSIF source_2ndHAbits='1' THEN
+			rf_source_addr <= sndOPC(15 downto 12);
 		ELSIF source_2ndHbits='1' THEN
 			rf_source_addr <= '0'&sndOPC(14 downto 12);
 		ELSIF source_2ndMbits='1' THEN
@@ -767,6 +892,8 @@ PROCESS (opcode, movem_presub, movem_regaddr, source_lowbits, source_areg, sndOP
 			rf_source_addr <= '0'&last_data_read(2 downto 0);
 		ELSIF source_LDRMbits='1' THEN
 			rf_source_addr <= '0'&last_data_read(8 downto 6);
+		ELSIF movec_src='1' THEN
+			rf_source_addr <= brief(15 downto 12);
 		ELSIF source_lowbits='1' THEN
 			rf_source_addr <= source_areg&opcode(2 downto 0);
 		ELSIF exec(linksp)='1' THEN
@@ -901,6 +1028,8 @@ PROCESS (clk)
 					IF	useStackframe2='1' THEN
 						-- stack frame format #2
 						data_write_tmp(15 downto 0) <= "0010" & trap_vector(11 downto 0); --TH
+					ELSIF trap_ae='1' THEN
+						data_write_tmp(15 downto 0) <= "1011" & trap_vector(11 downto 0);
 					else
 						data_write_tmp(15 downto 0) <= "0000" & trap_vector(11 downto 0);
 						writePCnext <= trap_trap OR trap_trapv OR exec(trap_chk) OR Z_error OR trap_mmucfg;
@@ -934,7 +1063,35 @@ PROCESS (clk)
 				ELSE	
 					data_write_tmp <= OP2out;
 				END IF;
+				IF micro_state=trap1 AND trap_ae='1' THEN
+					data_write_tmp <= ae_pc;
+				ELSIF micro_state=trapB THEN
+					IF ae_cnt="00001" THEN
+						data_write_tmp <= X"000000" & "01100" & trap_SR(5) & "10";
+					ELSE
+						data_write_tmp <= (OTHERS => '0');
+					END IF;
+				END IF;
+				IF frameB='1' THEN
+					IF micro_state=trapB THEN
+						data_write_tmp <= fb_long;
+					ELSIF micro_state=trap0 THEN
+						data_write_tmp(15 downto 0) <= "1011" & trap_vector(11 downto 0);
+					ELSIF micro_state=trap1 THEN
+						data_write_tmp <= f_pc;
+					ELSIF micro_state=trap2 THEN
+						data_write_tmp(15 downto 0) <= sr_frame & ccr_frame;
+					END IF;
+				END IF;
 			END IF;	
+			IF mmu_abort='1' THEN
+				store_in_tmp <= '0';
+				direct_data <= '0';
+				use_direct_data <= '0';
+				Z_error <= '0';
+				writePCnext <= '0';
+				useStackframe2 <= '0';
+			END IF;
 		END IF;	
 	END PROCESS;
 	
@@ -964,7 +1121,7 @@ PROCESS (brief, OP1out, OP1outbrief, cpu)
 -- MEM_IO 
 -----------------------------------------------------------------------------
 PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatype, interrupt, rIPL_nr, IPL_vec,
-         memaddr_reg, memaddr_delta_rega, memaddr_delta_regb, reg_QA, use_base, VBR, last_data_read, trap_vector, exec, set, cpu, use_VBR_Stackframe)
+         memaddr_reg, memaddr_delta_rega, memaddr_delta_regb, reg_QA, use_base, VBR, last_data_read, trap_vector, exec, set, cpu, use_VBR_Stackframe, rte_peek)
 	BEGIN
 		
 		IF rising_edge(clk) THEN
@@ -1006,9 +1163,18 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 				IF trap_trap='1' THEN
 					trap_vector(9 downto 0) <= "0010" & opcode(3 downto 0) & "00";
 				END IF;	
+				IF trap_ae='1' THEN
+					trap_vector(9 downto 0) <= "00" & X"0C";
+				END IF;
+				IF trap_format='1' THEN
+					trap_vector(9 downto 0) <= "00" & X"38";
+				END IF;
 				IF trap_interrupt='1' or set_vectoraddr = '1' THEN
 					trap_vector(9 downto 0) <= IPL_vec & "00";      --TH
 				END IF;	
+				IF frameB='1' THEN
+					trap_vector(9 downto 0) <= "00" & X"08";
+				END IF;
 			END IF;
 		END IF;
 		IF use_VBR_Stackframe='1' THEN
@@ -1039,6 +1205,8 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 			END IF;	
 		ELSIF interrupt='1' THEN
 			memaddr_a(4 downto 0) <= '1'&rIPL_nr&'0';	
+		ELSIF rte_peek='1' THEN
+			memaddr_a(4 downto 0) <= "00110";
 		END IF;	 
 		
 		IF rising_edge(clk) THEN
@@ -1110,7 +1278,7 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 -- PC Calc + fetch opcode
 -----------------------------------------------------------------------------
 PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data, next_micro_state, stop, make_trace, make_berr, IPL_nr, FlagsSR, set_rot_cnt, opcode, writePCbig, set_exec, exec,
-        PC_dataa, PC_datab, setnextpass, last_data_read, TG68_PC_brw, TG68_PC_word, Z_error, trap_trap, trap_trapv, interrupt, tmp_TG68_PC, TG68_PC, use_VBR_Stackframe, writePCnext)
+        PC_dataa, PC_datab, setnextpass, last_data_read, TG68_PC_brw, TG68_PC_word, Z_error, trap_trap, trap_trapv, interrupt, tmp_TG68_PC, TG68_PC, use_VBR_Stackframe, writePCnext, ae_pend, rp_arm)
 	BEGIN
 	
 		PC_dataa <= TG68_PC;
@@ -1154,7 +1322,7 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 		setinterrupt <= '0';
 		IF setstate="00" AND next_micro_state=idle AND setnextpass='0' AND (exec_write_back='0' OR state="11") AND set_rot_cnt="000001" AND set_exec(opcCHK)='0'THEN
 			setendOPC <= '1';
-			IF FlagsSR(2 downto 0)<IPL_nr OR IPL_nr="111"  OR make_trace='1' OR make_berr='1' THEN
+			IF (FlagsSR(2 downto 0)<IPL_nr OR IPL_nr="111"  OR make_trace='1' OR make_berr='1' OR ae_pend='1') AND rp_arm='0' THEN
 				setinterrupt <= '1';
 			ELSIF stop='0' THEN
 				setopcode <= '1';
@@ -1170,6 +1338,8 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 			IF Reset = '1' THEN
 				state <= "01";
 				addrvalue <= '0';
+				moves_fc <= '0';
+				moves_skip <= '0';
 				opcode <= X"2E79"; 					--move $0,a7
 				trap_interrupt <= '0';
 				interrupt <= '0';
@@ -1190,6 +1360,11 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 --				recall_last <= '0';
 				Suppress_Base <= '0'; 
 				make_berr <= '0';
+				ae_pend <= '0';
+				ae_block <= '0';
+				ae_halt <= '0';
+				trap_ae <= '0';
+				vec_load <= '0';
 				memmask <= "111111";
 				mm_plain <= '0';
 				wb_plain <= '0';
@@ -1234,6 +1409,35 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 						make_berr <= '0';
 					end if;
 						
+					vec_load <= '0';
+					IF micro_state=trap3 THEN
+						vec_load <= '1';
+					END IF;
+					IF micro_state=trapB THEN
+						ae_block <= '0';
+					END IF;
+					IF setinterrupt='1' THEN
+						ae_pend <= '0';
+					ELSIF cpu(1)='1' AND ae_pend='0' AND ((exec(directPC)='1' AND data_read(0)='1') OR
+					      (exec(ea_to_pc)='1' AND addr(0)='1') OR (TG68_PC_brw='1' AND TG68_PC_add(0)='1')) THEN
+						IF vec_load='1' AND (trap_ae='1' OR trap_berr='1') THEN
+							ae_halt <= '1';
+						ELSE
+							ae_pend <= '1';
+							ae_block <= '1';
+						END IF;
+						IF vec_load='1' THEN
+							ae_pc <= exe_pc;
+						ELSIF opcode(15 downto 6)="0100111011" OR opcode=X"4E77" THEN
+							ae_pc <= exe_pc+2;
+						ELSIF opcode(15 downto 6)="0100111010" THEN
+							ae_pc <= addr;
+						ELSIF opcode(15 downto 12)="0101" AND opcode(7 downto 3)="11001" THEN
+							ae_pc <= TG68_PC_add;
+						ELSE
+							ae_pc <= exe_pc;
+						END IF;
+					END IF;
 					stop <= set_stop OR (stop AND NOT setinterrupt);
 					IF setinterrupt='1' THEN
 						trap_interrupt <= '0';
@@ -1241,7 +1445,9 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 --						TG68_PC_word <= '0';
 						make_berr <= '0';
 						trap_berr <= '0';
-						IF make_trace='1' THEN
+						IF ae_pend='1' THEN
+							trap_ae <= '1';
+						ELSIF make_trace='1' THEN
 							trap_trace <= '1';
 						ELSIF make_berr='1' THEN
 							trap_berr <= '1';
@@ -1263,6 +1469,7 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 						trap_trace <= '0';
 						TG68_PC_word <= '0';
 						trap_berr <= '0';
+						trap_ae <= '0';
 					ELSIF opcode(7 downto 0)="00000000" OR opcode(7 downto 0)="11111111" OR data_is_source='1' THEN
 						TG68_PC_word <= '1';
 					END IF;	
@@ -1276,6 +1483,8 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 					memread <= "1111";
 					FC_i(1) <= NOT setstate(1) OR (PCbase AND NOT setstate(0));
 					FC_i(0) <= setstate(1) AND (NOT PCbase OR setstate(0));
+					moves_fc <= '0';
+					moves_skip <= '0';
 					IF interrupt='1' THEN
 						FC_i(1 downto 0) <= "11";
 					END IF;	
@@ -1292,6 +1501,10 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 						addrvalue <= '0';
 					ELSIF execOPC='1' AND exec_write_back='1' THEN
 						state <= "11";
+						IF moves_op='1' AND sndOPC(11)='1' THEN
+							moves_fc <= '1';
+							moves_fcv <= DFC;
+						END IF;
 						FC_i(1 downto 0) <= "01";
 						memmask <= wbmemmask;
 						mm_plain <= wb_plain;
@@ -1299,6 +1512,14 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 					ELSE	
 						state <= setstate;
 						addrvalue <= setaddrvalue; 
+						IF moves_op='1' AND setstate="10" AND setaddrvalue='0' THEN
+							IF sndOPC(11)='0' THEN
+								moves_fc <= '1';
+								moves_fcv <= SFC;
+							ELSE
+								moves_skip <= '1';
+							END IF;
+						END IF;
 						IF setstate="01" THEN
 							memmask <= "111111";
 							mm_plain <= '0';
@@ -1381,7 +1602,32 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 					IF decodeOPC='1' OR interrupt='1' THEN
 						trap_SR <= FlagsSR;
 					END IF;
+					IF trap_format='1' AND CPU030='1' THEN
+						trap_SR(7 downto 6) <= "00";
+					END IF;
 				END IF;	
+				IF mmu_abort='1' THEN
+					state <= "01";
+					addrvalue <= '0';
+					memmask <= "111111";
+					wbmemmask <= "111111";
+					mm_plain <= '0';
+					wb_plain <= '0';
+					memread <= "1111";
+					exec_write_back <= '0';
+					decodeOPC <= '0';
+					execOPC <= '0';
+					endOPC <= '0';
+					nextpass <= '0';
+					rot_cnt <= "000001";
+					opcode <= X"4E71";
+					Suppress_Base <= '0';
+					interrupt <= '0';
+					trap_interrupt <= '0';
+					trap_trace <= '0';
+					moves_fc <= '0';
+					moves_skip <= '0';
+				END IF;
 			END IF;	
 		END IF;	
 	
@@ -1408,6 +1654,11 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 				END IF;	
 				exec(get_2ndOPC) <= set(get_2ndOPC) OR setopcode;
 			END IF;	
+			IF mmu_abort='1' THEN
+				PCbase <= '0';
+				exec <= (OTHERS => '0');
+				exec_tas <= '0';
+			END IF;
 		END IF;	
 	END PROCESS;
 	
@@ -1500,18 +1751,28 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 				FC_i(2) <= '1';
 				SVmode <= '1';
 				preSVmode <= '1';
+				preMmode <= '0';
 				FlagsSR <= "00100111";
 				make_trace <= '0';
+				t0_arm <= '0';
 			ELSIF clkena_lw = '1' THEN
 				IF setopcode='1' THEN
 					make_trace <= FlagsSR(7);
+					t0_arm <= FlagsSR(6) AND NOT FlagsSR(7) AND cpu(1);
 					IF set(changeMode)='1' THEN
 						SVmode <= NOT SVmode; 
 					ELSE
 						SVmode <= preSVmode;
 					END IF;	
 				END IF;
-				IF trap_berr='1' OR trap_illegal='1' OR trap_addr_error='1' OR trap_priv='1' OR trap_1010='1' OR trap_1111='1' THEN
+				IF t0_arm='1' AND (TG68_PC_brw='1' OR exec(ea_to_pc)='1' OR exec(to_SR)='1' OR
+				   (exec(to_CCR)='1' AND (exec(andiSR)='1' OR exec(eoriSR)='1' OR exec(oriSR)='1')) OR
+				   (decodeOPC='1' AND (opcode=X"4E74" OR opcode=X"4E75" OR opcode=X"4E77")) OR
+				   (micro_state=trap3 AND writePCnext='1') OR
+				   (exec(directSR)='1' AND opcode=X"4E73" AND (data_read(15 downto 8) AND X"F7")/=(FlagsSR AND X"F7"))) THEN
+					make_trace <= '1';
+				END IF;
+				IF trap_berr='1' OR trap_illegal='1' OR trap_addr_error='1' OR trap_priv='1' OR trap_1010='1' OR trap_1111='1' OR trap_ae='1' OR trap_format='1' THEN
 					make_trace <= '0';
 					FlagsSR(7) <= '0';
 				END IF;
@@ -1520,8 +1781,12 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 					FlagsSR(5) <= NOT preSVmode;
 					FC_i(2) <= NOT preSVmode;
 				END IF;
+				IF set(changeMstk)='1' THEN
+					preMmode <= NOT preMmode;
+				END IF;
 				IF micro_state=trap3 THEN
 					FlagsSR(7) <= '0';
+					FlagsSR(6) <= '0';
 				END IF;
 				IF trap_trace='1' AND state="10" THEN
 					make_trace <= '0';
@@ -1547,6 +1812,10 @@ PROCESS (clk, Reset, FlagsSR, last_data_read, OP2out, exec)
 				END IF;
 				FlagsSR(3) <= '0';
 			END IF;
+			IF mmu_abort='1' THEN
+				make_trace <= '0';
+				t0_arm <= '0';
+			END IF;
 		END IF;	
 	END PROCESS;
 
@@ -1558,7 +1827,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		 SVmode, preSVmode, stop, long_done, ea_only, setstate, addrvalue, execOPC, exec_write_back, exe_datatype,
 		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, last_data_in, use_VBR_Stackframe,
 		 long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr,
-		 CPU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg)
+		 CPU030, MMU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg, preMmode, trap_ae, ae_cnt, rte_cnt, undo_v)
 	BEGIN
 		TG68_PC_brw <= '0';	
 		setstate <= "00";
@@ -1577,6 +1846,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		write_back <= '0';
 		setstackaddr <= '0';
 		dest_pmmu <= '0';
+		dest_undo0 <= '0';
+		dest_undo1 <= '0';
 		writePC <= '0';
 		ea_build_now <= '0';
 --		set_rot_bits <= "00";
@@ -1587,6 +1858,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		source_LDRLbits <= '0';
 		source_LDRMbits <= '0';
 		source_2ndHbits <= '0';
+		source_2ndHAbits <= '0';
+		movec_src <= '0';
 		source_2ndMbits <= '0';
 		source_2ndLbits <= '0';
 		dest_LDRHbits <= '0';
@@ -1598,6 +1871,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		set_exec_tas <= '0';
 		trap_illegal <='0';
 		trap_addr_error <= '0';
+		trap_format <= '0';
+		rte_peek <= '0';
 		trap_priv <='0';
 		trap_1010 <='0';
 		trap_1111 <='0';
@@ -1617,7 +1892,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		next_micro_state <= idle;
 		build_logical <= '0';
 		build_bcd <= '0';
-		skipFetch <= make_berr;
+		skipFetch_i <= make_berr;
 		set_writePCbig <= '0';
 --		set_recall_last <= '0';
 		set_Suppress_Base <= '0';
@@ -1652,6 +1927,13 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 			END IF;
 			setstate <= "01";
 		END IF;	
+		IF interrupt='1' AND trap_ae='1' THEN
+			next_micro_state <= trapB;
+			IF preSVmode='0' THEN
+				set(changeMode) <= '1';
+			END IF;
+			setstate <= "01";
+		END IF;
 		IF trapmake='1' AND trapd='0' THEN
 			IF cpu(1)='1' AND (trap_trapv='1' OR set_Z_error='1' OR exec(trap_chk)='1' OR trap_mmucfg='1') THEN
 				next_micro_state <= trap00;
@@ -1695,6 +1977,10 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 			set(changeMode) <= '1';
 --			setstate <= "01";
 --			next_micro_state <= nop;
+		END IF;
+		IF setexecOPC='1' AND cpu(1)='1' AND preSVmode='1' AND FlagsSR(4)/=preMmode THEN
+			set(changeMstk) <= '1';
+			setstackaddr <= '1';
 		END IF;
 
 		IF interrupt='1' AND trap_interrupt='1'THEN
@@ -1900,9 +2186,31 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 				ELSIF opcode(11 downto 9)="111" THEN		--MOVES not in 68000
 					IF cpu(0)='1' AND opcode(7 downto 6)/="11" AND opcode(5 downto 4)/="00" AND (opcode(5 downto 3)/="111" OR opcode(2 downto 1)="00") THEN
 						IF SVmode='1' THEN
-							--TODO: implement MOVES
-							trap_illegal <= '1';
-							trapmake <= '1';
+							datatype <= opcode(7 downto 6);
+							set(no_Flags) <= '1';
+							set_exec(opcMOVE) <= '1';
+							IF decodeOPC='1' THEN
+								next_micro_state <= nop;
+								set(get_2ndOPC) <= '1';
+								set(ea_build) <= '1';
+							END IF;
+							IF sndOPC(11)='0' THEN
+								set_exec(Regwrena) <= '1';
+								IF state="10" AND addrvalue='0' THEN
+									dest_2ndHbits <= '1';
+									dest_LDRareg <= sndOPC(15);
+									IF sndOPC(15)='1' AND opcode(7 downto 6)="00" THEN
+										set_datatype <= "10";
+										set(opcEXTB) <= '1';
+									END IF;
+								END IF;
+							ELSE
+								set_exec(ea_data_OP1) <= '1';
+								write_back <= '1';
+								IF state="10" AND addrvalue='0' THEN
+									source_2ndHAbits <= '1';
+								END IF;
+							END IF;
 						ELSE
 							trap_priv <= '1';
 							trapmake <= '1';
@@ -2176,7 +2484,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 										datatype <= "01";
 										write_back <='1';							-- im 68000 wird auch erst gelesen
 										IF cpu(0)='1' AND state="10" AND addrvalue='0' THEN
-											skipFetch <= '1';
+											skipFetch_i <= '1';
 										END IF;
 										IF opcode(5 downto 4)="00" THEN
 											set_exec(Regwrena) <= '1';
@@ -2227,7 +2535,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 									write_back <='1';
 									set_exec(opcAND) <= '1';
 									IF cpu(0)='1' AND state="10" AND addrvalue='0' THEN
-										skipFetch <= '1';
+										skipFetch_i <= '1';
 									END IF;
 									IF setexecOPC='1' THEN
 										set(OP1out_zero) <= '1';
@@ -2571,7 +2879,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 									END IF;
 								
 									IF micro_state=ld_AnXn1 AND brief(8)='0'THEN			--JMP/JSR n(Ax,Dn)
-										skipFetch <= '1';
+										skipFetch_i <= '1';
 									END IF;
 									IF state="00" THEN
 										writePC <= '1';
@@ -2579,7 +2887,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 									set(hold_dwr) <= '1';
 									IF set(get_ea_now)='1' THEN					--jsr
 										IF exec(longaktion)='0' OR long_done='1' THEN
-											skipFetch <= '1';
+											skipFetch_i <= '1';
 										END IF;
 										setstate <="01";
 										set(ea_to_pc) <= '1';
@@ -2672,7 +2980,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 												set_stop <= '1';	
 											END IF;
 											IF stop='1' THEN
-												skipFetch <= '1';
+												skipFetch_i <= '1';
 											END IF;		
 											
 										END IF;
@@ -2689,6 +2997,12 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 													set(directSR) <= '1';	
 												END IF;
 												next_micro_state <= rte1;
+												IF opcode(2)='0' AND cpu(1)='1' THEN
+													set(postadd) <= '0';
+													set(directSR) <= '0';
+													rte_peek <= '1';
+													next_micro_state <= rte_f1;
+												END IF;
 											END IF;
 										ELSE
 											trap_priv <= '1';
@@ -2800,7 +3114,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 							write_back <= '1';
 							set_exec(opcScc) <= '1';
 							IF cpu(0)='1' AND state="10" AND addrvalue='0' THEN
-								skipFetch <= '1';
+								skipFetch_i <= '1';
 							END IF;
 							IF opcode(5 downto 4)="00" THEN
 								set_exec(Regwrena) <= '1';
@@ -3238,7 +3552,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 --				
 ---- 1111 ----------------------------------------------------------------------------		
 			WHEN "1111" =>
-				IF CPU030='1' AND opcode(11 downto 9)="000" THEN
+				IF CPU030='1' AND MMU030='1' AND opcode(11 downto 9)="000" THEN
 					IF SVmode='0' THEN
 						trap_priv <= '1';
 						trapmake <= '1';
@@ -3421,6 +3735,25 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 			ELSIF clkena_lw='1' THEN
 				trapd <= trapmake;
 				micro_state <= next_micro_state;
+				IF (interrupt='1' AND trap_ae='1') OR micro_state=berr2 THEN
+					ae_cnt <= "10101";
+				ELSIF micro_state=trapB THEN
+					ae_cnt <= ae_cnt-1;
+				END IF;
+				IF micro_state=rte4 THEN
+					IF last_data_in(15 downto 12)="1001" THEN
+						rte_cnt <= "00011";
+					ELSIF last_data_in(15 downto 12)="1010" THEN
+						rte_cnt <= "00110";
+					ELSE
+						rte_cnt <= "10101";
+					END IF;
+				ELSIF micro_state=rte6 THEN
+					rte_cnt <= rte_cnt-1;
+				END IF;
+			ELSIF mmu_abort='1' THEN
+				trapd <= '0';
+				micro_state <= berr0;
 			END IF;
 		END IF;
 
@@ -3627,7 +3960,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 						TG68_PC_brw <= '1';	--pc+0000
 						next_micro_state <= nop;
 						if long_start='0' then
-							skipFetch <= '1'; -- AMR/GS - can't skip fetch for bra.l
+							skipFetch_i <= '1'; -- AMR/GS - can't skip fetch for bra.l
 						end if;
 					END IF;
 					
@@ -3638,7 +3971,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 				WHEN bsr2 =>		--bsr
 					IF long_start='0' THEN	
 						TG68_PC_brw <= '1';	
-						skipFetch <= '1';	-- AMR - can't skip fetch for bsr.l
+						skipFetch_i <= '1';	-- AMR - can't skip fetch for bsr.l
 					END IF;
 					set(longaktion) <= '1';
 					writePC <= '1';
@@ -3651,8 +3984,8 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 				WHEN dbcc1 =>		--dbcc
 					IF exe_condition='0' THEN
 						Regwrena_now <= '1';
-						IF c_out(1)='1' THEN
-							skipFetch <= '1';				
+						IF c_out(1)='1' OR (cpu(1)='1' AND last_data_read(0)='1') THEN
+							skipFetch_i <= '1';
 							next_micro_state <= nop;
 							TG68_PC_brw <= '1';	
 						END IF;	
@@ -3859,7 +4192,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					setstate <= "10";
 					next_micro_state <= pack3;
 				WHEN pack3 =>	
-					skipFetch <= '1';
+					skipFetch_i <= '1';
 					
 				WHEN op_AxAy =>		-- op -(Ax),-(Ay)
 					IF opcode(11 downto 9)="111" THEN
@@ -3972,6 +4305,62 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					datatype <= "01";
 					writeSR <= '1';
 					next_micro_state <= trap3;
+				WHEN trapB =>
+					set(presub) <= '1';
+					setstackaddr <='1';
+					setstate <= "11";
+					datatype <= "10";
+					IF ae_cnt="00001" THEN
+						next_micro_state <= trap0;
+					ELSE
+						next_micro_state <= trapB;
+					END IF;
+				WHEN berr0 =>
+					setstate <= "01";
+					IF undo_v(0)='1' THEN
+						dest_undo0 <= '1';
+						set(undo_wr0) <= '1';
+					END IF;
+					next_micro_state <= berr1;
+				WHEN berr1 =>
+					setstate <= "01";
+					IF undo_v(1)='1' THEN
+						dest_undo1 <= '1';
+						set(undo_wr1) <= '1';
+					END IF;
+					next_micro_state <= berr2;
+				WHEN berr2 =>
+					setstate <= "01";
+					IF preSVmode='0' THEN
+						set(changeMode) <= '1';
+					END IF;
+					next_micro_state <= trapB;
+				WHEN rte_f1 =>
+					setstate <= "01";
+					next_micro_state <= rte_f2;
+				WHEN rte_f2 =>
+					CASE last_data_in(15 downto 12) IS
+						WHEN "0000"|"0001"|"0010"|"1001"|"1010"|"1011" =>
+							setstate <= "10";
+							set(postadd) <= '1';
+							setstackaddr <= '1';
+							set(directSR) <= '1';
+							next_micro_state <= rte1;
+						WHEN OTHERS =>
+							trap_format <= '1';
+							trapmake <= '1';
+					END CASE;
+				WHEN rte6 =>
+					IF rte_cnt/="00001" THEN
+						setstate <= "10";
+						datatype <= "10";
+						set(postadd) <= '1';
+						setstackaddr <= '1';
+						next_micro_state <= rte6;
+					ELSE
+						datatype <= "01";
+						next_micro_state <= nop;
+					END IF;
 					
 										-- return from exception - RTE
 										-- fetch PC and status register from stack
@@ -4021,6 +4410,12 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 						set(postadd) <= '1';
 						setstackaddr <= '1';
 						next_micro_state <= rte5;
+					elsif cpu(1)='1' AND (last_data_in(15 downto 12)="1001" OR last_data_in(15 downto 12)="1010" OR last_data_in(15 downto 12)="1011") then
+						setstate <= "10";
+						datatype <= "10";
+						set(postadd) <= '1';
+						setstackaddr <= '1';
+						next_micro_state <= rte6;
 					else
 						datatype <= "01";
 						next_micro_state <= nop;
@@ -4036,7 +4431,13 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 					set(Regwrena) <= '1';
 					
 				WHEN movec1 =>		-- MOVEC
-					set(briefext) <= '1';
+					IF opcode(0)='1' AND cpu(1)='1' AND ((brief(11 downto 0)=X"803" AND preMmode='1') OR (brief(11 downto 0)=X"804" AND preMmode='0')) THEN
+						setstackaddr <= '1';
+						movec_src <= '1';
+						set(from_SSTK) <= '1';
+					ELSE
+						set(briefext) <= '1';
+					END IF;
 					set_writePCbig <='1';
 					IF (brief(11 downto 0)=X"000" OR brief(11 downto 0)=X"001" OR brief(11 downto 0)=X"800" OR brief(11 downto 0)=X"801") OR 
 					   (cpu(1)='1' AND (brief(11 downto 0)=X"002" OR brief(11 downto 0)=X"802" OR brief(11 downto 0)=X"803" OR brief(11 downto 0)=X"804")) THEN
@@ -4202,7 +4603,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 -----------------------------------------------------------------------------
 -- MOVEC
 -----------------------------------------------------------------------------
-  process (clk, SFC, DFC, VBR, CACR, CAAR, MSP, ISP, CACR_DC, CPU030, brief)
+  process (clk, SFC, DFC, VBR, CACR, CAAR, MSP, ISP, CACR_DC, CPU030, brief, a7_live, preMmode)
   begin
 	-- all other hexa codes should give illegal isntruction exception
 	if rising_edge(clk) then
@@ -4240,6 +4641,13 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		    when others => NULL;
 		  end case;
 		end if;
+		if clkena_lw = '1' and exec(changeMstk) = '1' then
+		  if preMmode = '1' then
+		    ISP <= reg_QA;
+		  else
+		    MSP <= reg_QA;
+		  end if;
+		end if;
 	  end if;
 	end if;
 
@@ -4251,15 +4659,25 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		if CPU030 = '1' then
 		  movec_data <= "000000000000000000" & CACR;
 		else
-		  movec_data <= "00000000000000000000000" & CACR_DC & "0000" & (CACR(3 downto 0) AND "0011");
+		  movec_data <= "000000000000000000000000000000" & CACR(1 downto 0);
 		end if;
 
 	  when X"801" => 
 		movec_data <= VBR;
 		--end if;
 	  when X"802" => movec_data <= CAAR;
-	  when X"803" => movec_data <= MSP;
-	  when X"804" => movec_data <= ISP;
+	  when X"803" =>
+		if preMmode = '1' then
+		  movec_data <= a7_live;
+		else
+		  movec_data <= MSP;
+		end if;
+	  when X"804" =>
+		if preMmode = '0' then
+		  movec_data <= a7_live;
+		else
+		  movec_data <= ISP;
+		end if;
 	  when others => NULL;
 	end case;
   end process;
@@ -4418,8 +4836,8 @@ PROCESS (clk)
   opc_cond  <= exe_condition;
   opc_snd   <= sndOPC;
   opc_dbx   <= '1' when micro_state = dbcc1 and exe_condition = '0' and c_out(1) = '0' else '0';
-  opc_cacr  <= CACR;
-  pmmu_ins <= '1' WHEN CPU030='1' AND opcode(15 downto 6)="1111000000" ELSE '0';
+  opc_cacr  <= CACR(1 downto 0);
+  pmmu_ins <= '1' WHEN CPU030='1' AND MMU030='1' AND opcode(15 downto 6)="1111000000" ELSE '0';
   pmmu_flush <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' AND pmmu_ext(8)='0' AND movem_run='0' AND
                 (pmmu_ext(14 downto 10)="00010" OR pmmu_ext(14 downto 10)="00011" OR pmmu_ext(14 downto 10)="10000" OR
                  pmmu_ext(14 downto 10)="10010" OR pmmu_ext(14 downto 10)="10011") ELSE '0';
@@ -4504,9 +4922,224 @@ PROCESS (clk)
 					END CASE;
 				END IF;
 			END IF;
+			IF mmu_abort='1' THEN
+				sndOPC <= (OTHERS => '0');
+				movem_actiond <= '0';
+			END IF;
 		END IF;
 	END PROCESS;
 	
+PROCESS (clk)
+	VARIABLE fa : std_logic_vector(31 downto 0);
+	VARIABLE fd, fn : std_logic;
+	BEGIN
+		IF rising_edge(clk) THEN
+			IF Reset='1' THEN
+				pf_bad <= '0';
+				pf_wait <= '0';
+				pf_lazy <= '0';
+				in_exc <= '0';
+				frameB <= '0';
+				rp_act <= '0';
+				rp_arm <= '0';
+				rp_cnt <= (OTHERS => '0');
+				dec_d <= '0';
+				undo_v <= "00";
+			ELSE
+				IF clkena_i='1' AND state(1)='1' THEN
+					IF rp_cnt/="111111" THEN
+						rp_cnt <= rp_cnt+1;
+					END IF;
+					IF state(0)='0' AND rp_cnt<18 THEN
+						rp_log(conv_integer(rp_cnt)) <= data_in_i;
+					END IF;
+					IF micro_state=rte6 AND state(0)='0' THEN
+						CASE rp_cnt IS
+							WHEN "000110" => rp_df <= data_in_i(8);
+							WHEN "010111" => rp_dib(31 downto 16) <= data_in_i;
+							WHEN "011000" => rp_dib(15 downto 0) <= data_in_i;
+							WHEN "011100" =>
+								rp_k <= data_in_i(5 downto 0);
+								rp_dfault <= data_in_i(8);
+								rp_n2 <= data_in_i(9);
+								rp_stick <= data_in_i(10);
+								rp_arm <= '1';
+							WHEN OTHERS => NULL;
+						END CASE;
+						IF rp_cnt>=29 AND rp_cnt<=46 THEN
+							rp_log(conv_integer(rp_cnt)-29) <= data_in_i;
+						END IF;
+					END IF;
+				END IF;
+				IF clkena_lw='1' THEN
+					dec_d <= decodeOPC;
+					wr_idx <= rf_dest_addr;
+					IF decodeOPC='1' THEN
+						rp_cnt <= (OTHERS => '0');
+						undo_v <= "00";
+					ELSIF Wwrena='1' AND WR_AReg='1' AND exc_seq='0' THEN
+						IF undo_v(0)='0' THEN
+							undo_v(0) <= '1';
+							undo_r0 <= wr_idx;
+							undo_d0 <= reg_QA;
+						ELSIF undo_v(1)='0' AND undo_r0/=wr_idx THEN
+							undo_v(1) <= '1';
+							undo_r1 <= wr_idx;
+							undo_d1 <= reg_QA;
+						END IF;
+					END IF;
+					IF dec_d='1' THEN
+						ccr_snap <= Flags;
+						sr_snap <= FlagsSR;
+					END IF;
+					IF micro_state=trap3 THEN
+						in_exc <= '1';
+					ELSIF micro_state=nopnop THEN
+						in_exc <= '0';
+					END IF;
+					IF setopcode='1' AND pf_bad='0' THEN
+						rp_act <= rp_arm;
+						rp_arm <= '0';
+						frameB <= '0';
+					ELSIF setinterrupt='1' AND pf_bad='0' THEN
+						frameB <= '0';
+					END IF;
+					pf_wait <= '0';
+				END IF;
+				IF pf_defer='1' AND clkena_in='1' THEN
+					IF setinterrupt='0' AND next_micro_state/=trap00 AND next_micro_state/=trap0 AND next_micro_state/=int1 AND pf_drop='0' THEN
+						IF pf_bcc='1' THEN
+							pf_lazy <= '1';
+						ELSE
+							pf_bad <= '1';
+							IF setopcode='1' AND longword_i='0' THEN
+								pf_wait <= '1';
+							END IF;
+						END IF;
+					END IF;
+					f_addr <= addr;
+					f_ssw <= X"5060" OR ("0000000000000" & FC_eff);
+					f_dob <= (OTHERS => '0');
+					IF setopcode='1' AND longword_i='0' THEN
+						f_pc <= addr;
+					ELSE
+						f_pc <= exe_pc;
+					END IF;
+				END IF;
+				IF pf_lazy='1' AND clkena_lw='1' AND micro_state=bra1 THEN
+					pf_lazy <= '0';
+					IF exe_condition='0' THEN
+						pf_bad <= '1';
+						pf_wait <= '1';
+						f_pc <= f_addr;
+					END IF;
+				END IF;
+				IF mmu_abort='1' THEN
+					frameB <= '1';
+					rp_act <= '0';
+					pf_bad <= '0';
+					pf_wait <= '0';
+					pf_lazy <= '0';
+					IF dec_d='1' THEN
+						ccr_frame <= Flags;
+						sr_frame <= FlagsSR;
+					ELSE
+						ccr_frame <= ccr_snap;
+						sr_frame <= sr_snap;
+					END IF;
+					IF pf_bad='0' THEN
+						fa := addr;
+						fd := '1';
+						fn := longword_i;
+						f_addr <= addr;
+						f_pc <= exe_pc;
+						f_ssw <= (OTHERS => '0');
+						f_ssw(8) <= '1';
+						f_ssw(6) <= NOT state(0);
+						IF longword_i='1' THEN
+							f_ssw(5 downto 4) <= "00";
+						ELSIF memmaskmux(5)/=memmaskmux(4) THEN
+							f_ssw(5 downto 4) <= "01";
+						ELSE
+							f_ssw(5 downto 4) <= "10";
+						END IF;
+						f_ssw(2 downto 0) <= FC_eff;
+						IF state(0)='0' THEN
+							f_dob <= (OTHERS => '0');
+						ELSIF longword_i='1' THEN
+							f_dob <= data_write_muxin;
+						ELSIF memmaskmux(5)/=memmaskmux(4) THEN
+							f_dob <= X"000000" & data_write_muxin(7 downto 0);
+						ELSE
+							f_dob <= X"0000" & data_write_muxin(15 downto 0);
+						END IF;
+					ELSE
+						fa := f_addr;
+						fd := '0';
+						fn := '0';
+					END IF;
+					IF rp_act='1' AND (rp_cnt<rp_k OR (rp_cnt=rp_k AND rp_fromdib='1')) THEN
+						f_info <= "00000" & rp_fromdib & rp_n2 & '0' & "00" & rp_k;
+						f_dib <= rp_dib;
+					ELSE
+						f_info <= "00000" & '0' & fn & fd & "00" & rp_cnt;
+						f_dib <= fa;
+					END IF;
+				END IF;
+			END IF;
+		END IF;
+	END PROCESS;
+
+PROCESS (rp_act, exc_seq, state, rp_cnt, rp_k, rp_fromdib, rp_n2, rp_log, rp_dib, memmaskmux)
+	VARIABLE i : integer range 0 to 17;
+	BEGIN
+		IF rp_cnt<18 THEN
+			i := conv_integer(rp_cnt);
+		ELSE
+			i := 0;
+		END IF;
+		rp_skip <= '0';
+		IF rp_act='1' AND exc_seq='0' AND state(1)='1' THEN
+			IF rp_cnt<rp_k AND (state(0)='1' OR rp_cnt<18) THEN
+				rp_skip <= '1';
+			ELSIF rp_fromdib='1' AND (rp_cnt=rp_k OR (rp_n2='1' AND rp_cnt=rp_k+1)) THEN
+				rp_skip <= '1';
+			END IF;
+		END IF;
+		IF rp_cnt<rp_k THEN
+			rp_word <= rp_log(i);
+		ELSIF rp_n2='1' AND rp_cnt=rp_k THEN
+			rp_word <= rp_dib(31 downto 16);
+		ELSIF memmaskmux(5)/=memmaskmux(4) THEN
+			rp_word <= rp_dib(7 downto 0) & rp_dib(7 downto 0);
+		ELSE
+			rp_word <= rp_dib(15 downto 0);
+		END IF;
+	END PROCESS;
+
+PROCESS (ae_cnt, rp_log, f_info, f_dib, f_addr, f_dob, f_ssw)
+	BEGIN
+		fb_long <= (OTHERS => '0');
+		CASE ae_cnt IS
+			WHEN "10101" => fb_long <= rp_log(16) & rp_log(17);
+			WHEN "10100" => fb_long <= rp_log(14) & rp_log(15);
+			WHEN "10011" => fb_long <= rp_log(12) & rp_log(13);
+			WHEN "10010" => fb_long <= rp_log(10) & rp_log(11);
+			WHEN "10001" => fb_long <= rp_log(8) & rp_log(9);
+			WHEN "10000" => fb_long <= rp_log(6) & rp_log(7);
+			WHEN "01111" => fb_long <= rp_log(4) & rp_log(5);
+			WHEN "01110" => fb_long <= rp_log(2) & rp_log(3);
+			WHEN "01101" => fb_long <= rp_log(0) & rp_log(1);
+			WHEN "01100" => fb_long <= X"0000" & f_info;
+			WHEN "01010" => fb_long <= f_dib;
+			WHEN "01000" => fb_long <= f_addr;
+			WHEN "00101" => fb_long <= f_dob;
+			WHEN "00011" => fb_long <= f_addr;
+			WHEN "00001" => fb_long <= X"0000" & f_ssw;
+			WHEN OTHERS => NULL;
+		END CASE;
+	END PROCESS;
+
 PROCESS (sndOPC, movem_mux)
 	BEGIN
 		movem_regaddr <="0000";
