@@ -769,7 +769,7 @@ ciab CIAB1
 );
 
 wire cpu_long_en;
-assign chip32_en = chipset_config[4] & ~ovr & ~cpuhlt;
+assign chip32_en = cpucfg[1] & (chipset_config[4] | (chipset_config[3] & ~cpucfg[0])) & ~ovr & ~cpuhlt;
 assign ram_long  = cpu_long_en & ~dbr & |bank[3:0];
 
 //instantiate cpu bridge
