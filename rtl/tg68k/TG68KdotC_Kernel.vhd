@@ -613,7 +613,7 @@ ALU: TG68K_ALU
 	-- does shift for byte access. note active low me
 	-- should produce address error on 68000
 	memmaskmux <= memmask when addr(0) = '1' else memmask(4 downto 0) & '1';
-	cand <= '1' WHEN s21_en='1' AND mm_plain='1' AND memmask="100001" AND addr(1 downto 0)="00" AND state(1)='1' AND MMU_TC(31)='0' ELSE '0';
+	cand <= '1' WHEN s21_en='1' AND mm_plain='1' AND memmask="100001" AND addr(1 downto 0)="00" AND state(1)='1' AND (MMU_TC(31)='0' OR (exc_seq='0' AND rp_act='0')) ELSE '0';
 	long_cand <= cand AND NOT mmu_stall;
 	l1 <= long_ack AND cand;
 	addr_p2 <= addr + 2;
@@ -4954,6 +4954,19 @@ PROCESS (clk)
 					END IF;
 					IF state(0)='0' AND rp_cnt<18 THEN
 						rp_log(conv_integer(rp_cnt)) <= data_in_i;
+					END IF;
+					IF l1='1' THEN
+						IF rp_cnt<"111110" THEN
+							rp_cnt <= rp_cnt+2;
+						ELSE
+							rp_cnt <= "111111";
+						END IF;
+						IF state(0)='0' AND rp_cnt<18 THEN
+							rp_log(conv_integer(rp_cnt)) <= data_in_hi;
+						END IF;
+						IF state(0)='0' AND rp_cnt<17 THEN
+							rp_log(conv_integer(rp_cnt)+1) <= data_in_i;
+						END IF;
 					END IF;
 					IF micro_state=rte6 AND state(0)='0' THEN
 						CASE rp_cnt IS
