@@ -45,7 +45,8 @@ entity TG68K_MMU030 is
 		mmusr_we   : out std_logic;
 		desc_addr  : out std_logic_vector(31 downto 0);
 
-		fault      : out std_logic
+		fault      : out std_logic;
+		f_ack      : in  std_logic
 	);
 end TG68K_MMU030;
 
@@ -76,7 +77,7 @@ architecture rtl of TG68K_MMU030 is
 	signal phys      : std_logic_vector(31 downto 0);
 	signal ci_r      : std_logic;
 	signal is_wr     : std_logic;
-	signal flt       : std_logic;
+	signal f_hold    : std_logic;
 
 	signal lk_addr   : std_logic_vector(31 downto 0);
 	signal lk_fc     : std_logic_vector(2 downto 0);
@@ -212,7 +213,7 @@ begin
 	          (tt_match(tt1, l_addr, l_fc, not is_wr, l_rmw) and tt1(10));
 
 	stall <= '1' when st /= S_IDLE or (need = '1' and xv = '0') else '0';
-	fault <= flt;
+	fault <= f_hold;
 
 	process (st, need, xv, l_addr, l_state, phys, b_addr, b_state, l_uds, l_lds, l_wr, l_long, wb_data, ci_r)
 	begin
@@ -255,7 +256,9 @@ begin
 	begin
 		if rising_edge(clk) then
 			mmusr_we <= '0';
-			flt <= '0';
+			if reset = '1' or f_ack = '1' then
+				f_hold <= '0';
+			end if;
 			if reset = '1' then
 				st <= S_IDLE;
 				xv <= '0';
@@ -269,16 +272,13 @@ begin
 					if need = '0' or (xv = '1' and p_ack = '1') then
 						xv <= '0';
 					end if;
-					if need = '1' and xv = '0' then
+					if need = '1' and xv = '0' and f_hold = '0' then
 						if tt_hit = '1' then
 							phys <= l_addr;
 							ci_r <= tt_ci;
 							xv <= '1';
 						elsif hit = '1' and (a_b(hit_i) = '1' or (is_wr = '1' and a_wp(hit_i) = '1')) then
-							flt <= '1';
-							phys <= l_addr;
-							ci_r <= '1';
-							xv <= '1';
+							f_hold <= '1';
 						elsif hit = '1' and (is_wr = '0' or a_m(hit_i) = '1') then
 							phys <= ((a_phy(hit_i) and pm) or (l_addr(31 downto 8) and not pm)) & l_addr(7 downto 0);
 							ci_r <= a_ci(hit_i);
