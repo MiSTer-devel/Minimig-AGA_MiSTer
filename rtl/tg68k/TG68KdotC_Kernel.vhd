@@ -433,6 +433,7 @@ architecture logic of TG68KdotC_Kernel is
 	signal addr_p2		: std_logic_vector(31 downto 0);
 	signal mmu_pstate		: std_logic_vector(1 downto 0);
 	signal mmu_cmd_go		: std_logic;
+	signal mmu_cfg_wr		: std_logic;
 	signal mmu_cmd_op		: std_logic_vector(2 downto 0);
 	signal mmu_cmd_fc		: std_logic_vector(2 downto 0);
 	signal mmu_sr_in		: std_logic_vector(15 downto 0);
@@ -552,7 +553,7 @@ ALU: TG68K_ALU
 
 	pmmu: entity work.TG68K_MMU030
 	port map(
-		clk => clk, reset => Reset, k_ena => clkena_lw,
+		clk => clk, reset => Reset, k_ena => clkena_lw, cfg_wr => mmu_cfg_wr,
 		tc => MMU_TC, crp => MMU_CRP, srp => MMU_SRP, tt0 => MMU_TT0, tt1 => MMU_TT1,
 		l_addr => addr, l_state => state_mmu, l_fc => FC_eff, l_rmw => '0',
 		l_uds => memmaskmux(5), l_lds => memmaskmux(4), l_wr => data_write_i, l_long => longword_i,
@@ -4841,6 +4842,7 @@ PROCESS (clk)
   pmmu_flush <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' AND pmmu_ext(8)='0' AND movem_run='0' AND
                 (pmmu_ext(14 downto 10)="00010" OR pmmu_ext(14 downto 10)="00011" OR pmmu_ext(14 downto 10)="10000" OR
                  pmmu_ext(14 downto 10)="10010" OR pmmu_ext(14 downto 10)="10011") ELSE '0';
+  mmu_cfg_wr <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' ELSE '0';
   mmu_cmd_go <= '1' WHEN pmmu_flush='1' OR
                 (exec(get_ea_now)='1' AND pmmu_ins='1' AND (pmmu_ext(15 downto 13)="100" OR
                  (pmmu_ext(15 downto 13)="001" AND (pmmu_ext(12 downto 10)="000" OR pmmu_ext(12 downto 10)="110")))) OR
