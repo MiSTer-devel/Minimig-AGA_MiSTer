@@ -97,21 +97,9 @@ always @(hpos)
     2'b11 : extra_delay_f0 = 8'b00_0100_00;
   endcase
 
-always @(hpos)
-  case (hpos[4:3])
-    2'b00 : extra_delay_f12 = 8'b00_0000_00;
-    2'b01 : extra_delay_f12 = 8'b01_1000_00;
-    2'b10 : extra_delay_f12 = 8'b01_0000_00;
-    2'b11 : extra_delay_f12 = 8'b00_1000_00;
-  endcase
+always @(hpos) extra_delay_f12 = {1'b0, 3'd0 - hpos[4:2], 4'b0000};
 
-always @(hpos)
-  case (hpos[5:4])
-    2'b00 : extra_delay_f3 = 8'b00_0000_00;
-    2'b01 : extra_delay_f3 = 8'b11_0000_00;
-    2'b10 : extra_delay_f3 = 8'b10_0000_00;
-    2'b11 : extra_delay_f3 = 8'b01_0000_00;
-  endcase
+always @(hpos) extra_delay_f3 = {4'd0 - hpos[5:2], 4'b0000};
 
 always @ (posedge clk) begin
   if (clk7_en) begin
