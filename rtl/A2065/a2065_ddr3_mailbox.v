@@ -182,6 +182,21 @@ module a2065_ddr3_mailbox (
     wire cmd_active = cmd_pending_s1;
 
     wire [15:0] ack_w1c  = cmd_data_s & CSR0_W1C;
+    // A CSR0 write that acknowledges nothing, commands nothing (INIT STRT STOP
+    // TDMD) and repeats the last CSR0 value queued changes nothing on the host.
+    // The Commodore a2065.device level 2 server writes one (INEA alone) on
+    // every level 2 interrupt, about 11 times a second while idle, and those
+    // filled the 256-entry ring whenever Main stalled for ~20 s, overwriting
+    // entries that mattered. They are completed here without a ring entry.
+    // The compare is against the last value queued, not csr0_out: the host's
+    // shadow lags the ring, so a queued INEA change would make a following
+    // INEA write look redundant. csr0_out[6] must agree as well, so a host
+    // that lost INEA (Main restarted) still gets the write.
+    reg  [15:0] last_csr0;
+    reg         last_csr0_v;
+    wire        cmd_noop = cmd_rap_s == 7'd0 && !(cmd_data_s & 16'h7F0F)
+                           && last_csr0_v && cmd_data_s == last_csr0
+                           && cmd_data_s[6] == csr0_out[6];
     wire        ack_csr0 = host_seq_ok && cmd_rap_s == 7'd0 && |ack_w1c;
     wire [15:0] csr0_ack = csr0_sum(csr0_out & ~ack_w1c);
 
@@ -219,6 +234,8 @@ module a2065_ddr3_mailbox (
             host_seq_ok     <= 1'b0;
             int_word        <= 2'd0;
             host_seq        <= 32'd0;
+            last_csr0       <= 16'd0;
+            last_csr0_v     <= 1'b0;
         end else begin
             avl_read        <= 0;
             avl_write       <= 0;
@@ -250,6 +267,9 @@ module a2065_ddr3_mailbox (
                     avl_burstcount <= 1;
                     avl_write      <= 1;
                     state          <= S_WPTR_INIT;
+                end else if (cmd_active && !cmd_clear && cmd_noop) begin
+                    cmd_clear <= 1'b1;
+                    state     <= S_CMD_DONE;
                 end else if (cmd_active && !cmd_clear) begin
                     avl_address    <= DDR3_BASE + AV_CMD_RING
                                       + {21'b0, cmd_wr_idx[CMD_RING_BITS-1:0]};
@@ -280,6 +300,10 @@ module a2065_ddr3_mailbox (
                     // Entry is in DDR3; publish the advanced write index so the
                     // host can see it.
                     cmd_wr_idx     <= cmd_wr_idx + 1'b1;
+                    if (cmd_rap_s == 7'd0) begin
+                        last_csr0   <= cmd_data_s;
+                        last_csr0_v <= 1'b1;
+                    end
                     if (ack_csr0) begin
                         clr_pend   <= clr_pend | ack_w1c;
                         clr_seq    <= cmd_wr_idx + 1'b1;
