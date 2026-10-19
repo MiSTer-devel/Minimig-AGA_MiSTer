@@ -132,13 +132,21 @@ cpu_cache_new cpu_cache
 	.cpu_dat_r        (cpuRD),                 // cpu read data
 	.cpu_ack          (cache_rd_ack),          // cpu acknowledge
 	.wb_en            (cache_wr_ack),          // write enable
+	.cpu_idle         (),
 	.sdr_dat_r        (sdata_reg),             // sdram read data
 	.sdr_read_req     (cache_req),             // sdram read request from cache
 	.sdr_read_ack     (cache_fill),            // sdram read acknowledge to cache
 	.snoop_act        (chipWE | chipWE2),      // snoop act (write only - just update existing data in cache)
 	.snoop_adr        (snoop2 ? {chipAddr[24:2], 1'b1} : chipAddr), // snoop address
 	.snoop_dat_w      (snoop2 ? chipWR2 : chipWR), // snoop write data
-	.snoop_bs         (snoop2 ? 2'b11 : {!chipU, !chipL}) // snoop byte selects
+	.snoop_bs         (snoop2 ? 2'b11 : {!chipU, !chipL}), // snoop byte selects
+	.buf_ok           (1'b0),
+	.buf_dat          (64'd0),
+	.buf_take         (),
+	.cpu_long         (1'b0),
+	.cpu_dat_w_lo     (16'd0),
+	.cpu_dat_hi       (),
+	.cpu_ack_l        ()
 );
 
 reg cache_fill;

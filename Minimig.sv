@@ -329,6 +329,10 @@ wire [15:0] ram_din;
 wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
 wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
 wire        zram_sel  = |ram_addr[28:26];
+wire        ram_l1;
+wire [15:0] ram_din_lo;
+wire [15:0] ram_dout2_hi;
+wire        ram_ready2_l;
 wire        ramshared;
 
 wire [7:0] toccata_base;
@@ -381,6 +385,7 @@ cpu_wrapper cpu_wrapper
 	.fastchip_lw     (fastchip_lw     ),
 
 	.cpucfg       (cpucfg          ),
+	.ntsc         (ntsc            ),
 	.cachecfg     (cachecfg        ),
 	.fastramcfg   (memcfg[6:4]     ),
 	.bootrom      (bootrom         ),
@@ -403,6 +408,10 @@ cpu_wrapper cpu_wrapper
 	.ramdin       (ram_din         ),
 	.ramready     (ram_ready       ),
 	.ramshared    (ramshared       ),
+	.ramlong1     (ram_l1          ),
+	.ramdin_lo    (ram_din_lo      ),
+	.ramdout_hi   (ram_dout2_hi    ),
+	.ramready_l   (zram_sel & ram_ready2_l),
 
 	//custom CPU signals
 	.cpustate     (cpu_state       ),
@@ -577,7 +586,12 @@ ddram_ctrl ram2
 	.cpuCS        (zram_sel&ram_cs ),
 	.cpuRD        (ram_dout2       ),
 	.ramshared    (ramshared       ),
+	.cpuLong      (fastchip_lw & ~ram_addr[1]),
 	.ramready     (ram_ready2      ),
+	.cpuLong1     (ram_l1 & zram_sel),
+	.cpuWR_lo     (ram_din_lo      ),
+	.cpuRD_hi     (ram_dout2_hi    ),
+	.ramready_l   (ram_ready2_l    ),
 
 	.dmaAddr      (dma_ddr_addr    ),
 	.dmaCS        (dma_ddr_cs      ),
@@ -749,7 +763,7 @@ assign UART_TXD = (hps_mpu & mt32_use) | uart_tx;
 ///////////////////////////////////////////////////////////////////////
 
 //// minimig top ////
-wire  [2:0] cpucfg;
+wire  [4:0] cpucfg;
 wire  [2:0] cachecfg;
 wire  [6:0] memcfg;
 wire        bootrom;   

@@ -61,7 +61,7 @@ module userio
 	output reg  [1:0] ar,
 	output reg  [1:0] blver,
 	output reg  [5:0] ide_config,
-	output reg  [2:0] cpu_config,
+	output reg  [4:0] cpu_config,
 	output reg  [2:0] cache_config,
 	output reg        bootrom =0, // do the A1000 bootrom magic in gary.v
 	output reg        usrrst,     // user reset from osd module
@@ -392,18 +392,18 @@ assign host_bs = 2'b11;
 
 reg [7:0] t_memory_config = 8'b0_0_00_01_01;
 reg [5:0] t_ide_config = 0;
-reg [5:0] t_cpu_config = 0;
+reg [7:0] t_cpu_config = 0;
 reg [5:0] t_chipset_config = 0;
 
 // configuration changes only while reset is active
 always @(posedge clk) begin
 	reg [5:0] ide_cfg = 0;
-	reg [2:0] cpu_cfg = 0;
+	reg [4:0] cpu_cfg = 0;
 
 	if (reset) begin
 		chipset_config <= t_chipset_config;
 		ide_cfg <= t_ide_config;
-		cpu_cfg <= {t_cpu_config[5], t_cpu_config[1:0]};
+		cpu_cfg <= {t_cpu_config[7:6], t_cpu_config[5], t_cpu_config[1:0]};
 		memory_config[5:0] <= t_memory_config[5:0];
 		memory_config[7] <= t_memory_config[7];
 	end
@@ -424,7 +424,7 @@ wire mem_write_sel    = (cmd[3:0] == 0); // A_A_A_A B,B,... || write system memo
 wire reset_ctrl_sel   = (cmd[3:0] == 1); // XXXXHRBC || reset control   | H - CPU halt, R - reset, B - reset to bootloader, C - reset control block
 wire aud_sel          = (cmd[3:0] == 2);
 wire chip_cfg_sel     = (cmd[3:0] == 3); // XXXGEANT || chipset config  | G - AGA, E - ECS, A - OCS A1000, N - NTSC, T - turbo
-wire cpu_cfg_sel      = (cmd[3:0] == 4); // XXXXKCTT || cpu config      | K - fast kickstart enable, C - CPU cache enable, TT - CPU type (00=68k, 01=68k10, 10=68k20)
+wire cpu_cfg_sel      = (cmd[3:0] == 4); // SSPCCCTT || cpu config      | SS - 01: 68030 at 40MHz, 10: 68030 at 50MHz, P - stock speed throttle (68020), CCC - cache config, TT - CPU type (00=68000, 01=68010, 10=68030, 11=68020)
 wire memory_cfg_sel   = (cmd[3:0] == 5); // XHFFSSCC || memory config   | H - HRTmon, FF - fast, SS - slow, CC - chip
 wire video_cfg_sel    = (cmd[3:0] == 6); // DDHHLLSS || video config    | DD - dither, HH - hires interp. filter, LL - lowres interp. filter, SS - scanline mode
 wire floppy_cfg_sel   = (cmd[3:0] == 7); // XXXXXFFS || floppy config   | FF - drive number, S - floppy speed
@@ -464,7 +464,7 @@ always @(posedge clk) begin
 			if(!bcnt) begin
 				if (reset_ctrl_sel)   {cpuhlt, cpurst, usrrst} <= IO_DIN[2:0];
 				if (chip_cfg_sel)     t_chipset_config <= IO_DIN[5:0];
-				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[5:0];
+				if (cpu_cfg_sel)      t_cpu_config <= IO_DIN[7:0];
 				if (memory_cfg_sel)   t_memory_config <= IO_DIN[7:0];
 				if (video_cfg_sel)    {blver, ar, scanline} <= {IO_DIN[11:8],IO_DIN[2:0]};
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[4:0];
