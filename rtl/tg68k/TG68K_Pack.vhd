@@ -32,7 +32,7 @@ package TG68K_Pack is
 						  rte4, rte5, rtd1, rtd2, trap00, trap0, trap1, trap2, trap3, cas1, cas2, cas21, cas22, cas23, cas24,
 						  cas25, cas26, cas27, cas28, chk20, chk21, chk22, chk23, chk24,
 						  trap4, trap5, trap6, movec1, movep1, movep2, movep3, movep4, movep5, rota1, bf1, 
-						  mul1, mul2, mul_end1,  mul_end2, div1, div2, div3, div4, div_end1, div_end2);
+						  mul1, mul2, mul_end1,  mul_end2, div1, div2, div3, div4, div_end1, div_end2, trapB, rte_f1, rte_f2, rte6, trap7, rte7, rte8);
 	
 	constant opcMOVE				: integer := 0; --
 	constant opcMOVEQ				: integer := 1; --
@@ -123,8 +123,10 @@ package TG68K_Pack is
 	constant alu_setFlags		: integer := 86; --
 	constant opcCHK2				: integer := 87; --
 	constant opcEXTB				: integer := 88; --
+	constant changeMstk			: integer := 89; --
+	constant from_SSTK			: integer := 90; --
 
-	constant lastOpcBit			: integer := 88;
+	constant lastOpcBit			: integer := 90;
 
 	component TG68K_ALU
 	generic(

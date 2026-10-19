@@ -313,6 +313,13 @@ wire        chip_rw;
 wire [15:0] chip_dout;
 wire [15:0] chip_din;
 wire [23:1] chip_addr;
+wire        chip32_en;
+wire        chip_long;
+wire [15:0] chip_din2;
+wire [15:0] chip_rd2;
+wire        ram_long;
+wire        arb_chip_long;
+wire [15:0] arb_chip_wr2;
 
 wire [28:1] ram_addr;
 wire        ram_sel;
@@ -359,6 +366,10 @@ cpu_wrapper cpu_wrapper
 	.chip_rw      (chip_rw         ),
 	.chip_dtack   (chip_dtack      ),
 	.chip_ipl     (chip_ipl        ),
+	.chip32_en    (chip32_en       ),
+	.chip_long    (chip_long       ),
+	.chip_din2    (chip_din2       ),
+	.chip_dout2   (chip_rd2        ),
 
 	.fastchip_dout   (fastchip_dout   ),
 	.fastchip_sel    (fastchip_sel    ),
@@ -463,7 +474,10 @@ sdram_ctrl ram1
 	.chipRW       (arb_chip_rw     ),
 	.chipDMA      (arb_chip_dma    ),
 	.chipRD       (ramdata_in      ),
-	.chip48       (chip48          )
+	.chip48       (chip48          ),
+	.chip32       (arb_chip_long   ),
+	.chipWR2      (arb_chip_wr2    ),
+	.chipRD2      (chip_rd2        )
 );
 
 chipdma_arb chipdma_arb
@@ -478,6 +492,8 @@ chipdma_arb chipdma_arb
 	.chip_in_rw      (_ram_we              ),
 	.chip_in_dma     (_ram_oe              ),
 	.chip_in_wr      (ram_data             ),
+	.chip_in_long    (ram_long             ),
+	.chip_in_wr2     (chip_din2            ),
 
 	.akiko_dma_req   (akiko_dma_req        ),
 	.akiko_dma_we    (akiko_dma_we         ),
@@ -500,6 +516,8 @@ chipdma_arb chipdma_arb
 	.chip_out_rw     (arb_chip_rw          ),
 	.chip_out_dma    (arb_chip_dma         ),
 	.chip_out_wr     (arb_chip_wr          ),
+	.chip_out_long   (arb_chip_long        ),
+	.chip_out_wr2    (arb_chip_wr2         ),
 	.chip_in_rd      (ramdata_in           ),
 
 	.z2ram_ena       (z2ram_ena            ),
@@ -732,6 +750,9 @@ minimig minimig
 	._cpu_uds     (chip_uds         ), // M68K upper data strobe
 	._cpu_lds     (chip_lds         ), // M68K lower data strobe
 	.cpu_r_w      (chip_rw          ), // M68K read / write
+	.cpu_long     (chip_long        ),
+	.chip32_en    (chip32_en        ),
+	.ram_long     (ram_long         ),
 	._cpu_dtack   (chip_dtack       ), // M68K data acknowledge
 	._cpu_reset   (cpu_rst          ), // M68K reset
 	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out

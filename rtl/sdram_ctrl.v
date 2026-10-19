@@ -58,6 +58,9 @@ module sdram_ctrl
 	input      [15:0] chipWR,
 	output reg [15:0] chipRD,
 	output     [47:0] chip48,
+	input             chip32,
+	input      [15:0] chipWR2,
+	output reg [15:0] chipRD2,
 	// cpu
 	input      [24:1] cpuAddr,
 	input             cpuCS,
@@ -107,6 +110,11 @@ wire ramsel = cpuCS & (~&cpustate | ~cpuU | ~cpuL);
 wire cache_rd_ack;
 wire cache_wr_ack;
 wire cache_req;
+reg        a_wr2 = 0;
+reg        a_rd2 = 0;
+reg [15:0] datawr2;
+reg        chipWE2 = 0;
+reg        snoop2 = 0;
 cpu_cache_new cpu_cache
 (
 	.clk              (sysclk),                // clock
@@ -127,10 +135,10 @@ cpu_cache_new cpu_cache
 	.sdr_dat_r        (sdata_reg),             // sdram read data
 	.sdr_read_req     (cache_req),             // sdram read request from cache
 	.sdr_read_ack     (cache_fill),            // sdram read acknowledge to cache
-	.snoop_act        (chipWE),                // snoop act (write only - just update existing data in cache)
-	.snoop_adr        (chipAddr),              // snoop address
-	.snoop_dat_w      (chipWR),                // snoop write data
-	.snoop_bs         ({!chipU, !chipL})       // snoop byte selects
+	.snoop_act        (chipWE | chipWE2),      // snoop act (write only - just update existing data in cache)
+	.snoop_adr        (snoop2 ? {chipAddr[24:2], 1'b1} : chipAddr), // snoop address
+	.snoop_dat_w      (snoop2 ? chipWR2 : chipWR), // snoop write data
+	.snoop_bs         (snoop2 ? 2'b11 : {!chipU, !chipL}) // snoop byte selects
 );
 
 reg cache_fill;
@@ -209,7 +217,10 @@ always @ (posedge sysclk) begin
 	if(slot_type == CHIP) begin
 		case(sdram_state)
 			 9: chipRD   <= (fwd_en && fwd_pos==2'd0) ? m : sdata_chip;
-			11: chip48_1 <= (fwd_en && fwd_pos==2'd1) ? m : sdata_chip;
+			11: begin
+					chip48_1 <= (fwd_en && fwd_pos==2'd1) ? m : sdata_chip;
+					if(a_rd2) chipRD2 <= (fwd_en && fwd_pos==2'd1) ? m : sdata_chip;
+				end
 			13: chip48_2 <= (fwd_en && fwd_pos==2'd2) ? m : sdata_chip;
 			15: chip48_3 <= (fwd_en && fwd_pos==2'd3) ? m : sdata_chip;
 		endcase
@@ -275,12 +286,21 @@ always @ (posedge sysclk) begin
 		chipWE                <= 0;
 	end
 
+	if(sdram_state == 4) begin
+		chipWE2 <= a_wr2;
+		snoop2  <= a_wr2;
+	end
+	if(sdram_state == 6) chipWE2 <= 0;
+	if(sdram_state == 8) snoop2  <= 0;
+
 	if(sdram_state[0]) sdata_reg <= sd_data;
 
 	if(!init_done) begin
 		slot_type             <= IDLE;
 		casaddr               <= 0;
 		rcnt                  <= 0;
+		a_wr2                 <= 0;
+		a_rd2                 <= 0;
 		sd_dqm                <= 3;
 		sd_ba                 <= 0;
 		if(sdram_state == 0) begin
@@ -316,6 +336,8 @@ always @ (posedge sysclk) begin
 				sd_dqm          <= 3;
 				slot_type       <= IDLE;
 				fwd_en          <= 0;
+				a_wr2           <= 0;
+				a_rd2           <= 0;
 
 				if(~&rcnt) rcnt <= rcnt + 1'd1;
 
@@ -330,6 +352,9 @@ always @ (posedge sysclk) begin
 					cas_sd_we    <= chipRW;
 					datawr       <= chipWR;
 					chipWE       <= !chipRW;
+					a_wr2        <= chip32 & !chipRW;
+					a_rd2        <= chip32 &  chipRW;
+					datawr2      <= chipWR2;
 					if(chipRW & write_req & (writeAddr[24:3] == chipAddr[24:3])) begin
 						fwd_en  <= 1'b1;
 						fwd_pos <= writeAddr[2:1] - chipAddr[2:1];
@@ -364,7 +389,7 @@ always @ (posedge sysclk) begin
 
 			// CAS
 			2 : begin
-				sd_addr         <= {1'b1, casaddr}; // AUTO PRECHARGE
+				sd_addr         <= {~a_wr2, casaddr}; // AUTO PRECHARGE
 				sd_cas          <= cas_sd_cas;
 				sd_dqm          <= 0;
 				if(!cas_sd_we) begin
@@ -374,6 +399,14 @@ always @ (posedge sysclk) begin
 					sd_we        <= 0;
 				end
 				write_ack       <= 0; // indicate to write that it's safe to accept the next write
+			end
+
+			4 : if(a_wr2) begin
+				sd_addr         <= {2'b00, 1'b1, casaddr[9:1], 1'b1};
+				sd_dqm          <= 0;
+				sd_data         <= datawr2;
+				sd_cas          <= 0;
+				sd_we           <= 0;
 			end
 		endcase
 	end
