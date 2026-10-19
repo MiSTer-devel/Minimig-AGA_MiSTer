@@ -12,6 +12,8 @@ module chipdma_arb
 	input             chip_in_rw,
 	input             chip_in_dma,
 	input      [15:0] chip_in_wr,
+	input             chip_in_long,
+	input      [15:0] chip_in_wr2,
 
 	input             akiko_dma_req,
 	input             akiko_dma_we,
@@ -34,6 +36,8 @@ module chipdma_arb
 	output            chip_out_rw,
 	output            chip_out_dma,
 	output     [15:0] chip_out_wr,
+	output            chip_out_long,
+	output     [15:0] chip_out_wr2,
 	input      [15:0] chip_in_rd,
 
 	input             z2ram_ena,
@@ -170,6 +174,8 @@ assign chip_out_u    = arb_drive_chip ? ak_u_w       : chip_in_u;
 assign chip_out_rw   = arb_drive_chip ? ak_rw_w      : chip_in_rw;
 assign chip_out_dma  = arb_drive_chip ? 1'b0         : chip_in_dma;
 assign chip_out_wr   = arb_drive_chip ? ak_wr_data_w : chip_in_wr;
+assign chip_out_long = ~arb_drive_chip & chip_in_long;
+assign chip_out_wr2  = chip_in_wr2;
 
 assign ddr_out_cs   = dma_ddr_cs_r;
 assign ddr_out_addr = dma_ddr_addr_r;

@@ -47,7 +47,11 @@ module cpu_wrapper
 	output reg        chip_rw,
 	input             chip_dtack,
 	input       [2:0] chip_ipl,
-	
+	input             chip32_en,
+	output reg        chip_long,
+	output reg [15:0] chip_din2,
+	input      [15:0] chip_dout2,
+
 	input      [15:0] fastchip_dout,
 	output reg        fastchip_sel,
 	output            fastchip_lds,
@@ -91,10 +95,13 @@ module cpu_wrapper
 	output            dcache_sw_en
 );
 
-wire dcache_sw_en_p;
-assign dcache_sw_en = cpucfg[1] ? dcache_sw_en_p : 1'b1;
+assign dcache_sw_en = 1'b1;
 
-assign ramsel       = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
+wire        ec020      = (cpucfg[1:0] == 2'b11) & cpucfg[2];
+wire [31:0] cpu_addr_m = ec020 ? {8'd0, cpu_addr_p[23:0]} : cpu_addr_p;
+
+wire   ramsel_i     = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
+assign ramsel       = ramsel_i & ~req_gate;
 assign ramshared    = sel_dd;
 
 // NMI
@@ -139,13 +146,13 @@ assign ramuds = sel_rtg ? lds_in : uds_in;
 assign ramdin = sel_rtg ? {cpu_dout[7:0],cpu_dout[15:8]} : cpu_dout;
 assign ramdat = sel_rtg ? {ramdout[7:0], ramdout[15:8]}  : ramdout;
 
-assign fastchip_lds = lds_in;
-assign fastchip_uds = uds_in;
+assign fastchip_lds = lds_in | req_gate;
+assign fastchip_uds = uds_in | req_gate;
 assign fastchip_rnw = wr;
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel ? ramdat :
+wire [15:0] cpu_din = ramsel_i ? ramdat :
                       fastchip_selack ? fastchip_dout :
                       cdtv_selack ? cdtv_din :
                       {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
@@ -158,9 +165,9 @@ reg  [31:0] vbr;
 always @* begin
 	if(cpucfg[1:0]) begin
 		cpu_dout     = cpu_dout_p;
-		cpu_addr     = cpu_addr_p;
+		cpu_addr     = cpu_addr_m;
 		cpustate     = cpustate_p;
-		cacr         = cacr_p;
+		cacr         = cacr_m;
 		vbr          = vbr_p;
 		wr           = wr_p;
 		uds_in       = uds_p;
@@ -170,10 +177,12 @@ always @* begin
 		chip_rw      = c_rw;
 		chip_uds     = c_uds;
 		chip_lds     = c_lds;
-		chip_addr    = cpu_addr_p[23:1];
-		chip_din     = cpu_dout_p;
+		chip_addr    = ((c_long | w32_fl) & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
+		chip_din     = ((c_long | w32_fl) & ~c_rw) ? w32_hi : cpu_dout_p;
+		chip_long    = c_long;
+		chip_din2    = cpu_dout_p;
 		chip_data    = chipdout_i;
-		fastchip_sel = cpu_req & !cpu_addr_p[31:24];
+		fastchip_sel = cpu_req & !cpu_addr_m[31:24] & ~req_gate;
 		fastchip_lw  = longword;
 	end
 	else begin
@@ -192,6 +201,8 @@ always @* begin
 		chip_lds     = lds_o;
 		chip_addr    = cpu_addr_o[23:1];
 		chip_din     = cpu_dout_o;
+		chip_long    = 0;
+		chip_din2    = 0;
 		chip_data    = chip_dout;
 		fastchip_sel = 0;
 		fastchip_lw  = 0;
@@ -202,12 +213,19 @@ wire [15:0] cpu_dout_p;
 wire [31:0] cpu_addr_p;
 wire  [1:0] cpustate_p;
 wire  [3:0] cacr_p;
+wire  [3:0] cacr_m = {cacr_p[3:1], cacr_p[0] | ec020};
 wire [31:0] vbr_p;
 wire        wr_p;
 wire        uds_p;
 wire        lds_p;
 wire        reset_out_p;
 wire        longword;
+wire        opc_start;
+wire [15:0] opc_out;
+wire        opc_cond;
+wire [15:0] opc_snd;
+wire        opc_dbx;
+wire  [1:0] cacr_x;
 
 TG68KdotC_Kernel
 #(
@@ -236,9 +254,15 @@ cpu_inst_p
   .longword(longword),
   
   .cpu(cpucfg[1:0]),
+  .opc_start(opc_start),
+  .opc_out(opc_out),
+  .opc_cond(opc_cond),
+  .opc_snd(opc_snd),
+  .opc_dbx(opc_dbx),
+  .opc_cacr(cacr_x),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
-  .d_cache_out(dcache_sw_en_p),
+  .d_cache_out(),
   .vbr_out(vbr_p)
 );
 
@@ -286,40 +310,60 @@ fx68k cpu_inst_o
 
 wire cpu_req = (cpustate != 1);
 
-wire cchip = turbochip_d & (!cpustate | (dcache_d & (cpustate != 2'd3)));
-wire ckick = turbokick_d & (!cpustate | dcache_d);
+wire cchip = turbochip_d & !cpustate;
+wire ckick = turbokick_d & !cpustate;
 
 reg turbochip_d;
 reg turbokick_d;
-reg dcache_d;
 always @(posedge clk) begin
 	if (~reset | ~reset_out) begin
 		turbochip_d <= 0;
 		turbokick_d <= 0;
-		dcache_d    <= 0;
 	end
 	else if (~cpu_req) begin	// No mem access, so safe to switch chipram access mode
 		turbochip_d <= cachecfg[0] & cpucfg[1];
 		turbokick_d <= cachecfg[1] & cpucfg[1];
-		dcache_d    <= cachecfg[2];
 	end
 end
 
-wire stock_speed   = cpucfg[2];
+wire stock_speed   = cpucfg[2] & (cpucfg[1:0] == 2'b11);
 wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
 
-reg [3:0] cooldown;
+wire cyc_hold;
+cpu_cycles cycles
+(
+	.clk(clk),
+	.reset(reset),
+	.ena(stock_speed),
+	.opc_start(opc_start),
+	.opc(opc_out),
+	.opc_cond(opc_cond),
+	.opc_snd(opc_snd),
+	.opc_dbx(opc_dbx),
+	.cpu_ena(clkena_p_throttled),
+	.bus_ack(clkena_p_throttled & cpu_req),
+	.bus_state(cpustate_p),
+	.bus_addr(cpu_addr_m),
+	.bus_long(longword),
+	.cacr(cacr_x),
+	.cacr_clr(cacr_p[3]),
+	.hold(cyc_hold)
+);
+
+reg inflight;
 always @(posedge clk) begin
-	if (~reset)                                cooldown <= 4'd0;
-	else if (cooldown != 4'd0)                 cooldown <= cooldown - 4'd1;
-	else if (stock_speed & clkena_p_base)      cooldown <= 4'd4;
+	if (~reset)                   inflight <= 0;
+	else if (clkena_p_throttled)  inflight <= cpu_req & longword;
+	else if (cpu_req & ~cyc_hold) inflight <= 1;
 end
-wire clkena_p_throttled = clkena_p_base & (cooldown == 4'd0);
+
+wire req_gate = cyc_hold & ~inflight;
+wire clkena_p_throttled = clkena_p_base & (cpu_req ? ~req_gate : ~cyc_hold);
 
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel & ~fastchip_selack;
+	chipreq <= cpu_req & ~ramsel_i & ~fastchip_selack & ~req_gate;
 	cpu_ipl <= ipl_i;
 end
 
@@ -329,14 +373,28 @@ always @(posedge clk) begin
 	ph2n <= ph2;
 end
 
+wire c32 = chip32_en & longword & ~uds_in & ~lds_in & ~|cpu_addr_m[1:0] & ~|cpu_addr_m[31:21] &
+           ~sel_nmi_vector & ~ramsel_i & ~fastchip_selack & ~cdtv_selack;
+
 reg        chipready;
 reg [15:0] chipdout_i;
 reg  [2:0] ipl_i;
 reg        c_as,c_rw,c_uds,c_lds;
+reg        c_long;
+reg        w32;
+reg [23:2] w32_adr;
+reg [15:0] w32_hi;
+reg        w32_fl;
+reg        r32;
+reg [23:2] r32_adr;
+reg [15:0] r32_lo;
+reg [15:0] chip_dout2_p;
+always @(posedge clk) chip_dout2_p <= chip_dout2;
 always @(negedge clk, negedge reset) begin
 	reg [1:0] stage;
 	reg waitm;
 	reg ready;
+	reg now;
 
 	if(~reset) begin
 		stage <= 0;
@@ -344,7 +402,11 @@ always @(negedge clk, negedge reset) begin
 		c_rw <= 1;
 		c_uds <= 1;
 		c_lds <= 1;
+		c_long <= 0;
 		ready <= 0;
+		w32 <= 0;
+		w32_fl <= 0;
+		r32 <= 0;
 	end
 	else begin
 		if (ph2n) begin
@@ -352,16 +414,42 @@ always @(negedge clk, negedge reset) begin
 			if(~stage[0]) ipl_i <= chip_ipl;
 		end
 
-		chipready <= 0;
+		now = 0;
+		if (~|stage & cpu_req & ~req_gate) begin
+			if (r32 & wr & (cpu_addr_m[23:2] == r32_adr) & cpu_addr_m[1]) begin
+				chipdout_i <= r32_lo;
+				r32 <= 0;
+				now = 1;
+			end
+			else if (c32 & ~wr & ~w32) begin
+				w32_adr <= cpu_addr_m[23:2];
+				w32_hi  <= cpu_dout_p;
+				w32 <= 1;
+				now = 1;
+			end
+		end
+
+		chipready <= now;
 		if (ph1n) begin
-			chipready <= ready;
+			chipready <= now | ready;
 			ready <= 0;
 			case (stage)
-				0: if (chipreq) begin
+				0: if (chipreq & ~now) begin
 						c_as <= 0;
-						c_rw <= wr;
-						c_uds <= uds_in;
-						c_lds <= lds_in;
+						if (w32 & (wr | (cpu_addr_m[23:2] != w32_adr) | ~cpu_addr_m[1] | uds_in | lds_in)) begin
+							c_rw <= 0;
+							c_uds <= 0;
+							c_lds <= 0;
+							c_long <= 0;
+							w32_fl <= 1;
+						end
+						else begin
+							c_rw <= wr;
+							c_uds <= uds_in;
+							c_lds <= lds_in;
+							c_long <= w32 | (c32 & wr);
+						end
+						r32 <= 0;
 						stage <= 1;
 					end
 				1: stage <= 2;
@@ -372,11 +460,21 @@ always @(negedge clk, negedge reset) begin
 							c_rw <= 1;
 							c_uds <= 1;
 							c_lds <= 1;
-							ready <= 1;
+							c_long <= 0;
+							w32 <= 0;
+							if (c_long & c_rw) begin
+								r32     <= 1;
+								r32_adr <= cpu_addr_m[23:2];
+							end
+							ready <= ~w32_fl;
+							w32_fl <= 0;
 							stage <= 3;
 						end
 					end
-				3: stage <= 0;
+				3: begin
+						r32_lo <= chip_dout2_p;
+						stage <= 0;
+					end
 			endcase
 		end
 	end
@@ -498,7 +596,7 @@ always @(posedge clk) begin
 	old_uds <= chip_uds;
 
 	if (~reset | ~reset_out) begin
-		ac_memcard  <= cpucfg[1] ? fastramcfg : fastramcfg[2] ? 3'd3 : {1'b0, fastramcfg[1:0]};
+		ac_memcard  <= (cpucfg[1] & ~ec020) ? fastramcfg : fastramcfg[2] ? 3'd3 : {1'b0, fastramcfg[1:0]};
 		ac_toccata  <= cdtv_mode ? 1'b0 : 1'b1;
 		ac_a2065    <= 1;
 		ac_cdtv     <= cdtv_mode;
