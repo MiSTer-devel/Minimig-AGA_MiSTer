@@ -265,6 +265,22 @@ module tb_cmd_ring;
         rdp_read(rv);
         check(rv == 16'h0073 && !int2_mb, "settles on the host's value: CSR0 0073, INT2 low");
 
+        // ---- no-op CSR0 writes (INEA alone, repeated) take no ring entry ----
+        host_csr0 = 16'h0073; host_int = 0; host_rd = last_wptr;
+        polls;
+        rdp_write(16'h0040, done);
+        before = last_wptr;
+        rdp_write(16'h0040, done); rdp_write(16'h0040, done);
+        check(done && last_wptr == before, "repeated INEA-only writes post no entry");
+
+        // ---- an INEA change still in the ring: the next INEA write counts ----
+        // Host shadow still shows INEA (it has not applied 0000 yet).
+        before = last_wptr;
+        rdp_write(16'h0000, done);
+        rdp_write(16'h0040, done);
+        check(last_wptr == before + 2, "0000 then 0040 with the host behind: both posted");
+        check(last_entry[23:8] == 16'h0040, "the last entry re-enables INEA");
+
         $display("=== %0d passed, %0d failed ===\\n", pass, fail);
         if (fail) $fatal(1, "cmd ring tests failed");
         $finish;
