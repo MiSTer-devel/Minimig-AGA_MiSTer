@@ -541,15 +541,15 @@ ddram_ctrl ram2
 	.DDRAM_BE     (DDRAM_BE        ),
 	.DDRAM_WE     (DDRAM_WE        ),
 
-	.mem2_address      (a2065_mem_address),
-	.mem2_burstcount   (a2065_mem_burstcount),
-	.mem2_read         (a2065_mem_read),
-	.mem2_readdata     (a2065_mem_readdata),
-	.mem2_readdatavalid(a2065_mem_readdatavalid),
-	.mem2_writedata    (a2065_mem_writedata),
-	.mem2_byteenable   (a2065_mem_byteenable),
-	.mem2_write        (a2065_mem_write),
-	.mem2_waitrequest  (a2065_mem_waitrequest),
+	.mem2_address      (mem2_address),
+	.mem2_burstcount   (mem2_burstcount),
+	.mem2_read         (mem2_read),
+	.mem2_readdata     (mem2_readdata),
+	.mem2_readdatavalid(mem2_readdatavalid),
+	.mem2_writedata    (mem2_writedata),
+	.mem2_byteenable   (mem2_byteenable),
+	.mem2_write        (mem2_write),
+	.mem2_waitrequest  (mem2_waitrequest),
 
 	.cpuWR        (ram_din         ),
 	.cpuAddr      (ram_addr        ),
@@ -583,6 +583,51 @@ wire [7:0]  a2065_mem_burstcount, a2065_mem_byteenable;
 wire        a2065_mem_read, a2065_mem_write;
 wire [63:0] a2065_mem_writedata, a2065_mem_readdata;
 wire        a2065_mem_readdatavalid, a2065_mem_waitrequest;
+
+wire [28:0] mem2_address;
+wire [7:0]  mem2_burstcount, mem2_byteenable;
+wire        mem2_read, mem2_write;
+wire [63:0] mem2_writedata, mem2_readdata;
+wire        mem2_readdatavalid, mem2_waitrequest;
+
+wire [28:0] dsnd_addr;
+wire        dsnd_rd, dsnd_busy, dsnd_ready;
+
+a2065_ddram_arbiter dsnd_arb
+(
+	.clk             (clk_114),
+	.rst             (reset_d),
+
+	.m0_address      (a2065_mem_address),
+	.m0_burstcount   (a2065_mem_burstcount),
+	.m0_read         (a2065_mem_read),
+	.m0_readdata     (a2065_mem_readdata),
+	.m0_readdatavalid(a2065_mem_readdatavalid),
+	.m0_writedata    (a2065_mem_writedata),
+	.m0_byteenable   (a2065_mem_byteenable),
+	.m0_write        (a2065_mem_write),
+	.m0_waitrequest  (a2065_mem_waitrequest),
+
+	.m1_address      (dsnd_addr),
+	.m1_burstcount   (8'd1),
+	.m1_read         (dsnd_rd),
+	.m1_readdata     (),
+	.m1_readdatavalid(dsnd_ready),
+	.m1_writedata    (64'd0),
+	.m1_byteenable   (8'hFF),
+	.m1_write        (1'b0),
+	.m1_waitrequest  (dsnd_busy),
+
+	.s_address       (mem2_address),
+	.s_burstcount    (mem2_burstcount),
+	.s_read          (mem2_read),
+	.s_readdata      (mem2_readdata),
+	.s_readdatavalid (mem2_readdatavalid),
+	.s_writedata     (mem2_writedata),
+	.s_byteenable    (mem2_byteenable),
+	.s_write         (mem2_write),
+	.s_waitrequest   (mem2_waitrequest)
+);
 
 wire [15:0] fastchip_dout;
 wire        fastchip_sel;
@@ -714,6 +759,8 @@ wire        ide_ena;
 
 wire [15:0] toccata_aud_left;
 wire [15:0] toccata_aud_right;
+
+wire  [8:0] drive_snd;
 
 wire [6:0]  IndirectUserOutmt32;
 wire [6:0]  IndirectUserOutFlop;
@@ -889,7 +936,8 @@ minimig minimig
 	.USER_IN      			(USER_IN),
 	.USER_OUT     			(IndirectUserOutFlop),
 	.user_port_mode 		(user_port_mode),
-	.mister_floppy_status	(mister_floppy_status)
+	.mister_floppy_status	(mister_floppy_status),
+	.drive_snd    			(drive_snd)
 );
 
 // power led control
@@ -1248,6 +1296,22 @@ wire flt_en    = ~status[48] ? pwr_led : status[47];
 wire aud_1200  = status[49];
 wire paula_pwm = status[50];
 
+wire [15:0] dsnd_l, dsnd_r;
+drive_sounds drive_sounds
+(
+	.clk(clk_114),
+	.rst(reset_d),
+	.volume(status[52:51]),
+	.drive_snd(drive_snd),
+	.sample_l(dsnd_l),
+	.sample_r(dsnd_r),
+	.ddr_addr(dsnd_addr),
+	.ddr_rd(dsnd_rd),
+	.ddr_busy(dsnd_busy),
+	.ddr_dout(DDRAM_DOUT),
+	.ddr_dout_ready(dsnd_ready)
+);
+
 wire [15:0] paula_smp_l = (paula_pwm ? {ldata_okk[8:0], 7'b0} : {ldata[14:0], 1'b0});
 wire [15:0] paula_smp_r = (paula_pwm ? {rdata_okk[8:0], 7'b0} : {rdata[14:0], 1'b0});
 
@@ -1338,16 +1402,25 @@ always @(posedge CLK_AUDIO) begin
 	cdda_sr <= pr[25:10];
 end
 
+reg [15:0] dsnd_al, dsnd_ar;
+always @(posedge CLK_AUDIO) begin
+	reg [31:0] old_d0, old_d1;
+
+	old_d0 <= {dsnd_l, dsnd_r};
+	old_d1 <= old_d0;
+	if(old_d0 == old_d1) {dsnd_al, dsnd_ar} <= old_d1;
+end
+
 reg [15:0] out_l, out_r;
 always @(posedge CLK_AUDIO) begin
-	reg [16:0] tmp_l, tmp_r;
+	reg [17:0] tmp_l, tmp_r;
 
-	tmp_l <= {aud_l[15],aud_l} + {toccata_aud_left[15],toccata_aud_left} + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l}) + {cdda_sl[15], cdda_sl};
-	tmp_r <= {aud_r[15],aud_r} + {toccata_aud_right[15],toccata_aud_right} + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r}) + {cdda_sr[15], cdda_sr};
+	tmp_l <= {{2{aud_l[15]}},aud_l} + {{2{toccata_aud_left[15]}},toccata_aud_left} + (mt32_mute ? 18'd0 : {{2{mt32_i2s_l[15]}},mt32_i2s_l}) + {{2{cdda_sl[15]}}, cdda_sl} + {{2{dsnd_al[15]}}, dsnd_al};
+	tmp_r <= {{2{aud_r[15]}},aud_r} + {{2{toccata_aud_right[15]}},toccata_aud_right} + (mt32_mute ? 18'd0 : {{2{mt32_i2s_r[15]}},mt32_i2s_r}) + {{2{cdda_sr[15]}}, cdda_sr} + {{2{dsnd_ar[15]}}, dsnd_ar};
 
 	// clamp the output
-	out_l <= (^tmp_l[16:15]) ? {tmp_l[16], {15{tmp_l[15]}}} : tmp_l[15:0];
-	out_r <= (^tmp_r[16:15]) ? {tmp_r[16], {15{tmp_r[15]}}} : tmp_r[15:0];
+	out_l <= (tmp_l[17:15] == 3'b000 || tmp_l[17:15] == 3'b111) ? tmp_l[15:0] : {tmp_l[17], {15{~tmp_l[17]}}};
+	out_r <= (tmp_r[17:15] == 3'b000 || tmp_r[17:15] == 3'b111) ? tmp_r[15:0] : {tmp_r[17], {15{~tmp_r[17]}}};
 end
 
 assign AUDIO_S = 1;
