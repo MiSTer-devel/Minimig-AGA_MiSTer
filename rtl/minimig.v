@@ -310,6 +310,7 @@ module minimig
 	output  [6:0] USER_OUT,
 	output  user_port_mode,
 	output   [2:0] mister_floppy_status,
+	output   [8:0] drive_snd,
 
 	// A2065 register file + doorbell
 	// A2065 memory port — goes to ddram_ctrl alongside the fast RAM
@@ -624,6 +625,7 @@ paula PAULA1
 	
 	.enable_mister_floppy(user_port_mode),	
 	.mister_floppy_status(mister_floppy_status),
+	.drive_snd(drive_snd),
 
 	.USER_IN(USER_IN),
 	.USER_OUT(USER_OUT)

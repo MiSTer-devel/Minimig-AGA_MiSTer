@@ -156,6 +156,10 @@ CDTV mode is preferred because appropriate updated ROM and ExtROM v3.2 for CDTV 
 Besides original CDTV HW config, you can use up to Amiga 1200 config (68020 + AGA + 2MB ChipRAM + 384MB FastRAM and A1200 KS ROM).
 CD32 official KS 3.1 set of ROMs also work with AmigaOS 3.2 (remember to use IDEFix to access HDD >4GB).
 
+### Floppy drive sounds
+
+The Drive Sounds item of the Audio & Video page plays the sounds of the floppy drives (motor, head steps, disk insert and eject): Off, Quiet, Normal or Loud. It needs [drivesounds.bin](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/raw/MiSTer/releases/drivesounds.bin) in `games/Amiga` on the SD card; without it the item shows "No file". Only the emulated drives make sounds, not the real drives on the MiSTer floppy adapter. The samples are by Alastair M. Robinson, from [MinimigAGA-MiST-TC64](https://github.com/minimig-dev/MinimigAGA-MiST-TC64) (GPL v3).
+
 ### MIDI
 Supported internal MiSTer emulation and external devices such as MT32-pi or generic MIDI though USER_IO.
 For MIDI-IN support through USER_IO set UART mode to None in OSD settings.
