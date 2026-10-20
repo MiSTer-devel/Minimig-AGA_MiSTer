@@ -744,8 +744,10 @@ wire flux_fifo_rd   = flux_inuse ? (busrd & dmaon) | ext_floppy_rd : 1'b0;      
 // This is used to decrement the dma length left
 wire selected_fifo_empty;
 wire selected_fifo_full;
-assign selected_fifo_empty = flux_inuse ? flux_fifo_empty : fifo_empty;
-assign selected_fifo_full =  flux_inuse ? flux_fifo_full : fifo_full;
+reg  flux_inuse_dma;
+always @(posedge clk) flux_inuse_dma <= flux_inuse;
+assign selected_fifo_empty = flux_inuse_dma ? flux_fifo_empty : fifo_empty;
+assign selected_fifo_full =  flux_inuse_dma ? flux_fifo_full : fifo_full;
 assign output_fifo_write = flux_inuse ? flux_fifo_wr : paula_fifo_wr;
 
 // OK: disk data read output gate

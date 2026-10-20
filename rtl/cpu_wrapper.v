@@ -33,7 +33,8 @@ module cpu_wrapper
 	input             ph1,
 	input             ph2,
 
-	input       [2:0] cpucfg,
+	input       [4:0] cpucfg,
+	input             ntsc,
 	input       [2:0] fastramcfg,
 	input       [2:0] cachecfg,
 	input             bootrom,
@@ -92,6 +93,10 @@ module cpu_wrapper
 	output reg  [3:0] z3ram_base1,
 	output reg        z3ram_ena1,
 
+	output            ramlong1,
+	output     [15:0] ramdin_lo,
+	input      [15:0] ramdout_hi,
+	input             ramready_l,
 	output            dcache_sw_en
 );
 
@@ -106,6 +111,8 @@ assign ramshared    = sel_dd;
 
 // NMI
 always @(posedge clk) nmi_addr <= vbr + 32'h7c;
+reg [31:0] nmi_addr2;
+always @(posedge clk) nmi_addr2 <= vbr + 32'h7e;
 
 wire sel_chipram;
 wire sel_kickram;
@@ -137,7 +144,7 @@ memory_router u_memory_router
 
 // we route everything hrtmon related through cart.v (needs a couple of signals to
 // decide what to do, would not be good style to replicate that here).
-wire sel_nmi_vector = (cpu_addr[31:2] == nmi_addr[31:2]) && (cpustate == 2);
+wire sel_nmi_vector = ((cpu_addr[31:1] == nmi_addr[31:1]) || (cpu_addr[31:1] == nmi_addr2[31:1])) && (cpustate == 2);
 
 wire [15:0] ramdat;
 
@@ -213,7 +220,7 @@ wire [15:0] cpu_dout_p;
 wire [31:0] cpu_addr_p;
 wire  [1:0] cpustate_p;
 wire  [3:0] cacr_p;
-wire  [3:0] cacr_m = {cacr_p[3:1], cacr_p[0] | ec020};
+wire  [3:0] cacr_m = {cacr_p[3:1], cacr_p[0] | ec020 | (cpucfg[1:0] == 2'b10)};
 wire [31:0] vbr_p;
 wire        wr_p;
 wire        uds_p;
@@ -225,7 +232,12 @@ wire [15:0] opc_out;
 wire        opc_cond;
 wire [15:0] opc_snd;
 wire        opc_dbx;
-wire  [1:0] cacr_x;
+wire [13:0] cacr_x;
+wire        mmu_busy;
+wire        s21_en;
+wire        long_cand;
+wire [15:0] cpu_dout_lo_p;
+wire        long_ack;
 
 TG68KdotC_Kernel
 #(
@@ -252,14 +264,21 @@ cpu_inst_p
   .nlds(lds_p),
   .nresetout(reset_out_p),
   .longword(longword),
+  .s21_en(s21_en),
+  .long_cand(long_cand),
+  .long_ack(long_ack),
+  .data_in_hi(ramdout_hi),
+  .data_write_lo(cpu_dout_lo_p),
   
-  .cpu(cpucfg[1:0]),
+  .cpu({cpucfg[1], cpucfg[1] | cpucfg[0]}),
+  .cpu030(cpu030),
   .opc_start(opc_start),
   .opc_out(opc_out),
   .opc_cond(opc_cond),
   .opc_snd(opc_snd),
   .opc_dbx(opc_dbx),
   .opc_cacr(cacr_x),
+  .mmu_busy(mmu_busy),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
   .d_cache_out(),
@@ -326,6 +345,7 @@ always @(posedge clk) begin
 	end
 end
 
+wire cpu030        = (cpucfg[1:0] == 2'b10);
 wire stock_speed   = cpucfg[2] & (cpucfg[1:0] == 2'b11);
 wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
 
@@ -334,17 +354,19 @@ cpu_cycles cycles
 (
 	.clk(clk),
 	.reset(reset),
-	.ena(stock_speed),
+	.ntsc(ntsc),
+	.mode({cpu030 & |cpucfg[4:3], stock_speed | (cpu030 & cpucfg[4])}),
 	.opc_start(opc_start),
 	.opc(opc_out),
 	.opc_cond(opc_cond),
 	.opc_snd(opc_snd),
 	.opc_dbx(opc_dbx),
-	.cpu_ena(clkena_p_throttled),
+	.cpu_ena(clkena_p_throttled & ~mmu_busy),
 	.bus_ack(clkena_p_throttled & cpu_req),
 	.bus_state(cpustate_p),
 	.bus_addr(cpu_addr_m),
 	.bus_long(longword),
+	.bus_l1(clkena_p_throttled & long_ack),
 	.cacr(cacr_x),
 	.cacr_clr(cacr_p[3]),
 	.hold(cyc_hold)
@@ -353,12 +375,17 @@ cpu_cycles cycles
 reg inflight;
 always @(posedge clk) begin
 	if (~reset)                   inflight <= 0;
-	else if (clkena_p_throttled)  inflight <= cpu_req & longword;
+	else if (clkena_p_throttled)  inflight <= cpu_req & longword & ~long_ack;
 	else if (cpu_req & ~cyc_hold) inflight <= 1;
 end
 
 wire req_gate = cyc_hold & ~inflight;
 wire clkena_p_throttled = clkena_p_base & (cpu_req ? ~req_gate : ~cyc_hold);
+
+assign s21_en    = cpu030;
+assign ramlong1  = long_cand & s21_en & sel_zram & ~sel_rtg & ~sel_dd & ~req_gate;
+assign ramdin_lo = cpu_dout_lo_p;
+assign long_ack  = ramlong1 & ramready_l;
 
 reg       chipreq;
 reg [2:0] cpu_ipl;

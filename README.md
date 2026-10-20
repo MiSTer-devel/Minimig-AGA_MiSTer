@@ -16,7 +16,7 @@ This version has been modified to add support for MiSTer Floppy, SCP and IPF sup
 * ChipRAM : 0.5MB - 2.0MB
 * SlowRAM : 0.0MB - 1.5MB
 * FastRAM : 0.0MB - 384MB
-* CPU core : 68000, 68010, 68EC020, 68020
+* CPU core : 68000, 68010, 68EC020, 68030 (with MMU, no FPU)
 * Kickstart : 1.2, 1.3, 2.0, 3.0, 3.1, 3.1.4, 3.2 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
 * Floppy drives : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
@@ -113,13 +113,19 @@ New video modes will appear in ScreenMode preference. For more screen modes use 
 
 **Note: RTG outputs to HDMI primarily as it uses scaler.**
 If you want to see RTG video on VGA output, then set vga_scaler=1 in MiSTer.ini.
-RTG is available only for 68020 CPU.
+RTG is available only for 68030 CPU.
 
 ### 68EC020
 
 The 68EC020 of the System page is the CPU of a stock A1200, cycle exact: AIBB and SysInfo give the speed of a real A1200 with no Fast RAM. With the AGA chipset it reads and writes chip RAM 32 bits at a time, as the A1200 does.
 
-As on the real chip its address bus is 24 bits wide, so its Fast RAM stops at 8MB: 256MB and 384MB need the 68020.
+As on the real chip its address bus is 24 bits wide, so its Fast RAM stops at 8MB: 256MB and 384MB need the 68030.
+
+### 68030
+
+The 68030 of the System page has its MMU, which stays off until a program uses it, as on the real CPU (NetBSD 9.2 runs on it). There is no FPU.
+
+68030 Fast runs at full speed. 68030 40MHz runs as fast as a real 68030 card at 40MHz, for the games that need the timing of a real machine: Stunt Car Racer, for one, shows graphic glitches with a faster CPU.
 
 ### IDE and CDROM
 By default up to 2 IDE devices are supported. For Secondary Master/Slave devices, you have to install either IDEFix97 (shareware, WB3.1/3.9) or AtapiMagic (freeware, WB 3.1.4/3.2).

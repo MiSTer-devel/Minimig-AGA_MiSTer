@@ -83,6 +83,9 @@ module a2065_ddram_arbiter #(
     wire       start_m0 = !busy && m0_req;
     wire       start_m1 = !busy && !m0_req && m1_req;
     wire       sel      = busy ? owner : (m0_req ? M0 : M1);
+    (* keep *) wire sel_a  = busy ? owner : (m0_req ? M0 : M1);
+    (* keep *) wire sel_d0 = busy ? owner : (m0_req ? M0 : M1);
+    (* keep *) wire sel_d1 = busy ? owner : (m0_req ? M0 : M1);
     wire       starting = start_m0 | start_m1;
 
     wire [BURST_W-1:0] sel_burstcount = (sel == M0) ? m0_burstcount : m1_burstcount;
@@ -92,6 +95,9 @@ module a2065_ddram_arbiter #(
     // A beat is accepted whenever the slave takes a write, or a read command is
     // issued. Read data comes back later and is counted by readdatavalid.
     wire write_beat = sel_write && !s_waitrequest;
+    wire beat_done  = owner_is_read ? s_readdatavalid : write_beat;
+    wire [BURST_W:0] m0_more = (owner == M0 && owner_is_read && m0_read && !s_waitrequest)
+                             ? {1'b0, m0_burstcount} : {(BURST_W+1){1'b0}};
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -118,27 +124,29 @@ module a2065_ddram_arbiter #(
                 end
             end
         end
-        else if (owner_is_read ? s_readdatavalid : write_beat) begin
-            beats_left <= beats_left - 1'b1;
-            if (beats_left == 1) busy <= 1'b0;
+        else begin
+            beats_left <= beats_left + m0_more - beat_done;
+            if (beats_left + m0_more - beat_done == 0) busy <= 1'b0;
         end
     end
 
-    // Read data returns out of band. Only one read burst is ever in flight
-    // (a new burst cannot start while busy), so remembering the owner of the
-    // most recent one is enough to route it.
+    // Read data returns out of band. A burst of the other master cannot start
+    // while beats are still to come back (busy), so remembering the owner of
+    // the most recent burst is enough to route them.
     reg rd_owner;
     always @(posedge clk or posedge rst) begin
         if (rst) rd_owner <= M0;
         else if (!busy && starting && !s_waitrequest && sel_read) rd_owner <= sel;
     end
 
-    assign s_address    = (sel == M0) ? m0_address    : m1_address;
-    assign s_burstcount = (sel == M0) ? m0_burstcount : m1_burstcount;
-    assign s_read       = (sel == M0) ? m0_read       : m1_read;
-    assign s_writedata  = (sel == M0) ? m0_writedata  : m1_writedata;
-    assign s_byteenable = (sel == M0) ? m0_byteenable : m1_byteenable;
-    assign s_write      = (sel == M0) ? m0_write      : m1_write;
+    assign s_address    = (sel_a == M0) ? m0_address    : m1_address;
+    assign s_burstcount = (sel_a == M0) ? m0_burstcount : m1_burstcount;
+    assign s_read       = (sel_a == M0) ? m0_read       : m1_read;
+    assign s_writedata  = {(sel_d1 == M0) ? m0_writedata[DATA_W-1:DATA_W/2] : m1_writedata[DATA_W-1:DATA_W/2],
+                           (sel_d0 == M0) ? m0_writedata[DATA_W/2-1:0]      : m1_writedata[DATA_W/2-1:0]};
+    assign s_byteenable = {(sel_d1 == M0) ? m0_byteenable[BYTE_W-1:BYTE_W/2] : m1_byteenable[BYTE_W-1:BYTE_W/2],
+                           (sel_d0 == M0) ? m0_byteenable[BYTE_W/2-1:0]      : m1_byteenable[BYTE_W/2-1:0]};
+    assign s_write      = (sel_a == M0) ? m0_write      : m1_write;
 
     // Back-pressure. A master that is merely idle must see the slave's own
     // waitrequest, not a busy signal: ddram_ctrl only issues a request while

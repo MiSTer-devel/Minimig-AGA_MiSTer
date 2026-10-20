@@ -290,7 +290,7 @@ module minimig
 	output        cdtv_cdda_volume_valid,
 
 	//user i/o
-	output  [2:0] cpucfg,
+	output  [4:0] cpucfg,
 	output  [2:0] cachecfg,
 	output  [6:0] memcfg,
 	output        bootrom,     // enable bootrom magic in gary.v
@@ -769,7 +769,7 @@ ciab CIAB1
 );
 
 wire cpu_long_en;
-assign chip32_en = cpucfg[1] & chipset_config[4] & ~ovr & ~cpuhlt;
+assign chip32_en = cpucfg[1] & (chipset_config[4] | (chipset_config[3] & ~cpucfg[0])) & ~ovr & ~cpuhlt;
 assign ram_long  = cpu_long_en & ~dbr & |bank[3:0];
 
 //instantiate cpu bridge
