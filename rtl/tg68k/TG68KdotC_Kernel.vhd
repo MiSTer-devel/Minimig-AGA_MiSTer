@@ -125,6 +125,7 @@ entity TG68KdotC_Kernel is
 		berr						: in std_logic:='0';					-- only 68000 Stackpointer dummy
 		CPU						: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only some parts - yet)
 		CPU030					: in std_logic:='0';
+		EC030					: in std_logic:='0';
 		addr_out					: out std_logic_vector(31 downto 0);
 		data_write				: out std_logic_vector(15 downto 0);
 		nWr						: out std_logic;
@@ -1836,7 +1837,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		 SVmode, preSVmode, stop, long_done, ea_only, setstate, addrvalue, execOPC, exec_write_back, exe_datatype,
 		 datatype, interrupt, c_out, trapmake, rot_cnt, brief, addr, trap_trapv, last_data_in, use_VBR_Stackframe,
 		 long_start, set_datatype, sndOPC, set_exec, exec, ea_build_now, reg_QA, reg_QB, make_berr, trap_berr,
-		 CPU030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg, preMmode, trap_ae, ae_cnt, rte_cnt, undo_v)
+		 CPU030, EC030, pmmu_ext, pmmu_ok, pmmu_ea, pmmu_bad, pmmu_cfg, preMmode, trap_ae, ae_cnt, rte_cnt, undo_v)
 	BEGIN
 		TG68_PC_brw <= '0';	
 		setstate <= "00";
@@ -3593,7 +3594,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 								END IF;
 							ELSE
 								setstate <= "01";
-								IF pmmu_ext(15 downto 13)="100" AND pmmu_ext(8)='1' THEN
+								IF pmmu_ext(15 downto 13)="100" AND pmmu_ext(8)='1' AND EC030='0' THEN
 									next_micro_state <= pmmu2;
 								END IF;
 							END IF;
@@ -4719,7 +4720,7 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 	end case;
   end process;
 
-PROCESS (opcode, pmmu_ext, pmmu_ea, pmmu_chk, pmmu_tcs, MMU_TC, MMU_SRP, MMU_CRP)
+PROCESS (opcode, pmmu_ext, pmmu_ea, pmmu_chk, pmmu_tcs, MMU_TC, MMU_SRP, MMU_CRP, EC030)
 	VARIABLE tib, tic, tid : std_logic_vector(3 downto 0);
 	BEGIN
 		tib := MMU_TC(11 downto 8);
@@ -4736,7 +4737,7 @@ PROCESS (opcode, pmmu_ext, pmmu_ea, pmmu_chk, pmmu_tcs, MMU_TC, MMU_SRP, MMU_CRP
 		END IF;
 		pmmu_tcs <= ("000" & MMU_TC(19 downto 16)) + ("000" & MMU_TC(23 downto 20)) + ("000" & MMU_TC(15 downto 12)) + ("000" & tib) + ("000" & tic) + ("000" & tid);
 		pmmu_bad <= '0';
-		IF pmmu_chk='1' THEN
+		IF pmmu_chk='1' AND EC030='0' THEN
 			CASE pmmu_ext(14 downto 10) IS
 				WHEN "10000" =>
 					IF MMU_TC(31)='1' AND (MMU_TC(23)='0' OR pmmu_tcs/="0100000") THEN
@@ -4808,6 +4809,9 @@ PROCESS (clk)
 				IF micro_state=pmmu1 AND pmmu_ok='1' THEN
 					pmmu_cap <= '1';
 				END IF;
+				IF micro_state=pmmu1 AND pmmu_ok='1' AND EC030='1' AND pmmu_ext(15 downto 13)="100" THEN
+					MMU_SR <= (OTHERS => '0');
+				END IF;
 				IF pmmu_cap='1' THEN
 					pmmu_dfc <= reg_QB(2 downto 0);
 				END IF;
@@ -4826,7 +4830,7 @@ PROCESS (clk)
 					CASE pmmu_ext(14 downto 10) IS
 						WHEN "00010" => MMU_TT0 <= data_read;
 						WHEN "00011" => MMU_TT1 <= data_read;
-						WHEN "10000" => MMU_TC <= data_read;
+						WHEN "10000" => MMU_TC <= (data_read(31) AND NOT EC030) & data_read(30 downto 0);
 						WHEN "10010" =>
 							pmmu_hold <= data_read;
 							IF movem_run='0' THEN
@@ -4880,8 +4884,8 @@ PROCESS (clk)
                  pmmu_ext(14 downto 10)="10010" OR pmmu_ext(14 downto 10)="10011") ELSE '0';
   mmu_cfg_wr <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' ELSE '0';
   mmu_cmd_go <= '1' WHEN pmmu_flush='1' OR
-                (exec(get_ea_now)='1' AND pmmu_ins='1' AND (pmmu_ext(15 downto 13)="100" OR
-                 (pmmu_ext(15 downto 13)="001" AND (pmmu_ext(12 downto 10)="000" OR pmmu_ext(12 downto 10)="110")))) OR
+                (exec(get_ea_now)='1' AND pmmu_ins='1' AND ((pmmu_ext(15 downto 13)="100" AND EC030='0') OR
+                 (pmmu_ext(15 downto 13)="001" AND ((pmmu_ext(12 downto 10)="000" AND EC030='0') OR pmmu_ext(12 downto 10)="110")))) OR
                 (pmmu_cap='1' AND pmmu_ins='1' AND pmmu_ext(15 downto 13)="001" AND
                  (pmmu_ext(12 downto 10)="001" OR pmmu_ext(12 downto 10)="100")) ELSE '0';
   mmu_cmd_op <= "001" WHEN pmmu_flush='1' ELSE
