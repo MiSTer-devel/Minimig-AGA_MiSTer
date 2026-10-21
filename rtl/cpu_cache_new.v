@@ -408,7 +408,9 @@ always @ (posedge clk) begin
         cpu_dat_hi <= rd_dat_hi;
         tw_op      <= rd_tw_op;
         // on hit update LRU flag in tag memory
-        if (rd_i0) begin
+        if (!cpu_cs) begin
+          cpu_sm_state <= CPU_SM_IDLE;
+        end else if (rd_i0) begin
           // data is already in instruction cache way 0
           cpu_ack <= 1'b1;
           cpu_sm_itag_we <= 1'b1;
