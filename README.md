@@ -186,7 +186,7 @@ The Minimig can also use HDF harddisk images, which can be created with [WinUAE]
 ### Recommended minimig config
 
 * for ECS games / demos : CPU = 68000, Turbo=NONE, Chipset=ECS, ChipRAM=0.5MB, slowRAM=0.5MB, Kickstart 1.3
-* for AGA games / demos : CPU = 68020, Turbo=NONE, Chipset=AGA, ChipRAM=2MB, SlowRAM=0MB, FastRAM=384MB, Kickstart 3.1
+* for AGA games / demos : CPU = 68EC020, Turbo=NONE, Chipset=AGA, ChipRAM=2MB, SlowRAM=0MB, FastRAM=384MB, Kickstart 3.1
 
 ### Controlling minimig
 
