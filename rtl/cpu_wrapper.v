@@ -103,6 +103,7 @@ module cpu_wrapper
 assign dcache_sw_en = 1'b1;
 
 wire        ec020      = (cpucfg[1:0] == 2'b11) & cpucfg[2];
+wire        ec030      = (cpucfg[1:0] == 2'b10) & cpucfg[2];
 wire [31:0] cpu_addr_m = ec020 ? {8'd0, cpu_addr_p[23:0]} : cpu_addr_p;
 
 wire   ramsel_i     = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
@@ -272,6 +273,7 @@ cpu_inst_p
   
   .cpu({cpucfg[1], cpucfg[1] | cpucfg[0]}),
   .cpu030(cpu030),
+  .ec030(ec030),
   .opc_start(opc_start),
   .opc_out(opc_out),
   .opc_cond(opc_cond),
