@@ -57,6 +57,8 @@ module userio
 	output reg  [4:0] floppy_config,
 	output reg  [11:0] floppy_ext_drive,
 	output reg        user_port_mode,			// 1=MiSTer Floppy, 0=MT32Pi
+	output reg  [1:0] snac_port,
+	output reg  [1:0] snac_af,
 	output reg  [2:0] scanline,
 	output reg  [1:0] ar,
 	output reg  [1:0] blver,
@@ -470,7 +472,7 @@ always @(posedge clk) begin
 				if (floppy_cfg_sel)   floppy_config <= IO_DIN[4:0];
 				if (floppyex01_cfg_sel) { floppy_ext_drive[5:3], floppy_ext_drive[2:0]}  = IO_DIN[5:0];
 				if (floppyex23_cfg_sel) { floppy_ext_drive[11:9], floppy_ext_drive[8:6]}  = IO_DIN[5:0];
-				if (userport_cfg_sel) user_port_mode = IO_DIN[0];
+				if (userport_cfg_sel) {snac_af, snac_port, user_port_mode} = IO_DIN[4:0];
 				if (harddisk_cfg_sel) t_ide_config <= IO_DIN[5:0];
 				if (joystick_cfg_sel) {joy_swap, cd32pad, joy_ana_en} <= {IO_DIN[3], ~IO_DIN[1] & IO_DIN[2], IO_DIN[1]};
 				if (aud_sel)          aud_mix <= IO_DIN[1:0];

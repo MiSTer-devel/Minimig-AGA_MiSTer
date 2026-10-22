@@ -802,7 +802,17 @@ wire  [8:0] drive_snd;
 wire [6:0]  IndirectUserOutmt32;
 wire [6:0]  IndirectUserOutFlop;
 wire        user_port_mode;
-assign USER_OUT = user_port_mode ? IndirectUserOutFlop : IndirectUserOutmt32;
+wire  [1:0] snac_port;
+wire  [1:0] snac_af;
+assign USER_OUT = |snac_port ? 7'h7F : user_port_mode ? IndirectUserOutFlop : IndirectUserOutmt32;
+
+reg  [21:0] snac_af_cnt;
+always @(posedge clk_sys) snac_af_cnt <= snac_af_cnt + 1'd1;
+
+wire        snac_af_clk = snac_af[1] ? snac_af_cnt[20] : snac_af_cnt[21];
+wire [15:0] snac_joy = {10'd0, ~USER_IN[6], ~USER_IN[2] & (~|snac_af | snac_af_clk), ~USER_IN[1], ~USER_IN[0], ~USER_IN[5], ~USER_IN[3]};
+wire [15:0] joy0_in = (snac_port == 2'd1) ? snac_joy : JOY0;
+wire [15:0] joy1_in = (snac_port == 2'd2) ? snac_joy : JOY1;
 
 
 minimig minimig
@@ -858,8 +868,8 @@ minimig minimig
 	.ri           (1                ), // RS232 Ring Indicator
 
 	//I/O
-	._joy1        (~JOY0            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
-	._joy2        (~JOY1            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
+	._joy1        (~joy0_in         ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
+	._joy2        (~joy1_in         ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
 	._joy3        (~JOY2            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right]
 	._joy4        (~JOY3            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right]
 	.joya1        (JOYA0            ),
@@ -975,9 +985,11 @@ minimig minimig
 	.a2065_mem_write(a2065_mem_write),
 	.a2065_mem_waitrequest(a2065_mem_waitrequest),
 	
-	.USER_IN      			(USER_IN),
+	.USER_IN      			(|snac_port ? 7'h7F : USER_IN),
 	.USER_OUT     			(IndirectUserOutFlop),
 	.user_port_mode 		(user_port_mode),
+	.snac_port    			(snac_port),
+	.snac_af      			(snac_af),
 	.mister_floppy_status	(mister_floppy_status),
 	.drive_snd    			(drive_snd)
 );
@@ -1273,7 +1285,7 @@ wire mt32_mute = mt32_available &  mt32_disable;
 mt32pi mt32pi
 (
 	.*,
-	.USER_IN(USER_IN),
+	.USER_IN(|snac_port ? 7'h7F : USER_IN),
 	.USER_OUT(IndirectUserOutmt32),
 
 	.CE_PIXEL(ce_pix_mt32),
@@ -1286,13 +1298,13 @@ wire  [4:0] mt32_cfg = (mt32_mode == 'hA2) ? {mt32_sf[2:0],  2'b10} :
 
 reg mt32_info_req;
 reg [3:0] mt32_info_disp;
-reg last_userport_mode;
+reg [2:0] last_userport_mode;
 always @(posedge clk_sys) begin
 	reg old_mode;
 	
 	userport_change_reset <= 0;
-	last_userport_mode <= user_port_mode;
-	if (last_userport_mode != user_port_mode) userport_change_reset <= 1;
+	last_userport_mode <= {snac_port, user_port_mode};
+	if (last_userport_mode != {snac_port, user_port_mode}) userport_change_reset <= 1;
 
 	old_mode <= mt32_newmode;
 	mt32_info_req <= (old_mode ^ mt32_newmode) && (mt32_info == 1);
