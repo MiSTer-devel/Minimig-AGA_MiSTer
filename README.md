@@ -163,7 +163,7 @@ Note1: enable either CD32 or CDTV, not both.
 Note2: remove CD0(CD1-CD9) supporting files from devs:DOSDrivers as CD is fully handled by ExtROM.
 You have to use appropriate ROM/ExtROM from CD32/CDTV to let AmigaOS recognize CD drive. Tested in AmigaOS v3.2.
 CDTV mode is preferred because appropriate updated ROM and ExtROM v3.2 for CDTV are included in AmigaOS 3.2 installation CD.
-Besides original CDTV HW config, you can use up to Amiga 1200 config (68020 + AGA + 2MB ChipRAM + 384MB FastRAM and A1200 KS ROM).
+Besides original CDTV HW config, you can use up to Amiga 1200 config (68030 + AGA + 2MB ChipRAM + 384MB FastRAM and A1200 KS ROM).
 CD32 official KS 3.1 set of ROMs also work with AmigaOS 3.2 (remember to use IDEFix to access HDD >4GB).
 
 ### Floppy drive sounds
@@ -190,7 +190,7 @@ The Minimig can also use HDF harddisk images, which can be created with [WinUAE]
 ### Recommended minimig config
 
 * for ECS games / demos : CPU = 68000, Turbo=NONE, Chipset=ECS, ChipRAM=0.5MB, slowRAM=0.5MB, Kickstart 1.3
-* for AGA games / demos : CPU = 68EC020, Turbo=NONE, Chipset=AGA, ChipRAM=2MB, SlowRAM=0MB, FastRAM=384MB, Kickstart 3.1
+* for AGA games / demos : CPU = 68EC020, Turbo=NONE, Chipset=AGA, ChipRAM=2MB, SlowRAM=0MB, FastRAM=8MB, Kickstart 3.1
 
 ### Controlling minimig
 
