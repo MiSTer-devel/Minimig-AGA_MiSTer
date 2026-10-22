@@ -89,26 +89,6 @@ REGISTER_BASE EQU $b80100
 
 FB_BASE EQU $27000000 ; MiSTer physical memory address
 
-BOARD_MANUFACTURER EQU 2011
-BOARD_REGISTERS    EQU $10
-BOARD_MEMORY       EQU $11
-
-ERT_ZORROII        EQU $c0
-ERT_ZORROIII       EQU $80
-ERFF_ZORRO_III     EQU $10
-
-er_Type            EQU 0
-er_Product         EQU 1
-er_Flags           EQU 2
-er_Manufacturer    EQU 4
-cd_Rom             EQU 16
-cd_BoardAddr       EQU 32
-cd_BoardSize       EQU 36
-
-_LVOAddConfigDev   EQU -30
-_LVOAllocConfigDev EQU -48
-_LVOFindConfigDev  EQU -72
-
 ; B80100:B80101 :  8:0 : ADDR[24:16]
 ; B80102:B80103 : 15:0 : ADDR[15:0]
 ; B80104:B80105 : 5:0  : FORMAT[5:0]
@@ -186,7 +166,7 @@ MinimigCard:
         dc.b    'MiSTer.card',0,0
         dc.b    '$VER: '
 IDString:
-        dc.b    'MiSTer.card 0.2 (21.Oct.2026)',0
+        dc.b    'MiSTer.card 0.1 (19.Oct.2020)',0
         dc.b    0
 expansionLibName:
         dc.b    'expansion.library',0
@@ -353,44 +333,8 @@ FindCard:
         move.l  #REGISTER_BASE,PSSO_BoardInfo_RegisterBase(a0)
         move.l  #MEMORY_BASE  ,PSSO_BoardInfo_MemoryBase(a0)
         
-        movem.l a2/a6,-(sp)
-        movea.l CARD_EXPANSIONBASE(a6),a6
-        lea     Boards(pc),a2
-.board:
-        moveq   #0,d1
-        move.b  2(a2),d1
-        beq.b   .done
-        suba.l  a0,a0
-        move.l  #BOARD_MANUFACTURER,d0
-        jsr     _LVOFindConfigDev(a6)
-        tst.l   d0
-        bne.b   .next
-        jsr     _LVOAllocConfigDev(a6)
-        tst.l   d0
-        beq.b   .next
-        movea.l d0,a0
-        move.b  (a2),cd_Rom+er_Type(a0)
-        move.b  1(a2),cd_Rom+er_Flags(a0)
-        move.b  2(a2),cd_Rom+er_Product(a0)
-        move.w  #BOARD_MANUFACTURER,cd_Rom+er_Manufacturer(a0)
-        move.l  4(a2),cd_BoardAddr(a0)
-        move.l  8(a2),cd_BoardSize(a0)
-        jsr     _LVOAddConfigDev(a6)
-.next:
-        lea     12(a2),a2
-        bra.b   .board
-.done:
-        movem.l (sp)+,a2/a6
-
         moveq   #-1,d0
         rts
-
-Boards:
-        dc.b    ERT_ZORROII|1,0,BOARD_REGISTERS,0
-        dc.l    REGISTER_BASE&$ffff0000,$10000
-        dc.b    ERT_ZORROIII,ERFF_ZORRO_III,BOARD_MEMORY,0
-        dc.l    MEMORY_BASE,MEMORY_SIZE
-        dc.b    0,0,0,0
 
 ;------------------------------------------------------------------------------
 InitCard:
