@@ -518,6 +518,7 @@ assign ide_fast = ~ide_config[5] & cpucfg[1];
 //--------------------------------------------------------------------------------------
 
 wire 			floppy_speed;
+wire        blit_nasty;
 
 //instantiate agnus
 agnus AGNUS1
@@ -559,6 +560,7 @@ agnus AGNUS1
 	.harddis(harddis),
 	.varbeamen(varbeamen),
 	.int3(int3),
+	.blit_nasty(blit_nasty),
 	.audio_dmal(audio_dmal),
 	.audio_dmas(audio_dmas),
 	.disk_dmal(disk_dmal),
@@ -788,6 +790,7 @@ minimig_m68k_bridge CPU1
 	.xbs(xbs),
 	.nrdy((gayle_nrdy & rd_cyc) | a2065_nrdy),
 	.bls(bls),
+	.blit_nasty(blit_nasty),
 	.memory_config(memory_config[3:0]),
 	._as(_cpu_as),
 	._lds(_cpu_lds),

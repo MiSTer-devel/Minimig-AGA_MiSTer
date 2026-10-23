@@ -41,6 +41,7 @@ module minimig_m68k_bridge
 	input	        xbs,           // cross bridge access (active dbr holds off CPU access)
 	input         nrdy,          // target device is not ready
 	output        bls,           // blitter slowdown, tells the blitter that CPU wants the bus
+	input         blit_nasty,
 	input	        cck,           // colour clock enable, active when dma can access the memory bus
 	input   [3:0] memory_config, // system memory config
 	input	        _as,           // m68k adress strobe
@@ -146,12 +147,14 @@ end
 
 wire _as_and_cs = !halt ? _as : !host_cs;
 
+wire blt_wr = !lr_w && address[23:16] == 8'hDF && address[8:6] == 3'b001 && address[5:1] <= 5'h1A;
+
 // data transfer acknowledge in normal mode
 reg _ta_n; // transfer acknowledge
 always @(posedge clk or posedge _as_and_cs) begin
 	if (_as_and_cs) _ta_n <= 1;
 	else if (clk7n_en) begin
-		if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0; 
+		if (!l_as && cck && ((!vpa && !(dbr && dbs) && !(blit_nasty && blt_wr)) || (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;
 	end
 end
 
