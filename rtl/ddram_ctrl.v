@@ -159,12 +159,18 @@ wire        w_lo   = stg_v && (cpuAddr[28:2] == stg_a) && cpuAddr[1];
 wire        w_hi   = ~stg_v && cpuLong && ~cpuAddr[1] && ~ramshared;
 wire        w_l1n  = ~stg_v && cpuLong1 && ~cpuAddr[1] && ~ramshared;
 wire        stg_fl = stg_v && ramsel && ~write_ena && ~((cpustate == 3) && (cpuAddr[28:2] == stg_a) && cpuAddr[1]);
+wire [28:2] q_pa   = stg_v ? stg_a : cpuAddr[28:2];
+wire [15:0] q_pdh  = stg_v ? stg_d : cpuAddr[1] ? 16'd0 : w_dat;
+wire [15:0] q_pdl  = (stg_v | cpuAddr[1]) ? w_dat : cpuWR_lo;
+wire  [1:0] q_pbh  = stg_v ? stg_b : cpuAddr[1] ? 2'b00 : w_be;
+wire  [1:0] q_pbl  = stg_v ? (stg_fl ? 2'b00 : w_be) : cpuAddr[1] ? w_be : w_l1n ? 2'b11 : 2'b00;
 
 wire [28:2] wh_a  = wq_a[wq_h];
 wire [15:0] wh_dh = wq_dh[wq_h];
 wire [15:0] wh_dl = wq_dl[wq_h];
 wire  [1:0] wh_bh = wq_bh[wq_h];
 wire  [1:0] wh_bl = wq_bl[wq_h];
+wire [15:0] wh_dlm = |wh_bl ? wh_dl : 16'd0;
 
 reg wq_line;
 integer qi;
@@ -177,12 +183,8 @@ end
 integer qj;
 always @ (posedge sysclk) begin
 	reg        push;
-	reg [28:2] pa;
-	reg [15:0] pdh, pdl;
-	reg  [1:0] pbh, pbl;
 
 	push = 0;
-	pa = 0; pdh = 0; pdl = 0; pbh = 0; pbl = 0;
 	if(~reset_n) begin
 		wq_n      <= 0;
 		wq_h      <= 0;
@@ -194,21 +196,21 @@ always @ (posedge sysclk) begin
 	end else begin
 		if(stg_fl) begin
 			if(w_room) begin
-				push = 1; pa = stg_a; pdh = stg_d; pbh = stg_b;
+				push = 1;
 				stg_v <= 0;
 			end
 		end
 		else if(w_new) begin
 			if(w_lo) begin
 				if(w_room) begin
-					push = 1; pa = stg_a; pdh = stg_d; pbh = stg_b; pdl = w_dat; pbl = w_be;
+					push = 1;
 					stg_v     <= 0;
 					write_ena <= 1;
 				end
 			end
 			else if(w_l1n) begin
 				if(w_room) begin
-					push = 1; pa = cpuAddr[28:2]; pdh = w_dat; pbh = w_be; pdl = cpuWR_lo; pbl = 2'b11;
+					push = 1;
 					write_ena <= 1;
 					w_l1      <= 1;
 				end
@@ -221,21 +223,19 @@ always @ (posedge sysclk) begin
 				write_ena <= 1;
 			end
 			else if(~stg_v & w_room) begin
-				push = 1; pa = cpuAddr[28:2];
-				if(cpuAddr[1]) begin pdl = w_dat; pbl = w_be; end
-				else           begin pdh = w_dat; pbh = w_be; end
+				push = 1;
 				write_ena <= 1;
 			end
 		end
 
-		if(push) begin
-			wq_a[wq_t]  <= pa;
-			wq_dh[wq_t] <= pdh;
-			wq_dl[wq_t] <= pdl;
-			wq_bh[wq_t] <= pbh;
-			wq_bl[wq_t] <= pbl;
-			wq_t        <= (wq_t == WQN - 1) ? 2'd0 : wq_t + 1'd1;
+		if(w_room) begin
+			wq_a[wq_t]  <= q_pa;
+			wq_dh[wq_t] <= q_pdh;
+			wq_dl[wq_t] <= q_pdl;
+			wq_bh[wq_t] <= q_pbh;
+			wq_bl[wq_t] <= q_pbl;
 		end
+		if(push) wq_t <= (wq_t == WQN - 1) ? 2'd0 : wq_t + 1'd1;
 		// The SDRAM controller has picked up the request
 		if(wq_pop) wq_h <= (wq_h == WQN - 1) ? 2'd0 : wq_h + 1'd1;
 		wq_n  <= wq_n + {2'd0, push} - {2'd0, wq_pop};
@@ -462,8 +462,8 @@ assign     kept_ok  = sb_v && (sb_a == cpuAddr[28:3]) && ~ramshared && ~wq_line 
 reg        strm_on;
 reg [28:3] nx_a;
 reg [28:3] nx_a1;
-wire [28:3] nx_a_nx;
-wire [28:3] nx_a1_nx;
+(* keep *) wire [28:3] nx_a_nx;
+(* keep *) wire [28:3] nx_a1_nx;
 assign     nx_a_nx  = sb_up ? nx_a + 1'd1 : nx_a - 1'd1;
 assign     nx_a1_nx = sb_up ? nx_a1 + 1'd1 : nx_a1 - 1'd1;
 wire       m2_req  = q2_v;
@@ -578,7 +578,7 @@ always @ (posedge sysclk) begin
 					if(wq_sel) begin
 						if(~ram_busy) begin
 							ram_be   <= {4'b0000, wh_bl, wh_bh} << {wh_a[2], 2'b00};
-							ram_din  <= {wh_dl, wh_dh, wh_dl, wh_dh};
+							ram_din  <= {wh_dlm, wh_dh, wh_dlm, wh_dh};
 							ram_bcnt <= 8'd1;
 							ram_we   <= 1;
 							e_drop    = in_buf(wh_a[28:3]);
@@ -614,13 +614,11 @@ always @ (posedge sysclk) begin
 									dn_first <= 1;
 									e_rs_w    = 1;
 									sb_up    <= 0;
-									nx_a     <= cpu_dn2;
 								end
 								else begin
 									ram_bcnt <= ramshared ? 8'd1 : 8'd2;
 									e_rs_w    = ~ramshared;
 									sb_up    <= 1;
-									nx_a     <= cpu_up2;
 								end
 								sb_last  <= cpuAddr[28:3];
 								ram_rd   <= 1;
@@ -696,11 +694,9 @@ always @ (posedge sysclk) begin
 		end
 		sb_v <= n0_v; sb_wait <= n0_w; sb_kill <= n0_k; sb_a <= n0_a; sb_d <= n0_d;
 		sc_v <= n1_v; sc_wait <= n1_w; sc_kill <= n1_k; sc_a <= n1_a; sc_d <= n1_d;
-		if(e_issue) begin
-			nx_a  <= nx_a1;
-			nx_a1 <= nx_a1_nx;
-		end
-		else nx_a1 <= nx_a_nx;
+		if(e_issue) nx_a <= nx_a1;
+		else if(e_reset) nx_a <= (~ramshared && cpu_below_sb) ? cpu_dn2 : cpu_up2;
+		nx_a1 <= e_issue ? nx_a1_nx : nx_a_nx;
 	end
 end
 
