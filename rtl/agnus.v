@@ -90,6 +90,7 @@ module agnus
 	output        harddis,
 	output        varbeamen,
 	output        int3,            // blitter finished interrupt (to Paula)
+	output        blit_nasty,
 	input   [3:0] audio_dmal,      // audio dma data transfer request (from Paula)
 	input   [3:0] audio_dmas,      // audio dma location pointer restart (from Paula)
 	input         disk_dmal,       // disk dma data transfer request (from Paula)
@@ -429,6 +430,7 @@ always @(posedge clk) if (clk7_en) begin
 end
 
 wire        blit_busy;       //blitter busy status
+wire        blit_active;
 wire        blit_zero;       //blitter zero status
 wire        req_blt;         //blitter dma request
 wire [20:1] address_blt;     //blitter dma engine chip address out
@@ -450,6 +452,7 @@ agnus_blitter bl1
 	.we(we_blt),
 	.zero(blit_zero),
 	.busy(blit_busy),
+	.active(blit_active),
 	.int3(int3),
 	.data_in(data_in),
 	.data_out(data_blt),
@@ -457,6 +460,8 @@ agnus_blitter bl1
 	.address_out(address_blt),
 	.reg_address_out(reg_address_blt)
 );
+
+assign blit_nasty = bltpri & blten & blit_active;
 
 //--------------------------------------------------------------------------------------
 
