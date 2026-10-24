@@ -123,14 +123,20 @@ reg  [2:0] load_d;
 wire [3:0] load_s = {load_d, clk7_en & load};
 always @(posedge clk) load_d <= load_s[2:0];
 
+reg  [2:0] shift_d;
+wire [3:0] shift_s = {shift_d, shift};
+always @(posedge clk) shift_d <= shift_s[2:0];
+reg  [1:0] hstart_lo_l = 0;
+
 // sprite shift register
 always @(posedge clk)
   if (load_s[hstart_lo]) // AMR - load_del) // load new data into shift register
   begin
     shifta[63:0] <= datla[63:0];
     shiftb[63:0] <= datlb[63:0];
+    hstart_lo_l <= hstart_lo;
   end
-  else if (shift)
+  else if (shift_s[hstart_lo_l])
   begin
     shifta[63:0] <= {shifta[62:0],1'b0};
     shiftb[63:0] <= {shiftb[62:0],1'b0};

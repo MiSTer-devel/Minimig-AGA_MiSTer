@@ -186,8 +186,8 @@ always @ (posedge sysclk) begin
 					writeAddr <= cpuAddr;
 					writeDat  <= cpuWR;
 					write_dqm <= {cpuU, cpuL};
-					write_req <= 1;
 					if(cache_wr_ack) begin
+						write_req   <= 1;
 						write_ena   <= 1;
 						write_state <= 1;
 					end
