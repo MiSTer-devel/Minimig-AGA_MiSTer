@@ -462,6 +462,12 @@ architecture logic of TG68KdotC_Kernel is
 	signal in_exc			: std_logic;
 	signal frameB			: std_logic;
 	signal data_in_i	: std_logic_vector(15 downto 0);
+	signal din_sub		: std_logic;
+	signal din_alt		: std_logic_vector(15 downto 0);
+	signal dwt_dr		: std_logic;
+	signal dwt_lo		: std_logic;
+	signal mdr_dr		: std_logic;
+	signal opc_dr		: std_logic;
 	signal f_ssw			: std_logic_vector(15 downto 0);
 	signal f_addr			: std_logic_vector(31 downto 0);
 	signal f_dob			: std_logic_vector(31 downto 0);
@@ -578,7 +584,17 @@ ALU: TG68K_ALU
 	mmu_abort <= '1' WHEN clkena_in='1' AND exc_seq='0' AND ((mmu_fault='1' AND state(1)='1' AND pf_bad='0' AND skipFetch_i='0') OR
 	                          (pf_bad='1' AND pf_wait='0')) ELSE '0';
 	mmu_f_ack <= mmu_abort OR ((pf_defer OR sk_drop) AND clkena_in);
-	data_in_i <= X"4E71" WHEN pf_defer='1' OR pf_bad='1' OR sk_drop='1' ELSE rp_word WHEN rp_skip='1' ELSE data_in;
+	din_sub <= pf_defer OR pf_bad OR sk_drop OR rp_skip;
+	din_alt <= X"4E71" WHEN pf_defer='1' OR pf_bad='1' OR sk_drop='1' ELSE rp_word;
+	data_in_i <= din_alt WHEN din_sub='1' ELSE data_in;
+	dwt_dr <= '1' WHEN writePC='0' AND exec(writePC_add)='0' AND micro_state/=trap00 AND micro_state/=trap0 AND
+	                   exec(hold_dwr)='0' AND exec(exg)='0' AND NOT (exec(get_ea_now)='1' AND ea_only='1') AND
+	                   execOPC='0' AND exec_DIRECT='1' AND state="10" AND micro_state/=trapB AND
+	                   NOT (micro_state=trap1 AND (trap_ae='1' OR frameB='1')) ELSE '0';
+	dwt_lo <= '0' WHEN frameB='1' AND micro_state=trap2 ELSE '1';
+	mdr_dr <= '1' WHEN NOT (cand='1' AND l1='0') AND NOT ((memmaskmux(3)='0' AND cand='0') OR exec(mem_addsub)='1') AND
+	                   set(restore_ADDR)='0' AND exec(direct_delta)='1' ELSE '0';
+	opc_dr <= '1' WHEN clkena_lw='1' AND mmu_abort='0' AND setopcode='1' AND berr='0' AND state="00" ELSE '0';
 	exc_seq <= '1' WHEN in_exc='1' OR micro_state=trap00 OR micro_state=trap0 OR micro_state=trap1 OR micro_state=trap2 OR
 	                    micro_state=trap3 OR micro_state=trap4 OR micro_state=trap5 OR micro_state=trap6 OR micro_state=trapB OR
 	                    micro_state=berr0 OR micro_state=berr1 OR micro_state=berr2 OR
@@ -642,12 +658,18 @@ ALU: TG68K_ALU
 		END IF;
 	END PROCESS;
 			
-PROCESS (clk, long_done, last_data_in, data_in, addr, long_start, memmaskmux, memread, memmask, data_read, l1, data_in_hi, data_in_i)
+PROCESS (clk, long_done, last_data_in, data_in, addr, long_start, memmaskmux, memread, memmask, data_read, l1, data_in_hi, data_in_i, din_sub, din_alt)
 	BEGIN
 		IF memmaskmux(4)='0' THEN
-			data_read <= last_data_in(15 downto 0)&data_in_i;
+			data_read <= last_data_in(15 downto 0)&data_in;
+			IF din_sub='1' THEN
+				data_read(15 downto 0) <= din_alt;
+			END IF;
 		ELSE
-			data_read <= last_data_in(23 downto 0)&data_in_i(15 downto 8);
+			data_read <= last_data_in(23 downto 0)&data_in(15 downto 8);
+			IF din_sub='1' THEN
+				data_read(7 downto 0) <= din_alt(15 downto 8);
+			END IF;
 		END IF;
 		IF memread(0)='1' OR (memread(1 downto 0)="10" AND memmaskmux(4)='1')THEN
 			data_read(31 downto 16) <= (OTHERS=>data_read(15));
@@ -1054,10 +1076,7 @@ PROCESS (clk)
 				ELSIF execOPC='1' THEN
 					data_write_tmp <= ALUout;
 				ELSIF (exec_DIRECT='1' AND state="10") THEN
-					data_write_tmp <= data_read;
-					IF  exec(movepl)='1' THEN
-						data_write_tmp(31 downto 8) <= data_write_tmp(23 downto 0);
-					END IF;
+					NULL;
 				ELSIF exec(movepl)='1' THEN
 					data_write_tmp(15 downto 0) <= reg_QB(31 downto 16);
 				ELSIF direct_data='1' THEN
@@ -1088,6 +1107,18 @@ PROCESS (clk)
 						data_write_tmp <= f_pc;
 					ELSIF micro_state=trap2 THEN
 						data_write_tmp(15 downto 0) <= sr_frame & ccr_frame;
+					END IF;
+				END IF;
+				IF dwt_dr='1' THEN
+					data_write_tmp(31 downto 16) <= data_read(31 downto 16);
+					IF dwt_lo='1' THEN
+						data_write_tmp(15 downto 0) <= data_read(15 downto 0);
+					END IF;
+					IF exec(movepl)='1' THEN
+						data_write_tmp(31 downto 16) <= data_write_tmp(23 downto 8);
+						IF dwt_lo='1' THEN
+							data_write_tmp(15 downto 8) <= data_write_tmp(7 downto 0);
+						END IF;
 					END IF;
 				END IF;
 			END IF;	
@@ -1234,7 +1265,7 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 				ELSIF set(restore_ADDR)='1' THEN
 					memaddr_delta_rega <= tmp_TG68_PC;
 				ELSIF exec(direct_delta)='1' THEN
-					memaddr_delta_rega <= data_read;
+					NULL;
 				ELSIF exec(ea_to_pc)='1' AND setstate="00" THEN
 					IF cand='1' THEN
 						memaddr_delta_rega <= addr_p2;
@@ -1256,6 +1287,9 @@ PROCESS (clk, setdisp, memaddr_a, briefdata, memaddr_delta, setdispbyte, datatyp
 --					IF interrupt='0' AND Suppress_Base='0' AND setstate(1)='1' THEN
 						use_base <= '1';
 					END IF;	
+				END IF;
+				IF mdr_dr='1' THEN
+					memaddr_delta_rega <= data_read;
 				END IF;
 					
 		-- only used for movem address update
@@ -1589,7 +1623,6 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 					
 					IF setopcode='1' AND berr='0' THEN
 						IF state="00" THEN
-							opcode <= data_read(15 downto 0);
 							exe_pc <= tg68_pc;--TH
 						ELSE
 							opcode <= last_opc_read(15 downto 0);
@@ -1634,6 +1667,9 @@ PROCESS (clk, IPL, setstate, addrvalue, state, exec_write_back, set_direct_data,
 					trap_trace <= '0';
 					moves_fc <= '0';
 					moves_skip <= '0';
+				END IF;
+				IF opc_dr='1' THEN
+					opcode <= data_read(15 downto 0);
 				END IF;
 			END IF;	
 		END IF;	
