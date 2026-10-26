@@ -62,6 +62,7 @@ module fastchip
 	output        ide_led,
 
 	output        akiko_irq,
+	input   [1:0] akiko_cd_speed,
 
 	output        akiko_dma_req,
 	output        akiko_dma_we,
@@ -123,6 +124,7 @@ akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 (
 	.clk(clk_sys),
 	.reset(reset),
+	.cd_speed(akiko_cd_speed),
 	.cs(sel_akiko && !addr[7:6]),
 	.rd(rnw),
 	.wr(~rnw & (lds|uds)),

@@ -22,6 +22,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 (
 	input             clk,
 	input             reset,
+	input       [1:0] cd_speed,
 	input             cs,
 	input             rd,
 	input             wr,
@@ -200,6 +201,10 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [3:0] pbx_seccnt;
 	reg [11:0] pbx_byte_idx;
 	reg  [4:0] pbx_cnt;
+	reg        cd_speed2;
+	reg [18:0] cd_tick_cnt;
+	reg        cd_tick;
+	reg        cmd_pending_d;
 
 	reg        pbx_ship_invalid;
 
@@ -288,7 +293,7 @@ if (NATIVE_CD32) begin : g_cd
 	                   && cdrom_flags[CDFLAG_ENABLE_BIT]
 	                   && cdrom_flags[CDFLAG_PBX_BIT]
 	                   && (cdrom_pbx != 16'h0)
-	                   && sector_ready;
+	                   && sector_ready && cd_tick;
 	wire others_busy     = rx_busy | pbx_busy | tx_busy;
 	wire others_starting = rx_can_start | tx_can_start | pbx_can_start;
 
@@ -347,7 +352,7 @@ if (NATIVE_CD32) begin : g_cd
 	                 && cdrom_flags[CDFLAG_ENABLE_BIT]
 	                 && cdrom_flags[CDFLAG_PBX_BIT]
 	                 && (cdrom_pbx != 16'h0)
-	                 && sector_ready && !subcode_busy;
+	                 && sector_ready && cd_tick && !subcode_busy;
 
 	always @(posedge clk) begin
 		if (reset) begin
@@ -395,9 +400,23 @@ if (NATIVE_CD32) begin : g_cd
 			pbx_byte_idx         <= 12'h0;
 			pbx_cnt              <= 5'h0;
 			pbx_ship_invalid     <= 1'b0;
+			cd_speed2            <= 1'b0;
+			cd_tick_cnt          <= 19'd0;
+			cd_tick              <= 1'b1;
+			cmd_pending_d        <= 1'b0;
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+
+			cmd_pending_d <= cmd_pending;
+			if (cmd_pending && !cmd_pending_d && cmd_op == 4'h4 && cdrom_command_buffer[7][7])
+				cd_speed2 <= cdrom_command_buffer[8][6];
+			if (cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
+				cd_tick_cnt <= 19'd0;
+				cd_tick     <= 1'b1;
+			end else begin
+				cd_tick_cnt <= cd_tick_cnt + 19'd1;
+			end
 
 			pio_wr_d <= pio_wr_sel;
 			pio_rd_d <= pio_rd_sel;
@@ -586,7 +605,8 @@ if (NATIVE_CD32) begin : g_cd
 					if (cdrom_flags[CDFLAG_ENABLE_BIT]
 					    && cdrom_flags[CDFLAG_PBX_BIT]
 					    && (cdrom_pbx != 16'h0)
-					    && sector_ready && !subcode_busy) begin
+					    && sector_ready && cd_tick && !subcode_busy) begin
+						cd_tick      <= 1'b0;
 						pbx_seccnt   <= highest_bit(cdrom_pbx);
 						pbx_byte_idx <= 12'd4;
 						pbx_cnt      <= cdrom_sector_counter[4:0];

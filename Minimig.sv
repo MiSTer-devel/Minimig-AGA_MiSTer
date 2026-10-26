@@ -723,6 +723,7 @@ fastchip fastchip
 
 	.akiko_irq    (akiko_f_irq       ),
 
+	.akiko_cd_speed  (status[54:53]   ),
 	.akiko_dma_req   (akiko_dma_req   ),
 	.akiko_dma_we    (akiko_dma_we    ),
 	.akiko_dma_baddr (akiko_dma_baddr ),
