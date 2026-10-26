@@ -49,7 +49,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input             hps_result_done,
 
 	output            hps_sec_req,
-	output      [7:0] hps_sec_status,
+	output     [15:0] hps_sec_status,
 	input             hps_sec_push,
 	input      [15:0] hps_sec_word,
 	input             hps_sec_done,
@@ -124,7 +124,7 @@ wire  [7:0] cd_dma_wbyte;
 wire        cd_hps_cmd_pending;
 wire  [7:0] cd_hps_cmd_byte;
 wire        cd_hps_sec_req;
-wire  [7:0] cd_hps_sec_status;
+wire [15:0] cd_hps_sec_status;
 wire        cd_hps_rx_busy;
 wire  [7:0] cd_hps_nvr_dout;
 wire        cd_hps_nvr_dirty;
@@ -189,7 +189,7 @@ if (NATIVE_CD32) begin : g_cd
 	wire        sec_w_we   = hps_sec_push && sec_wr_ptr != 11'd1176;
 	wire [10:0] sec_w_addr = sec_wr_ptr;
 	wire [15:0] sec_w_din  = hps_sec_word;
-	reg  [7:0] cdrom_sector_counter;
+	reg [15:0] cdrom_sector_counter;
 	reg        pbx_busy;
 	reg  [2:0] pbx_state;
 	localparam PBX_IDLE = 3'd0;
@@ -388,7 +388,7 @@ if (NATIVE_CD32) begin : g_cd
 			subcode_state        <= SUB_IDLE;
 			subcode_off          <= 8'h0;
 			sub_idx              <= 8'h0;
-			cdrom_sector_counter <= 8'h0;
+			cdrom_sector_counter <= 16'h0;
 			pbx_busy             <= 1'b0;
 			pbx_state            <= PBX_IDLE;
 			pbx_seccnt           <= 4'h0;
@@ -494,7 +494,7 @@ if (NATIVE_CD32) begin : g_cd
 					//
 					if (new_flags[CDFLAG_ENABLE_BIT] && !cdrom_flags[CDFLAG_ENABLE_BIT]) begin
 						cdrom_intreq         <= cdrom_intreq & ~CDINT_OVERFLOW;
-						cdrom_sector_counter <= 8'h0;
+						cdrom_sector_counter <= 16'h0;
 						sector_ready         <= 1'b0;
 						sec_wr_ptr           <= 11'h0;
 					end
@@ -628,7 +628,7 @@ if (NATIVE_CD32) begin : g_cd
 					cdrom_pbx[pbx_seccnt] <= 1'b0;
 					cdrom_intreq          <= cdrom_intreq | CDINT_PBX;
 					if (!pbx_ship_invalid && !enable_rising)
-						cdrom_sector_counter <= cdrom_sector_counter + 8'd1;
+						cdrom_sector_counter <= cdrom_sector_counter + 16'd1;
 					sector_ready          <= 1'b0;
 					pbx_busy              <= 1'b0;
 					pbx_state             <= PBX_IDLE;
@@ -789,7 +789,7 @@ end else begin : g_stub
 	assign cd_hps_cmd_pending = 1'b0;
 	assign cd_hps_cmd_byte    = 8'h0;
 	assign cd_hps_sec_req     = 1'b0;
-	assign cd_hps_sec_status  = 8'h0;
+	assign cd_hps_sec_status  = 16'h0;
 	assign cd_hps_rx_busy     = 1'b0;
 	assign cd_hps_nvr_dout    = 8'h0;
 	assign cd_hps_nvr_dirty   = 1'b0;

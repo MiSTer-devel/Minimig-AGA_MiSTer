@@ -102,7 +102,7 @@ wire        akiko_hps_result_push;
 wire  [7:0] akiko_hps_result_byte;
 wire        akiko_hps_result_done;
 wire        akiko_hps_sec_req;
-wire  [7:0] akiko_hps_sec_status;
+wire [15:0] akiko_hps_sec_status;
 wire        akiko_hps_sec_push;
 wire [15:0] akiko_hps_sec_word;
 wire        akiko_hps_sec_done;
@@ -110,7 +110,6 @@ wire        akiko_hps_subcode_push;
 wire  [7:0] akiko_hps_subcode_byte;
 wire        akiko_hps_subcode_done;
 wire        akiko_hps_rx_busy;
-wire  [7:0] akiko_uio_dout_byte;
 
 wire  [9:0] akiko_hps_nvr_addr;
 wire  [7:0] akiko_hps_nvr_dout;
@@ -119,8 +118,6 @@ wire        akiko_hps_nvr_load_we;
 wire        akiko_hps_nvr_clear_dirty;
 wire        akiko_hps_nvr_dirty;
 wire        akiko_hps_nvr_done;
-
-assign akiko_uio_dout = {8'h0, akiko_uio_dout_byte};
 
 akiko #(.NATIVE_CD32(NATIVE_CD32)) akiko
 (
@@ -178,7 +175,7 @@ akiko_hps_bridge akiko_hps_bridge
 	.uio_wr(akiko_uio_wr),
 	.uio_rd(akiko_uio_rd),
 	.uio_din(akiko_uio_din),
-	.uio_dout(akiko_uio_dout_byte),
+	.uio_dout(akiko_uio_dout),
 	.cmd_pending(akiko_hps_cmd_pending),
 	.cmd_byte(akiko_hps_cmd_byte),
 	.cmd_pop(akiko_hps_cmd_pop),
