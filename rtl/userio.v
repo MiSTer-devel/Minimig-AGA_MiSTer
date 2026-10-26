@@ -230,8 +230,8 @@ always @ (posedge clk) begin
 	else if (cd32pad2_reg_shift) cd32pad2_reg <= {cd32pad2_reg[6:0], 1'b0};
 end
 
-wire [15:0] joy1 = joy_ana_en ? {{12{1'b1}}, _joy1[6], 1'b1, _joy1[4], _joy1[5]} : _joy1;
-wire [15:0] joy2 = joy_ana_en ? {{12{1'b1}}, _joy2[6], 1'b1, _joy2[4], _joy2[5]} : _joy2;
+wire [15:0] joy1 = joy_ana_en ? {{12{1'b1}}, _joy1[6], 1'b1, _joy1[4], _joy1[5]} : {_joy1[15:4], _joy1[3] | ~_joy1[2], _joy1[2], _joy1[1] | ~_joy1[0], _joy1[0]};
+wire [15:0] joy2 = joy_ana_en ? {{12{1'b1}}, _joy2[6], 1'b1, _joy2[4], _joy2[5]} : {_joy2[15:4], _joy2[3] | ~_joy2[2], _joy2[2], _joy2[1] | ~_joy2[0], _joy2[0]};
 
 // input synchronization of external signals
 always @ (posedge clk) begin
