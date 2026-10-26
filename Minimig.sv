@@ -326,7 +326,6 @@ wire        ram_sel;
 wire        ram_lds;
 wire        ram_uds;
 wire [15:0] ram_din;
-wire [15:0] ram_dout  = zram_sel ? ram_dout2  : ram_dout1;
 wire        ram_ready = zram_sel ? ram_ready2 : ram_ready1;
 wire        zram_sel  = |ram_addr[28:26];
 wire        ram_l1;
@@ -404,7 +403,8 @@ cpu_wrapper cpu_wrapper
 	.ramaddr      (ram_addr        ),
 	.ramlds       (ram_lds         ),
 	.ramuds       (ram_uds         ),
-	.ramdout      (ram_dout        ),
+	.ramdout      (ram_dout1       ),
+	.ramdout2     (ram_dout2       ),
 	.ramdin       (ram_din         ),
 	.ramready     (ram_ready       ),
 	.ramshared    (ramshared       ),

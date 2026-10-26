@@ -66,6 +66,7 @@ module cpu_wrapper
 	output     [28:1] ramaddr,
 	output     [15:0] ramdin,
 	input      [15:0] ramdout,
+	input      [15:0] ramdout2,
 	input             ramready,
 	output            ramlds,
 	output            ramuds,
@@ -147,12 +148,10 @@ memory_router u_memory_router
 // decide what to do, would not be good style to replicate that here).
 wire sel_nmi_vector = ((cpu_addr[31:1] == nmi_addr[31:1]) || (cpu_addr[31:1] == nmi_addr2[31:1])) && (cpustate == 2);
 
-wire [15:0] ramdat;
 
 assign ramlds = sel_rtg ? uds_in : lds_in;
 assign ramuds = sel_rtg ? lds_in : uds_in;
 assign ramdin = sel_rtg ? {cpu_dout[7:0],cpu_dout[15:8]} : cpu_dout;
-assign ramdat = sel_rtg ? {ramdout[7:0], ramdout[15:8]}  : ramdout;
 
 assign fastchip_lds = lds_in | req_gate;
 assign fastchip_uds = uds_in | req_gate;
@@ -160,10 +159,14 @@ assign fastchip_rnw = wr;
 
 reg  [31:0] cpu_addr;
 reg  [15:0] cpu_dout;
-wire [15:0] cpu_din = ramsel_i ? ramdat :
-                      fastchip_selack ? fastchip_dout :
-                      cdtv_selack ? cdtv_din :
-                      {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire        zram_sel   = |ramaddr[28:26];
+wire  [1:0] ramdat_sel = {ramsel_i & zram_sel, ramsel_i & (~zram_sel | sel_rtg)};
+wire [15:0] cpu_din_o  = fastchip_selack ? fastchip_dout :
+                         cdtv_selack ? cdtv_din :
+                         {sel_autoconfig ? autocfg_data : chip_data[15:12], chip_data[11:0]};
+wire [15:0] cpu_din    = (ramdat_sel == 1) ? ramdout :
+                         (ramdat_sel == 2) ? ramdout2 :
+                         (ramdat_sel == 3) ? {ramdout2[7:0], ramdout2[15:8]} : cpu_din_o;
 reg         wr;
 reg         uds_in;
 reg         lds_in;
