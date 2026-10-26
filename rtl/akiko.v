@@ -191,13 +191,15 @@ if (NATIVE_CD32) begin : g_cd
 	wire [15:0] sec_w_din  = hps_sec_word;
 	reg  [7:0] cdrom_sector_counter;
 	reg        pbx_busy;
-	reg  [1:0] pbx_state;
-	localparam PBX_IDLE = 2'd0;
-	localparam PBX_DATA = 2'd1;
-	localparam PBX_ZERO = 2'd2;
-	localparam PBX_FIN  = 2'd3;
+	reg  [2:0] pbx_state;
+	localparam PBX_IDLE = 3'd0;
+	localparam PBX_DATA = 3'd1;
+	localparam PBX_ZERO = 3'd2;
+	localparam PBX_FIN  = 3'd3;
+	localparam PBX_STAT = 3'd4;
 	reg  [3:0] pbx_seccnt;
 	reg [11:0] pbx_byte_idx;
+	reg  [4:0] pbx_cnt;
 
 	reg        pbx_ship_invalid;
 
@@ -292,9 +294,9 @@ if (NATIVE_CD32) begin : g_cd
 
 	wire [23:0] pbx_slot_base = cdrom_addressdata[23:0] + {8'h0, pbx_seccnt, 12'h0};
 	wire [23:0] pbx_addr_c    = pbx_slot_base
-	                          + ((pbx_state == PBX_DATA)
-	                              ? {12'h0, pbx_byte_idx}
-	                              : (24'h000c00 + {12'h0, pbx_byte_idx}));
+	                          + ((pbx_state == PBX_ZERO)
+	                              ? (24'h000c00 + {12'h0, pbx_byte_idx})
+	                              : {12'h0, pbx_byte_idx});
 	reg  [23:0] pbx_addr;
 	always @(posedge clk) begin
 		if (reset) pbx_addr <= 24'h0;
@@ -308,10 +310,10 @@ if (NATIVE_CD32) begin : g_cd
 	end
 	wire  [7:0] sector_rd_q = sector_rd_hi ? sector_rd_w[15:8] : sector_rd_w[7:0];
 	wire [7:0]  sector_byte_at_idx = (pbx_byte_idx <  12'd3   ) ? 8'h00 :
-	                                 (pbx_byte_idx == 12'd3   ) ? (cdrom_sector_counter & 8'h1f) :
+	                                 (pbx_byte_idx == 12'd3   ) ? {3'b000, pbx_cnt} :
 	                                 (pbx_byte_idx <  12'd2352) ? sector_rd_q :
 	                                                              8'h00;
-	wire [7:0]  pbx_wbyte = (pbx_state == PBX_DATA) ? sector_byte_at_idx : 8'h00;
+	wire [7:0]  pbx_wbyte = (pbx_state == PBX_DATA || pbx_state == PBX_STAT) ? sector_byte_at_idx : 8'h00;
 
 	function [3:0] highest_bit;
 		input [15:0] m;
@@ -391,6 +393,7 @@ if (NATIVE_CD32) begin : g_cd
 			pbx_state            <= PBX_IDLE;
 			pbx_seccnt           <= 4'h0;
 			pbx_byte_idx         <= 12'h0;
+			pbx_cnt              <= 5'h0;
 			pbx_ship_invalid     <= 1'b0;
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
@@ -585,7 +588,8 @@ if (NATIVE_CD32) begin : g_cd
 					    && (cdrom_pbx != 16'h0)
 					    && sector_ready && !subcode_busy) begin
 						pbx_seccnt   <= highest_bit(cdrom_pbx);
-						pbx_byte_idx <= 12'h0;
+						pbx_byte_idx <= 12'd4;
+						pbx_cnt      <= cdrom_sector_counter[4:0];
 						pbx_busy     <= 1'b1;
 						pbx_state    <= PBX_DATA;
 					end
@@ -604,10 +608,20 @@ if (NATIVE_CD32) begin : g_cd
 					if (dma_ack && own_pbx) begin
 						if (pbx_byte_idx == 12'd145) begin
 							pbx_byte_idx <= 12'h0;
-							pbx_state    <= PBX_FIN;
+							pbx_state    <= PBX_STAT;
 						end else begin
 							pbx_byte_idx <= pbx_byte_idx + 12'd1;
 						end
+					end
+				end
+				PBX_STAT: begin
+					if (dma_ack && own_pbx) begin
+						case (pbx_byte_idx[1:0])
+							2'd0: pbx_byte_idx <= 12'd1;
+							2'd1: pbx_byte_idx <= 12'd3;
+							2'd3: pbx_byte_idx <= 12'd2;
+							default: pbx_state <= PBX_FIN;
+						endcase
 					end
 				end
 				PBX_FIN: begin
