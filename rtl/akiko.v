@@ -22,6 +22,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 (
 	input             clk,
 	input             reset,
+	input       [1:0] cd_speed,
 	input             cs,
 	input             rd,
 	input             wr,
@@ -49,7 +50,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input             hps_result_done,
 
 	output            hps_sec_req,
-	output      [7:0] hps_sec_status,
+	output     [15:0] hps_sec_status,
 	input             hps_sec_push,
 	input      [15:0] hps_sec_word,
 	input             hps_sec_done,
@@ -124,7 +125,7 @@ wire  [7:0] cd_dma_wbyte;
 wire        cd_hps_cmd_pending;
 wire  [7:0] cd_hps_cmd_byte;
 wire        cd_hps_sec_req;
-wire  [7:0] cd_hps_sec_status;
+wire [15:0] cd_hps_sec_status;
 wire        cd_hps_rx_busy;
 wire  [7:0] cd_hps_nvr_dout;
 wire        cd_hps_nvr_dirty;
@@ -189,15 +190,21 @@ if (NATIVE_CD32) begin : g_cd
 	wire        sec_w_we   = hps_sec_push && sec_wr_ptr != 11'd1176;
 	wire [10:0] sec_w_addr = sec_wr_ptr;
 	wire [15:0] sec_w_din  = hps_sec_word;
-	reg  [7:0] cdrom_sector_counter;
+	reg [15:0] cdrom_sector_counter;
 	reg        pbx_busy;
-	reg  [1:0] pbx_state;
-	localparam PBX_IDLE = 2'd0;
-	localparam PBX_DATA = 2'd1;
-	localparam PBX_ZERO = 2'd2;
-	localparam PBX_FIN  = 2'd3;
+	reg  [2:0] pbx_state;
+	localparam PBX_IDLE = 3'd0;
+	localparam PBX_DATA = 3'd1;
+	localparam PBX_ZERO = 3'd2;
+	localparam PBX_FIN  = 3'd3;
+	localparam PBX_STAT = 3'd4;
 	reg  [3:0] pbx_seccnt;
 	reg [11:0] pbx_byte_idx;
+	reg  [4:0] pbx_cnt;
+	reg        cd_speed2;
+	reg [18:0] cd_tick_cnt;
+	reg        cd_tick;
+	reg        cmd_pending_d;
 
 	reg        pbx_ship_invalid;
 
@@ -286,15 +293,15 @@ if (NATIVE_CD32) begin : g_cd
 	                   && cdrom_flags[CDFLAG_ENABLE_BIT]
 	                   && cdrom_flags[CDFLAG_PBX_BIT]
 	                   && (cdrom_pbx != 16'h0)
-	                   && sector_ready;
+	                   && sector_ready && cd_tick;
 	wire others_busy     = rx_busy | pbx_busy | tx_busy;
 	wire others_starting = rx_can_start | tx_can_start | pbx_can_start;
 
 	wire [23:0] pbx_slot_base = cdrom_addressdata[23:0] + {8'h0, pbx_seccnt, 12'h0};
 	wire [23:0] pbx_addr_c    = pbx_slot_base
-	                          + ((pbx_state == PBX_DATA)
-	                              ? {12'h0, pbx_byte_idx}
-	                              : (24'h000c00 + {12'h0, pbx_byte_idx}));
+	                          + ((pbx_state == PBX_ZERO)
+	                              ? (24'h000c00 + {12'h0, pbx_byte_idx})
+	                              : {12'h0, pbx_byte_idx});
 	reg  [23:0] pbx_addr;
 	always @(posedge clk) begin
 		if (reset) pbx_addr <= 24'h0;
@@ -308,10 +315,10 @@ if (NATIVE_CD32) begin : g_cd
 	end
 	wire  [7:0] sector_rd_q = sector_rd_hi ? sector_rd_w[15:8] : sector_rd_w[7:0];
 	wire [7:0]  sector_byte_at_idx = (pbx_byte_idx <  12'd3   ) ? 8'h00 :
-	                                 (pbx_byte_idx == 12'd3   ) ? (cdrom_sector_counter & 8'h1f) :
+	                                 (pbx_byte_idx == 12'd3   ) ? {3'b000, pbx_cnt} :
 	                                 (pbx_byte_idx <  12'd2352) ? sector_rd_q :
 	                                                              8'h00;
-	wire [7:0]  pbx_wbyte = (pbx_state == PBX_DATA) ? sector_byte_at_idx : 8'h00;
+	wire [7:0]  pbx_wbyte = (pbx_state == PBX_DATA || pbx_state == PBX_STAT) ? sector_byte_at_idx : 8'h00;
 
 	function [3:0] highest_bit;
 		input [15:0] m;
@@ -345,7 +352,7 @@ if (NATIVE_CD32) begin : g_cd
 	                 && cdrom_flags[CDFLAG_ENABLE_BIT]
 	                 && cdrom_flags[CDFLAG_PBX_BIT]
 	                 && (cdrom_pbx != 16'h0)
-	                 && sector_ready && !subcode_busy;
+	                 && sector_ready && cd_tick && !subcode_busy;
 
 	always @(posedge clk) begin
 		if (reset) begin
@@ -386,15 +393,30 @@ if (NATIVE_CD32) begin : g_cd
 			subcode_state        <= SUB_IDLE;
 			subcode_off          <= 8'h0;
 			sub_idx              <= 8'h0;
-			cdrom_sector_counter <= 8'h0;
+			cdrom_sector_counter <= 16'h0;
 			pbx_busy             <= 1'b0;
 			pbx_state            <= PBX_IDLE;
 			pbx_seccnt           <= 4'h0;
 			pbx_byte_idx         <= 12'h0;
+			pbx_cnt              <= 5'h0;
 			pbx_ship_invalid     <= 1'b0;
+			cd_speed2            <= 1'b0;
+			cd_tick_cnt          <= 19'd0;
+			cd_tick              <= 1'b1;
+			cmd_pending_d        <= 1'b0;
 		end else begin
 			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+
+			cmd_pending_d <= cmd_pending;
+			if (cmd_pending && !cmd_pending_d && cmd_op == 4'h4 && cdrom_command_buffer[7][7])
+				cd_speed2 <= cdrom_command_buffer[8][6];
+			if (cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
+				cd_tick_cnt <= 19'd0;
+				cd_tick     <= 1'b1;
+			end else begin
+				cd_tick_cnt <= cd_tick_cnt + 19'd1;
+			end
 
 			pio_wr_d <= pio_wr_sel;
 			pio_rd_d <= pio_rd_sel;
@@ -491,7 +513,7 @@ if (NATIVE_CD32) begin : g_cd
 					//
 					if (new_flags[CDFLAG_ENABLE_BIT] && !cdrom_flags[CDFLAG_ENABLE_BIT]) begin
 						cdrom_intreq         <= cdrom_intreq & ~CDINT_OVERFLOW;
-						cdrom_sector_counter <= 8'h0;
+						cdrom_sector_counter <= 16'h0;
 						sector_ready         <= 1'b0;
 						sec_wr_ptr           <= 11'h0;
 					end
@@ -583,9 +605,11 @@ if (NATIVE_CD32) begin : g_cd
 					if (cdrom_flags[CDFLAG_ENABLE_BIT]
 					    && cdrom_flags[CDFLAG_PBX_BIT]
 					    && (cdrom_pbx != 16'h0)
-					    && sector_ready && !subcode_busy) begin
+					    && sector_ready && cd_tick && !subcode_busy) begin
+						cd_tick      <= 1'b0;
 						pbx_seccnt   <= highest_bit(cdrom_pbx);
-						pbx_byte_idx <= 12'h0;
+						pbx_byte_idx <= 12'd4;
+						pbx_cnt      <= cdrom_sector_counter[4:0];
 						pbx_busy     <= 1'b1;
 						pbx_state    <= PBX_DATA;
 					end
@@ -604,17 +628,27 @@ if (NATIVE_CD32) begin : g_cd
 					if (dma_ack && own_pbx) begin
 						if (pbx_byte_idx == 12'd145) begin
 							pbx_byte_idx <= 12'h0;
-							pbx_state    <= PBX_FIN;
+							pbx_state    <= PBX_STAT;
 						end else begin
 							pbx_byte_idx <= pbx_byte_idx + 12'd1;
 						end
+					end
+				end
+				PBX_STAT: begin
+					if (dma_ack && own_pbx) begin
+						case (pbx_byte_idx[1:0])
+							2'd0: pbx_byte_idx <= 12'd1;
+							2'd1: pbx_byte_idx <= 12'd3;
+							2'd3: pbx_byte_idx <= 12'd2;
+							default: pbx_state <= PBX_FIN;
+						endcase
 					end
 				end
 				PBX_FIN: begin
 					cdrom_pbx[pbx_seccnt] <= 1'b0;
 					cdrom_intreq          <= cdrom_intreq | CDINT_PBX;
 					if (!pbx_ship_invalid && !enable_rising)
-						cdrom_sector_counter <= cdrom_sector_counter + 8'd1;
+						cdrom_sector_counter <= cdrom_sector_counter + 16'd1;
 					sector_ready          <= 1'b0;
 					pbx_busy              <= 1'b0;
 					pbx_state             <= PBX_IDLE;
@@ -775,7 +809,7 @@ end else begin : g_stub
 	assign cd_hps_cmd_pending = 1'b0;
 	assign cd_hps_cmd_byte    = 8'h0;
 	assign cd_hps_sec_req     = 1'b0;
-	assign cd_hps_sec_status  = 8'h0;
+	assign cd_hps_sec_status  = 16'h0;
 	assign cd_hps_rx_busy     = 1'b0;
 	assign cd_hps_nvr_dout    = 8'h0;
 	assign cd_hps_nvr_dirty   = 1'b0;

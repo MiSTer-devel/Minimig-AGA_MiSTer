@@ -242,6 +242,7 @@ wire        s21_en;
 wire        long_cand;
 wire [15:0] cpu_dout_lo_p;
 wire        long_ack;
+wire        skipfetch;
 
 TG68KdotC_Kernel
 #(
@@ -284,6 +285,7 @@ cpu_inst_p
   .opc_dbx(opc_dbx),
   .opc_cacr(cacr_x),
   .mmu_busy(mmu_busy),
+  .skipfetch(skipfetch),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
   .cacr_out(cacr_p),
   .d_cache_out(),
@@ -353,6 +355,7 @@ end
 wire cpu030        = (cpucfg[1:0] == 2'b10);
 wire stock_speed   = cpucfg[2] & (cpucfg[1:0] == 2'b11);
 wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
+wire skip_rd       = skipfetch & (cpustate_p == 2) & ~ramsel_i & ~fastchip_selack;
 
 wire cyc_hold;
 cpu_cycles cycles
@@ -367,7 +370,7 @@ cpu_cycles cycles
 	.opc_snd(opc_snd),
 	.opc_dbx(opc_dbx),
 	.cpu_ena(clkena_p_throttled & ~mmu_busy),
-	.bus_ack(clkena_p_throttled & cpu_req),
+	.bus_ack(clkena_p_throttled & cpu_req & ~skip_rd),
 	.bus_state(cpustate_p),
 	.bus_addr(cpu_addr_m),
 	.bus_long(longword),
@@ -395,7 +398,7 @@ assign long_ack  = ramlong1 & ramready_l;
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel_i & ~fastchip_selack & ~req_gate;
+	chipreq <= cpu_req & ~ramsel_i & ~fastchip_selack & ~req_gate & ~skip_rd;
 	cpu_ipl <= ipl_i;
 end
 
@@ -448,7 +451,8 @@ always @(negedge clk, negedge reset) begin
 
 		now = 0;
 		if (~|stage & cpu_req & ~req_gate) begin
-			if (r32 & wr & (cpu_addr_m[23:2] == r32_adr) & cpu_addr_m[1]) begin
+			if (skip_rd) now = 1;
+			else if (r32 & wr & (cpu_addr_m[23:2] == r32_adr) & cpu_addr_m[1]) begin
 				chipdout_i <= r32_lo;
 				r32 <= 0;
 				now = 1;

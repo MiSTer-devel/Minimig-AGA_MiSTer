@@ -24,7 +24,7 @@ module akiko_hps_bridge
 	input             uio_wr,
 	input             uio_rd,
 	input      [15:0] uio_din,
-	output      [7:0] uio_dout,
+	output     [15:0] uio_dout,
 
 	input             cmd_pending,
 	input       [7:0] cmd_byte,
@@ -35,7 +35,7 @@ module akiko_hps_bridge
 	output            result_done,
 
 	input             sec_req,
-	input       [7:0] sec_status,
+	input      [15:0] sec_status,
 	output            sec_push,
 	output     [15:0] sec_word,
 	output            sec_done,

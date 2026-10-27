@@ -243,8 +243,10 @@ end
 // BPLCON4 values are delayed for 1 lores pixel - TODO double-check this!
 // AMR - bplxor is active from first write to BPL1DAT until DIWSTOP. (Fixes Andromeda: Nexus 7, shade cluster part)
 always @ (posedge clk) begin
+  reg [1:0] diwstop_d;
   if (clk7_en) begin
-    if(reset || hpos[8:0]==hdiwstop[8:0])
+    diwstop_d <= {diwstop_d[0], hpos[8:0]==hdiwstop[8:0]};
+    if(reset || diwstop_d[1])
       bplxor   <= 8'd0;
 	else if (display_ena)
       bplxor   <= bplcon4[15:8];
