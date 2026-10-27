@@ -411,7 +411,7 @@ if (NATIVE_CD32) begin : g_cd
 			cmd_pending_d <= cmd_pending;
 			if (cmd_pending && !cmd_pending_d && cmd_op == 4'h4 && cdrom_command_buffer[7][7])
 				cd_speed2 <= cdrom_command_buffer[8][6];
-			if (cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
+			if (&cd_speed || cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
 				cd_tick_cnt <= 19'd0;
 				cd_tick     <= 1'b1;
 			end else begin
