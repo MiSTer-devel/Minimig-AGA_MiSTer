@@ -341,6 +341,7 @@ wire [7:0] a2065_base;
 
 wire        cdtv_mode;
 wire  [7:0] cdtv_base;
+wire        ar_fetch;
 wire [15:0] cdtv_din_w;
 wire        cdtv_selack_w;
 wire  [9:0] cdtv_cdda_volume;
@@ -398,6 +399,9 @@ cpu_wrapper cpu_wrapper
 
 	.cdtv_din     (cdtv_din_w      ),
 	.cdtv_selack  (cdtv_selack_w   ),
+
+	.ar_on        (status[55]      ),
+	.ar_fetch     (ar_fetch        ),
 
 	.ramsel       (ram_sel         ),
 	.ramaddr      (ram_addr        ),
@@ -819,6 +823,8 @@ minimig minimig
 	._cpu_reset   (cpu_rst          ), // M68K reset
 	._cpu_reset_in(cpu_nrst_out     ), // M68K reset out
 	.nmi_addr     (cpu_nmi_addr     ), // M68K NMI address
+	.cart_ar      (status[55]       ), // the cartridge: the Action Replay (Main's ext_cfg bit 23)
+	.ar_fetch     (ar_fetch         ),
 
 	//sram pins
 	.ram_data     (ram_data         ), // SRAM data bus

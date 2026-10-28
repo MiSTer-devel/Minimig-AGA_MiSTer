@@ -83,6 +83,7 @@ module gary
 	input   [7:0] cdtv_base,
 
 	input         cdtv_mode,
+	input         ar_on,         // the Action Replay is fitted: $A80000-$AFFFFF is its, no Kickstart mirror there
 
 	output        ram_rd, //bus read
 	output        ram_hwr, //bus high write
@@ -132,7 +133,7 @@ assign ram_lwr = dbr ?  dbwe : cpu_lwr;
 // ram address multiplexer (512KB bank)
 // assign ram_address_out = dbr ? dma_address_in[18:1] : cpu_address_in[18:1];
 // output full address to make mapping easier.
-wire kick_mirror_a8 = cpu_address_in[23:19] == 5'b1010_1;
+wire kick_mirror_a8 = cpu_address_in[23:19] == 5'b1010_1 && !ar_on;
 wire kick_mirror_b0 = cpu_address_in[23:19] == 5'b1011_0;
 wire kick_mirror_f0 = cdtv_mode && cpu_address_in[23:19] == 5'b1111_0;
 wire cdtv_card_win  = cdtv_mode && cpu_address_in[23:19] == 5'b1110_0 && !cpu_hlt;
