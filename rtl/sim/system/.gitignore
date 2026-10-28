@@ -1,0 +1,6 @@
+obj_dir*/
+gen/
+asm/build/
+microrom.mem
+nanorom.mem
+*.log

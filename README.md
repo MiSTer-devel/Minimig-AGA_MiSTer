@@ -19,6 +19,7 @@ This version has been modified to add support for MiSTer Floppy, SCP and IPF sup
 * CPU core : 68000, 68010, 68EC020, 68EC030, 68030 (with MMU, no FPU)
 * Kickstart : 1.2, 1.3, 2.0, 3.0, 3.1, 3.1.4, 3.2 (256kB, 512kB & 1MB kickstart ROMs currently supported)
 * HRTmon with custom registers mirror
+* Action Replay (AR5, DeMoN v2 layout): AR5.ROM in games/Amiga, Cartridge: Action Replay in the System menu (needs a Main with the cartridge choice)
 * Floppy drives : 1-4 floppies (supports ADF floppy image format), with normal & turbo speeds
 * Up to 4 IDE devices
 * CDROM
@@ -197,7 +198,7 @@ The Minimig can also use HDF harddisk images, which can be created with [WinUAE]
 Keyboard special keys:
 
 * F12         - OSD menu
-* F11         - start monitor (HRTmon) if HRTmon is enabled in OSD menu (otherwise F11 is the Amiga HELP key)
+* F11         - start monitor (HRTmon) or freeze (Action Replay) if a cartridge is enabled in OSD menu (otherwise F11 is the Amiga HELP key)
 * ScrollLock  - toggle keyoard only / mouse / joystick 1 / joystick 2 emulation on the keyboard (direction keys + LCTRL)
 
 

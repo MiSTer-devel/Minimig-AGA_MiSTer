@@ -165,6 +165,8 @@ module minimig
 	input 	     _cpu_reset_in,//m68k reset in
 	input  [31:0] nmi_addr,    // m68k NMI address
 	output 	     ovr,         // NMI address decoding override
+	input         cart_ar,     // the cartridge is the Action Replay (AR5, DeMoN v2), not HRTmon
+	input         ar_fetch,    // the CPU fetched an instruction outside $A80000-$AFFFFF
 
 	//sram pins
 	output [15:0] ram_data,    // sram data bus
@@ -462,6 +464,10 @@ wire        int7;					//int7 interrupt request from Action Replay
 wire  [2:0] _iplx;			   //interrupt request lines from Paula
 wire        sel_cart;			//Action Replay RAM select
 wire [15:0] cart_data_out;
+wire [15:0] cart_data_mask;
+wire        ar_on = cart_ar & memory_config[6];
+wire        ar_vsel;
+wire [23:1] ar_vadr;
 
 wire        usrrst;				//user reset from osd interface
 wire        hires;				//hires signal from Denise for interpolation filter enable in Amber
@@ -845,7 +851,7 @@ minimig_sram_bridge RAM1
 	.c1(c1),
 	.c3(c3),	
 	.bank(bank),
-	.address_in(ram_address_out),
+	.address_in(ar_vsel ? ar_vadr : ram_address_out),
 	.data_in(ram_data_in),
 	.data_out(ram_data_out),
 	.rd(ram_rd),
@@ -871,13 +877,19 @@ cart CART1
   .cpu_rd(cpu_rd),
   .cpu_hwr(cpu_hwr),
   .cpu_lwr(cpu_lwr),
+  .cpu_data(cpu_data_out),
   .nmi_addr(nmi_addr),
   .reg_address_in(reg_address),
   .reg_data_in(custom_data_in),
   .dbr(dbr),
   .ovl(ovl),
   .freeze(freeze),
+  .ar_en(ar_on),
+  .ar_fetch(ar_fetch),
   .cart_data_out(cart_data_out),
+  .cart_data_mask(cart_data_mask),
+  .ar_vsel(ar_vsel),
+  .ar_vadr(ar_vadr),
   .int7(int7),
   .sel_cart(sel_cart),
   .ovr(ovr),
@@ -916,6 +928,7 @@ gary GARY1
 	.a2065_ena(a2065_ena),
 	.a2065_base(a2065_base),
 	.cdtv_mode(chipset_config[5]),
+	.ar_on(ar_on),
 	.ram_rd(ram_rd),
 	.ram_hwr(ram_hwr),
 	.ram_lwr(ram_lwr),
@@ -1176,7 +1189,7 @@ assign cdtv_selack = cdtv_bridge_selack | sel_cdtv_nvram | sel_cdtv_card;
 //-------------------------------------------------------------------------------------
 
 //data multiplexer
-assign cpu_data_in[15:0]= gary_data_out[15:0]
+assign cpu_data_in[15:0]= (gary_data_out[15:0] & cart_data_mask)
 							 | cia_data_out[15:0]
 							 | gayle_data_out[15:0]
 							 | cart_data_out[15:0]
