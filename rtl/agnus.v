@@ -205,7 +205,7 @@ begin
 		reg_address = reg_address_cop;
 		dbwe = 0;
 	end
-	else if (dma_blt && bls_cnt!=BLS_CNT_MAX) begin
+	else if (dma_blt && (bls_cnt!=BLS_CNT_MAX || aga && blit_flush)) begin
 		// bus allocated to blitter
 		cpu_custom = 0;
 		dbr = 1;
@@ -265,7 +265,7 @@ wire spren  = dmacon[5] & dmacon[9];
 wire ena_cop = ~dma_bpl;
 //dma enable for blitter tells the blitter that no higher priority dma channel is using the bus
 //since blitter has the lowest priority and can use any dma slot (even and odd) all other dma channels block blitter activity
-wire ena_blt = ~(dma_ref | dma_dsk | dma_aud | dma_spr | dma_bpl | dma_cop) && bls_cnt!=BLS_CNT_MAX ? 1'b1 : 1'b0;
+wire ena_blt = ~(dma_ref | dma_dsk | dma_aud | dma_spr | dma_bpl | dma_cop) && (bls_cnt!=BLS_CNT_MAX || aga && blit_flush) ? 1'b1 : 1'b0;
 
 //--------------------------------------------------------------------------------------
 
@@ -431,6 +431,7 @@ end
 
 wire        blit_busy;       //blitter busy status
 wire        blit_active;
+wire        blit_flush;
 wire        blit_zero;       //blitter zero status
 wire        req_blt;         //blitter dma request
 wire [20:1] address_blt;     //blitter dma engine chip address out
@@ -453,6 +454,7 @@ agnus_blitter bl1
 	.zero(blit_zero),
 	.busy(blit_busy),
 	.active(blit_active),
+	.flush(blit_flush),
 	.int3(int3),
 	.data_in(data_in),
 	.data_out(data_blt),

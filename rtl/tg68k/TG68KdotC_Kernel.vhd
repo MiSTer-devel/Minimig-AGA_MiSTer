@@ -153,6 +153,8 @@ entity TG68KdotC_Kernel is
 		opc_snd					: out std_logic_vector(15 downto 0);
 		opc_dbx					: out std_logic;
 		opc_cacr				: out std_logic_vector(13 downto 0);
+		opc_cacr_wr			: out std_logic;
+		opc_caar				: out std_logic_vector(5 downto 0);
 		mmu_busy				: out std_logic
 		);
 end TG68KdotC_Kernel;
@@ -405,6 +407,7 @@ architecture logic of TG68KdotC_Kernel is
 	signal MSP					: std_logic_vector(31 downto 0);
 	signal ISP					: std_logic_vector(31 downto 0);
 	signal cclr					: std_logic_vector(4 downto 0);
+	signal cacr_wr				: std_logic;
 	signal CACR_DC				: std_logic;
 	signal CACR_DC_owned		: std_logic;
 	signal DFC					: std_logic_vector(2 downto 0);
@@ -4688,15 +4691,18 @@ PROCESS (clk, cpu, OP1out, OP2out, opcode, exe_condition, nextpass, micro_state,
 		MSP <= (others => '0');
 		ISP <= (others => '0');
 		cclr <= (others => '0');
+		cacr_wr <= '0';
 		CACR_DC <= '1';
 		CACR_DC_owned <= '0';
 	  else
 		if cclr /= "00000" then cclr <= cclr - 1; end if;
+		cacr_wr <= '0';
 		if clkena_lw = '1' and exec(movec_wr) = '1' then
 		  case brief(11 downto 0) is
 		    when X"000" => SFC <= reg_QA(2 downto 0); -- SFC -- 68010+
 		    when X"001" => DFC <= reg_QA(2 downto 0); -- DFC -- 68010+
 		    when X"002" =>
+		      cacr_wr <= '1';
 		      if CPU030 = '1' then
 		        CACR <= reg_QA(13 downto 0) and "11001100010011";
 		        if (reg_QA(11) or reg_QA(10) or reg_QA(3) or reg_QA(2)) = '1' then
@@ -4914,6 +4920,8 @@ PROCESS (clk)
   opc_snd   <= sndOPC;
   opc_dbx   <= '1' when micro_state = dbcc1 and exe_condition = '0' and c_out(1) = '0' else '0';
   opc_cacr  <= CACR;
+  opc_cacr_wr <= cacr_wr;
+  opc_caar  <= CAAR(7 downto 2);
   pmmu_ins <= '1' WHEN CPU030='1' AND opcode(15 downto 6)="1111000000" ELSE '0';
   pmmu_flush <= '1' WHEN state="10" AND exec(movem_action)='1' AND opcode(15)='1' AND pmmu_ext(8)='0' AND movem_run='0' AND
                 (pmmu_ext(14 downto 10)="00010" OR pmmu_ext(14 downto 10)="00011" OR pmmu_ext(14 downto 10)="10000" OR

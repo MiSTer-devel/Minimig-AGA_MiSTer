@@ -164,6 +164,7 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [5:0] cdrom_receive_offset;
 	reg  [1:0] tx_dma_delay;
 	reg  [1:0] rx_dma_delay;
+	reg [10:0] dma_line_cnt;
 	reg        tx_busy;
 	reg        rx_busy;
 	reg        rx_inflight;
@@ -377,6 +378,7 @@ if (NATIVE_CD32) begin : g_cd
 			cdrom_receive_offset <= 6'h0;
 			tx_dma_delay         <= 2'h0;
 			rx_dma_delay         <= 2'h0;
+			dma_line_cnt         <= 11'd0;
 			tx_busy              <= 1'b0;
 			rx_busy              <= 1'b0;
 			rx_inflight          <= 1'b0;
@@ -405,13 +407,16 @@ if (NATIVE_CD32) begin : g_cd
 			cd_tick              <= 1'b1;
 			cmd_pending_d        <= 1'b0;
 		end else begin
-			if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
-			if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+			dma_line_cnt <= (dma_line_cnt == 11'd0) ? 11'd1815 : dma_line_cnt - 11'd1;
+			if (dma_line_cnt == 11'd0) begin
+				if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
+				if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
+			end
 
 			cmd_pending_d <= cmd_pending;
 			if (cmd_pending && !cmd_pending_d && cmd_op == 4'h4 && cdrom_command_buffer[7][7])
 				cd_speed2 <= cdrom_command_buffer[8][6];
-			if (cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
+			if (&cd_speed || cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
 				cd_tick_cnt <= 19'd0;
 				cd_tick     <= 1'b1;
 			end else begin
