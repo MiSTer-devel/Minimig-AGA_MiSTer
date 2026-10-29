@@ -367,7 +367,8 @@ end
 
 wire cpu030        = (cpucfg[1:0] == 2'b10);
 wire stock_speed   = cpucfg[2] & (cpucfg[1:0] == 2'b11);
-wire clkena_p_base = ~cpu_req | chipready | ramready | fastchip_ready;
+(* keep *) wire clkena_p_thr;
+(* keep *) wire clkena_p_rest;
 wire skip_rd       = skipfetch & (cpustate_p == 2) & ~ramsel_i & ~fastchip_selack;
 
 wire cyc_hold;
@@ -412,7 +413,9 @@ always @(posedge clk) begin
 end
 
 wire req_gate = cyc_hold & ~inflight;
-wire clkena_p_throttled = clkena_p_base & (cpu_req ? ~req_gate : ~cyc_hold);
+assign clkena_p_thr  = cpu_req ? ~req_gate : ~cyc_hold;
+assign clkena_p_rest = (~cpu_req | chipready | fastchip_ready) & clkena_p_thr;
+wire clkena_p_throttled = clkena_p_rest | (ramready & clkena_p_thr);
 
 assign s21_en    = cpu030;
 assign ramlong1  = long_cand & s21_en & sel_zram & ~sel_rtg & ~sel_dd & ~req_gate;
