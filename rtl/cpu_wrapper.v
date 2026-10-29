@@ -192,7 +192,7 @@ always @* begin
 		chip_rw      = c_rw;
 		chip_uds     = c_uds;
 		chip_lds     = c_lds;
-		chip_addr    = ((c_long | w32_fl) & ~c_rw) ? {w32_adr, 1'b0} : cpu_addr_m[23:1];
+		chip_addr    = ((c_long | w32_fl) & ~c_rw) ? {w32_adr, 1'b0} : if_go ? {if_a, if_lo} : cpu_addr_m[23:1];
 		chip_din     = ((c_long | w32_fl) & ~c_rw) ? w32_hi : cpu_dout_p;
 		chip_long    = c_long;
 		chip_din2    = cpu_dout_p;
@@ -247,6 +247,9 @@ wire        long_cand;
 wire [15:0] cpu_dout_lo_p;
 wire        long_ack;
 wire        skipfetch;
+wire  [2:0] fc_p;
+wire        cacr_wr;
+wire  [5:0] caar;
 
 TG68KdotC_Kernel
 #(
@@ -288,6 +291,9 @@ cpu_inst_p
   .opc_snd(opc_snd),
   .opc_dbx(opc_dbx),
   .opc_cacr(cacr_x),
+  .opc_cacr_wr(cacr_wr),
+  .opc_caar(caar),
+  .fc(fc_p),
   .mmu_busy(mmu_busy),
   .skipfetch(skipfetch),
   .busstate(cpustate_p),		// 0: fetch code, 1: no memaccess, 2: read data, 3: write data
@@ -345,14 +351,17 @@ wire ckick = turbokick_d & !cpustate;
 
 reg turbochip_d;
 reg turbokick_d;
+reg ic_ena;
 always @(posedge clk) begin
 	if (~reset | ~reset_out) begin
 		turbochip_d <= 0;
 		turbokick_d <= 0;
+		ic_ena <= 0;
 	end
 	else if (~cpu_req) begin	// No mem access, so safe to switch chipram access mode
-		turbochip_d <= cachecfg[0] & cpucfg[1];
+		turbochip_d <= cachecfg[0] & cpucfg[1] & ~ec020;
 		turbokick_d <= cachecfg[1] & cpucfg[1];
+		ic_ena <= cachecfg[0] & ec020;
 	end
 end
 
@@ -380,7 +389,7 @@ cpu_cycles cycles
 	.bus_long(longword),
 	.bus_l1(clkena_p_throttled & long_ack),
 	.cacr(cacr_x),
-	.cacr_clr(cacr_p[3]),
+	.cacr_clr(ec020 ? cacr_wr & cacr_x[3] : cacr_p[3]),
 	.hold(cyc_hold)
 );
 
@@ -413,7 +422,7 @@ assign long_ack  = ramlong1 & ramready_l;
 reg       chipreq;
 reg [2:0] cpu_ipl;
 always @(posedge clk) begin
-	chipreq <= cpu_req & ~ramsel_i & ~fastchip_selack & ~req_gate & ~skip_rd;
+	chipreq <= cpu_req & ~ramsel_i & ~fastchip_selack & ~req_gate & ~skip_rd & ~ic_nq;
 	cpu_ipl <= ipl_i;
 end
 
@@ -440,6 +449,60 @@ reg [23:2] r32_adr;
 reg [15:0] r32_lo;
 reg [15:0] chip_dout2_p;
 always @(posedge clk) chip_dout2_p <= chip_dout2;
+
+wire        ifch = ic_ena & ~|cpustate_p & ~|cpu_addr_m[23:21];
+reg  [16:0] ic_tag[64];
+reg  [31:0] ic_dat[64];
+reg  [63:0] ic_val;
+reg  [16:0] ic_tq;
+reg  [31:0] ic_dq;
+reg         ic_vq, ic_qv;
+reg  [23:2] ic_qa;
+reg         ic_we, ic_clr, ic_clre, ic_nq;
+reg   [5:0] ic_wa;
+reg  [16:0] ic_wt;
+reg  [31:0] ic_wd;
+reg         ih_v;
+reg  [23:2] ih_a;
+reg  [31:0] ih_d;
+reg         if_go, if_lo, if_dn, if_l, if_a1, if_s;
+reg  [23:2] if_a;
+reg  [15:0] if_hi, if_lw;
+reg         nf_v, nf_s;
+reg  [23:2] nf_a;
+
+wire        ih_hit  = ih_v & (ih_a == cpu_addr_m[23:2]);
+wire        ic_rdy  = ic_qv & (ic_qa == cpu_addr_m[23:2]);
+wire        ic_hit  = ic_rdy & cacr_x[0] & ic_vq & (ic_tq == {fc_p[2], cpu_addr_m[23:8]});
+wire [31:0] ic_q    = ih_hit ? ih_d : ic_dq;
+wire        ic_take = ifch & ~req_gate & ~if_go & ~cacr_wr & ~nf_v & (ih_hit | ic_hit);
+wire        if_ok   = ~cacr_wr & ~nf_v & (~cacr_x[0] | ic_rdy);
+wire [15:0] if_lw2  = if_l ? chip_dout2_p : if_lw;
+
+always @(posedge clk) begin
+	if (ic_we) begin
+		ic_tag[ic_wa] <= ic_wt;
+		ic_dat[ic_wa] <= ic_wd;
+	end
+	ic_tq <= ic_tag[cpu_addr_m[7:2]];
+	ic_dq <= ic_dat[cpu_addr_m[7:2]];
+end
+
+always @(posedge clk) begin
+	ic_vq <= ic_val[cpu_addr_m[7:2]];
+	ic_qa <= cpu_addr_m[23:2];
+	ic_qv <= ~clkena_p_throttled & ~ic_we & ~ic_clr & ~ic_clre;
+	nf_v  <= ec020 & clkena_p_throttled & ~|cpustate_p & |cpu_addr_m[23:21];
+	nf_a  <= cpu_addr_m[23:2];
+	nf_s  <= fc_p[2];
+	if (~reset) ic_val <= 0;
+	else begin
+		if (ic_we) ic_val[ic_wa] <= 1'b1;
+		if (ic_clre) ic_val[caar] <= 1'b0;
+		if (ic_clr) ic_val <= 0;
+	end
+end
+
 always @(negedge clk, negedge reset) begin
 	reg [1:0] stage;
 	reg waitm;
@@ -457,11 +520,35 @@ always @(negedge clk, negedge reset) begin
 		w32 <= 0;
 		w32_fl <= 0;
 		r32 <= 0;
+		ih_v <= 0;
+		if_go <= 0;
+		if_lo <= 0;
+		if_dn <= 0;
+		ic_we <= 0;
+		ic_clr <= 0;
+		ic_clre <= 0;
+		ic_nq <= 0;
 	end
 	else begin
 		if (ph2n) begin
 			waitm <= chip_dtack;
 			if(~stage[0]) ipl_i <= chip_ipl;
+		end
+
+		ic_we <= 0;
+		ic_clr <= 0;
+		ic_clre <= 0;
+		ic_nq <= 0;
+		if (cacr_wr) begin
+			ih_v <= 0;
+			ic_clr <= cacr_x[3];
+			ic_clre <= cacr_x[2];
+		end
+		if (nf_v) begin
+			ih_v <= 0;
+			ic_we <= cacr_x[0] & ~cacr_x[1];
+			ic_wa <= nf_a[7:2];
+			ic_wt <= {nf_s, nf_a[23:8]};
 		end
 
 		now = 0;
@@ -479,13 +566,21 @@ always @(negedge clk, negedge reset) begin
 				now = 1;
 			end
 		end
+		if ((stage == 0 || stage == 3) && ic_take) begin
+			chipdout_i <= cpu_addr_m[1] ? ic_q[15:0] : ic_q[31:16];
+			ih_v <= 1;
+			ih_a <= cpu_addr_m[23:2];
+			ih_d <= ic_q;
+			ic_nq <= 1;
+			now = 1;
+		end
 
 		chipready <= now;
 		if (ph1n) begin
 			chipready <= now | ready;
 			ready <= 0;
 			case (stage)
-				0: if (chipreq & ~now) begin
+				0: if (chipreq & ~now & (~ifch | if_ok)) begin
 						c_as <= 0;
 						if (w32 & (wr | (cpu_addr_m[23:2] != w32_adr) | ~cpu_addr_m[1] | uds_in | lds_in)) begin
 							c_rw <= 0;
@@ -493,6 +588,19 @@ always @(negedge clk, negedge reset) begin
 							c_lds <= 0;
 							c_long <= 0;
 							w32_fl <= 1;
+						end
+						else if (ifch) begin
+							c_rw <= 1;
+							c_uds <= 0;
+							c_lds <= 0;
+							c_long <= chip32_en & ~if_go;
+							if (~if_go) begin
+								if_go <= 1;
+								if_l  <= chip32_en;
+								if_a  <= cpu_addr_m[23:2];
+								if_a1 <= cpu_addr_m[1];
+								if_s  <= fc_p[2];
+							end
 						end
 						else begin
 							c_rw <= wr;
@@ -513,17 +621,46 @@ always @(negedge clk, negedge reset) begin
 							c_lds <= 1;
 							c_long <= 0;
 							w32 <= 0;
-							if (c_long & c_rw) begin
+							if (c_long & c_rw & ~if_go) begin
 								r32     <= 1;
 								r32_adr <= cpu_addr_m[23:2];
 							end
 							ready <= ~w32_fl;
+							if (if_go) begin
+								if (~if_lo) if_hi <= chip_dout;
+								else begin
+									if_lw <= chip_dout;
+									if (~if_a1) chipdout_i <= if_hi;
+								end
+								if_dn <= if_l | if_lo;
+								if (~if_l & ~if_lo) begin
+									if_lo <= 1;
+									ready <= 0;
+								end
+								if (if_l & if_a1) ready <= 0;
+							end
 							w32_fl <= 0;
 							stage <= 3;
 						end
 					end
 				3: begin
 						r32_lo <= chip_dout2_p;
+						if (if_dn) begin
+							ih_v <= 1;
+							ih_a <= if_a;
+							ih_d <= {if_hi, if_lw2};
+							ic_we <= cacr_x[0] & ~cacr_x[1];
+							ic_wa <= if_a[7:2];
+							ic_wt <= {if_s, if_a[23:8]};
+							ic_wd <= {if_hi, if_lw2};
+							if (if_l & if_a1) begin
+								chipdout_i <= chip_dout2_p;
+								chipready <= 1;
+							end
+							if_go <= 0;
+							if_lo <= 0;
+							if_dn <= 0;
+						end
 						stage <= 0;
 					end
 			endcase
