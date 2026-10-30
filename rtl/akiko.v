@@ -23,6 +23,7 @@ module akiko #(parameter NATIVE_CD32 = 0)
 	input             clk,
 	input             reset,
 	input       [1:0] cd_speed,
+	input             ntsc,
 	input             cs,
 	input             rd,
 	input             wr,
@@ -204,8 +205,21 @@ if (NATIVE_CD32) begin : g_cd
 	reg  [4:0] pbx_cnt;
 	reg        cd_speed2;
 	reg [18:0] cd_tick_cnt;
-	reg        cd_tick;
+	reg        cd_owed;
+	reg        cd_streaming;
 	reg        cmd_pending_d;
+
+	reg  [7:0] tx_fifo [1024];
+	reg [10:0] tx_fifo_wr;
+	reg [10:0] tx_fifo_rd;
+	reg  [7:0] tx_fifo_q;
+	reg        parse_wait;
+	reg [14:0] cmd_turn_cnt;
+	reg        cmd_turn_done;
+	reg        cmd_wait_reply;
+	reg [21:0] cmd_reply_cnt;
+	reg        res_hold;
+	reg        res_drop;
 
 	reg        pbx_ship_invalid;
 
@@ -248,9 +262,24 @@ if (NATIVE_CD32) begin : g_cd
 	                    ||  (cmd_op == 4'h8)
 	                    ||  (cmd_op == 4'h9)
 	                    ||  (cmd_op == 4'ha);
-	wire       cmd_pending  = (cdrom_command_length != 6'd0)
+	wire       txdone_wait  = cdrom_intreq[27] && cdrom_intena[27];
+	wire       res_busy     = (cdrom_receive_length != 6'd0) || res_hold;
+	wire       cmd_complete = (cdrom_command_length != 6'd0)
 	                       && ((cdrom_command_length >= cmd_total)
 	                          || (cdrom_command_length == 6'd32));
+	wire       cmd_pending  = cmd_complete && cmd_turn_done && !res_busy && !txdone_wait;
+
+	reg  [7:0] cmd_sum;
+	always @(*) begin : cmd_sum_c
+		integer i;
+		cmd_sum = 8'h0;
+		for (i = 0; i < 13; i = i + 1)
+			if (i < cmd_total) cmd_sum = cmd_sum + cdrom_command_buffer[i];
+	end
+	wire       cmd_expect_reply = !cmd_zero_result || (cmd_op > 4'ha) || (cmd_sum != 8'hff);
+
+	wire       tx_fifo_full  = ((tx_fifo_wr - tx_fifo_rd) == 11'd1024);
+	wire       tx_fifo_empty = (tx_fifo_wr == tx_fifo_rd);
 
 	wire [23:0] cdrx_address = cdrom_addressmisc[23:0];
 	wire [23:0] cdtx_address = cdrom_addressmisc[23:0] | 24'h000200;
@@ -264,9 +293,7 @@ if (NATIVE_CD32) begin : g_cd
 	                  && !cdrom_flags[CDFLAG_ENABLE_BIT]
 	                  && (cdcomtxinx != cdcomtxcmp)
 	                  && (tx_dma_delay == 2'd0)
-	                  && (cdrom_receive_length == 6'd0)
-	                  && (cdrom_command_length != 6'd32)
-	                  && !cmd_pending;
+	                  && !tx_fifo_full;
 
 	wire rx_can_start =  cdrom_flags[CDFLAG_RXD_BIT]
 	                  && (cdrom_receive_length != 6'd0)
@@ -274,13 +301,11 @@ if (NATIVE_CD32) begin : g_cd
 	                  && (rx_dma_delay == 2'd0);
 
 	wire       pio_tx_allowed  = !cdrom_flags[CDFLAG_TXD_BIT] && !tx_busy;
-	wire       pio_tx_can_send = (cdrom_receive_length == 6'd0)
-	                          && (cdrom_command_length != 6'd32)
-	                          && !cmd_pending;
-	wire [3:0] pio_tx_op       = (cdrom_command_length == 6'd0) ? din[11:8] : cmd_op;
-	wire [5:0] pio_tx_next_len = cdrom_command_length + 6'd1;
-	wire       pio_tx_more     = (pio_tx_next_len < expected_total_len(pio_tx_op))
-	                          && (pio_tx_next_len != 6'd32);
+	wire       parse_ok        = !cmd_complete && !cmd_wait_reply && !parse_wait
+	                          && !res_busy && !tx_fifo_empty;
+	wire [5:0] parse_next_len  = cdrom_command_length + 6'd1;
+	wire       parse_more      = (parse_next_len < expected_total_len((cdrom_command_length == 6'd0) ? tx_fifo_q[3:0] : cmd_op))
+	                          && (parse_next_len != 6'd32);
 
 	wire       pio_rx_allowed  = !cdrom_flags[CDFLAG_RXD_BIT] && !rx_busy;
 	wire       pio_rx_avail    = pio_rx_allowed
@@ -290,11 +315,11 @@ if (NATIVE_CD32) begin : g_cd
 	                          : pio_byte;
 	wire       pio_rx_last     = (cdrom_receive_offset + 6'd1) == cdrom_receive_length;
 
-	wire pbx_can_start =  (pbx_state == PBX_IDLE)
-	                   && cdrom_flags[CDFLAG_ENABLE_BIT]
-	                   && cdrom_flags[CDFLAG_PBX_BIT]
-	                   && (cdrom_pbx != 16'h0)
-	                   && sector_ready && cd_tick;
+	wire        pbx_armed = cdrom_flags[CDFLAG_ENABLE_BIT] && cdrom_flags[CDFLAG_PBX_BIT]
+	                     && (cdrom_pbx != 16'h0);
+	wire [18:0] cd_period = ntsc ? 19'd381817 : 19'd378334;
+	wire        cd_edge   = &cd_speed || (cd_tick_cnt >= (cd_period >> ({1'b0, cd_speed} + cd_speed2)));
+	wire pbx_can_start = (pbx_state == PBX_IDLE) && pbx_armed && sector_ready && (cd_edge || cd_owed);
 	wire others_busy     = rx_busy | pbx_busy | tx_busy;
 	wire others_starting = rx_can_start | tx_can_start | pbx_can_start;
 
@@ -349,11 +374,15 @@ if (NATIVE_CD32) begin : g_cd
 	wire enable_rising = write && (addr == 5'b10010) && uds && din[10]
 	                  && !cdrom_flags[CDFLAG_ENABLE_BIT];
 
-	wire pbx_starting = (pbx_state == PBX_IDLE)
-	                 && cdrom_flags[CDFLAG_ENABLE_BIT]
-	                 && cdrom_flags[CDFLAG_PBX_BIT]
-	                 && (cdrom_pbx != 16'h0)
-	                 && sector_ready && cd_tick && !subcode_busy;
+	wire pbx_starting = pbx_can_start && !subcode_busy;
+
+	wire       txf_we_dma = tx_busy && dma_ack && own_tx;
+	wire       txf_we_pio = write && (addr == 5'b10100) && pio_wr_edge && pio_tx_allowed && !tx_fifo_full;
+	always @(posedge clk) begin
+		if (txf_we_dma | txf_we_pio)
+			tx_fifo[tx_fifo_wr[9:0]] <= txf_we_dma ? dma_rbyte : din[15:8];
+		tx_fifo_q <= tx_fifo[tx_fifo_rd[9:0]];
+	end
 
 	always @(posedge clk) begin
 		if (reset) begin
@@ -404,10 +433,24 @@ if (NATIVE_CD32) begin : g_cd
 			pbx_ship_invalid     <= 1'b0;
 			cd_speed2            <= 1'b0;
 			cd_tick_cnt          <= 19'd0;
-			cd_tick              <= 1'b1;
+			cd_owed              <= 1'b0;
+			cd_streaming         <= 1'b0;
 			cmd_pending_d        <= 1'b0;
-		end else begin
-			dma_line_cnt <= (dma_line_cnt == 11'd0) ? 11'd1815 : dma_line_cnt - 11'd1;
+			tx_fifo_wr           <= 11'h0;
+			tx_fifo_rd           <= 11'h0;
+			parse_wait           <= 1'b0;
+			cmd_turn_cnt         <= 15'h0;
+			cmd_turn_done        <= 1'b0;
+			cmd_wait_reply       <= 1'b0;
+			cmd_reply_cnt        <= 22'h0;
+			res_hold             <= 1'b0;
+			res_drop             <= 1'b0;
+		end else begin : run
+			reg [31:0] irq_set;
+			reg [31:0] irq_clr;
+			irq_set = 32'h0;
+			irq_clr = 32'h0;
+			dma_line_cnt <= (dma_line_cnt == 11'd0) ? (ntsc ? 11'd1819 : 11'd1815) : dma_line_cnt - 11'd1;
 			if (dma_line_cnt == 11'd0) begin
 				if (tx_dma_delay != 2'd0) tx_dma_delay <= tx_dma_delay - 2'd1;
 				if (rx_dma_delay != 2'd0) rx_dma_delay <= rx_dma_delay - 2'd1;
@@ -416,11 +459,19 @@ if (NATIVE_CD32) begin : g_cd
 			cmd_pending_d <= cmd_pending;
 			if (cmd_pending && !cmd_pending_d && cmd_op == 4'h4 && cdrom_command_buffer[7][7])
 				cd_speed2 <= cdrom_command_buffer[8][6];
-			if (&cd_speed || cd_tick_cnt >= (19'd378334 >> ({1'b0, cd_speed} + cd_speed2))) begin
-				cd_tick_cnt <= 19'd0;
-				cd_tick     <= 1'b1;
-			end else begin
-				cd_tick_cnt <= cd_tick_cnt + 19'd1;
+			cd_tick_cnt <= cd_edge ? 19'd0 : cd_tick_cnt + 19'd1;
+			if (enable_rising) begin
+				cd_owed      <= 1'b0;
+				cd_streaming <= 1'b0;
+			end else if (pbx_starting) begin
+				cd_owed      <= 1'b0;
+				cd_streaming <= 1'b1;
+			end else if (cd_edge) begin
+				if (pbx_armed && cd_streaming) cd_owed <= 1'b1;
+				else begin
+					cd_owed      <= 1'b0;
+					cd_streaming <= 1'b0;
+				end
 			end
 
 			pio_wr_d <= pio_wr_sel;
@@ -481,21 +532,21 @@ if (NATIVE_CD32) begin : g_cd
 				end
 				5'b01100: begin
 					if (uds) begin
-						cdrom_intreq <= cdrom_intreq & ~CDINT_SUBCODE;
+						irq_clr     = irq_clr | CDINT_SUBCODE;
 						subcode_irq  <= 1'b0;
 					end
 				end
 				5'b01110: begin
 					if (lds) begin
 						cdcomtxcmp   <= din[7:0];
-						cdrom_intreq <= cdrom_intreq & ~CDINT_TXDMADONE;
+						irq_clr      = irq_clr | CDINT_TXDMADONE;
 						tx_dma_delay <= 2'd3;
 					end
 				end
 				5'b01111: begin
 					if (lds) begin
 						cdcomrxcmp   <= din[7:0];
-						cdrom_intreq <= cdrom_intreq & ~CDINT_RXDMADONE;
+						irq_clr      = irq_clr | CDINT_RXDMADONE;
 						rx_dma_delay <= 2'd3;
 					end
 				end
@@ -506,7 +557,7 @@ if (NATIVE_CD32) begin : g_cd
 					if (lds) tmp[7:0]  = tmp[7:0]  | din[7:0];
 					if (!cdrom_flags[CDFLAG_PBX_BIT]) tmp = 16'h0;
 					cdrom_pbx    <= tmp;
-					cdrom_intreq <= cdrom_intreq & ~CDINT_PBX;
+					irq_clr      = irq_clr | CDINT_PBX;
 				end
 				5'b10010: begin : cfg_high
 					reg [31:0] new_flags;
@@ -517,7 +568,7 @@ if (NATIVE_CD32) begin : g_cd
 					cdrom_flags <= new_flags;
 					//
 					if (new_flags[CDFLAG_ENABLE_BIT] && !cdrom_flags[CDFLAG_ENABLE_BIT]) begin
-						cdrom_intreq         <= cdrom_intreq & ~CDINT_OVERFLOW;
+						irq_clr               = irq_clr | CDINT_OVERFLOW;
 						cdrom_sector_counter <= 16'h0;
 						sector_ready         <= 1'b0;
 						sec_wr_ptr           <= 11'h0;
@@ -534,12 +585,8 @@ if (NATIVE_CD32) begin : g_cd
 				end
 				5'b10100: begin
 					if (pio_wr_edge && pio_tx_allowed) begin
-						cdrom_intreq <= (cdrom_intreq & ~CDINT_DRIVEXMIT)
-						              | ((pio_tx_can_send && pio_tx_more) ? CDINT_DRIVEXMIT : 32'h0);
-						if (pio_tx_can_send) begin
-							cdrom_command_buffer[cdrom_command_length] <= din[15:8];
-							cdrom_command_length <= pio_tx_next_len;
-						end
+						irq_clr = irq_clr | CDINT_DRIVEXMIT;
+						if (!tx_fifo_full) tx_fifo_wr <= tx_fifo_wr + 11'd1;
 					end
 				end
 				5'b11000: begin
@@ -560,40 +607,61 @@ if (NATIVE_CD32) begin : g_cd
 					if (pio_rx_last) begin
 						cdrom_receive_length <= 6'd0;
 						cdrom_receive_offset <= 6'd0;
-						cdrom_intreq <= (cdrom_intreq & ~CDINT_DRIVERECV) | CDINT_DRIVEXMIT;
+						irq_clr = irq_clr | CDINT_DRIVERECV;
+						irq_set = irq_set | CDINT_DRIVEXMIT;
 					end
 				end else begin
-					cdrom_intreq <= cdrom_intreq & ~CDINT_DRIVERECV;
+					irq_clr = irq_clr | CDINT_DRIVERECV;
 				end
 			end
 
 			if (tx_busy) begin
 				if (dma_ack && own_tx) begin
-					if (cdrom_command_length != 6'd32)
-						cdrom_command_buffer[cdrom_command_length] <= dma_rbyte;
-					cdrom_command_length <= cdrom_command_length + 6'd1;
+					tx_fifo_wr <= tx_fifo_wr + 11'd1;
 					cdcomtxinx           <= cdcomtxinx + 8'd1;
 					if ((cdcomtxinx + 8'd1) == cdcomtxcmp)
-						cdrom_intreq <= cdrom_intreq | CDINT_TXDMADONE;
+						irq_set = irq_set | CDINT_TXDMADONE;
 					tx_busy <= 1'b0;
 				end
 			end else if (!rx_busy && !pbx_busy && tx_can_start && !subcode_busy) begin
 				tx_busy <= 1'b1;
 			end
 
+			if (parse_wait) begin
+				parse_wait <= 1'b0;
+				if (cdrom_command_length != 6'd32)
+					cdrom_command_buffer[cdrom_command_length] <= tx_fifo_q;
+				cdrom_command_length <= parse_next_len;
+				tx_fifo_rd           <= tx_fifo_rd + 11'd1;
+				if (!cdrom_flags[CDFLAG_TXD_BIT] && parse_more)
+					irq_set = irq_set | CDINT_DRIVEXMIT;
+			end else if (parse_ok) begin
+				parse_wait <= 1'b1;
+			end
+
+			if (!cmd_complete) begin
+				cmd_turn_cnt  <= 15'd0;
+				cmd_turn_done <= 1'b0;
+			end else if (!cmd_turn_done) begin
+				if (cmd_turn_cnt == (ntsc ? 15'd28635 : 15'd28374)) cmd_turn_done <= 1'b1;
+				else                           cmd_turn_cnt  <= cmd_turn_cnt + 15'd1;
+			end
+
 			//
 			if (rx_busy) begin
 				if (dma_ack && own_rx) begin
+					pio_byte             <= cdrom_result_buffer[cdrom_receive_offset];
 					cdcomrxinx           <= cdcomrxinx + 8'd1;
 					cdrom_receive_offset <= cdrom_receive_offset + 6'd1;
 					if ((cdrom_receive_offset + 6'd1) == cdrom_receive_length) begin
 						cdrom_receive_length <= 6'd0;
 						cdrom_receive_offset <= 6'd0;
-						cdrom_intreq <= ((cdrom_intreq & ~CDINT_DRIVERECV) | CDINT_DRIVEXMIT)
+						irq_clr = irq_clr | CDINT_DRIVERECV;
+						irq_set = irq_set | (tx_fifo_full ? 32'h0 : CDINT_DRIVEXMIT)
 						              | (((cdcomrxinx + 8'd1) == cdcomrxcmp) ? CDINT_RXDMADONE : 32'h0);
 					end else if ((cdcomrxinx + 8'd1) == cdcomrxcmp) begin
 						//
-						cdrom_intreq <= cdrom_intreq | CDINT_RXDMADONE;
+						irq_set = irq_set | CDINT_RXDMADONE;
 					end
 					rx_busy     <= 1'b0;
 					rx_inflight <= 1'b0;
@@ -607,11 +675,7 @@ if (NATIVE_CD32) begin : g_cd
 
 			case (pbx_state)
 				PBX_IDLE: begin
-					if (cdrom_flags[CDFLAG_ENABLE_BIT]
-					    && cdrom_flags[CDFLAG_PBX_BIT]
-					    && (cdrom_pbx != 16'h0)
-					    && sector_ready && cd_tick && !subcode_busy) begin
-						cd_tick      <= 1'b0;
+					if (pbx_starting) begin
 						pbx_seccnt   <= highest_bit(cdrom_pbx);
 						pbx_byte_idx <= 12'd4;
 						pbx_cnt      <= cdrom_sector_counter[4:0];
@@ -651,7 +715,7 @@ if (NATIVE_CD32) begin : g_cd
 				end
 				PBX_FIN: begin
 					cdrom_pbx[pbx_seccnt] <= 1'b0;
-					cdrom_intreq          <= cdrom_intreq | CDINT_PBX;
+					irq_set                = irq_set | CDINT_PBX;
 					if (!pbx_ship_invalid && !enable_rising)
 						cdrom_sector_counter <= cdrom_sector_counter + 16'd1;
 					sector_ready          <= 1'b0;
@@ -693,7 +757,7 @@ if (NATIVE_CD32) begin : g_cd
 					if (subcode_ready) begin
 						if (!cdrom_flags[CDFLAG_SUBCODE_BIT]) begin
 							subcode_ready <= 1'b0;
-						end else if (!others_busy && !others_starting) begin
+						end else if (!others_busy && !others_starting && !sector_ready) begin
 							subcode_off   <= (cdrom_subcodeoffset >= 8'd128) ? 8'd0 : 8'd128;
 							sub_idx       <= 8'h0;
 							subcode_busy  <= 1'b1;
@@ -721,21 +785,49 @@ if (NATIVE_CD32) begin : g_cd
 			if (hps_cmd_done) begin
 				cdrom_command_length <= 6'd0;
 				hps_cmd_rd_ptr       <= 6'd0;
+				cmd_wait_reply       <= cmd_complete && cmd_expect_reply;
+				cmd_reply_cnt        <= 22'd0;
+			end else if (hps_result_done) begin
+				cmd_wait_reply       <= 1'b0;
+			end else if (cmd_wait_reply) begin
+				if (&cmd_reply_cnt) cmd_wait_reply <= 1'b0;
+				else                cmd_reply_cnt  <= cmd_reply_cnt + 22'd1;
 			end
 
-			if (hps_cmd_done && cmd_zero_result && !hps_result_done)
-				cdrom_intreq <= cdrom_intreq | CDINT_DRIVEXMIT;
+			if (hps_cmd_done && cmd_complete && !cmd_expect_reply && !tx_fifo_full)
+				irq_set = irq_set | CDINT_DRIVEXMIT;
 
-			if (hps_result_push && (hps_result_wr_ptr != 6'd32)) begin
+			if (hps_cmd_done && cmd_complete && (cmd_sum == 8'hff) && ((cmd_op == 4'h1) || (cmd_op == 4'h4))) begin
+				sector_ready <= 1'b0;
+				sec_wr_ptr   <= 11'h0;
+			end
+
+			if (hps_result_push) begin
+				if (res_busy) res_drop <= 1'b1;
+				else if (hps_result_wr_ptr != 6'd32) begin
 				cdrom_result_buffer[hps_result_wr_ptr[4:0]] <= hps_result_byte;
 				hps_result_wr_ptr <= hps_result_wr_ptr + 6'd1;
+				end
 			end
-			if (hps_result_done && (cdrom_receive_length == 6'd0)) begin
+			if (hps_result_done) begin
+				res_drop <= 1'b0;
+				if (res_drop || res_busy || (hps_result_wr_ptr == 6'd0)) begin
+					if (!res_hold) hps_result_wr_ptr <= 6'd0;
+				end else if (cmd_wait_reply && txdone_wait) begin
+					res_hold <= 1'b1;
+				end else begin
+					cdrom_receive_length <= hps_result_wr_ptr;
+					hps_result_wr_ptr    <= 6'd0;
+					irq_set = irq_set | CDINT_DRIVERECV;
+				end
+			end else if (res_hold && !txdone_wait) begin
+				res_hold             <= 1'b0;
 				cdrom_receive_length <= hps_result_wr_ptr;
 				hps_result_wr_ptr    <= 6'd0;
-				if (hps_result_wr_ptr != 6'd0)
-					cdrom_intreq <= cdrom_intreq | CDINT_DRIVERECV;
+				irq_set = irq_set | CDINT_DRIVERECV;
 			end
+
+			cdrom_intreq <= (cdrom_intreq & ~irq_clr) | irq_set;
 		end
 	end
 
@@ -785,7 +877,7 @@ if (NATIVE_CD32) begin : g_cd
 	assign cd_hps_sec_req     = sec_req_w;
 	assign cd_hps_sec_status  = cdrom_sector_counter;
 
-	assign cd_hps_rx_busy     = (cdrom_receive_length != 6'd0);
+	assign cd_hps_rx_busy     = res_busy;
 
 	akiko_nvram nvram_inst (
 		.clk              (clk),

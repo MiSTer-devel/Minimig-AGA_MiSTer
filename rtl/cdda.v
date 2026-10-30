@@ -1,8 +1,10 @@
 
-module cdda #(parameter CLK_RATE)
+module cdda #(parameter CLK_RATE, parameter CLK_RATE_NTSC = CLK_RATE)
 (
 	input             CLK,
 	input             nRESET,
+	input             NTSC,
+	input             FLUSH,
 
 	output reg        WRITE_REQ,
 	input             WRITE,
@@ -21,13 +23,14 @@ localparam BUFFER_SIZE  = 2**BUFFER_WIDTH;
 reg         cen_44100;
 reg  [31:0] cen_44100_cnt;
 wire [31:0] cen_44100_cnt_next = cen_44100_cnt + 44100;
+wire [31:0] clk_rate = NTSC ? CLK_RATE_NTSC : CLK_RATE;
 
 always @(posedge CLK) begin
 	cen_44100 <= 0;
 	cen_44100_cnt <= cen_44100_cnt_next;
-	if (cen_44100_cnt_next >= CLK_RATE) begin
+	if (cen_44100_cnt_next >= clk_rate) begin
 		cen_44100 <= 1;
-		cen_44100_cnt <= cen_44100_cnt_next - CLK_RATE;
+		cen_44100_cnt <= cen_44100_cnt_next - clk_rate;
 	end
 	AUDIO_CE <= cen_44100;
 end
@@ -43,7 +46,7 @@ reg [31:0] BUFFER[BUFFER_SIZE];
 reg [31:0] BUFFER_Q;
 
 always @(posedge CLK) begin
-	if (~nRESET) begin
+	if (~nRESET | FLUSH) begin
 		OLD_WRITE <= 0;
 		LRCK      <= 0;
 		READ_ADDR <= 0;

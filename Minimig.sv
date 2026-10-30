@@ -683,6 +683,13 @@ wire [15:0] ide_f_readdata;
 
 // fastchip is working on CPU clock.
 // Only high performance 68020 devices are inside
+reg [1:0] akiko_rst_cnt = 0;
+always @(posedge clk_sys) begin
+	reg old_rst;
+	old_rst <= ~cpu_rst | ~cpu_nrst_out;
+	if (old_rst & cpu_rst & cpu_nrst_out) akiko_rst_cnt <= akiko_rst_cnt + 1'd1;
+end
+
 fastchip fastchip
 (
 	.clk          (clk_114           ),
@@ -728,6 +735,7 @@ fastchip fastchip
 	.akiko_irq    (akiko_f_irq       ),
 
 	.akiko_cd_speed  (status[54:53]   ),
+	.akiko_ntsc      (ntsc            ),
 	.akiko_dma_req   (akiko_dma_req   ),
 	.akiko_dma_we    (akiko_dma_we    ),
 	.akiko_dma_baddr (akiko_dma_baddr ),
@@ -1432,11 +1440,14 @@ wire  [15:0] cdda_r;
 wire  [15:0] cdda_dout;
 wire         cdda_req;
 wire         cdda_wr;
+wire         cdda_flush;
 
-cdda #(28375160) cdda
+cdda #(28375160, 28636360) cdda
 (
 	.CLK(clk_sys),
 	.nRESET(~reset),
+	.NTSC(ntsc),
+	.FLUSH(cdda_flush),
 	.WRITE_REQ(cdda_req),
 	.WRITE(cdda_wr),
 	.DIN(cdda_dout),
