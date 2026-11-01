@@ -25,8 +25,7 @@ module fastchip
 
 	input         reset,
 
-	input         rtg_card_ena,
-	input   [7:0] rtg_card_base,
+	input         rtg_reg_sel,
 
 	input         sel,
 	output        sel_ack, // 1 when fast chip is used instead of legacy chip
@@ -247,7 +246,7 @@ gayle gayle
 	.led(ide_led)
 );
 
-wire        sel_rtg = sel && !sel_akiko && rtg_card_ena && (addr[23:12] == {rtg_card_base, 4'h0});
+wire        sel_rtg = sel && rtg_reg_sel;
 wire [15:0] rtg_dout;
 wire        rtg_ready;
 

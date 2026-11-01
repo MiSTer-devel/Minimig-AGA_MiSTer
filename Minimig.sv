@@ -427,10 +427,9 @@ cpu_wrapper cpu_wrapper
 	.z3ram_ena0   (z3ram_ena0      ),
 	.z3ram_base1  (z3ram_base1     ),
 	.z3ram_ena1   (z3ram_ena1      ),
-	.rtg_card_ena (rtg_card_ena    ),
-	.rtg_card_base(rtg_card_base   ),
-	.rtg_mem_ena  (rtg_mem_ena     ),
-	.rtg_mem_base (rtg_mem_base    ),
+	.rtg_ena      (rtg_zorro_ena   ),
+	.rtg_base     (rtg_zorro_base  ),
+	.rtg_reg_sel  (rtg_reg_sel     ),
 	.dcache_sw_en (dcache_sw_en    )
 );
 
@@ -442,10 +441,9 @@ wire        z3ram_ena0;
 wire  [3:0] z3ram_base1;
 wire        z3ram_ena1;
 
-wire        rtg_card_ena;
-wire  [7:0] rtg_card_base;
-wire        rtg_mem_ena;
-wire  [8:0] rtg_mem_base;
+wire        rtg_zorro_ena;
+wire  [7:0] rtg_zorro_base;
+wire        rtg_reg_sel;
 
 wire [28:1] dma_ddr_addr;
 wire        dma_ddr_l;
@@ -699,8 +697,7 @@ fastchip fastchip
 	.clk_sys      (clk_sys           ),
 
 	.reset        (~cpu_rst | ~cpu_nrst_out ),
-	.rtg_card_ena (rtg_card_ena      ),
-	.rtg_card_base(rtg_card_base     ),
+	.rtg_reg_sel  (rtg_reg_sel       ),
 	.sel          (fastchip_sel      ),
 	.sel_ack      (fastchip_selack   ),
 	.ready        (fastchip_ready    ),
