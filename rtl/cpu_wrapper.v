@@ -97,6 +97,11 @@ module cpu_wrapper
 	output reg  [3:0] z3ram_base1,
 	output reg        z3ram_ena1,
 
+	output reg        rtg_card_ena,
+	output reg  [7:0] rtg_card_base,
+	output reg        rtg_mem_ena,
+	output reg  [8:0] rtg_mem_base,
+
 	output            ramlong1,
 	output     [15:0] ramdin_lo,
 	input      [15:0] ramdout_hi,
@@ -108,6 +113,7 @@ assign dcache_sw_en = 1'b1;
 
 wire        ec020      = (cpucfg[1:0] == 2'b11) & cpucfg[2];
 wire        ec030      = (cpucfg[1:0] == 2'b10) & cpucfg[2];
+wire        z3cpu      = cpucfg[1] & ~ec020;
 wire [31:0] cpu_addr_m = ec020 ? {8'd0, cpu_addr_p[23:0]} : cpu_addr_p;
 
 wire   ramsel_i     = cpu_req & ~sel_nmi_vector & (sel_zram | sel_chipram | sel_kickram | sel_dd | sel_rtg);
@@ -139,6 +145,8 @@ memory_router u_memory_router
 	.z3ram_ena0    (z3ram_ena0    ),
 	.z3ram_base1   (z3ram_base1   ),
 	.z3ram_ena1    (z3ram_ena1    ),
+	.rtg_ena       (rtg_mem_ena   ),
+	.rtg_base      (rtg_mem_base  ),
 	.sel_chipram   (sel_chipram   ),
 	.sel_kickram   (sel_kickram   ),
 	.sel_zram      (sel_zram      ),
@@ -676,6 +684,8 @@ end
 reg       ac_toccata;
 reg       ac_a2065;
 reg       ac_cdtv;
+reg       ac_rtgcard;
+reg       ac_rtgmem;
 reg [2:0] ac_memcard;
 reg [3:0] autocfg_data;
 
@@ -778,9 +788,36 @@ always @(*) begin
 			  default:;
 		endcase
 	end
+	else if(ac_rtgcard) begin
+		case (chip_addr[6:1])
+			6'h0: autocfg_data = 4'b1100;
+			6'h1: autocfg_data = 4'b0001;
+			6'h2: autocfg_data = 4'b1010;
+			6'h3: autocfg_data = 4'b1101;
+			6'h8: autocfg_data = 4'b1111;
+			6'h9: autocfg_data = 4'b1000;
+			6'ha: autocfg_data = 4'b0010;
+			6'hb: autocfg_data = 4'b0100;
+			default: ;
+		endcase
+	end
+	else if(ac_rtgmem) begin
+		case (chip_addr[6:1])
+			6'h0: autocfg_data = 4'b1000;
+			6'h1: autocfg_data = 4'b0000;
+			6'h2: autocfg_data = 4'b1010;
+			6'h3: autocfg_data = 4'b1100;
+			6'h4: autocfg_data = 4'b0010;
+			6'h8: autocfg_data = 4'b1111;
+			6'h9: autocfg_data = 4'b1000;
+			6'ha: autocfg_data = 4'b0010;
+			6'hb: autocfg_data = 4'b0100;
+			default: ;
+		endcase
+	end
 end
 
-wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv); //$E80000 - $E8FFFF
+wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv || ac_rtgcard || ac_rtgmem); //$E80000 - $E8FFFF
 
 always @(posedge clk) begin
 	reg old_uds;
@@ -791,6 +828,10 @@ always @(posedge clk) begin
 		ac_toccata  <= cdtv_mode ? 1'b0 : 1'b1;
 		ac_a2065    <= 1;
 		ac_cdtv     <= cdtv_mode;
+		ac_rtgcard  <= z3cpu;
+		ac_rtgmem   <= z3cpu;
+		rtg_card_ena <= 0;
+		rtg_mem_ena  <= 0;
 		cdtv_base   <= 8'hE9;
 		z2ram_ena   <= 0;
 		z3ram_ena0  <= 0;
@@ -838,6 +879,20 @@ always @(posedge clk) begin
 					z3ram_ena0 <= 1;
 					ac_memcard <= 0;
 				end
+			end
+		end
+		else if(ac_rtgcard) begin
+			if (chip_addr[6:1] == 6'b100100) begin
+				rtg_card_base <= cpu_dout[7:0];
+				rtg_card_ena  <= 1;
+				ac_rtgcard    <= 0;
+			end
+		end
+		else if(ac_rtgmem) begin
+			if (chip_addr[6:1] == 6'b100010) begin
+				rtg_mem_base <= cpu_dout[15:7];
+				rtg_mem_ena  <= 1;
+				ac_rtgmem    <= 0;
 			end
 		end
 	end
