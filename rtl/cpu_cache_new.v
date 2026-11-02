@@ -301,12 +301,18 @@ wire [15:0] rd_dat    = rd_i0 ? idram0_cpu_dat_r :
 wire        wr_i2     = LINE_TAKE && cpu_long && ((itag0_match && itag0_valid) || (itag1_match && itag1_valid));
 wire [15:0] rd_dat_hi = rd_d0 ? ddram0_cpu_dat_r : rd_d1 ? ddram1_cpu_dat_r : buf_word;
 wire  [3:0] rd_tw_op  = rd_i0 ? TW_I0 : rd_i1 ? TW_I1 : rd_d0 ? TW_D0 : rd_d1 ? TW_D1 : dtag_lru ? TW_DF0 : TW_DF1;
+(* keep *) wire i_hit = rd_i0 | rd_i1;
+(* keep *) wire d_hit = rd_d0 | rd_d1;
+wire        ln_take   = LINE_TAKE && buf_ok_r && !snoop_act && !cpu_ir && cc_den && !cache_inhibit;
+(* keep *) wire rd_go = cpu_cs && !ln_take;
+(* keep *) wire req_next = (cpu_sm_state == CPU_SM_READ) ? rd_go && !i_hit && !d_hit : (cpu_sm_state == CPU_SM_FILL1) && !sdr_read_ack;
+
+always @ (posedge clk) sdr_read_req <= !rst && req_next;
 
 // cpu side state machine
 always @ (posedge clk) begin
   if (rst) begin
     fill              <= 1'b0;
-    sdr_read_req      <= 1'b0;
     wb_en             <= 1'b0;
     cpu_ack           <= 1'b0;
     cpu_ack_l         <= 1'b0;
@@ -333,7 +339,6 @@ always @ (posedge clk) begin
     cpu_sm_dline0_we  <= 1'b0;
     cpu_sm_dline1_we  <= 1'b0;
     cpu_sm_long       <= 1'b0;
-    sdr_read_req      <= 1'b0;
     wb_en             <= 1'b0;
     cpu_sm_itag_we    <= 1'b0;
     cpu_sm_dtag_we    <= 1'b0;
@@ -410,27 +415,18 @@ always @ (posedge clk) begin
         // on hit update LRU flag in tag memory
         if (!cpu_cs) begin
           cpu_sm_state <= CPU_SM_IDLE;
-        end else if (rd_i0) begin
+        end else if (i_hit) begin
           // data is already in instruction cache way 0
-          cpu_ack <= 1'b1;
-          cpu_sm_itag_we <= 1'b1;
-          cpu_sm_state <= CPU_SM_WAIT;
-        end else if (rd_i1) begin
           // data is already in instruction cache way 1
           cpu_ack <= 1'b1;
           cpu_sm_itag_we <= 1'b1;
           cpu_sm_state <= CPU_SM_WAIT;
-        end else if (rd_d0) begin
+        end else if (d_hit) begin
           cpu_ack_l  <= long_rd;
           cpu_ack <= 1'b1;
           cpu_sm_dtag_we <= 1'b1;
           cpu_sm_state <= CPU_SM_WAIT;
-        end else if (rd_d1) begin
-          cpu_ack_l  <= long_rd;
-          cpu_ack <= 1'b1;
-          cpu_sm_dtag_we <= 1'b1;
-          cpu_sm_state <= CPU_SM_WAIT;
-        end else if (LINE_TAKE && buf_ok_r && !snoop_act && !cpu_ir && cc_den && !cache_inhibit) begin
+        end else if (ln_take) begin
           cpu_ack_l  <= long_rd;
           cpu_ack   <= 1'b1;
           buf_take  <= 1'b1;
@@ -440,7 +436,6 @@ always @ (posedge clk) begin
           cpu_sm_state     <= CPU_SM_WAIT;
         end else begin
           // on miss fetch data from SDRAM
-          sdr_read_req <= 1'b1;
           cpu_sm_state <= CPU_SM_FILL1;
           fill_active  <= 1'b1;
           fill_snooped <= 1'b0;
@@ -455,10 +450,7 @@ always @ (posedge clk) begin
         tw_tag <= cpu_adr_tag;
         fill <= 1'b1;
         cpu_sm_adr <= cpu_adr[10:1]; 
-        if (!sdr_read_ack) begin
-          sdr_read_req <= 1'b1;
-        end else begin
-          sdr_read_req <= 1'b0;
+        if (sdr_read_ack) begin
           // read data to cpu
           cpu_dat_r <= sdr_dat_r;
           cpu_ack <= 1'b1;

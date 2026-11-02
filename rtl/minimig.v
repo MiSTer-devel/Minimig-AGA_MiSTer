@@ -311,6 +311,8 @@ module minimig
 	input   [6:0] USER_IN,
 	output  [6:0] USER_OUT,
 	output  user_port_mode,
+	output  [1:0] snac_port,
+	output  [1:0] snac_af,
 	output   [2:0] mister_floppy_status,
 	output   [8:0] drive_snd,
 
@@ -672,6 +674,8 @@ userio USERIO1
 	.floppy_config(floppy_config),
 	.floppy_ext_drive(floppy_ext_drive),
 	.user_port_mode(user_port_mode),
+	.snac_port(snac_port),
+	.snac_af(snac_af),
 	.scanline(scanline),
 	.ar(ar),
 	.blver(blver),

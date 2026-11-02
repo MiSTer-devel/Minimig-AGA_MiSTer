@@ -59,6 +59,7 @@ module hps_ext
 	input             cdda_req,
 	output reg        cdda_wr,
 	output reg [15:0] cdda_dout,
+	output reg        cdda_flush,
 
 	input      [15:0] akiko_din,
 	output reg [15:0] akiko_dout,
@@ -72,6 +73,7 @@ module hps_ext
 	input             akiko_sec_req,
 	input             akiko_rx_busy,
 	input             akiko_nvr_dirty,
+	input       [1:0] akiko_rst_cnt,
 
 	input      [15:0] cdtv_din,
 	output reg [15:0] cdtv_dout,
@@ -113,11 +115,13 @@ always@(posedge clk_sys) begin : main_proc
 	reg [15:0] cmd;
 	reg ide_cs = 0;
 	reg cdda_cs = 0;
+	reg cdda_cs_flush = 0;
 
 	sset <= 0;
 
 	{ide_rd, ide_wr} <= 0;
 	cdda_wr <= 0;
+	cdda_flush <= 0;
 	{akiko_rd, akiko_wr} <= 0;
 	{cdtv_rd, cdtv_wr} <= 0;
 	if((ide_rd | ide_wr) & ~&ide_addr[3:0]) ide_addr <= ide_addr + 1'd1;
@@ -128,6 +132,8 @@ always@(posedge clk_sys) begin : main_proc
 		byte_cnt <= 0;
 		ide_cs <= 0;
 		cdda_cs <= 0;
+		cdda_flush <= cdda_cs_flush;
+		cdda_cs_flush <= 0;
 		akiko_cs <= 0;
 		akiko_cs_sec <= 0;
 		akiko_cs_nvr <= 0;
@@ -151,7 +157,8 @@ always@(posedge clk_sys) begin : main_proc
 		if(byte_cnt == 1) begin
 			ide_addr     <= {io_din[8],io_din[3:0]};
 			ide_cs       <= (io_din[15:9] == 7'b1111000);
-			cdda_cs      <= (io_din[15:9] == 7'b1111001);
+			cdda_cs      <= (io_din[15:9] == 7'b1111001) && !io_din[8];
+			cdda_cs_flush<= (io_din[15:9] == 7'b1111001) &&  io_din[8] && (cmd == 'h61);
 			akiko_cs        <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5];
 			akiko_cs_sec    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[8];
 			akiko_cs_nvr    <= (io_din[15:9] == 7'b1111010) && !io_din[7] && !io_din[5] && io_din[6];
@@ -166,7 +173,7 @@ always@(posedge clk_sys) begin : main_proc
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 			dout_en <= (io_din >= EXT_CMD_MIN && io_din <= EXT_CMD_MAX) || (io_din >= EXT_CMD_MIN2 && io_din <= EXT_CMD_MAX2);
-			if(io_din == 'h63) io_dout <= {2'b00, cdtv_card_dirty, cdtv_nvr_dirty, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
+			if(io_din == 'h63) io_dout <= {akiko_rst_cnt, cdtv_card_dirty, cdtv_nvr_dirty, akiko_req, akiko_sec_req, akiko_rx_busy, cdda_req, akiko_nvr_dirty, cdtv_req, ide_req};
 			if(io_din == UIO_GET_VMODE) io_dout <= 1;
 		end else begin
 			case(cmd)
