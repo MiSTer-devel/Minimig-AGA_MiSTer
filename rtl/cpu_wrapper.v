@@ -793,10 +793,10 @@ always @(*) begin
 			6'h1: autocfg_data = 4'b0000;	// 16MB (extended size code 0)
 			6'h2: autocfg_data = 4'b1100;	// ProductID=0x30
 			6'h4: autocfg_data = 4'b0000;	// memory space, not silenceable, Extended size, Zorro III
-			6'h8: autocfg_data = 4'b1110;	// Manufacturer ID: 0x139c
-			6'h9: autocfg_data = 4'b1100;
-			6'ha: autocfg_data = 4'b0110;
-			6'hb: autocfg_data = 4'b0011;
+			6'h8: autocfg_data = 4'b0010;	// Manufacturer ID: 0xDE10 (DE10)
+			6'h9: autocfg_data = 4'b0001;
+			6'ha: autocfg_data = 4'b1110;
+			6'hb: autocfg_data = 4'b1111;
 			default: ;
 		endcase
 	end
