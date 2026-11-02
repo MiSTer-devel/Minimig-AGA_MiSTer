@@ -789,11 +789,11 @@ always @(*) begin
 	end
 	else if(ac_rtg) begin
 		case (chip_addr[6:1])
-			6'h0: autocfg_data = 4'b1000;	// Zorro III, no memory list, no ROM
-			6'h1: autocfg_data = 4'b0000;	// 16MB (extended size code 0)
-			6'h2: autocfg_data = 4'b1100;	// ProductID=0x30
-			6'h4: autocfg_data = 4'b0000;	// memory space, not silenceable, Extended size, Zorro III
-			6'h8: autocfg_data = 4'b1110;	// Manufacturer ID: 0x139c
+			6'h0: autocfg_data = 4'b1000;
+			6'h1: autocfg_data = 4'b0000;
+			6'h2: autocfg_data = 4'b1100;
+			6'h4: autocfg_data = 4'b0000;
+			6'h8: autocfg_data = 4'b1110;
 			6'h9: autocfg_data = 4'b1100;
 			6'ha: autocfg_data = 4'b0110;
 			6'hb: autocfg_data = 4'b0011;
@@ -802,7 +802,7 @@ always @(*) begin
 	end
 end
 
-wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv || ac_rtg); //$E80000 - $E8FFFF
+wire sel_autoconfig = (chip_addr[23:16] == 8'b11101000) && (ac_memcard || ac_toccata || ac_a2065 || ac_cdtv || ac_rtg);
 
 always @(posedge clk) begin
 	reg old_uds;
