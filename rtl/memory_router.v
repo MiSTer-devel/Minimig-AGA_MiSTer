@@ -38,7 +38,7 @@ assign sel_z3ram1   = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;
 assign sel_z2ram    = !cpu_addr[31:24] && (cpu_addr[23] ^ |cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4
 assign sel_zram     = sel_z3ram0 | sel_z3ram1 | sel_z2ram;
 assign sel_dd       = (cpu_addr[31:16] == 16'h00DD) && (cpu_addr[15:13] == 3'b010);
-assign sel_rtg      = rtg_ena && (cpu_addr[31:23] == rtg_base);
+assign sel_rtg      = (rtg_ena && (cpu_addr[31:23] == rtg_base)) || (cpu_addr[31:24] == 8'h02);
 
 // don't sel_kickram when writing
 assign sel_kickram   = !cpu_addr[31:24] && (&cpu_addr[23:19] || (!cdtv_mode && cpu_addr[23:19] == 5'b11100) || (cpu_addr[23:19] == 5'b10101 && !ar_on) || (cpu_addr[23:19] == 5'b10110)) && ckick && wr;
