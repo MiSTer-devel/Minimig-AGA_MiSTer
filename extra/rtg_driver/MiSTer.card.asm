@@ -359,6 +359,12 @@ FindCard:
         bra.b   .found
 
 .legacy:
+        movea.l $4.w,a0
+        btst    #AFB_68020,AttnFlags+1(a0)
+        beq.b   .none
+        lea     REGISTER_BASE,a0
+        cmpi.w  #$5001,REG_ID(a0)
+        bne.b   .none
         move.l  #REGISTER_BASE,d1
         move.l  #MEMORY_BASE,d0
 
