@@ -25,6 +25,8 @@ module fastchip
 
 	input         reset,
 
+	input         rtg_reg_sel,
+
 	input         sel,
 	output        sel_ack, // 1 when fast chip is used instead of legacy chip
 	output        ready,
@@ -246,7 +248,7 @@ gayle gayle
 	.led(ide_led)
 );
 
-wire        sel_rtg = sel && !sel_akiko && (addr[23:12] == 'hB80);
+wire        sel_rtg = sel && (rtg_reg_sel || (!sel_akiko && (addr[23:12] == 'hB80)));
 wire [15:0] rtg_dout;
 wire        rtg_ready;
 

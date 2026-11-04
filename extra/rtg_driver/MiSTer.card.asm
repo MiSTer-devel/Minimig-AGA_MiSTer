@@ -89,6 +89,16 @@ REGISTER_BASE EQU $b80100
 
 FB_BASE EQU $27000000 ; MiSTer physical memory address
 
+BOARD_MANUFACTURER EQU $139C
+BOARD_PRODUCT      EQU $30
+REGISTER_OFFSET    EQU $800100
+
+cd_Flags           EQU 14
+cd_BoardAddr       EQU 32
+CDB_CONFIGME       EQU 1
+
+_LVOFindConfigDev  EQU -72
+
 ; B80100:B80101 :  8:0 : ADDR[24:16]
 ; B80102:B80103 : 15:0 : ADDR[15:0]
 ; B80104:B80105 : 5:0  : FORMAT[5:0]
@@ -166,7 +176,7 @@ MinimigCard:
         dc.b    'MiSTer.card',0,0
         dc.b    '$VER: '
 IDString:
-        dc.b    'MiSTer.card 0.1 (19.Oct.2020)',0
+        dc.b    'MiSTer.card 0.2 (1.Nov.2026)',0
         dc.b    0
 expansionLibName:
         dc.b    'expansion.library',0
@@ -329,11 +339,47 @@ FindCard:
 ;  BoardInfo struct supplied by the caller, the rtg.library, for example
 ;  the MemoryBase, MemorySize and RegisterBase fields.
 
-        move.l  #MEMORY_SIZE  ,PSSO_BoardInfo_MemorySize(a0)
-        move.l  #REGISTER_BASE,PSSO_BoardInfo_RegisterBase(a0)
-        move.l  #MEMORY_BASE  ,PSSO_BoardInfo_MemoryBase(a0)
-        
+        movem.l a2/a6,-(sp)
+        movea.l a0,a2
+        movea.l CARD_EXPANSIONBASE(a6),a6
+
+        suba.l  a0,a0
+        move.l  #BOARD_MANUFACTURER,d0
+        moveq   #BOARD_PRODUCT,d1
+        jsr     _LVOFindConfigDev(a6)
+        tst.l   d0
+        beq.b   .legacy
+        movea.l d0,a0
+        btst    #CDB_CONFIGME,cd_Flags(a0)
+        beq.b   .none
+        bclr    #CDB_CONFIGME,cd_Flags(a0)
+        move.l  cd_BoardAddr(a0),d0
+        move.l  d0,d1
+        addi.l  #REGISTER_OFFSET,d1
+        bra.b   .found
+
+.legacy:
+        movea.l $4.w,a0
+        btst    #AFB_68020,AttnFlags+1(a0)
+        beq.b   .none
+        lea     REGISTER_BASE,a0
+        cmpi.w  #$5001,REG_ID(a0)
+        bne.b   .none
+        move.l  #REGISTER_BASE,d1
+        move.l  #MEMORY_BASE,d0
+
+.found:
+        move.l  d1,PSSO_BoardInfo_RegisterBase(a2)
+        move.l  d0,PSSO_BoardInfo_MemoryBase(a2)
+        move.l  #MEMORY_SIZE,PSSO_BoardInfo_MemorySize(a2)
+
+        movem.l (sp)+,a2/a6
         moveq   #-1,d0
+        rts
+
+.none:
+        movem.l (sp)+,a2/a6
+        moveq   #0,d0
         rts
 
 ;------------------------------------------------------------------------------
@@ -614,9 +660,9 @@ SetPanning:
 ;  these values you will have to calculate the LinearStartingAddress
 ;  fields of the CRTC registers.
 
-        movea.l PSSO_BoardInfo_RegisterBase(a0),a0
         move.l  a1,d0
-        sub.l   #MEMORY_BASE,d0
+        sub.l   PSSO_BoardInfo_MemoryBase(a0),d0
+        movea.l PSSO_BoardInfo_RegisterBase(a0),a0
         add.l   #FB_BASE,d0
         BUG     "RTG:ADDRESS = %lx",d0
         move.l  d0,REG_ADDRESS(a0)
