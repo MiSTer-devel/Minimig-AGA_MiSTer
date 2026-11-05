@@ -827,8 +827,10 @@ always @(posedge clk_sys) snac_af_cnt <= snac_af_cnt + 1'd1;
 
 wire        snac_af_clk = snac_af[1] ? snac_af_cnt[20] : snac_af_cnt[21];
 wire [15:0] snac_joy = {10'd0, ~USER_IN[6], ~USER_IN[2] & (~|snac_af | snac_af_clk), ~USER_IN[1], ~USER_IN[0], ~USER_IN[5], ~USER_IN[3]};
-wire [15:0] joy0_in = (snac_port == 2'd1) ? snac_joy : JOY0;
-wire [15:0] joy1_in = (snac_port == 2'd2) ? snac_joy : JOY1;
+wire [15:0] joy0_hps = {JOY0[15:4], JOY0[3] & ~JOY0[2], JOY0[2], JOY0[1] & ~JOY0[0], JOY0[0]};
+wire [15:0] joy1_hps = {JOY1[15:4], JOY1[3] & ~JOY1[2], JOY1[2], JOY1[1] & ~JOY1[0], JOY1[0]};
+wire [15:0] joy0_in = (snac_port == 2'd1) ? snac_joy : joy0_hps;
+wire [15:0] joy1_in = (snac_port == 2'd2) ? snac_joy : joy1_hps;
 
 
 minimig minimig
