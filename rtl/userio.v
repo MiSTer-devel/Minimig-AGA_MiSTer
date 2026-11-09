@@ -350,30 +350,68 @@ reg  [ 7:0] xcount;
 reg  [ 7:0] ycount;
 reg  [ 7:0] mouse0scr;
 
-// mouse counters
+// Movement can arrive faster than the Amiga polls JOY0DAT. Adding two
+// +/-127 packets directly makes the 8-bit difference appear to reverse.
+// Keep excess movement and release one count every three scanlines: at
+// most 105 counts per PAL frame (88 NTSC)
+reg signed [15:0] mouse_x_pending;
+reg signed [15:0] mouse_y_pending;
+reg        [1:0] mouse_line_div;
+reg              mouse_old_level;
+reg              mouse_wheel;
+
+wire mouse_event = mouse_old_level ^ kms_level;
+wire signed [15:0] mouse_delta = {{8{kbd_mouse_data[7]}}, kbd_mouse_data};
+wire signed [15:0] mouse_x_next = mouse_x_pending +
+                     ((mouse_event && kbd_mouse_type == 0) ? mouse_delta : 16'sd0);
+wire signed [15:0] mouse_y_next = mouse_y_pending +
+                     ((mouse_event && kbd_mouse_type == 1 && !mouse_wheel) ? mouse_delta : 16'sd0);
+wire mouse_step = clk7_en && pot_cnt_en && mouse_line_div == 2;
+
 always @(posedge clk) begin
-	reg old_level;
-	reg wheel;
-	
-	old_level <= kms_level;
+	mouse_old_level <= kms_level;
 
 	if(reset) begin
 		xcount <= 0;
 		ycount <= 0;
 		mouse0scr <= 0;
-		wheel <= 0;
-	end else if (test_load && clk7_en) begin
-		ycount[7:2] <= test_data[15:10];
-		xcount[7:2] <= test_data[7:2];
-	end else if (old_level ^ kms_level) begin
-		if(kbd_mouse_type == 0) begin
-			wheel <= 0;
-			xcount[7:0] <= xcount[7:0] + kbd_mouse_data;
+		mouse_wheel <= 0;
+		mouse_x_pending <= 0;
+		mouse_y_pending <= 0;
+		mouse_line_div <= 0;
+	end else begin
+		mouse_x_pending <= mouse_x_next;
+		mouse_y_pending <= mouse_y_next;
+
+		if (clk7_en && pot_cnt_en)
+			mouse_line_div <= mouse_line_div == 2 ? 2'd0 : mouse_line_div + 2'd1;
+
+		if (mouse_event) begin
+			if (kbd_mouse_type == 0) mouse_wheel <= 0;
+			if (kbd_mouse_type == 1) begin
+				mouse_wheel <= 1;
+				if (mouse_wheel) mouse0scr <= mouse0scr + kbd_mouse_data;
+			end
 		end
-		if(kbd_mouse_type == 1) begin
-			wheel <= 1;
-			if(wheel) mouse0scr <= mouse0scr + kbd_mouse_data;
-			else ycount[7:0] <= ycount[7:0] + kbd_mouse_data;
+
+		if (test_load && clk7_en) begin
+			ycount[7:2] <= test_data[15:10];
+			xcount[7:2] <= test_data[7:2];
+		end else if (mouse_step) begin
+			if (mouse_x_next > 0) begin
+				xcount <= xcount + 8'd1;
+				mouse_x_pending <= mouse_x_next - 16'sd1;
+			end else if (mouse_x_next < 0) begin
+				xcount <= xcount - 8'd1;
+				mouse_x_pending <= mouse_x_next + 16'sd1;
+			end
+			if (mouse_y_next > 0) begin
+				ycount <= ycount + 8'd1;
+				mouse_y_pending <= mouse_y_next - 16'sd1;
+			end else if (mouse_y_next < 0) begin
+				ycount <= ycount - 8'd1;
+				mouse_y_pending <= mouse_y_next + 16'sd1;
+			end
 		end
 	end
 end
