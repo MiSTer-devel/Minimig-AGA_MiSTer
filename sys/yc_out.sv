@@ -77,9 +77,9 @@ reg de_dly4 = 1'b0, de_dly5 = 1'b0, de_dly6 = 1'b0;
 
 reg [10:0]  cburst_phase = 11'd0; // colorburst counter
 reg unsigned [7:0] vref = 'd128; // Voltage reference point (Used for Chroma)
-logic [7:0]  chroma_LUT_COS = 8'd0; // Chroma cos LUT reference
-logic [7:0]  chroma_LUT_SIN = 8'd0; // Chroma sin LUT reference
-logic [7:0]  chroma_LUT_BURST = 8'd0; // Chroma colorburst LUT reference
+logic signed [10:0] chroma_COS = 11'sd0; // Chroma cos carrier
+logic signed [10:0] chroma_SIN = 11'sd0; // Chroma sin carrier
+logic signed [10:0] chroma_BURST = 11'sd0; // Chroma colorburst carrier
 logic [7:0]  chroma_LUT = 8'd0;
 
 /*
@@ -120,23 +120,21 @@ wire [7:0] chroma = phase[4].c[7:0];
 // so it matches the C/Y sample captured by Y and C below.
 wire data_de = de_dly6;
 
-// Y/C luma keeps full range. North American NTSC applies 7.5 IRE setup
-// during active video only, so blanking is not lifted with the black level.
+// Keep the separate Y/C luma level identical for PAL and NTSC.
 wire [7:0] luma_raw = luma_d4;
 
-wire [15:0] luma_setup_scaled =
-	{luma_raw, 8'd0} -
-	{4'd0, luma_raw, 4'd0} -
-	{7'd0, luma_raw, 1'd0} -
-	{8'd0, luma_raw};
+// Disabled 7.5 IRE setup scaling, retained here for reference.
+// wire [15:0] luma_setup_scaled =
+// 	{luma_raw, 8'd0} -
+// 	{4'd0, luma_raw, 4'd0} -
+// 	{7'd0, luma_raw, 1'd0} -
+// 	{8'd0, luma_raw};
+// wire [7:0] yc_luma_setup = luma_setup_scaled[15:8] + 8'd19;
 
-wire [7:0] yc_luma_setup = luma_setup_scaled[15:8] + 8'd19;
-
-wire [7:0] yc_luma =
-	data_de ? (PAL_EN ? luma_raw : yc_luma_setup) : 8'd0;
+wire [7:0] yc_luma = data_de ? luma_raw : 8'd0;
 
 // CVBS intentionally keeps the original mixer behavior from the legacy module.
-// The Y/C path below still applies the newer setup and chroma gating changes.
+// The Y/C path below still applies the newer chroma gating changes.
 wire [7:0] cvbs_out = {1'b0, luma_raw[7:1]} + {1'b0, chroma[7:1]};
 
 /**************************************
@@ -163,15 +161,15 @@ always_ff @(posedge clk) begin
 	// Adjust SINE carrier reference for PAL (Also adjust for PAL Switch)
 	if (PAL_EN) begin
 		if (PAL_FLIP)
-			chroma_LUT_BURST <= chroma_LUT + 8'd160;
+			chroma_BURST <= chroma_sin(chroma_LUT + 8'd160);
 		else
-			chroma_LUT_BURST <= chroma_LUT + 8'd96;
+			chroma_BURST <= chroma_sin(chroma_LUT + 8'd96);
 	end else  // Adjust SINE carrier reference for NTSC
-		chroma_LUT_BURST <= chroma_LUT + 8'd128;
+		chroma_BURST <= chroma_sin(chroma_LUT + 8'd128);
 
 	// Prepare LUT values for sin / cos (+90 degress)
-	chroma_LUT_SIN <= chroma_LUT;
-	chroma_LUT_COS <= chroma_LUT + 8'd64;
+	chroma_SIN <= chroma_sin(chroma_LUT);
+	chroma_COS <= chroma_sin(chroma_LUT + 8'd64);
 
 	// Calculate for U, V - Bit Shift Multiple by u = by * 1024 x 0.492 = 504, v = ry * 1024 x 0.877 = 898
 	phase[0].u <= $signed({2'b0 ,(blue_2)}) - $signed({2'b0 ,phase[0].y[17:10]});
@@ -196,7 +194,7 @@ always_ff @(posedge clk) begin
 	else begin // Generate Colorburst for 9 cycles
 		if (cburst_phase >= COLORBURST_RANGE[16:10] && cburst_phase <= COLORBURST_RANGE[9:0]) begin // Start the color burst signal at 40 samples or 0.9 us
 			// COLORBURST SIGNAL GENERATION (9 CYCLES ONLY or between count 40 - 240)
-			phase[2].u <= $signed({chroma_sin(chroma_LUT_BURST),5'd0});
+			phase[2].u <= $signed({chroma_BURST,5'd0});
 			phase[2].v <= 21'b0;
 			phase[2].burst <= 1'b1;
 			phase[2].chroma_en <= 1'b0;
@@ -213,8 +211,8 @@ always_ff @(posedge clk) begin
 			U,V are both multiplied by 1024 earlier to scale for the decimals in the YUV colorspace conversion.
 			U and V are both divided by 2^10 which introduce chroma subsampling of 4:1:1 (25% or from 8 bit to 6 bit)
 			*/
-			phase[2].u <= $signed((phase[1].u)>>>10) * $signed(chroma_sin(chroma_LUT_SIN));
-			phase[2].v <= $signed((phase[1].v)>>>10) * $signed(chroma_sin(chroma_LUT_COS));
+			phase[2].u <= $signed((phase[1].u)>>>10) * chroma_SIN;
+			phase[2].v <= $signed((phase[1].v)>>>10) * chroma_COS;
 			phase[2].burst <= 1'b0;
 			phase[2].chroma_en <= de_dly3;
 

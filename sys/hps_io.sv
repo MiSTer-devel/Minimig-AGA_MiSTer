@@ -31,8 +31,12 @@
 //  0 - no, F12 bring framework menu
 //  1 - F12 is passed to core, F12 + (L/R)GUI key bring framework menu
 
+// FFB - force feedback request from the core (joystick_N_ffb)
+//  0 - not used, Main never polls it (default)
+//  1 - core drives joystick_N_ffb, read by Main with UIO_GET_FFB
+
 //
-module hps_io #(parameter CONF_STR, CONF_STR_BRAM=0, PS2DIV=0, WIDE=0, VDNUM=1, BLKSZ=2, PS2WE=0, STRLEN=$size(CONF_STR)>>3, F12KEYMOD=0)
+module hps_io #(parameter CONF_STR, CONF_STR_BRAM=0, PS2DIV=0, WIDE=0, VDNUM=1, BLKSZ=2, PS2WE=0, STRLEN=$size(CONF_STR)>>3, F12KEYMOD=0, FFB=0)
 (
 	input             clk_sys,
 	inout      [45:0] HPS_BUS,
@@ -60,12 +64,37 @@ module hps_io #(parameter CONF_STR, CONF_STR_BRAM=0, PS2DIV=0, WIDE=0, VDNUM=1, 
 	output reg [15:0] joystick_r_analog_4,
 	output reg [15:0] joystick_r_analog_5,
 
+	// Analog triggers 0..255, released at power-up.
+	output reg  [7:0] joystick_lt_analog_0 = 0,
+	output reg  [7:0] joystick_lt_analog_1 = 0,
+	output reg  [7:0] joystick_lt_analog_2 = 0,
+	output reg  [7:0] joystick_lt_analog_3 = 0,
+	output reg  [7:0] joystick_lt_analog_4 = 0,
+	output reg  [7:0] joystick_lt_analog_5 = 0,
+	output reg  [7:0] joystick_rt_analog_0 = 0,
+	output reg  [7:0] joystick_rt_analog_1 = 0,
+	output reg  [7:0] joystick_rt_analog_2 = 0,
+	output reg  [7:0] joystick_rt_analog_3 = 0,
+	output reg  [7:0] joystick_rt_analog_4 = 0,
+	output reg  [7:0] joystick_rt_analog_5 = 0,
+
 	input      [15:0] joystick_0_rumble, // 15:8 - 'large' rumble motor magnitude, 7:0 'small' rumble motor magnitude
 	input      [15:0] joystick_1_rumble,
 	input      [15:0] joystick_2_rumble,
 	input      [15:0] joystick_3_rumble,
 	input      [15:0] joystick_4_rumble,
 	input      [15:0] joystick_5_rumble,
+
+	// force feedback request, read by Main with UIO_GET_FFB (0x45). Used only with FFB=1.
+	// [55:48] flags: bit 48 - active, bit 49 - core provides the centring spring, others 0
+	// [47:32] constant force, signed, positive pushes the wheel right
+	// [31:24] spring, [23:16] damper, [15:8] friction, [7:0] vibration (0..255)
+	input      [55:0] joystick_0_ffb,
+	input      [55:0] joystick_1_ffb,
+	input      [55:0] joystick_2_ffb,
+	input      [55:0] joystick_3_ffb,
+	input      [55:0] joystick_4_ffb,
+	input      [55:0] joystick_5_ffb,
 
 	// paddle 0..255
 	output reg  [7:0] paddle_0,
@@ -267,12 +296,14 @@ always@(posedge clk_sys) begin : uio_block
 	reg [15:0] cmd;
 	reg  [2:0] b_wr;
 	reg  [3:0] stick_idx;
+	reg  [7:0] atrig_idx;
 	reg  [3:0] pdsp_idx;
 	reg        ps2skip = 0;
 	reg  [3:0] stflg = 0;
 	reg[127:0] status_req;
 	reg        old_status_set = 0;
 	reg        old_upload_req = 0;
+	reg [47:0] ffb_data;
 	reg        upload_req = 0;
 	reg        old_info = 0;
 	reg  [7:0] info_n = 0;
@@ -340,6 +371,12 @@ always@(posedge clk_sys) begin : uio_block
 				'h033F: io_dout <= joystick_3_rumble;
 				'h043F: io_dout <= joystick_4_rumble;
 				'h053F: io_dout <= joystick_5_rumble;
+				'h0045: if(FFB) begin io_dout <= {8'hFB, joystick_0_ffb[55:48]}; ffb_data <= joystick_0_ffb[47:0]; end
+				'h0145: if(FFB) begin io_dout <= {8'hFB, joystick_1_ffb[55:48]}; ffb_data <= joystick_1_ffb[47:0]; end
+				'h0245: if(FFB) begin io_dout <= {8'hFB, joystick_2_ffb[55:48]}; ffb_data <= joystick_2_ffb[47:0]; end
+				'h0345: if(FFB) begin io_dout <= {8'hFB, joystick_3_ffb[55:48]}; ffb_data <= joystick_3_ffb[47:0]; end
+				'h0445: if(FFB) begin io_dout <= {8'hFB, joystick_4_ffb[55:48]}; ffb_data <= joystick_4_ffb[47:0]; end
+				'h0545: if(FFB) begin io_dout <= {8'hFB, joystick_5_ffb[55:48]}; ffb_data <= joystick_5_ffb[47:0]; end
 			endcase
 
 			sd_buff_addr <= 0;
@@ -355,6 +392,13 @@ always@(posedge clk_sys) begin : uio_block
 				'h11: if(byte_cnt==1) joystick_3[15:0] <= io_din; else joystick_3[31:16] <= io_din;
 				'h12: if(byte_cnt==1) joystick_4[15:0] <= io_din; else joystick_4[31:16] <= io_din;
 				'h13: if(byte_cnt==1) joystick_5[15:0] <= io_din; else joystick_5[31:16] <= io_din;
+
+				// force feedback request, snapshot taken with the command word
+				'h0X45: if(FFB) case(byte_cnt)
+							1: io_dout <= ffb_data[47:32];
+							2: io_dout <= ffb_data[31:16];
+							3: io_dout <= ffb_data[15:0];
+						endcase
 
 				// store incoming ps2 mouse bytes
 				'h04: begin
@@ -455,6 +499,19 @@ always@(posedge clk_sys) begin : uio_block
 									endcase
 							endcase
 						end
+
+				// 0x46: player, {RT, LT}
+				'h46: case(byte_cnt)
+							1: atrig_idx <= io_din[7:0];
+							2: case(atrig_idx)
+									0: {joystick_rt_analog_0, joystick_lt_analog_0} <= io_din;
+									1: {joystick_rt_analog_1, joystick_lt_analog_1} <= io_din;
+									2: {joystick_rt_analog_2, joystick_lt_analog_2} <= io_din;
+									3: {joystick_rt_analog_3, joystick_lt_analog_3} <= io_din;
+									4: {joystick_rt_analog_4, joystick_lt_analog_4} <= io_din;
+									5: {joystick_rt_analog_5, joystick_lt_analog_5} <= io_din;
+								endcase
+						endcase
 
 				// notify image selection
 				'h1c: begin

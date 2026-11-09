@@ -37,6 +37,12 @@ output        HDMI_FREEZE,
 output        HDMI_BLACKOUT,
 output        HDMI_BOB_DEINT,
 
+input   [5:0] LFB_FMT,
+input  [31:0] LFB_BASE,
+input  [11:0] LFB_WIDTH,
+input  [11:0] LFB_HEIGHT,
+input  [13:0] LFB_STRIDE,
+
 `ifdef MISTER_FB
 // Use framebuffer in DDRAM
 // FB_FORMAT:
