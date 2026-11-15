@@ -403,6 +403,13 @@ architecture logic of TG68KdotC_Kernel is
 	signal pmmu_chk			: bit;
 	signal pmmu_bad			: bit;
 	signal pmmu_cfg			: bit;
+	signal pmmu_era			: std_logic_vector(3 downto 0);
+	signal pmmu_eqa			: std_logic_vector(3 downto 0);
+	signal pmmu_eub			: std_logic;
+	type rf_hint_t is array(0 to 15) of std_logic_vector(1 downto 0);
+	signal rf_hint			: rf_hint_t;
+	attribute ramstyle : string;
+	attribute ramstyle of rf_hint : signal is "logic";
 	signal trap_mmucfg		: bit;
 	signal MSP					: std_logic_vector(31 downto 0);
 	signal ISP					: std_logic_vector(31 downto 0);
@@ -567,12 +574,16 @@ ALU: TG68K_ALU
 		tc => MMU_TC, crp => MMU_CRP, srp => MMU_SRP, tt0 => MMU_TT0, tt1 => MMU_TT1,
 		l_addr => addr, l_state => state_bus, l_fc => FC_eff, l_rmw => '0',
 		l_uds => memmaskmux(5), l_lds => memmaskmux(4), l_wr => data_write_i, l_long => longword_i,
+		e_ra => pmmu_era, e_qa => pmmu_eqa, e_ub => pmmu_eub, e_st => state,
 		p_addr => addr_out, p_state => mmu_pstate, p_uds => nUDS, p_lds => nLDS, p_wr => data_write,
 		p_long => longword, p_ci => open, p_ack => clkena_in, p_rd => data_in, stall => mmu_stall,
 		cmd_go => mmu_cmd_go, cmd_op => mmu_cmd_op, cmd_ea => addr, cmd_fc => mmu_cmd_fc,
 		cmd_mask => pmmu_ext(7 downto 5), cmd_rd => pmmu_ext(9), cmd_level => pmmu_ext(12 downto 10),
 		mmusr => mmu_sr_in, mmusr_we => mmu_sr_we, desc_addr => mmu_desc, fault => mmu_fault, f_ack => mmu_f_ack);
 
+	pmmu_era <= "00" & memaddr_delta_rega(11 downto 10);
+	pmmu_eqa <= "00" & rf_hint(RDindex_A);
+	pmmu_eub <= '1' WHEN use_base='1' ELSE '0';
 	clk_hold <= (mmu_stall AND NOT pf_defer AND NOT sk_drop) OR (pf_bad AND NOT pf_wait);
 	mmu_busy <= clk_hold;
 	clkena_i <= clkena_in AND NOT clk_hold AND NOT ae_halt;
@@ -771,6 +782,7 @@ PROCESS (clk, regfile, RDindex_A, RDindex_B, exec)
 				RDindex_B <= conv_integer(rf_source_addr(3 downto 0));
 				IF Wwrena='1' THEN
 					regfile(RDindex_A) <= regin;
+					rf_hint(RDindex_A) <= regin(11 downto 10);
 					IF RDindex_A=15 THEN
 						a7_live <= regin;
 					END IF;

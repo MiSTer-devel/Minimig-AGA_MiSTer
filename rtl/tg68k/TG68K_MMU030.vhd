@@ -23,6 +23,10 @@ entity TG68K_MMU030 is
 		l_lds      : in  std_logic;
 		l_wr       : in  std_logic_vector(15 downto 0);
 		l_long     : in  std_logic;
+		e_ra       : in  std_logic_vector(3 downto 0);
+		e_qa       : in  std_logic_vector(3 downto 0);
+		e_ub       : in  std_logic;
+		e_st       : in  std_logic_vector(1 downto 0);
 
 		p_addr     : out std_logic_vector(31 downto 0);
 		p_state    : out std_logic_vector(1 downto 0);
@@ -124,12 +128,25 @@ architecture rtl of TG68K_MMU030 is
 	signal b_addr    : std_logic_vector(31 downto 0);
 	signal b_state   : std_logic_vector(1 downto 0);
 
-	type u24_t is array(0 to 2) of std_logic_vector(23 downto 0);
-	type u3_t  is array(0 to 2) of std_logic_vector(2 downto 0);
+	constant UI : integer := 2;
+	constant UG : integer := 2**UI;
+	constant UN : integer := 3*UG;
+	type u24_t is array(0 to UN-1) of std_logic_vector(23 downto 0);
+	type u3_t  is array(0 to UN-1) of std_logic_vector(2 downto 0);
 	signal u_log, u_phy : u24_t;
 	signal u_fc         : u3_t;
-	signal u_v, u_rok, u_wok, u_ci : std_logic_vector(2 downto 0) := (others => '0');
-	signal u_s          : integer range 0 to 2;
+	signal u_v, u_rok, u_wok, u_ci : std_logic_vector(UN-1 downto 0) := (others => '0');
+	signal u_c          : integer range 0 to 2;
+	signal u_iq, u_ir, u_i : integer range 0 to UG-1;
+	signal u_s          : integer range 0 to UN-1;
+	type cl24_t is array(0 to 2) of std_logic_vector(23 downto 0);
+	signal q_phy        : cl24_t;
+	signal q_ci, q_hit  : std_logic_vector(2 downto 0);
+	signal s_phy        : std_logic_vector(23 downto 0);
+	signal s_ci         : std_logic;
+	signal need_a       : std_logic;
+	signal take_l       : std_logic_vector(31 downto 0);
+	signal early_a      : std_logic_vector(31 downto 0);
 	signal u_hit        : std_logic;
 	signal tt_rhit      : std_logic;
 	signal tt_whit      : std_logic;
@@ -170,6 +187,7 @@ begin
 	end process;
 
 	need  <= '1' when tc(31) = '1' and l_state /= "01" and l_fc /= "111" else '0';
+	need_a <= '1' when tc(31) = '1' and e_st /= "01" and l_fc /= "111" else '0';
 	is_wr <= '1' when l_state = "11" or l_rmw = '1' else '0';
 
 	lk_addr <= c_ea when c_act = '1' else l_addr;
@@ -225,30 +243,63 @@ begin
 	tt_rhit <= tt_match(tt0, l_addr, l_fc, '1', l_rmw) or tt_match(tt1, l_addr, l_fc, '1', l_rmw);
 	tt_whit <= tt_match(tt0, l_addr, l_fc, '0', l_rmw) or tt_match(tt1, l_addr, l_fc, '0', l_rmw);
 
-	u_s   <= 0 when l_state(1) = '0' else 1 when l_state(0) = '0' else 2;
-	u_hit <= '1' when st = S_IDLE and f_hold = '0' and u_v(u_s) = '1' and u_fc(u_s) = l_fc and
-	                  ((u_log(u_s) xor l_addr(31 downto 8)) and pm) = x"000000" and
-	                  ((is_wr = '1' and u_wok(u_s) = '1') or (is_wr = '0' and u_rok(u_s) = '1')) else '0';
+	u_c   <= 0 when e_st(1) = '0' else 1 when e_st(0) = '0' else 2;
+	u_iq  <= conv_integer(e_qa(UI - 1 downto 0));
+	u_ir  <= conv_integer(e_ra(UI - 1 downto 0));
+	u_i   <= u_iq when e_ub = '1' else u_ir;
+	u_s   <= u_c * UG + u_i;
+	process (u_v, u_fc, u_log, u_phy, u_rok, u_wok, u_ci, u_iq, u_ir, e_ub, l_fc, l_addr, pm, l_rmw)
+		variable ix : integer range 0 to UN - 1;
+		variable ok : std_logic;
+	begin
+		for c in 0 to 2 loop
+			if e_ub = '1' then
+				ix := c * UG + u_iq;
+			else
+				ix := c * UG + u_ir;
+			end if;
+			if c = 2 or l_rmw = '1' then
+				ok := u_wok(ix);
+			else
+				ok := u_rok(ix);
+			end if;
+			if u_v(ix) = '1' and ok = '1' and u_fc(ix) = l_fc and ((u_log(ix) xor l_addr(31 downto 8)) and pm) = x"000000" then
+				q_hit(c) <= '1';
+			else
+				q_hit(c) <= '0';
+			end if;
+			q_phy(c) <= u_phy(ix);
+			q_ci(c)  <= u_ci(ix);
+		end loop;
+	end process;
+	s_phy <= q_phy(0) when e_st(1) = '0' else q_phy(1) when e_st(0) = '0' else q_phy(2);
+	s_ci  <= q_ci(0)  when e_st(1) = '0' else q_ci(1)  when e_st(0) = '0' else q_ci(2);
+	u_hit <= '1' when st = S_IDLE and f_hold = '0' and
+	                  ((e_st(1) = '0' and q_hit(0) = '1') or (e_st = "10" and q_hit(1) = '1') or (e_st = "11" and q_hit(2) = '1'))
+	         else '0';
 
 	stall <= '1' when st /= S_IDLE or (need = '1' and xv = '0' and u_hit = '0') else '0';
 	fault <= f_hold;
 
-	process (st, need, xv, u_hit, u_s, u_phy, u_ci, pm, l_addr, l_state, phys, b_addr, b_state, l_uds, l_lds, l_wr, l_long, wb_data, ci_r)
+	take_l(31 downto 8) <= (others => '0') when st /= S_IDLE or (need_a = '1' and xv = '1') else
+	                       (others => '1') when need_a = '0' else
+	                       not pm;
+	take_l(7 downto 0)  <= (others => '1') when st = S_IDLE and (need_a = '0' or xv = '0') else (others => '0');
+	early_a <= b_addr when st /= S_IDLE else
+	           phys when xv = '1' else
+	           s_phy & x"00";
+	p_addr  <= (l_addr and take_l) or (early_a and not take_l);
+
+	process (st, need, xv, u_hit, s_ci, l_state, b_state, l_uds, l_lds, l_wr, l_long, wb_data, ci_r)
 	begin
 		if st = S_IDLE then
 			if need = '1' then
-				if xv = '1' then
-					p_addr <= phys;
-				else
-					p_addr <= (u_phy(u_s) or (l_addr(31 downto 8) and not pm)) & l_addr(7 downto 0);
-				end if;
 				if xv = '1' or u_hit = '1' then
 					p_state <= l_state;
 				else
 					p_state <= "01";
 				end if;
 			else
-				p_addr <= l_addr;
 				p_state <= l_state;
 			end if;
 			p_uds  <= l_uds;
@@ -258,10 +309,9 @@ begin
 			if xv = '1' then
 				p_ci <= ci_r and need;
 			else
-				p_ci <= u_ci(u_s) and need;
+				p_ci <= s_ci and need;
 			end if;
 		else
-			p_addr  <= b_addr;
 			p_state <= b_state;
 			p_uds   <= '0';
 			p_lds   <= '0';
@@ -290,7 +340,7 @@ begin
 				xv <= '0';
 				c_act <= '0';
 				b_state <= "01";
-				u_v <= "000";
+				u_v <= (others => '0');
 			else
 				case st is
 
@@ -343,7 +393,7 @@ begin
 						end if;
 					end if;
 					if (cmd_go = '1' or cfg_wr = '1') and k_ena = '1' then
-						u_v <= "000";
+						u_v <= (others => '0');
 					end if;
 					if cmd_go = '1' and k_ena = '1' then
 						c_op <= cmd_op;
