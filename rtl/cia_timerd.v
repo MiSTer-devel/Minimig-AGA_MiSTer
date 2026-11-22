@@ -106,7 +106,7 @@ always @(posedge clk)
     begin
       tod[23:0] <= 24'd0;  // Clear counter on reset
     end
-    else if (wr && !crb7)  // CRB7==0 enables writing to TOD counter
+    else if (wr && !crb7 && (tlo || tme || thi))  // Only actual TOD register writes
     begin
       if (tlo)
         tod[7:0] <= data_in[7:0];
